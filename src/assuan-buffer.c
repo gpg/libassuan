@@ -91,10 +91,9 @@ readline (ASSUAN_CONTEXT ctx, char *buf, size_t buflen,
       nleft -= n;
       buf += n;
       *r_nread += n;
-      
-      for (; n && *p != '\n'; n--, p++)
-        ;
-      if (n)
+
+      p = memrchr (p, '\n', n);
+      if (p)
         break; /* at least one full line available - that's enough for now */
     }
 
@@ -106,8 +105,9 @@ int
 _assuan_read_line (ASSUAN_CONTEXT ctx)
 {
   char *line = ctx->inbound.line;
-  int n, nread, atticlen;
+  int nread, atticlen;
   int rc;
+  char *endp = 0;
 
   if (ctx->inbound.eof)
     return -1;
@@ -117,22 +117,25 @@ _assuan_read_line (ASSUAN_CONTEXT ctx)
     {
       memcpy (line, ctx->inbound.attic.line, atticlen);
       ctx->inbound.attic.linelen = 0;
-      for (n=0; n < atticlen && line[n] != '\n'; n++)
-        ;
-      if (n < atticlen)
+
+      endp = memchr (line, '\n', atticlen);
+      if (endp)
+	/* Found another line in the attic.  */
 	{
-	  rc = 0; /* found another line in the attic */
+	  rc = 0;
 	  nread = atticlen;
 	  atticlen = 0;
 	}
       else
-        { /* read the rest */
+	/* There is pending data but not a full line.  */
+        {
           assert (atticlen < LINELENGTH);
           rc = readline (ctx, line + atticlen,
 			 LINELENGTH - atticlen, &nread, &ctx->inbound.eof);
         }
     }
   else
+    /* No pending data.  */
     rc = readline (ctx, line, LINELENGTH,
                    &nread, &ctx->inbound.eof);
   if (rc)
@@ -152,51 +155,52 @@ _assuan_read_line (ASSUAN_CONTEXT ctx)
 
   ctx->inbound.attic.pending = 0;
   nread += atticlen;
-  for (n=0; n < nread; n++)
+
+  if (! endp)
+    endp = memchr (line, '\n', nread);
+
+  if (endp)
     {
-      if (line[n] == '\n')
-        {
-          if (n+1 < nread)
-            {
-              char *s, *d;
-              int i;
+      int n = endp - line + 1;
+      if (n < nread)
+	/* LINE contains more than one line.  We copy it to the attic
+	   now as handlers are allowed to modify the passed
+	   buffer.  */
+	{
+	  int len = nread - n;
+	  memcpy (ctx->inbound.attic.line, endp + 1, len);
+	  ctx->inbound.attic.pending = memrchr (endp + 1, '\n', len) ? 1 : 0;
+	  ctx->inbound.attic.linelen = len;
+	}
 
-              n++;
-              /* we have to copy the rest because the handlers are
-                 allowed to modify the passed buffer */
-              for (d=ctx->inbound.attic.line, s=line+n, i=nread-n; i; i--)
-                {
-                  if (*s=='\n')
-                    ctx->inbound.attic.pending = 1;
-                  *d++ = *s++;
-                }
-              ctx->inbound.attic.linelen = nread-n;
-              n--;
-            }
-          if (n && line[n-1] == '\r')
-            n--;
-          line[n] = 0;
-          ctx->inbound.linelen = n;
-          if (ctx->log_fp)
-            {
-              fprintf (ctx->log_fp, "%s[%p] <- ", my_log_prefix (), ctx); 
-              if (ctx->confidential)
-                fputs ("[Confidential data not shown]", ctx->log_fp);
-              else
-                _assuan_log_print_buffer (ctx->log_fp, 
-                                          ctx->inbound.line,
-                                          ctx->inbound.linelen);
-              putc ('\n', ctx->log_fp);
-            }
-          return 0;
-        }
+      if (endp != line && endp[-1] == '\r')
+	endp --;
+      *endp = 0;
+
+      ctx->inbound.linelen = endp - line;
+      if (ctx->log_fp)
+	{
+	  fprintf (ctx->log_fp, "%s[%p] <- ", my_log_prefix (), ctx); 
+	  if (ctx->confidential)
+	    fputs ("[Confidential data not shown]", ctx->log_fp);
+	  else
+	    _assuan_log_print_buffer (ctx->log_fp, 
+				      ctx->inbound.line,
+				      ctx->inbound.linelen);
+	  putc ('\n', ctx->log_fp);
+	}
+      return 0;
     }
-
-  if (ctx->log_fp)
-    fprintf (ctx->log_fp, "%s[%p] <- [Invalid line]\n", my_log_prefix (), ctx);
-  *line = 0;
-  ctx->inbound.linelen = 0;
-  return ctx->inbound.eof? ASSUAN_Line_Not_Terminated : ASSUAN_Line_Too_Long;
+  else
+    {
+      if (ctx->log_fp)
+	fprintf (ctx->log_fp, "%s[%p] <- [Invalid line]\n",
+		 my_log_prefix (), ctx);
+      *line = 0;
+      ctx->inbound.linelen = 0;
+      return ctx->inbound.eof ? ASSUAN_Line_Not_Terminated
+	: ASSUAN_Line_Too_Long;
+    }
 }
 
 
@@ -376,7 +380,7 @@ _assuan_cookie_write_flush (void *cookie)
                                       ctx->outbound.data.line,
                                       linelen);
           putc ('\n', ctx->log_fp);
-            }
+	}
       *line++ = '\n';
       linelen++;
       if (writen (ctx, ctx->outbound.data.line, linelen))

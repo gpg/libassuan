@@ -1,3 +1,8 @@
+2002-11-23  Neal H. Walfield  <neal@g10code.de>
+
+	* assuan-buffer.c (readline): Use memrchr.
+	(_assuan_read_line): Rewritten to use the string functions.
+
 2002-11-20  Neal H. Walfield  <neal@g10code.de>
 
 	* assuan-socket-connect.c (assuan_socket_connect): Pass PF_LOCAL
