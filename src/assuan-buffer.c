@@ -25,7 +25,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <assert.h>
-#ifdef _WIN32
+#ifdef HAVE_W32_SYSTEM
 #include <process.h>
 #endif
 #include "assuan-defs.h"

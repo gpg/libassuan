@@ -19,7 +19,7 @@
  */
 #include <config.h>
 #include <stdio.h>
-#ifdef _WIN32
+#ifdef HAVE_W32_SYSTEM
 #include <windows.h>
 #include <io.h>
 #else
@@ -31,7 +31,7 @@
 int
 _assuan_close (int fd)
 {
-#ifndef _WIN32
+#ifndef HAVE_W32_SYSTEM
   return close (fd);
 #else
   int rc = closesocket (fd);
@@ -45,7 +45,7 @@ _assuan_close (int fd)
 int
 _assuan_sock_new (int domain, int type, int proto)
 {
-#ifndef _WIN32
+#ifndef HAVE_W32_SYSTEM
   return socket (domain, type, proto);
 #else
   if (domain == AF_UNIX || domain == AF_LOCAL)
@@ -58,7 +58,7 @@ _assuan_sock_new (int domain, int type, int proto)
 int
 _assuan_sock_connect (int sockfd, struct sockaddr * addr, int addrlen)
 {
-#ifndef _WIN32
+#ifndef HAVE_W32_SYSTEM
   return connect (sockfd, addr, addrlen);
 #else
   struct sockaddr_in myaddr;
@@ -93,7 +93,7 @@ _assuan_sock_connect (int sockfd, struct sockaddr * addr, int addrlen)
 int
 _assuan_sock_bind (int sockfd, struct sockaddr * addr, int addrlen)
 {
-#ifndef _WIN32
+#ifndef HAVE_W32_SYSTEM
   return bind (sockfd, addr, addrlen);
 #else
   if (addr->sa_family == AF_LOCAL || addr->sa_family == AF_UNIX)

@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <sys/types.h>
-#ifndef _WIN32
+#ifndef HAVE_W32_SYSTEM
 #include <sys/socket.h>
 #include <sys/un.h>
 #else
@@ -90,7 +90,7 @@ domain_reader (assuan_context_t ctx, void *buf, size_t buflen)
 {
   int len = ctx->domainbuffersize;
 
-#ifndef _WIN32
+#ifndef HAVE_W32_SYSTEM
  start:
   if (len == 0)
     /* No data is buffered.  */
@@ -239,7 +239,7 @@ domain_reader (assuan_context_t ctx, void *buf, size_t buflen)
 static ssize_t
 domain_writer (assuan_context_t ctx, const void *buf, size_t buflen)
 {
-#ifndef _WIN32
+#ifndef HAVE_W32_SYSTEM
   struct msghdr msg;
   struct iovec iovec;
   ssize_t len;
@@ -273,7 +273,7 @@ domain_writer (assuan_context_t ctx, const void *buf, size_t buflen)
 static assuan_error_t
 domain_sendfd (assuan_context_t ctx, int fd)
 {
-#ifndef _WIN32
+#ifndef HAVE_W32_SYSTEM
   struct msghdr msg;
   struct
   {
@@ -317,7 +317,7 @@ domain_sendfd (assuan_context_t ctx, int fd)
 static assuan_error_t
 domain_receivefd (assuan_context_t ctx, int *fd)
 {
-#ifndef _WIN32
+#ifndef HAVE_W32_SYSTEM
   if (ctx->pendingfds == 0)
     {
       _assuan_log_printf ("no pending file descriptors!\n");

@@ -1,3 +1,13 @@
+2004-12-07  Werner Koch  <wk@g10code.com>
+
+	* assuan-logging.c, assuan-io.c: Include config.h
+
+	Replaced all usages of _WIN32 by the new HAVE_W32_SYSTEM because
+	there is nothing winning in this API.
+
+	* assuan-pipe-connect.c (assuan_pipe_connect2) [_WIN32]: Return
+	error Not Imlemented.
+
 2004-11-27  Werner Koch  <wk@g10code.com>
 
 	* assuan-socket.c: Include sys/types.h.  Noted by Michael

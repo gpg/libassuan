@@ -17,7 +17,7 @@
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA 
  */
-#ifndef _WIN32
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -30,7 +30,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/types.h>
-#ifndef _WIN32
+#ifndef HAVE_W32_SYSTEM
 #include <sys/wait.h>
 #else
 #include <windows.h>
@@ -44,7 +44,7 @@
 #define MAX_OPEN_FDS 20
 #endif
 
-
+#ifndef HAVE_W32_SYSTEM
 static int
 writen (int fd, const char *buffer, size_t length)
 {
@@ -63,8 +63,9 @@ writen (int fd, const char *buffer, size_t length)
     }
   return 0;  /* okay */
 }
+#endif
 
-
+#ifndef HAVE_W32_SYSTEM
 static int
 do_finish (assuan_context_t ctx)
 {
@@ -85,13 +86,15 @@ do_finish (assuan_context_t ctx)
     }
   return 0;
 }
+#endif
 
+#ifndef HAVE_W32_SYSTEM
 static void
 do_deinit (assuan_context_t ctx)
 {
   do_finish (ctx);
 }
-
+#endif
 
 
 /* Connect to a server over a pipe, creating the assuan context and
@@ -102,11 +105,15 @@ do_deinit (assuan_context_t ctx)
    argument and 0 is passed as the second argument. The ATFORK
    function should only act if the second value is 0. */
 assuan_error_t
-assuan_pipe_connect2 (assuan_context_t *ctx, const char *name, char *const argv[],
+assuan_pipe_connect2 (assuan_context_t *ctx,
+                      const char *name, char *const argv[],
                       int *fd_child_list,
                       void (*atfork) (void *opaque, int reserved),
                       void *atforkvalue)
 {
+#ifdef HAVE_W32_SYSTEM
+  return ASSUAN_Not_Implemented;
+#else
   static int fixed_signals = 0;
   assuan_error_t err;
   int rp[2];
@@ -288,6 +295,7 @@ assuan_pipe_connect2 (assuan_context_t *ctx, const char *name, char *const argv[
     }
 
   return err;
+#endif
 }
 
 
@@ -301,4 +309,3 @@ assuan_pipe_connect (assuan_context_t *ctx, const char *name, char *const argv[]
 {
   return assuan_pipe_connect2 (ctx, name, argv, fd_child_list, NULL, NULL);
 }
-#endif

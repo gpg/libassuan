@@ -67,11 +67,42 @@ if test "$GCC" = yes; then
 fi
 
 
+# 
+# Options depending on the host OS.
+# 
+have_dosish_system=no
+have_w32_system=no
+case "${host}" in
+    *-mingw32*)
+        have_dosish_system=yes
+        have_w32_system=yes
+        ;;
+esac
+
+if test "$have_dosish_system" = yes; then
+   AC_DEFINE(HAVE_DOSISH_SYSTEM,1,
+             [Defined if we run on some of the PCDOS like systems 
+              (DOS, Windoze. OS/2) with special properties like
+              no file modes])
+fi
+dnl AM_CONDITIONAL(HAVE_DOSISH_SYSTEM, test "$have_dosish_system" = yes)
+
+if test "$have_w32_system" = yes; then
+   AC_DEFINE(HAVE_W32_SYSTEM,1, [Defined if we run on a W32 API based system])
+fi
+dnl AM_CONDITIONAL(HAVE_W32_SYSTEM, test "$have_w32_system" = yes)
+
+
+
 # For src/libassuan-config.in
 LIBASSUAN_CONFIG_LIBS="-lassuan"
 LIBASSUAN_CONFIG_CFLAGS=""
+if test "$have_w32_system" = yes; then
+  LIBASSUAN_CONFIG_LIBS="$LIBASSUAN_CONFIG_LIBS -lwsock32"
+fi
 AC_SUBST(LIBASSUAN_CONFIG_LIBS)
 AC_SUBST(LIBASSUAN_CONFIG_CFLAGS)
+
 
 # Checks for header files.
 AC_HEADER_STDC

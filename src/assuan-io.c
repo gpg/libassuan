@@ -18,17 +18,21 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA 
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "assuan-defs.h"
 #include <sys/types.h>
 #include <unistd.h>
-#ifdef _WIN32
+#ifdef HAVE_W32_SYSTEM
 #include <windows.h>
 #endif
 
 extern ssize_t pth_read (int fd, void *buffer, size_t size);
 extern ssize_t pth_write (int fd, const void *buffer, size_t size);
 
-#ifndef _WIN32
+#ifndef HAVE_W32_SYSTEM
 #pragma weak pth_read
 #pragma weak pth_write
 #endif
@@ -36,7 +40,7 @@ extern ssize_t pth_write (int fd, const void *buffer, size_t size);
 ssize_t
 _assuan_simple_read (assuan_context_t ctx, void *buffer, size_t size)
 {
-#ifndef _WIN32
+#ifndef HAVE_W32_SYSTEM
   return (pth_read ? pth_read : read) (ctx->inbound.fd, buffer, size);
 #else
   return pth_read ? pth_read (ctx->inbound.fd, buffer, size)
@@ -47,7 +51,7 @@ _assuan_simple_read (assuan_context_t ctx, void *buffer, size_t size)
 ssize_t
 _assuan_simple_write (assuan_context_t ctx, const void *buffer, size_t size)
 {
-#ifndef _WIN32
+#ifndef HAVE_W32_SYSTEM
   return (pth_write ? pth_write : write) (ctx->outbound.fd, buffer, size);
 #else
   return pth_write ? pth_write (ctx->outbound.fd, buffer, size)

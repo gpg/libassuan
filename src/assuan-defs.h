@@ -22,7 +22,7 @@
 #define ASSUAN_DEFS_H
 
 #include <sys/types.h>
-#ifndef _WIN32
+#ifndef HAVE_W32_SYSTEM
 #include <sys/socket.h>
 #include <sys/un.h>
 #else
@@ -32,13 +32,13 @@
 
 #include "assuan.h"
 
-#ifndef _WIN32
+#ifndef HAVE_W32_SYSTEM
 #define DIRSEP_C '/'
 #else
 #define DIRSEP_C '\\'
 #endif
 
-#ifdef _WIN32
+#ifdef HAVE_W32_SYSTEM
 #define AF_LOCAL AF_UNIX
 /* We need to prefix the structure with a sockaddr_in header so we can
    use it later for sendto and recvfrom. */

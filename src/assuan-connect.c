@@ -29,7 +29,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/types.h>
-#ifndef _WIN32
+#ifndef HAVE_W32_SYSTEM
 #include <sys/wait.h>
 #endif
 

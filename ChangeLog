@@ -1,3 +1,8 @@
+2004-12-07  Werner Koch  <wk@g10code.com>
+
+	* configure.ac: Define HAVE_W32_SYSTEM and HAVE_DOSISH_SYSTEM.
+	Add -lwsock2 to the config lib flags for W32.
+
 2004-11-25  Werner Koch  <wk@g10code.com>
 
 	Released 0.6.8.

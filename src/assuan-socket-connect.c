@@ -26,7 +26,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/types.h>
-#ifndef _WIN32
+#ifndef HAVE_W32_SYSTEM
 #include <sys/socket.h>
 #include <sys/un.h>
 #else
