@@ -1,0 +1,7 @@
+2003-02-18  Neal H. Walfield  <neal@cs.uml.edu>
+
+	* Makefile.am: New file.
+	* fdl.texi: New file.
+	* gpl.texi: New file.
+	* assuan.texi: Imported from newpg.
+

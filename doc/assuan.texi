@@ -1,0 +1,377 @@
+\input texinfo                      @c -*-texinfo-*-
+@c %**start of header
+@setfilename assuan.info
+
+@macro copyrightnotice
+Copyright @copyright{} 2002, 2003 Free Software Foundation, Inc.
+@end macro
+@macro permissionnotice
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.1 or
+any later version published by the Free Software Foundation; with the
+Invariant Sections being ``GNU General Public License'', the Front-Cover
+texts being (a) (see below), and with the Back-Cover Texts being (b)
+(see below).  A copy of the license is included in the section entitled
+``GNU Free Documentation License''.
+
+(a) The FSF's Front-Cover Text is:
+
+     A GNU Manual
+
+(b) The FSF's Back-Cover Text is:
+
+     You have freedom to copy and modify this GNU Manual, like GNU
+     software.  Copies published by the Free Software Foundation raise
+     funds for GNU development.
+@end macro
+
+
+@settitle Developing with Assuan
+
+@c Create a separate index for command line options.
+@defcodeindex op
+@c Merge the standard indexes into a single one.
+@syncodeindex fn cp
+@syncodeindex vr cp
+@syncodeindex ky cp
+@syncodeindex pg cp
+@syncodeindex tp cp
+
+@c printing stuff taken from gcc.
+@macro gnupgtabopt{body}
+@code{\body\}
+@end macro
+@macro gnupgoptlist{body}
+@smallexample
+\body\
+@end smallexample
+@end macro
+@c Makeinfo handles the above macro OK, TeX needs manual line breaks;
+@c they get lost at some point in handling the macro.  But if @macro is
+@c used here rather than @alias, it produces double line breaks.
+@iftex
+@alias gol = *
+@end iftex
+@ifnottex
+@macro gol
+@end macro
+@end ifnottex
+
+
+@c Change the font used for @def... commands, since the default
+@c proportional one used is bad for names starting __.
+@tex
+\global\setfont\defbf\ttbshape{10}{\magstep1}
+@end tex
+
+@c %**end of header
+
+@ifnottex
+@dircategory GNU Libraries
+@direntry
+* Assuan: (assuan).        An IPC library for non-persistent servers.
+@end direntry
+This file documents the use and the internals of Assuan.
+
+This is Edition @value{EDITION}, last updated @value{UPDATED}, of
+@cite{The `Developing with Assuan' Manual}, for Version @value{VERSION}.
+@sp 1
+Published by the Free Software Foundation@*
+59 Temple Place - Suite 330@*
+Boston, MA 02111-1307 USA
+@sp 1
+@copyrightnotice{}
+@sp 1
+@permissionnotice{}
+@end ifnottex
+
+@setchapternewpage odd
+
+@titlepage
+@title Developing with Assuan
+@subtitle Version @value{VERSION}
+@subtitle @value{UPDATED}
+@author Werner Koch @code{(wk@@gnupg.org)}
+
+@page
+@vskip 0pt plus 1filll
+@copyrightnotice{}
+@sp 2
+@permissionnotice{}
+@end titlepage
+@summarycontents
+@contents
+@page
+
+
+@node Top
+@top Introduction
+@cindex introduction
+
+This manual documents how to exploit the Assuan library, a simple
+interprocess communcation library.
+
+@menu
+* Introduction::        An introduction to and the motivation behind Assuan.
+* Assuan::              Description of the Assuan protocol.
+
+Miscellaneous
+
+* Copying::             GNU Lesser General Public License says
+                        how you can copy and share Assuan
+* GNU Free Documentation License:: How you can copy and share this manual.
+
+Indices
+
+* Option Index::        Index to command line options.
+* Index::	        Index of concepts and symbol names.
+@end menu
+
+@include gpl.texi
+@include fdl.texi
+
+@node Introduction
+@chapter Introduction to Assuan
+
+In an ideal world, Assuan is irrelevant.  Assuan's primary use is to
+allow a client to interact with a non-persistent server.  Using
+Assuan, this is accomplished by forking a subprocess and communicating
+with it via, for example, a pipe or unix domain socket.  This method
+is neither elegant nor efficient especially when there is a lot of
+data spread across several transactions: not only is there a penalty
+for an increased number of context switches, but also a significant
+amount of data is @var{memcpy}ed from the client to a file descriptor
+and from the file descriptor to the server.  Despite these and other
+disadvantages, this type of client/server communication can be useful:
+the client is completely separate from the server; they are in
+different address spaces.  This is especially important in situations
+where the server must have a known degree of reliability and data must
+be protected: as the Assuan protocol is well defined and clients
+cannot corrupt the servers' address space, auditing become much
+easier.
+
+Assuan was developed for use by the GNU Privacy Guard, GnuPG, to
+prevent potentially buggy clients from unwittingly corrupting
+sensitive transactions or compromising data such as a secret key.
+Assuan permits the servers, which do the actual work, e.g. encryption
+and decryption of data using a secret key, to be developed
+independently of the user interfaces, e.g. mail clients and other
+encryption front ends.  Like a shared library, the interface is well
+defined and any number of front ends can use it; however, unlike a
+shared library, the client cannot see or touch the server's data.  As
+with any modular system, Assuan helps keep the servers small and
+understandable help to make code more understandable and less error
+prone.
+
+Assuan is not, however, limited to use with GnuPG servers and clients:
+it was design to be flexible enough to meet the demands of almost any
+transaction based environment with non-persistent servers.
+
+@node Assuan
+@chapter Description of the Assuan protocol.
+
+The architecture of the modular GnuPG system is based on several
+highly specialized modules which compose a network of client/server
+communication.  A common framework for intermodule communication is
+therefore needed and should be implemented in a library.
+
+Goals:
+
+@itemize @bullet
+@item Common framework for module communication
+@item Easy debugging
+@item Easy module testing 
+@item Extendible
+@item Optional authentication and encryption facility
+@item Usable by access external hardware
+@end itemize
+
+
+Design criteria:
+
+@itemize @bullet
+@item Client server with back channel
+@item Use a mainly text based protocol
+@item Escape certain control characters
+@item Allow indefinite data length
+@item Request confidentiality for parts of the communication
+@item Dummy module to allow direct linking of client and server
+@item Inline data or descriptor passing for bulk data
+@item No protection against DoS needed
+@item Subliminal channels are not an issue
+@end itemize
+
+Implementation:
+
+The implementation is line based with a maximum line size of 1000
+octects.  The default IPC mechanism are Unix Domain Sockets.
+
+On a connect request the server responds either with an okay or an error
+status.  For authentication check the server may send an Inquiry
+Response prior to the first Okay, it may also issue Status messages.
+The server must check that the client is allowed to connect, this is
+done by requesting the credentials for the peer and comparing them to
+those of the server.  This avoids attacks based on wrong socket
+permissions.
+
+It may choose to delay the first response in case of an error.  The
+server never closes the connection - however the lower protocol may do
+so after some time of inactivity or when the connection is in an error
+state.
+
+All textual messages are assumed to be in UTF-8 unless otherwise noted.
+
+
+Server responses:
+
+@table @code
+@item OK  [<arbitary debugging information>]
+Request was successful.
+
+@item ERR @var{errorcode} [<human readable error description>]
+Request could not be fulfilled.  The error codes are mostly application
+specific except for a few common ones.
+
+@item S @var{keyword} <status information depending on keyword>
+Informational output by the server, still processing the request.
+
+@item # <string>
+Comment line issued only for debugging purposes.  Totally ignored.
+
+@item D <raw data>
+Raw data returned to client. There must be exactly one space after the
+'D'.  The values for '%', CR and LF must be percent escaped; this is
+encoded as %25, %0D and %0A.  Only uppercase letters should be used in
+the hexadecimal representation.  Other characters may be percent escaped
+for easier debugging.  All these Data lines are considered one data
+stream up to the OK or ERR response.  Status and Inquiry Responses
+may be mixed with the Data lines.
+
+@item INQUIRE @var{keyword}> <parameters>
+Server needs further information from the client.  The client should
+answer with a command which is allowed after an inquiry.  Note that the
+server does not confirm that client command but either continues
+processing or ends processing with an error status.  Not all commands
+are allowed.
+@end table
+
+
+A client should only check the first letter of each line and then skip
+over to the next token (except for data lines where the raw data starts
+exactly after 2 bytes).  Lines larger than 1000 bytes should be
+treated as a communication error. (The rationale for having a line
+length limit is to allow for easier multiplexing of multiple channels).
+
+
+Client requests:
+
+The server waits for client requests after he sent an Okay or Error.
+The client should not issue a request in other cases with the
+exception of the CANCEL command.
+
+@example
+@var{command} <parameters>
+@end example
+
+@var{command} is a one word string without preceding white space.
+Parameters are command specific, CR, LF and the percent signs should be
+percent escaped as described above.  To send a backslash as the last
+character it should also be percent escaped.  Percent escaping is
+allowed anywhere in the parameters but not in the command.  The line
+ends with a CR, LF or just a LF.
+
+Not yet implemented feature: If there is a need for a parameter list
+longer than the line length limit (1000 characters including command and
+CR, LF), the last character of the line (right before the CR/LF or LF)
+must be a non-escape encoded backslash. The following line is then
+expected to be a continuation of the line with the backslash replaced by
+a blank and the line ending removed.
+
+@example
+D <raw data>
+@end example
+
+Raw data to the server. There must be exactly one space after the 'D'.
+The values for '%', CR and LF must be percent escaped; this is encoded
+as %25, %0D and %0A.  Only uppercase letters should be used in the
+hexadecimal representation.  Other characters may be percent escaped for
+easier debugging.  All these Data lines are considered one data stream
+up to the OKAY or ERROR response.  Status and Inquiry Responses may be
+mixed with the Data lines.
+
+@example
+END
+@end example
+
+
+
+Lines beginning with a @code{#} or empty lines are ignored.  This is
+useful to comment test scripts.
+
+
+Although the commands are application specific, some of them are used by
+all protocols and partly directly supported by the Assuan library:
+
+@table @code
+@item CANCEL
+his is the one special command which aborts the current request.  it can
+be sent at any time and the server will stop its operation right before
+it would send the next response line (of any type).
+
+@item BYE
+Close the connect, the server will reply with an @code{OK}.
+
+@item AUTH
+Not yet specified as we don't implement it in the first phase.  See my
+mail to gpa-dev on 2001-10-25 about the rationale for measurements
+against local attacks.
+
+@item RESET
+Reset the connection but not any existing authentication.  The server
+should release all resources associated with the connection.
+
+@item END
+Used by a client to mark the end of raw data.  The server may send END
+to indicate a partial end of data.
+@end table
+
+
+Error Codes:
+
+Here we keep a list of error codes used in any Assuan based
+protocol.  The format is the string @code{ERR}, white space, the error
+number, white space, a textual description of the error.
+
+@table @code
+
+@item 100 Unknown Command
+@item 101 Not Implemented
+
+@item 301 certificate has been revoked [DirMngr]
+@item 302 no CRL known for this certificate [DirMngr]
+@item 303 CRL is too old and a new one could not be retrieved [DirMngr]
+
+@end table
+
+
+@c ---------------------------------------------------------------------
+@c Indexes
+@c ---------------------------------------------------------------------
+
+@node Option Index
+@unnumbered Option Index
+
+@printindex op
+
+@node Index
+@unnumbered Index
+
+@printindex cp
+
+@c ---------------------------------------------------------------------
+@c Epilogue
+@c ---------------------------------------------------------------------
+
+@bye
+
+
