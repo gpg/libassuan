@@ -1,5 +1,5 @@
 /* assuan-listen.c - Wait for a connection (server) 
- *	Copyright (C) 2001, 2002 Free Software Foundation, Inc.
+ *	Copyright (C) 2001, 2002, 2004 Free Software Foundation, Inc.
  *
  * This file is part of Assuan.
  *
@@ -41,8 +41,13 @@ assuan_set_hello_line (ASSUAN_CONTEXT ctx, const char *line)
       char *buf = xtrymalloc (3+strlen(line)+1);
       if (!buf)
         return ASSUAN_Out_Of_Core;
-      strcpy (buf, "OK ");
-      strcpy (buf+3, line);
+      if (strchr (line, '\n'))
+        strcpy (buf, line);
+      else
+        {
+          strcpy (buf, "OK ");
+          strcpy (buf+3, line);
+        }
       xfree (ctx->hello_line);
       ctx->hello_line = buf;
     }
@@ -65,6 +70,7 @@ AssuanError
 assuan_accept (ASSUAN_CONTEXT ctx)
 {
   int rc;
+  const char *p, *pend;
 
   if (!ctx)
     return ASSUAN_Invalid_Value;
@@ -77,9 +83,26 @@ assuan_accept (ASSUAN_CONTEXT ctx)
   if (rc)
     return rc;
 
-  /* send the hello */
-  rc = assuan_write_line (ctx, ctx->hello_line? ctx->hello_line
-                                              : "OK Your orders please");
+  /* Send the hello. */
+  p = ctx->hello_line;
+  if (p && (pend = strchr (p, '\n')))
+    { /* This is a multi line hello.  Send all but the last line as
+         comments. */
+      do
+        {
+          rc = _assuan_write_line (ctx, "# ", p, pend - p);
+          if (rc)
+            return rc;
+          p = pend + 1;
+          pend = strchr (p, '\n');
+        }
+      while (pend);
+      rc = _assuan_write_line (ctx, "OK ", p, strlen (p));
+    }
+  else if (p)
+    rc = assuan_write_line (ctx, p);
+  else
+    rc = assuan_write_line (ctx, "OK Pleased to meet you");
   if (rc)
     return rc;
   

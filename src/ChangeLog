@@ -1,3 +1,11 @@
+2004-05-11  Werner Koch  <wk@gnupg.org>
+
+	* assuan-listen.c (assuan_set_hello_line, assuan_accept): Allow
+	for multi line hello strings.
+
+	* assuan-buffer.c (_assuan_write_line): New with parts of ..
+	(assuan_write_line): .. factored out.
+
 2004-04-29  Werner Koch  <wk@gnupg.org>
 
 	* assuan-socket-connect.c: Include string.h.

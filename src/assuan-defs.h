@@ -152,6 +152,8 @@ int _assuan_register_std_commands (ASSUAN_CONTEXT ctx);
 int _assuan_read_line (ASSUAN_CONTEXT ctx);
 int _assuan_cookie_write_data (void *cookie, const char *buffer, size_t size);
 int _assuan_cookie_write_flush (void *cookie);
+assuan_error_t _assuan_write_line (assuan_context_t ctx, const char *prefix,
+                                   const char *line, size_t len);
 
 /*-- assuan-client.c --*/
 AssuanError _assuan_read_from_server (ASSUAN_CONTEXT ctx, int *okay, int *off);

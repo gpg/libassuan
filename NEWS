@@ -1,6 +1,10 @@
 Noteworthy changes in version 0.6.6
 ------------------------------------------------
 
+ * assuan_set_hello_line may now take a multi line argument where the
+   first lines are send as comment lines and the last one as a OK
+   line.
+
 
 Noteworthy changes in version 0.6.5 (2004-04-29)
 ------------------------------------------------

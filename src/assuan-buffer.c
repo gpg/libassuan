@@ -1,5 +1,5 @@
 /* assuan-buffer.c - read and send data
- *	Copyright (C) 2001, 2002, 2003 Free Software Foundation, Inc.
+ *	Copyright (C) 2001, 2002, 2003, 2004 Free Software Foundation, Inc.
  *
  * This file is part of Assuan.
  *
@@ -227,10 +227,65 @@ assuan_pending_line (ASSUAN_CONTEXT ctx)
 }
 
 
+assuan_error_t 
+_assuan_write_line (assuan_context_t ctx, const char *prefix,
+                    const char *line, size_t len)
+{
+  int rc = 0;
+  size_t prefixlen = prefix? strlen (prefix):0;
+
+  /* Make sure that the line is short enough. */
+  if (len + prefixlen + 2 > ASSUAN_LINELENGTH)
+    {
+      if (ctx->log_fp)
+        fprintf (ctx->log_fp, "%s[%u.%p] DBG: -> "
+                 "[supplied line too long -truncated]\n",
+                 assuan_get_assuan_log_prefix (),
+                 (unsigned int)getpid (), ctx);
+      if (prefixlen > 5)
+        prefixlen = 5;
+      if (len > ASSUAN_LINELENGTH - prefixlen - 2)
+        len = ASSUAN_LINELENGTH - prefixlen - 2 - 1;
+    }
+
+  /* Fixme: we should do some kind of line buffering.  */
+  if (ctx->log_fp)
+    {
+      fprintf (ctx->log_fp, "%s[%u.%p] DBG: -> ",
+	       assuan_get_assuan_log_prefix (),
+               (unsigned int)getpid (), ctx);
+      if (ctx->confidential)
+	fputs ("[Confidential data not shown]", ctx->log_fp);
+      else
+	_assuan_log_print_buffer (ctx->log_fp, line, len);
+      putc ('\n', ctx->log_fp);
+    }
+
+  if (prefixlen)
+    {
+      rc = writen (ctx, prefix, prefixlen);
+      if (rc)
+        rc = ASSUAN_Write_Error;
+    }
+  if (!rc)
+    {
+      rc = writen (ctx, line, len);
+      if (rc)
+        rc = ASSUAN_Write_Error;
+      if (!rc)
+        {
+          rc = writen (ctx, "\n", 1);
+          if (rc)
+            rc = ASSUAN_Write_Error;
+        }
+    }
+  return rc;
+}
+
+
 AssuanError 
 assuan_write_line (ASSUAN_CONTEXT ctx, const char *line)
 {
-  int rc;
   size_t len;
   const char *s;
 
@@ -242,32 +297,13 @@ assuan_write_line (ASSUAN_CONTEXT ctx, const char *line)
   s = strchr (line, '\n');
   len = s? (s-line) : strlen (line);
 
-  /* fixme: we should do some kind of line buffering.  */
-  if (ctx->log_fp)
-    {
-      fprintf (ctx->log_fp, "%s[%u.%p] DBG: -> ",
-	       assuan_get_assuan_log_prefix (),
-               (unsigned int)getpid (), ctx);
-      if (s)
-	fputs ("[supplied line contained a LF]", ctx->log_fp);
-      if (ctx->confidential)
-	fputs ("[Confidential data not shown]", ctx->log_fp);
-      else
-	_assuan_log_print_buffer (ctx->log_fp, line, len);
-      putc ('\n', ctx->log_fp);
-    }
+  if (ctx->log_fp && s)
+    fprintf (ctx->log_fp, "%s[%u.%p] DBG: -> "
+             "[supplied line contained a LF -truncated]\n",
+             assuan_get_assuan_log_prefix (),
+             (unsigned int)getpid (), ctx);
 
-  rc = writen (ctx, line, len);
-  if (rc)
-    rc = ASSUAN_Write_Error;
-  if (!rc)
-    {
-      rc = writen (ctx, "\n", 1);
-      if (rc)
-        rc = ASSUAN_Write_Error;
-    }
-
-  return rc;
+  return _assuan_write_line (ctx, NULL, line, len);
 }
 
 
