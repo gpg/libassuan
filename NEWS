@@ -1,7 +1,9 @@
-Noteworthy changes in version 0.6.8
+Noteworthy changes in version 0.6.8 (2004-11-25)
 ------------------------------------------------
 
  * assuan_write_status does now return an error code.
+
+ * Fixes for C89 compatibility and some first takes on a W32 port.
 
 
 Noteworthy changes in version 0.6.7 (2004-09-27)
