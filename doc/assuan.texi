@@ -8,21 +8,10 @@ Copyright @copyright{} 2002, 2003 Free Software Foundation, Inc.
 @macro permissionnotice
 Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.1 or
-any later version published by the Free Software Foundation; with the
-Invariant Sections being ``GNU General Public License'', the Front-Cover
-texts being (a) (see below), and with the Back-Cover Texts being (b)
-(see below).  A copy of the license is included in the section entitled
+any later version published by the Free Software Foundation; with no
+Invariant Sections, with no Front-Cover texts, and with no Back-Cover
+texts.  A copy of the license is included in the section entitled
 ``GNU Free Documentation License''.
-
-(a) The FSF's Front-Cover Text is:
-
-     A GNU Manual
-
-(b) The FSF's Back-Cover Text is:
-
-     You have freedom to copy and modify this GNU Manual, like GNU
-     software.  Copies published by the Free Software Foundation raise
-     funds for GNU development.
 @end macro
 
 
@@ -117,7 +106,7 @@ interprocess communcation library.
 
 Miscellaneous
 
-* Copying::             GNU Lesser General Public License says
+* Library Copying::     GNU Lesser General Public License says
                         how you can copy and share Assuan
 * GNU Free Documentation License:: How you can copy and share this manual.
 
@@ -127,7 +116,7 @@ Indices
 * Index::	        Index of concepts and symbol names.
 @end menu
 
-@include gpl.texi
+@include lgpl.texi
 @include fdl.texi
 
 @node Introduction
@@ -347,9 +336,6 @@ number, white space, a textual description of the error.
 @item 100 Unknown Command
 @item 101 Not Implemented
 
-@item 301 certificate has been revoked [DirMngr]
-@item 302 no CRL known for this certificate [DirMngr]
-@item 303 CRL is too old and a new one could not be retrieved [DirMngr]
 
 @end table
 

@@ -19,7 +19,7 @@
 
 ## Process this file with automake to produce Makefile.in
 
-EXTRA_DIST = mkerrors libassuan.m4
+EXTRA_DIST = libassuan-config.in mkerrors libassuan.m4
 INCLUDES = -I.. -I$(top_srcdir)/include
 BUILT_SOURCES = assuan-errors.c
 MOSTLYCLEANFILES = assuan-errors.c

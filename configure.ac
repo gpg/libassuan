@@ -21,7 +21,8 @@
 AC_PREREQ(2.57)
 # Version number: Remember to change it immediately *after* a release.
 #                 Add a "-cvs" prefix for non-released code.
-AC_INIT(libassuan, 0.0.1-cvs, gpa-dev@gnupg.org)
+AC_INIT(libassuan, 0.6.0, gnupg-devel@gnupg.org)
+# Note, that this is not yet available as a shared library.
 
 PACKAGE=$PACKAGE_NAME
 VERSION=$PACKAGE_VERSION
@@ -31,6 +32,8 @@ AM_MAINTAINER_MODE
 AC_CONFIG_SRCDIR(src/assuan.h)
 AM_CONFIG_HEADER(config.h)
 
+AC_GNU_SOURCE
+
 
 AC_SUBST(PACKAGE)
 AC_SUBST(VERSION)
@@ -39,13 +42,6 @@ AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Version of this package])
 AC_DEFINE_UNQUOTED(PACKAGE_BUGREPORT, "$PACKAGE_BUGREPORT",
                                         [Bug report address])
 
-
-
-AH_TOP([
-/* We need this, because some autoconf tests rely on this (e.g. stpcpy)
-   and it should be used for new programs anyway. */
-#define _GNU_SOURCE  1
-])
 
 
 # Checks for programs.
@@ -75,8 +71,6 @@ LIBASSUAN_CONFIG_CFLAGS=""
 AC_SUBST(LIBASSUAN_CONFIG_LIBS)
 AC_SUBST(LIBASSUAN_CONFIG_CFLAGS)
 
-AC_CONFIG_COMMANDS([assuan-defs],[chmod +x src/libassuan-config])
-
 # Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS([string.h locale.h])
@@ -105,9 +99,11 @@ AC_REPLACE_FUNCS(isascii)
 AC_REPLACE_FUNCS(putc_unlocked)
 AC_REPLACE_FUNCS(memrchr)
 
-# Create the config file.
+# Create the config files.
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([m4/Makefile])
-AC_CONFIG_FILES([src/Makefile src/libassuan-config])
+AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([doc/Makefile])
+AC_CONFIG_FILES([src/libassuan-config], [chmod +x src/libassuan-config])
+
 AC_OUTPUT

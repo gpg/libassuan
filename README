@@ -1,0 +1,10 @@
+  Libassuan
+ ===========
+
+This is the IPC library used by GnuPG 1.9, gpgme and the old newpg
+package.  It used to be included with the latter packages but we
+decided to make your life not too easy and separated it out to a
+standalone library.
+
+
+

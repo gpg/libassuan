@@ -1,3 +1,7 @@
+2003-08-06  Werner Koch  <wk@gnupg.org>
+
+	Released 0.6.0.
+
 2003-07-29  Werner Koch  <wk@gnupg.org>
 
 	* configure.ac: Cleanups for newer autoconf.
