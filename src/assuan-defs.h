@@ -32,7 +32,16 @@ struct cmdtbl_s {
   int (*handler)(ASSUAN_CONTEXT, char *line);
 };
 
-struct assuan_context_s {
+struct assuan_io
+{
+  /* Routine to read from input_fd.  */
+  ssize_t (*read) (ASSUAN_CONTEXT, void *, size_t);
+  /* Routine to write to output_fd.  */
+  ssize_t (*write) (ASSUAN_CONTEXT, const void *, size_t);
+};  
+
+struct assuan_context_s
+{
   AssuanError err_no;
   const char *err_str;
   int os_errno;  /* last system error number used with certain error codes*/
@@ -99,6 +108,8 @@ struct assuan_context_s {
   int input_fd;   /* set by INPUT command */
   int output_fd;  /* set by OUTPUT command */
 
+  /* io routines.  */
+  struct assuan_io *io;
 };
 
 
@@ -135,13 +146,6 @@ void  _assuan_free (void *p);
 
 void _assuan_log_print_buffer (FILE *fp, const void *buffer, size_t  length);
 void _assuan_log_sanitized_string (const char *string);
-
-/*-- assuan-io.c --*/
-
-/* Wraps the standard read and write functions to do the Right
-   Thing depending on our linkage.  */
-ssize_t _assuan_read (int fd, void *buffer, size_t size);
-ssize_t _assuan_write (int fd, const void *buffer, size_t size);
 
 #endif /*ASSUAN_DEFS_H*/
 

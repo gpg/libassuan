@@ -44,11 +44,11 @@ my_log_prefix (void)
 
 
 static int
-writen ( int fd, const char *buffer, size_t length )
+writen (ASSUAN_CONTEXT ctx, const char *buffer, size_t length)
 {
   while (length)
     {
-      ssize_t nwritten = _assuan_write (fd, buffer, length);
+      ssize_t nwritten = ctx->io->write (ctx, buffer, length);
       
       if (nwritten < 0)
         {
@@ -62,9 +62,10 @@ writen ( int fd, const char *buffer, size_t length )
   return 0;  /* okay */
 }
 
-/* read an entire line */
+/* Read an entire line.  */
 static int
-readline (int fd, char *buf, size_t buflen, int *r_nread, int *eof)
+readline (ASSUAN_CONTEXT ctx, char *buf, size_t buflen,
+	  int *r_nread, int *eof)
 {
   size_t nleft = buflen;
   char *p;
@@ -73,7 +74,7 @@ readline (int fd, char *buf, size_t buflen, int *r_nread, int *eof)
   *r_nread = 0;
   while (nleft > 0)
     {
-      ssize_t n = _assuan_read (fd, buf, nleft);
+      ssize_t n = ctx->io->read (ctx, buf, nleft);
 
       if (n < 0)
         {
@@ -127,12 +128,12 @@ _assuan_read_line (ASSUAN_CONTEXT ctx)
       else
         { /* read the rest */
           assert (atticlen < LINELENGTH);
-          rc = readline (ctx->inbound.fd, line + atticlen,
+          rc = readline (ctx, line + atticlen,
 			 LINELENGTH - atticlen, &nread, &ctx->inbound.eof);
         }
     }
   else
-    rc = readline (ctx->inbound.fd, line, LINELENGTH,
+    rc = readline (ctx, line, LINELENGTH,
                    &nread, &ctx->inbound.eof);
   if (rc)
     {
@@ -233,7 +234,7 @@ assuan_pending_line (ASSUAN_CONTEXT ctx)
 
 
 AssuanError 
-assuan_write_line (ASSUAN_CONTEXT ctx, const char *line )
+assuan_write_line (ASSUAN_CONTEXT ctx, const char *line)
 {
   int rc;
   size_t len;
@@ -260,12 +261,12 @@ assuan_write_line (ASSUAN_CONTEXT ctx, const char *line )
       putc ('\n', ctx->log_fp);
     }
 
-  rc = writen (ctx->outbound.fd, line, len);
+  rc = writen (ctx, line, len);
   if (rc)
     rc = ASSUAN_Write_Error;
   if (!rc)
     {
-      rc = writen (ctx->outbound.fd, "\n", 1);
+      rc = writen (ctx, "\n", 1);
       if (rc)
         rc = ASSUAN_Write_Error;
     }
@@ -333,7 +334,7 @@ _assuan_cookie_write_data (void *cookie, const char *buffer, size_t size)
             }
           *line++ = '\n';
           linelen++;
-          if (writen (ctx->outbound.fd, ctx->outbound.data.line, linelen))
+          if (writen (ctx, ctx->outbound.data.line, linelen))
             {
               ctx->outbound.data.error = ASSUAN_Write_Error;
               return 0;
@@ -378,7 +379,7 @@ _assuan_cookie_write_flush (void *cookie)
             }
       *line++ = '\n';
       linelen++;
-      if (writen (ctx->outbound.fd, ctx->outbound.data.line, linelen))
+      if (writen (ctx, ctx->outbound.data.line, linelen))
         {
           ctx->outbound.data.error = ASSUAN_Write_Error;
           return 0;

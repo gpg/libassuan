@@ -1,3 +1,30 @@
+2002-11-20  Neal H. Walfield  <neal@g10code.de>
+
+	* assuan-defs.h (struct assuan_io): New structure.
+	(struct assuan_context_s): New field, io.
+	(_assuan_read): Depreciated.
+	(_assuan_write): Likewise.
+	* assuan-pipe-server.c: Include <unistd.h>.
+	(pipe_reader): New function.
+	(pipe_writer): Likewise.
+	(_assuan_new_context.IO): New local static.  Set to pipe_reader
+	and pipe_writer.  Use it to initialize new context.
+	* assuan-socket-connect.c (socket_reader): New function.
+	(socket_writer): New function.
+	(assuan_socket_connect.IO): New local static.  Set to socket_reader
+	and socket_writer.  Use it to initialize new context.
+	* assuan-buffer.c (writen): Take an ASSUAN_CONTEXT rather than a
+	file descriptor.  Do not use _assuan_write but the write method
+	in the supplied context.
+	(readline): Likewise for _assuan_read.
+	(assuan_write_line): When calling writen, pass CTX; not the file
+	descriptor directly.
+	(_assuan_cookie_write_data): Likewise.
+	(_assuan_cookie_write_flush): Likewise.
+	(_assuan_read_line): Likewise for readline.
+	* Makefile.am (libassuan_a_SOURCES): Remove assuan-io.c.
+	* assuan-io.c: Removed.
+
 2002-11-10  Werner Koch  <wk@gnupg.org>
 
 	* assuan-pipe-connect.c (assuan_pipe_connect): Changed the order

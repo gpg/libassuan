@@ -63,14 +63,36 @@ do_deinit (ASSUAN_CONTEXT ctx)
 }
 
 
+/* Read from the socket server.  */
+static ssize_t
+socket_reader (ASSUAN_CONTEXT ctx, void *buf, size_t buflen)
+{
+#pragma weak pth_read
+  extern ssize_t pth_read (int, void *, size_t);
+
+  return (pth_read ? pth_read : read) (ctx->inbound.fd, buf, buflen);
+}
+
+/* Write to the pipe server.  */
+static ssize_t
+socket_writer (ASSUAN_CONTEXT ctx, const void *buf, size_t buflen)
+{
+#pragma weak pth_write
+      
+  extern ssize_t pth_write (int, const void *, size_t);
+
+  return (pth_write ? pth_write : write) (ctx->outbound.fd, buf, buflen);
+}
 
 /* Make a connection to the Unix domain socket NAME and return a new
    Assuan context in CTX.  SERVER_PID is currently not used but may
-   become handy in the future. */
+   become handy in the future.  */
 AssuanError
 assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
                        const char *name, pid_t server_pid)
 {
+  static struct assuan_io io = { socket_reader, socket_writer };
+
   AssuanError err;
   ASSUAN_CONTEXT ctx;
   int fd;
@@ -119,6 +141,7 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
 
   ctx->inbound.fd = fd;
   ctx->outbound.fd = fd;
+  ctx->io = &io;
 
   /* initial handshake */
   {

@@ -145,7 +145,7 @@ assuan_init_connected_socket_server (ASSUAN_CONTEXT *r_ctx, int fd)
   if (!ctx)
     return ASSUAN_Out_Of_Core;
   ctx->is_server = 1;
-  ctx->pipe_mode = 1; /* we wan't a second accept to indicate EOF */
+  ctx->pipe_mode = 1; /* we want a second accept to indicate EOF */
   ctx->input_fd = -1;
   ctx->output_fd = -1;
 
