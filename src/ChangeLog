@@ -1,3 +1,8 @@
+2004-12-19  Werner Koch  <wk@g10code.com>
+
+	* assuan-pipe-server.c (assuan_init_pipe_server) [W32]: Map file
+	descriptors using _get_osfhandle.
+
 2004-12-19  Moritz Schulte  <moritz@g10code.com>
 
 	* assuan-pipe-connect.c (assuan_pipe_connect2): Removed "`"

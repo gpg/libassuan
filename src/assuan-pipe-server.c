@@ -22,8 +22,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#ifdef HAVE_W32_SYSTEM
+#include <windows.h>
+#include <fcntl.h>
+#endif
 
 #include "assuan-defs.h"
+
 
 static void
 deinit_pipe_server (ASSUAN_CONTEXT ctx)
@@ -83,7 +88,6 @@ _assuan_new_context (ASSUAN_CONTEXT *r_ctx)
 }
 
 
-
 int
 assuan_init_pipe_server (ASSUAN_CONTEXT *r_ctx, int filedes[2])
 {
@@ -97,8 +101,18 @@ assuan_init_pipe_server (ASSUAN_CONTEXT *r_ctx, int filedes[2])
       unsigned long ul;
 
       ctx->is_server = 1;
-      ctx->inbound.fd = filedes[0];
+#ifdef HAVE_W32_SYSTEM
+      /* MS Windows has so many different types of handle that one
+         needs to tranlsate them at many place forth and back.  Also
+         make sure that the fiel descriptos are in binary mode.  */
+      setmode (filedes[0], O_BINARY);
+      setmode (filedes[1], O_BINARY);
+      ctx->inbound.fd  = _get_osfhandle (filedes[0]);
+      ctx->outbound.fd = _get_osfhandle (filedes[1]);
+#else
+      ctx->inbound.fd  = filedes[0];
       ctx->outbound.fd = filedes[1];
+#endif
       ctx->pipe_mode = 1;
 
       s = getenv ("_assuan_pipe_connect_pid");
