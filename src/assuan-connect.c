@@ -47,8 +47,9 @@ assuan_disconnect (ASSUAN_CONTEXT ctx)
     }
 }
 
+/* Return the PID of the perr or -1 if not known. */
 pid_t
 assuan_get_pid (ASSUAN_CONTEXT ctx)
 {
-  return ctx ? ctx->pid : -1;
+  return (ctx && ctx->pid)? ctx->pid : -1;
 }

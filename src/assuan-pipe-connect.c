@@ -78,7 +78,7 @@ do_finish (ASSUAN_CONTEXT ctx)
       close (ctx->outbound.fd);
       ctx->outbound.fd = -1;
     }
-  if (ctx->pid != -1)
+  if (ctx->pid != -1 && ctx->pid)
     {
       waitpid (ctx->pid, NULL, 0);  /* FIXME Check return value.  */
       ctx->pid = -1;
@@ -111,6 +111,7 @@ assuan_pipe_connect2 (ASSUAN_CONTEXT *ctx, const char *name, char *const argv[],
   AssuanError err;
   int rp[2];
   int wp[2];
+  char mypidstr[50];
 
   if (!ctx || !name || !argv || !argv[0])
     return ASSUAN_Invalid_Value;
@@ -130,6 +131,8 @@ assuan_pipe_connect2 (ASSUAN_CONTEXT *ctx, const char *name, char *const argv[],
       fixed_signals = 1;
       /* FIXME: This is not MT safe */
     }
+
+  sprintf (mypidstr, "%lu", (unsigned long)getpid ());
 
   if (pipe (rp) < 0)
     return ASSUAN_General_Error;
@@ -238,6 +241,13 @@ assuan_pipe_connect2 (ASSUAN_CONTEXT *ctx, const char *name, char *const argv[],
             close(i);
         }
       errno = 0;
+
+      /* We store our parents pid in the environment so that the
+         execed assuan server is able to read the actual pid of the
+         client.  The server can't use getppid becuase it might have
+         been double forked before the assuan server has been
+         initialized. */
+      setenv ("_assuan_pipe_connect_pid", mypidstr, 1);
 
       execv (name, argv); 
       /* oops - use the pipe to tell the parent about it */

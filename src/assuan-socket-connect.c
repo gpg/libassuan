@@ -82,7 +82,6 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
   err = _assuan_new_context (&ctx); 
   if (err)
       return err;
-  ctx->pid = server_pid; /* save it in case we need it later */
   ctx->deinit_handler = do_deinit;
   ctx->finish_handler = do_finish;
 

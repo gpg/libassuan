@@ -34,14 +34,16 @@ accept_connection_bottom (ASSUAN_CONTEXT ctx)
 {
   int fd = ctx->connected_fd;
 
-  ctx->client_pid = (pid_t)-1;
 #ifdef HAVE_SO_PEERCRED
   {
+    /* This overrides any already set PID if the function returns a
+       valid one. */
     struct ucred cr; 
     int cl = sizeof cr;
 
-    if ( !getsockopt (fd, SOL_SOCKET, SO_PEERCRED, &cr, &cl) ) 
-      ctx->client_pid = cr.pid;
+    if ( !getsockopt (fd, SOL_SOCKET, SO_PEERCRED, &cr, &cl)
+         && cr.pid != (pid_t)-1 && cr.pid ) 
+      ctx->pid = cr.pid;
   }
 #endif
 
@@ -68,7 +70,6 @@ accept_connection (ASSUAN_CONTEXT ctx)
   struct sockaddr_un clnt_addr;
   size_t len = sizeof clnt_addr;
 
-  ctx->client_pid = (pid_t)-1;
   fd = accept (ctx->listen_fd, (struct sockaddr*)&clnt_addr, &len );
   if (fd == -1)
     {

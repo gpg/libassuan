@@ -90,13 +90,9 @@ struct assuan_context_s
 
   int pipe_mode;  /* We are in pipe mode, i.e. we can handle just one
                      connection and must terminate then */
-  pid_t pid;	  /* In pipe mode, the pid of the child server process.  
-                     In socket mode, the pid of the server */
+  pid_t pid;	  /* The the pid of the peer. */
   int listen_fd;  /* The fd we are listening on (used by socket servers) */
   int connected_fd; /* helper */
-
-  pid_t client_pid; /* for a socket server the PID of the client or -1
-                       if not available */
 
   /* Used for Unix domain sockets.  */
   struct sockaddr_un myaddr;

@@ -69,7 +69,6 @@ _assuan_new_context (ASSUAN_CONTEXT *r_ctx)
   ctx->io = &io;
 
   ctx->listen_fd = -1;
-  ctx->client_pid = (pid_t)-1;
   /* Use the pipe server handler as a default.  */
   ctx->deinit_handler = deinit_pipe_server;
   ctx->accept_handler = accept_connection;
@@ -94,11 +93,20 @@ assuan_init_pipe_server (ASSUAN_CONTEXT *r_ctx, int filedes[2])
   if (!rc)
     {
       ASSUAN_CONTEXT ctx = *r_ctx;
+      const char *s;
+      unsigned long ul;
 
       ctx->is_server = 1;
       ctx->inbound.fd = filedes[0];
       ctx->outbound.fd = filedes[1];
       ctx->pipe_mode = 1;
+
+      s = getenv ("_assuan_pipe_connect_pid");
+      if (s && (ul=strtoul (s, NULL, 10)) && ul)
+        ctx->pid = (pid_t)ul;
+      else
+        ctx->pid = (pid_t)-1;
+
     }
   return rc;
 }
