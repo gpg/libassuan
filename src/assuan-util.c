@@ -1,5 +1,5 @@
 /* assuan-util.c - Utility functions for Assuan 
- * Copyright (C) 2001, 2002, 2003, 2004 Free Software Foundation, Inc.
+ * Copyright (C) 2001, 2002, 2003, 2004, 2005 Free Software Foundation, Inc.
  *
  * This file is part of Assuan.
  *
@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
 
 #include "assuan-defs.h"
 
@@ -55,9 +56,19 @@ _assuan_realloc (void *a, size_t n)
 void *
 _assuan_calloc (size_t n, size_t m)
 {
-  void *p = _assuan_malloc (n*m);
+  void *p;
+  size_t nbytes;
+    
+  nbytes = n * m;
+  if (m && nbytes / m != n) 
+    {
+      errno = ENOMEM;
+      return NULL;
+    }
+
+  p = _assuan_malloc (nbytes);
   if (p)
-    memset (p, 0, n* m);
+    memset (p, 0, nbytes);
   return p;
 }
 

@@ -1,3 +1,7 @@
+2005-04-04  Werner Koch  <wk@g10code.com>
+
+	* assuan-util.c (_assuan_calloc): Avoid integer overflow.
+
 2005-03-22  Werner Koch  <wk@g10code.com>
 
 	* assuan-defs.h (struct assuan_io): Renamed elements READ and
