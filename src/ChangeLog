@@ -1,3 +1,9 @@
+2004-10-02  Werner Koch  <wk@g10code.com>
+
+	* assuan-socket-connect.c: Define SUN_LEN, AF_LOCAL and PF_LOCAL
+	if they are not available.
+	* assuan-domain-connect.c: Define PF_LOCAL and AF_LOCAL if needed.
+
 2004-06-23  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan-domain-connect.c [HAVE_SYS_UIO_H]: Include <sys/uio.h>.

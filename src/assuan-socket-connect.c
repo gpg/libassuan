@@ -1,5 +1,5 @@
 /* assuan-socket-connect.c - Assuan socket based client
- *	Copyright (C) 2002, 2003 Free Software Foundation, Inc.
+ *	Copyright (C) 2002, 2003, 2004 Free Software Foundation, Inc.
  *
  * This file is part of Assuan.
  *
@@ -30,6 +30,26 @@
 #include <unistd.h>
 
 #include "assuan-defs.h"
+
+/* Hacks for Slowaris.  */
+#ifndef PF_LOCAL
+# ifdef PF_UNIX
+#  define PF_LOCAL PF_UNIX
+# else
+#  define PF_LOCAL AF_UNIX
+# endif
+#endif
+#ifndef AF_LOCAL
+# define AF_LOCAL AF_UNIX
+#endif
+
+#ifndef SUN_LEN
+# define SUN_LEN(ptr) ((size_t) (((struct sockaddr_un *) 0)->sun_path) \
+	               + strlen ((ptr)->sun_path))
+#endif
+
+ 
+
 
 #define LOG(format, args...) \
 	fprintf (assuan_get_assuan_log_stream (), \

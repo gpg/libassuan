@@ -39,6 +39,17 @@
 
 #include "assuan-defs.h"
 
+#ifndef PF_LOCAL
+# ifdef PF_UNIX
+#  define PF_LOCAL PF_UNIX
+# else
+#  define PF_LOCAL AF_UNIX
+# endif
+# ifndef AF_LOCAL
+#  define AF_LOCAL AF_UNIX
+# endif
+#endif
+
 #define LOG(format, args...) \
 	fprintf (assuan_get_assuan_log_stream (), \
 	         assuan_get_assuan_log_prefix (), \
@@ -384,7 +395,7 @@ _assuan_domain_init (ASSUAN_CONTEXT *r_ctx, int rendezvousfd, pid_t peer)
       if (! p)
 	{
 	  LOG ("cannot determine an appropriate temporary file "
-	       "name.  DOS in progress?\n");
+	       "name.  DoS in progress?\n");
 	  _assuan_release_context (ctx);
 	  close (fd);
 	  return ASSUAN_General_Error;
