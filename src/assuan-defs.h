@@ -208,6 +208,13 @@ void _assuan_log_sanitized_string (const char *string);
 /*-- assuan-logging.c --*/
 void _assuan_set_default_log_stream (FILE *fp);
 
+void _assuan_log_printf (const char *format, ...)
+#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 5 )
+ __attribute__ ((format (printf,1,2)))
+#endif
+     ;
+
+
 /*-- assuan-io.c --*/
 ssize_t _assuan_simple_read (ASSUAN_CONTEXT ctx, void *buffer, size_t size);
 ssize_t _assuan_simple_write (ASSUAN_CONTEXT ctx, const void *buffer,

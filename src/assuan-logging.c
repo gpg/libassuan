@@ -1,5 +1,5 @@
 /* assuan-logging.c - Default logging function.
- *	Copyright (C) 2002, 2003 Free Software Foundation, Inc.
+ *	Copyright (C) 2002, 2003, 2004 Free Software Foundation, Inc.
  *
  * This file is part of Assuan.
  *
@@ -21,6 +21,7 @@
 #include "assuan-defs.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 
 static char prefix_buffer[80];
 static FILE *_assuan_log;
@@ -63,4 +64,25 @@ const char *
 assuan_get_assuan_log_prefix (void)
 {
   return prefix_buffer;
+}
+
+
+void
+_assuan_log_printf (const char *format, ...)
+{
+  va_list arg_ptr;
+  FILE *fp;
+  const char *prf;
+
+  fp = assuan_get_assuan_log_stream ();
+  prf = assuan_get_assuan_log_prefix ();
+  if (*prf)
+    {
+      fputs (prf, fp);
+      fputs (": ", fp);
+    }
+
+  va_start (arg_ptr, format);
+  vfprintf (fp, format, arg_ptr );
+  va_end (arg_ptr);
 }

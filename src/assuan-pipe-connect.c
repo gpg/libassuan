@@ -44,10 +44,6 @@
 #define MAX_OPEN_FDS 20
 #endif
 
-#define LOG(format, args...) \
-	fprintf (assuan_get_assuan_log_stream (), "%s%s" format , \
-        assuan_get_assuan_log_prefix (), \
-        assuan_get_assuan_log_prefix ()? ": ":"", ## args)
 
 static int
 writen (int fd, const char *buffer, size_t length)
@@ -188,7 +184,8 @@ assuan_pipe_connect2 (assuan_context_t *ctx, const char *name, char *const argv[
 	{
 	  if (dup2 (rp[1], STDOUT_FILENO) == -1)
 	    {
-	      LOG ("dup2 failed in child: %s\n", strerror (errno));
+	      _assuan_log_printf ("dup2 failed in child: %s\n",
+                                  strerror (errno));
 	      _exit (4);
 	    }
 	}
@@ -196,7 +193,8 @@ assuan_pipe_connect2 (assuan_context_t *ctx, const char *name, char *const argv[
 	{
 	  if (dup2 (wp[0], STDIN_FILENO) == -1)
 	    {
-	      LOG ("dup2 failed in child: %s\n", strerror (errno));
+	      _assuan_log_printf ("dup2 failed in child: %s\n",
+                                  strerror (errno));
 	      _exit (4);
 	    }
 	}
@@ -214,12 +212,14 @@ assuan_pipe_connect2 (assuan_context_t *ctx, const char *name, char *const argv[
 	  int fd = open ("/dev/null", O_WRONLY);
 	  if (fd == -1)
 	    {
-	      LOG ("can't open `/dev/null': %s\n", strerror (errno));
+	      _assuan_log_printf ("can't open `/dev/null': %s\n",
+                                  strerror (errno));
 	      _exit (4);
 	    }
 	  if (dup2 (fd, STDERR_FILENO) == -1)
 	    {
-	      LOG ("dup2(dev/null, 2) failed: %s\n", strerror (errno));
+	      _assuan_log_printf ("dup2(dev/null, 2) failed: %s\n",
+                                  strerror (errno));
 	      _exit (4);
 	    }
 	}
@@ -271,10 +271,12 @@ assuan_pipe_connect2 (assuan_context_t *ctx, const char *name, char *const argv[
 
     err = _assuan_read_from_server (*ctx, &okay, &off);
     if (err)
-      LOG ("can't connect server: %s\n", assuan_strerror (err));
+      _assuan_log_printf ("can't connect server: %s\n",
+                          assuan_strerror (err));
     else if (okay != 1)
       {
-	LOG ("can't connect server: `%s'\n", (*ctx)->inbound.line);
+	_assuan_log_printf ("can't connect server: `%s'\n",
+                            (*ctx)->inbound.line);
 	err = ASSUAN_Connect_Failed;
       }
   }

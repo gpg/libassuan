@@ -1,5 +1,12 @@
 2004-11-24  Werner Koch  <wk@g10code.com>
 
+	* assuan-logging.c (_assuan_log_printf): New.
+	* assuan-domain-connect.c (LOG): Removed and replaced all callers
+	by _assuan_log_printf.  This is needed for C89 and gcc 2.95 which
+	both don't have C99 style variable arg macros.
+	* assuan-pipe-connect.c (LOG): Ditto.
+	* assuan-socket-connect.c (LOG): Ditto.
+
 	* assuan-socket.c[!_WIN32]: Fixed includes.
 
 2004-11-23  Timo Schulz  <twoaday@g10code.com>

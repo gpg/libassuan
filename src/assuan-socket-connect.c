@@ -53,16 +53,6 @@
 #endif
 
  
-#ifdef _WIN32
-#warning implement it
-#define LOG(format, args...)
-#else
-#define LOG(format, args...) \
-	fprintf (assuan_get_assuan_log_stream (), "%s%s" format , \
-        assuan_get_assuan_log_prefix (), \
-        assuan_get_assuan_log_prefix ()? ": ":"", ## args)
-#endif
-
 static int
 do_finish (ASSUAN_CONTEXT ctx)
 {
@@ -116,7 +106,7 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
   fd = _assuan_sock_new (PF_LOCAL, SOCK_STREAM, 0);
   if (fd == -1)
     {
-      LOG ("can't create socket: %s\n", strerror (errno));
+      _assuan_log_printf ("can't create socket: %s\n", strerror (errno));
       _assuan_release_context (ctx);
       return ASSUAN_General_Error;
     }
@@ -129,7 +119,8 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
 
   if (_assuan_sock_connect (fd, (struct sockaddr *) &srvr_addr, len) == -1)
     {
-      LOG ("can't connect to `%s': %s\n", name, strerror (errno));
+      _assuan_log_printf ("can't connect to `%s': %s\n",
+                          name, strerror (errno));
       _assuan_release_context (ctx);
       _assuan_close (fd);
       return ASSUAN_Connect_Failed;
@@ -145,7 +136,8 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
 
     err = _assuan_read_from_server (ctx, &okay, &off);
     if (err)
-      LOG ("can't connect to server: %s\n", assuan_strerror (err));
+      _assuan_log_printf ("can't connect to server: %s\n",
+                          assuan_strerror (err));
     else if (okay != 1)
       {
         /*LOG ("can't connect to server: `");*/
