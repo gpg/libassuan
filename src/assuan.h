@@ -23,7 +23,7 @@
 
 #include <stdio.h>
 #include <sys/types.h>
-#include <unistd.h> /* for ssize_t */
+#include <unistd.h>
 
 #ifdef __cplusplus
 extern "C" { 
@@ -180,6 +180,26 @@ AssuanError assuan_pipe_connect (ASSUAN_CONTEXT *ctx, const char *name,
 /*-- assuan-socket-connect.c --*/
 AssuanError assuan_socket_connect (ASSUAN_CONTEXT *ctx, const char *name,
                                    pid_t server_pid);
+
+/*-- assuan-domain-connect.c --*/
+
+/* Connect to a Unix domain socket server.  RENDEZVOUSFD is
+   bidirectional file descriptor (normally returned via socketpair)
+   which the client can use to rendezvous with the server.  SERVER s
+   the server's pid.  */
+AssuanError assuan_domain_connect (ASSUAN_CONTEXT *r_ctx,
+				   int rendezvousfd,
+				   pid_t server);
+
+/*-- assuan-domain-server.c --*/
+
+/* RENDEZVOUSFD is a bidirectional file descriptor (normally returned
+   via socketpair) that the domain server can use to rendezvous with
+   the client.  CLIENT is the client's pid.  */
+AssuanError assuan_init_domain_server (ASSUAN_CONTEXT *r_ctx,
+				       int rendezvousfd,
+				       pid_t client);
+
 
 /*-- assuan-connect.c --*/
 void assuan_disconnect (ASSUAN_CONTEXT ctx);

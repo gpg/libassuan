@@ -43,7 +43,9 @@ libassuan_a_SOURCES = \
 	assuan-socket-server.c \
 	assuan-pipe-connect.c \
 	assuan-socket-connect.c \
-	assuan-io.c
+	assuan-io.c \
+	assuan-domain-connect.c \
+	assuan-domain-server.c
 
 assuan-errors.c : assuan.h
 	$(srcdir)/mkerrors < $(srcdir)/assuan.h > assuan-errors.c

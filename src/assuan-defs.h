@@ -24,6 +24,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <unistd.h>
 
 #include "assuan.h"
 
@@ -130,12 +131,17 @@ struct assuan_context_s
   struct assuan_io *io;
 };
 
-
-
 /*-- assuan-pipe-server.c --*/
 int _assuan_new_context (ASSUAN_CONTEXT *r_ctx);
 void _assuan_release_context (ASSUAN_CONTEXT ctx);
 
+/*-- assuan-domain-connect.c --*/
+/* Make a connection to the Unix domain socket NAME and return a new
+   Assuan context in CTX.  SERVER_PID is currently not used but may
+   become handy in the future.  */
+AssuanError _assuan_domain_init (ASSUAN_CONTEXT *r_ctx,
+				 int rendezvousfd,
+				 pid_t peer);
 
 /*-- assuan-handler.c --*/
 int _assuan_register_std_commands (ASSUAN_CONTEXT ctx);
