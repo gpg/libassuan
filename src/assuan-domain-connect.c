@@ -63,6 +63,17 @@ do_deinit (ASSUAN_CONTEXT ctx)
       free (ctx->domainbuffer);
     }
 
+  if (ctx->pendingfds)
+    {
+      int i;
+
+      assert (ctx->pendingfdscount > 0);
+      for (i = 0; i < ctx->pendingfdscount; i ++)
+	close (ctx->pendingfds[i]);
+
+      free (ctx->pendingfds);
+    }
+
   unlink (ctx->myaddr.sun_path);
 }
 
@@ -80,6 +91,11 @@ domain_reader (ASSUAN_CONTEXT ctx, void *buf, size_t buflen)
       struct msghdr msg;
       struct iovec iovec;
       struct sockaddr_un sender;
+      struct 
+      {
+	struct cmsghdr hdr;
+	int fd;
+      } cmsg;
 
       memset (&msg, 0, sizeof (msg));
 
@@ -91,8 +107,8 @@ domain_reader (ASSUAN_CONTEXT ctx, void *buf, size_t buflen)
 	  msg.msg_iovlen = 1;
 	  iovec.iov_base = ctx->domainbuffer;
 	  iovec.iov_len = ctx->domainbufferallocated;
-	  msg.msg_control = 0;
-	  msg.msg_controllen = 0;
+	  msg.msg_control = &cmsg;
+	  msg.msg_controllen = sizeof cmsg;
 
 	  /* Peek first: if the buffer we have is too small then it
 	     will be truncated.  */
@@ -144,8 +160,8 @@ domain_reader (ASSUAN_CONTEXT ctx, void *buf, size_t buflen)
       msg.msg_iovlen = 1;
       iovec.iov_base = ctx->domainbuffer;
       iovec.iov_len = ctx->domainbufferallocated;
-      msg.msg_control = 0;
-      msg.msg_controllen = 0;
+      msg.msg_control = &cmsg;
+      msg.msg_controllen = sizeof cmsg;
 
       if (strcmp (ctx->serveraddr.sun_path,
 		  ((struct sockaddr_un *) msg.msg_name)->sun_path) != 0)
@@ -167,6 +183,30 @@ domain_reader (ASSUAN_CONTEXT ctx, void *buf, size_t buflen)
 
       ctx->domainbuffersize = len;
       ctx->domainbufferoffset = 0;
+
+      if (sizeof (cmsg) == msg.msg_controllen)
+	/* We received a file descriptor.  */
+	{
+	  void *tmp;
+
+	  tmp = realloc (ctx->pendingfds,
+			 sizeof (int) * (ctx->pendingfdscount + 1));
+	  if (! tmp)
+	    {
+	      LOGERROR1 ("domain_reader: %s\n", strerror (errno));
+	      return -1;
+	    }
+
+	  ctx->pendingfds = tmp;
+	  ctx->pendingfds[ctx->pendingfdscount ++]
+	    = * (int *) CMSG_DATA (&cmsg.hdr);
+
+	  LOGERROR1 ("Received file descriptor %d from peer.\n",
+		     ctx->pendingfds[ctx->pendingfdscount - 1]);
+	}
+
+      if (len == 0)
+	goto start;
     }
 
   /* Return some data to the user.  */
@@ -212,6 +252,74 @@ domain_writer (ASSUAN_CONTEXT ctx, const void *buf, size_t buflen)
   return len;
 }
 
+static AssuanError
+domain_sendfd (ASSUAN_CONTEXT ctx, int fd)
+{
+  struct msghdr msg;
+  struct 
+  {
+    struct cmsghdr hdr;
+    int fd;
+  } cmsg;
+  int len;
+
+  memset (&msg, 0, sizeof (msg));
+
+  msg.msg_name = &ctx->serveraddr;
+  msg.msg_namelen = offsetof (struct sockaddr_un, sun_path)
+    + strlen (ctx->serveraddr.sun_path) + 1;
+
+  msg.msg_iovlen = 0;
+  msg.msg_iov = 0;
+
+  cmsg.hdr.cmsg_level = SOL_SOCKET;
+  cmsg.hdr.cmsg_type = SCM_RIGHTS;
+  cmsg.hdr.cmsg_len = sizeof (cmsg);
+
+  msg.msg_control = &cmsg;
+  msg.msg_controllen = sizeof (cmsg);
+
+  * (int *) CMSG_DATA (&cmsg.hdr) = fd;
+
+  len = sendmsg (ctx->outbound.fd, &msg, 0);
+  if (len < 0)
+    {
+      LOGERROR1 ("domain_sendfd: %s\n", strerror (errno));
+      return ASSUAN_General_Error;
+    }
+  else
+    return 0;
+}
+
+static AssuanError
+domain_receivefd (ASSUAN_CONTEXT ctx, int *fd)
+{
+  if (ctx->pendingfds == 0)
+    {
+      LOGERROR ("No pending file descriptors!\n");
+      return ASSUAN_General_Error;
+    }
+
+  *fd = ctx->pendingfds[0];
+  if (-- ctx->pendingfdscount == 0)
+    {
+      free (ctx->pendingfds);
+      ctx->pendingfds = 0;
+    }
+  else
+    /* Fix the array.  */
+    {
+      memmove (ctx->pendingfds, ctx->pendingfds + 1,
+	       ctx->pendingfdscount * sizeof (int));
+      ctx->pendingfds = realloc (ctx->pendingfds,
+				 ctx->pendingfdscount * sizeof (int));
+    }
+
+  return 0;
+}
+
+
+
 /* Make a connection to the Unix domain socket NAME and return a new
    Assuan context in CTX.  SERVER_PID is currently not used but may
    become handy in the future.  */
@@ -220,7 +328,8 @@ _assuan_domain_init (ASSUAN_CONTEXT *r_ctx,
 		     int rendezvousfd,
 		     pid_t peer)
 {
-  static struct assuan_io io = { domain_reader, domain_writer };
+  static struct assuan_io io = { domain_reader, domain_writer,
+				 domain_sendfd, domain_receivefd };
 
   AssuanError err;
   ASSUAN_CONTEXT ctx;
@@ -262,6 +371,8 @@ _assuan_domain_init (ASSUAN_CONTEXT *r_ctx,
   ctx->domainbufferoffset = 0;
   ctx->domainbuffersize = 0;
   ctx->domainbufferallocated = 0;
+  ctx->pendingfds = 0;
+  ctx->pendingfdscount = 0;
 
   /* Get usable name and bind to it.  */
 

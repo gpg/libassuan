@@ -154,20 +154,27 @@ parse_cmd_input_output (ASSUAN_CONTEXT ctx, char *line, int *rfd)
 {
   char *endp;
 
-  if (strncmp (line, "FD=", 3))
-    return set_error (ctx, Syntax_Error, "FD=<n> expected");
-  line += 3;
-  if (!digitp (*line))
-    return set_error (ctx, Syntax_Error, "number required");
-  *rfd = strtoul (line, &endp, 10);
-  /* remove that argument so that a notify handler won't see it */
-  memset (line, ' ', endp? (endp-line):strlen(line));
+  if (strncmp (line, "FD", 2) != 0 || (line[2] != '=' && line[2] != '\0'))
+    return set_error (ctx, Syntax_Error, "FD[=<n>] expected");
+  line += 2;
+  if (*line == '=')
+    {
+      line ++;
+      if (!digitp (*line))
+	return set_error (ctx, Syntax_Error, "number required");
+      *rfd = strtoul (line, &endp, 10);
+      /* remove that argument so that a notify handler won't see it */
+      memset (line, ' ', endp? (endp-line):strlen(line));
 
-  if (*rfd == ctx->inbound.fd)
-    return set_error (ctx, Parameter_Conflict, "fd same as inbound fd");
-  if (*rfd == ctx->outbound.fd)
-    return set_error (ctx, Parameter_Conflict, "fd same as outbound fd");
-  return 0;
+      if (*rfd == ctx->inbound.fd)
+	return set_error (ctx, Parameter_Conflict, "fd same as inbound fd");
+      if (*rfd == ctx->outbound.fd)
+	return set_error (ctx, Parameter_Conflict, "fd same as outbound fd");
+      return 0;
+    }
+  else
+    /* Our peer has sent the file descriptor.  */
+    return assuan_receivefd (ctx, rfd);
 }
 
 /* Format is INPUT FD=<n> */

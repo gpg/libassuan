@@ -437,3 +437,23 @@ assuan_send_data (ASSUAN_CONTEXT ctx, const void *buffer, size_t length)
 
   return 0;
 }
+
+AssuanError
+assuan_sendfd (ASSUAN_CONTEXT ctx, int fd)
+{
+  if (! ctx->io->sendfd)
+    return set_error (ctx, Not_Implemented,
+		      "server does not support sending and receiving "
+		      "of file descriptors");
+  return ctx->io->sendfd (ctx, fd);
+}
+
+AssuanError
+assuan_receivefd (ASSUAN_CONTEXT ctx, int *fd)
+{
+  if (! ctx->io->receivefd)
+    return set_error (ctx, Not_Implemented,
+		      "server does not support sending and receiving "
+		      "of file descriptors");
+  return ctx->io->receivefd (ctx, fd);
+}

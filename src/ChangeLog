@@ -1,3 +1,25 @@
+2002-11-24  Neal H. Walfield  <neal@cs.uml.edu>
+
+	* assuan.h (assuan_sendfd): New prototype.
+	(assuan_receivefd): New prototype.
+	* assuan-buffer.c (assuan_sendfd): New function.
+	(assuan_receivefd): New function.
+	* assuan-handler.c (parse_cmd_input_output): Recognize incoming
+	file descriptors and act appropriately.
+	* assuan-defs.h (struct assuan_io): Add fields sendfd and
+	receivefd.
+	(struct assuan_context_s): Add fields pendingfds and
+	pendingfdscount.
+	* assuan-pipe-server.c (_assuan_new_context): Update IO to reflect
+	new features.
+	* assuan-domain-connect.c (do_deinit): Cleanup any unreceived file
+	descriptors.
+	(domain_reader): Receive file descriptors.
+	(domain_sendfd): New function.
+	(domain_receivefd): New function.
+	(_assuan_domain_init): Update initialization code to reflect new
+	features.
+
 2002-11-24  Neal H. Walfield  <neal@g10code.de>
 
 	* assuan-domain-connect.c (do_finish): Remove.

@@ -43,6 +43,10 @@ struct assuan_io
   ssize_t (*read) (ASSUAN_CONTEXT, void *, size_t);
   /* Routine to write to output_fd.  */
   ssize_t (*write) (ASSUAN_CONTEXT, const void *, size_t);
+  /* Send a file descriptor.  */
+  AssuanError (*sendfd) (ASSUAN_CONTEXT, int);
+  /* Receive a file descriptor.  */
+  AssuanError (*receivefd) (ASSUAN_CONTEXT, int *);
 };  
 
 struct assuan_context_s
@@ -108,6 +112,9 @@ struct assuan_context_s
   int domainbuffersize;
   /* Memory allocated.  */
   int domainbufferallocated;
+
+  int *pendingfds;
+  int pendingfdscount;
 
   void (*deinit_handler)(ASSUAN_CONTEXT);  
   int (*accept_handler)(ASSUAN_CONTEXT);
@@ -175,7 +182,6 @@ void _assuan_log_sanitized_string (const char *string);
 ssize_t _assuan_simple_read (ASSUAN_CONTEXT ctx, void *buffer, size_t size);
 ssize_t _assuan_simple_write (ASSUAN_CONTEXT ctx, const void *buffer,
 			      size_t size);
-
 
 #endif /*ASSUAN_DEFS_H*/
 

@@ -51,7 +51,8 @@ int
 _assuan_new_context (ASSUAN_CONTEXT *r_ctx)
 {
   static struct assuan_io io = { _assuan_simple_read,
-				 _assuan_simple_write };
+				 _assuan_simple_write,
+				 0, 0 };
 
   ASSUAN_CONTEXT ctx;
   int rc;

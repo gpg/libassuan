@@ -229,6 +229,12 @@ AssuanError assuan_write_line (ASSUAN_CONTEXT ctx, const char *line );
 AssuanError assuan_send_data (ASSUAN_CONTEXT ctx,
                               const void *buffer, size_t length);
 
+/* The file descriptor must be pending before assuan_receivefd is
+   call.  This means that assuan_sendfd should be called *before* the
+   trigger is sent (normally via assuan_send_data ("I sent you a
+   descriptor")).  */
+AssuanError assuan_sendfd (ASSUAN_CONTEXT ctx, int fd);
+AssuanError assuan_receivefd (ASSUAN_CONTEXT ctx, int *fd);
 
 /*-- assuan-util.c --*/
 void assuan_set_malloc_hooks ( void *(*new_alloc_func)(size_t n),
