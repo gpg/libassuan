@@ -303,7 +303,7 @@ all protocols and partly directly supported by the Assuan library:
 
 @table @code
 @item CANCEL
-his is the one special command which aborts the current request.  it can
+This is the one special command which aborts the current request.  It can
 be sent at any time and the server will stop its operation right before
 it would send the next response line (of any type).
 

@@ -493,7 +493,7 @@ process_request (ASSUAN_CONTEXT ctx)
           const char *text = ctx->err_no == rc? ctx->err_str:NULL;
 
 #if defined(__GNUC__) && defined(__ELF__)
-          /* If we have weak symbol support we try to use the rror
+          /* If we have weak symbol support we try to use the error
              strings from libgpg-error without creating a dependency.
              They are used for debugging purposes only, so there is no
              problem if they are not available.  We need to make sure

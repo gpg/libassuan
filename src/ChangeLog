@@ -1,3 +1,7 @@
+2003-12-08  Werner Koch  <wk@gnupg.org>
+
+	* TODO: Removed.
+
 2003-11-12  Werner Koch  <wk@gnupg.org>
 
 	* assuan-handler.c (process_request): Kludge to print better error
