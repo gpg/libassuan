@@ -103,7 +103,6 @@ AC_REPLACE_FUNCS(memrchr)
 
 # Create the config files.
 AC_CONFIG_FILES([Makefile])
-AC_CONFIG_FILES([m4/Makefile])
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([doc/Makefile])
 AC_CONFIG_FILES([src/libassuan-config], [chmod +x src/libassuan-config])
