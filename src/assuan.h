@@ -155,6 +155,12 @@ AssuanError assuan_set_okay_line (ASSUAN_CONTEXT ctx, const char *line);
 void assuan_write_status (ASSUAN_CONTEXT ctx,
                           const char *keyword, const char *text);
 
+/* Negotiate a file descriptor.  If LINE contains "FD=N", returns N
+   assuming a local file descriptor.  If LINE contains "FD" reads a
+   file descriptor via CTX and stores it in *RDF (the CTX must be
+   capable of passing file descriptors).  */
+AssuanError assuan_command_parse_fd (ASSUAN_CONTEXT ctx, char *line,
+				     int *rfd);
 
 /*-- assuan-listen.c --*/
 AssuanError assuan_set_hello_line (ASSUAN_CONTEXT ctx, const char *line);

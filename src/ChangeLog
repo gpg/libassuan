@@ -1,5 +1,13 @@
 2002-11-24  Neal H. Walfield  <neal@g10code.de>
 
+	* assuan.h (assuan_command_parse_fd): New prototype.
+	* assuan-handler.c (assuan_command_parse_fd): Rename from
+	parse_cmd_input_output.  Export.
+	(std_handler_input): Update to use assuan_command_parse_fd.
+	(std_handler_output): Likewise.
+
+2002-11-24  Neal H. Walfield  <neal@g10code.de>
+
 	* assuan.h (assuan_sendfd): New prototype.
 	(assuan_receivefd): New prototype.
 	* assuan-buffer.c (assuan_sendfd): New function.

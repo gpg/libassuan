@@ -149,8 +149,8 @@ std_handler_end (ASSUAN_CONTEXT ctx, char *line)
   return set_error (ctx, Not_Implemented, NULL); 
 }
 
-static int
-parse_cmd_input_output (ASSUAN_CONTEXT ctx, char *line, int *rfd)
+AssuanError
+assuan_command_parse_fd (ASSUAN_CONTEXT ctx, char *line, int *rfd)
 {
   char *endp;
 
@@ -183,7 +183,7 @@ std_handler_input (ASSUAN_CONTEXT ctx, char *line)
 {
   int rc, fd;
 
-  rc = parse_cmd_input_output (ctx, line, &fd);
+  rc = assuan_command_parse_fd (ctx, line, &fd);
   if (rc)
     return rc;
   ctx->input_fd = fd;
@@ -198,7 +198,7 @@ std_handler_output (ASSUAN_CONTEXT ctx, char *line)
 {
   int rc, fd;
 
-  rc = parse_cmd_input_output (ctx, line, &fd);
+  rc = assuan_command_parse_fd (ctx, line, &fd);
   if (rc)
     return rc;
   ctx->output_fd = fd;
