@@ -177,6 +177,9 @@ void  _assuan_free (void *p);
 void _assuan_log_print_buffer (FILE *fp, const void *buffer, size_t  length);
 void _assuan_log_sanitized_string (const char *string);
 
+/*-- assuan-logging.c --*/
+void _assuan_set_default_log_stream (FILE *fp);
+
 /*-- assuan-io.c --*/
 ssize_t _assuan_simple_read (ASSUAN_CONTEXT ctx, void *buffer, size_t size);
 ssize_t _assuan_simple_write (ASSUAN_CONTEXT ctx, const void *buffer,

@@ -266,17 +266,26 @@ const char *assuan_strerror (AssuanError err);
 
 /*-- assuan-logging.c --*/
 
-/* Set the stream to which assuan should log.  By default, this is
-   stderr.  */
+/* Set the stream to which assuan should log message not associated
+   with a context.  By default, this is stderr.  The default value
+   will be changed when the first log stream is associated with a
+   context.  Note, that this function is not thread-safe and should
+   in general be used right at startup. */
 extern void assuan_set_assuan_log_stream (FILE *fp);
 
-/* Return the stream which is currently being using for logging.  */
+/* Return the stream which is currently being using for global logging.  */
 extern FILE *assuan_get_assuan_log_stream (void);
 
-/* User defined call back.  Return a prefix to be used at the start of
-   a line emitted by assuan on the log stream.  The default
-   implementation returns the empty string, i.e. ""  */
-extern const char *assuan_get_assuan_log_prefix (void);
+/* Set the prefix to be used at the start of a line emitted by assuan
+   on the log stream.  The default is the empty string.  Note, that
+   this function is not thread-safe and should in general be used
+   right at startup. */
+void assuan_set_assuan_log_prefix (const char *text);
+
+/* Return a prefix to be used at the start of a line emitted by assuan
+   on the log stream.  The default implementation returns the empty
+   string, i.e. ""  */
+const char *assuan_get_assuan_log_prefix (void);
 
 #ifdef __cplusplus
 }

@@ -125,16 +125,18 @@ _assuan_read_line (ASSUAN_CONTEXT ctx)
   if (rc)
     {
       if (ctx->log_fp)
-	fprintf (ctx->log_fp, "%s[%p] <- [Error: %s]\n",
-		 assuan_get_assuan_log_prefix (), ctx, strerror (errno));
+	fprintf (ctx->log_fp, "%s[%u.%p] DBG: <- [Error: %s]\n",
+		 assuan_get_assuan_log_prefix (),
+                 (unsigned int)getpid (), ctx, strerror (errno));
       return ASSUAN_Read_Error;
     }
   if (!nread)
     {
       assert (ctx->inbound.eof);
       if (ctx->log_fp)
-	fprintf (ctx->log_fp, "%s[%p] <- [EOF]\n",
-		 assuan_get_assuan_log_prefix (), ctx);
+	fprintf (ctx->log_fp, "%s[%u.%p] DBG: <- [EOF]\n",
+		 assuan_get_assuan_log_prefix (),
+                 (unsigned int)getpid (), ctx);
       return -1;
     }
 
@@ -165,8 +167,9 @@ _assuan_read_line (ASSUAN_CONTEXT ctx)
       ctx->inbound.linelen = endp - line;
       if (ctx->log_fp)
 	{
-	  fprintf (ctx->log_fp, "%s[%p] <- ",
-		   assuan_get_assuan_log_prefix (), ctx);
+	  fprintf (ctx->log_fp, "%s[%u.%p] DBG: <- ",
+		   assuan_get_assuan_log_prefix (),
+                   (unsigned int)getpid (), ctx);
 	  if (ctx->confidential)
 	    fputs ("[Confidential data not shown]", ctx->log_fp);
 	  else
@@ -180,8 +183,9 @@ _assuan_read_line (ASSUAN_CONTEXT ctx)
   else
     {
       if (ctx->log_fp)
-	fprintf (ctx->log_fp, "%s[%p] <- [Invalid line]\n",
-		 assuan_get_assuan_log_prefix (), ctx);
+	fprintf (ctx->log_fp, "%s[%u.%p] DBG: <- [Invalid line]\n",
+		 assuan_get_assuan_log_prefix (),
+                 (unsigned int)getpid (), ctx);
       *line = 0;
       ctx->inbound.linelen = 0;
       return ctx->inbound.eof ? ASSUAN_Line_Not_Terminated
@@ -241,8 +245,9 @@ assuan_write_line (ASSUAN_CONTEXT ctx, const char *line)
   /* fixme: we should do some kind of line buffering.  */
   if (ctx->log_fp)
     {
-      fprintf (ctx->log_fp, "%s[%p] -> ",
-	       assuan_get_assuan_log_prefix (), ctx);
+      fprintf (ctx->log_fp, "%s[%u.%p] DBG: -> ",
+	       assuan_get_assuan_log_prefix (),
+               (unsigned int)getpid (), ctx);
       if (s)
 	fputs ("[supplied line contained a LF]", ctx->log_fp);
       if (ctx->confidential)
@@ -314,8 +319,9 @@ _assuan_cookie_write_data (void *cookie, const char *buffer, size_t size)
         {
           if (ctx->log_fp)
             {
-	      fprintf (ctx->log_fp, "%s[%p] -> ",
-		       assuan_get_assuan_log_prefix (), ctx);
+	      fprintf (ctx->log_fp, "%s[%u.%p] DBG: -> ",
+		       assuan_get_assuan_log_prefix (),
+                       (unsigned int)getpid (), ctx);
 
               if (ctx->confidential)
                 fputs ("[Confidential data not shown]", ctx->log_fp);
@@ -361,8 +367,9 @@ _assuan_cookie_write_flush (void *cookie)
     {
       if (ctx->log_fp)
 	{
-	  fprintf (ctx->log_fp, "%s[%p] -> ",
-		   assuan_get_assuan_log_prefix (), ctx);
+	  fprintf (ctx->log_fp, "%s[%u.%p] DBG: -> ",
+		   assuan_get_assuan_log_prefix (),
+                   (unsigned int)getpid (), ctx);
 	  if (ctx->confidential)
 	    fputs ("[Confidential data not shown]", ctx->log_fp);
 	  else

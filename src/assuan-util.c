@@ -102,6 +102,7 @@ assuan_set_log_stream (ASSUAN_CONTEXT ctx, FILE *fp)
       if (ctx->log_fp)
         fflush (ctx->log_fp);
       ctx->log_fp = fp;
+      _assuan_set_default_log_stream (fp);
     }
 }
 

@@ -21,7 +21,15 @@
 #include "assuan-defs.h"
 #include <stdio.h>
 
+static char prefix_buffer[80];
 static FILE *_assuan_log;
+
+void
+_assuan_set_default_log_stream (FILE *fp)
+{
+  if (!_assuan_log)
+    _assuan_log = fp;
+}
 
 void
 assuan_set_assuan_log_stream (FILE *fp)
@@ -35,8 +43,23 @@ assuan_get_assuan_log_stream (void)
   return _assuan_log ? _assuan_log : stderr;
 }
 
+
+/* Set the prefix to be used for logging to TEXT or
+   resets it to the default if TEXT is NULL. */
+void
+assuan_set_assuan_log_prefix (const char *text)
+{
+  if (text)
+    {
+      strncpy (prefix_buffer, text, sizeof (prefix_buffer)-1);
+      prefix_buffer[sizeof (prefix_buffer)-1] = 0;
+    }
+  else
+    *prefix_buffer = 0;
+}
+
 const char *
 assuan_get_assuan_log_prefix (void)
 {
-  return "";
+  return prefix_buffer;
 }
