@@ -75,7 +75,7 @@ AC_SUBST(LIBASSUAN_CONFIG_CFLAGS)
 
 # Checks for header files.
 AC_HEADER_STDC
-AC_CHECK_HEADERS([string.h locale.h])
+AC_CHECK_HEADERS([string.h locale.h sys/uio.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST

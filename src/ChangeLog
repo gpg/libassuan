@@ -1,3 +1,7 @@
+2004-06-23  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan-domain-connect.c [HAVE_SYS_UIO_H]: Include <sys/uio.h>.
+
 2004-05-11  Werner Koch  <wk@gnupg.org>
 
 	* assuan-listen.c (assuan_set_hello_line, assuan_accept): Allow
