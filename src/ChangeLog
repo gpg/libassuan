@@ -1,3 +1,14 @@
+2004-01-14  Werner Koch  <wk@gnupg.org>
+
+	* assuan-buffer.c (_assuan_cookie_write_data): Return the
+	requested size to indicate successful operation.  Fixes a spurious
+	bug we previously fixed using fflush().
+
+2003-12-22  Werner Koch  <wk@gnupg.org>
+
+	* assuan.h (ASSUAN_Locale_Problem): Added.
+	* assuan-errors.c (assuan_strerror): Ditto.
+
 2003-12-18  Werner Koch  <wk@gnupg.org>
 
 	* assuan.h (AssuanCommand): Clarified that these are now

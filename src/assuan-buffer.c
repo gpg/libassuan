@@ -275,9 +275,10 @@ assuan_write_line (ASSUAN_CONTEXT ctx, const char *line)
 /* Write out the data in buffer as datalines with line wrapping and
    percent escaping.  This fucntion is used for GNU's custom streams */
 int
-_assuan_cookie_write_data (void *cookie, const char *buffer, size_t size)
+_assuan_cookie_write_data (void *cookie, const char *buffer, size_t orig_size)
 {
   ASSUAN_CONTEXT ctx = cookie;
+  size_t size = orig_size;
   char *line;
   size_t linelen;
 
@@ -344,12 +345,12 @@ _assuan_cookie_write_data (void *cookie, const char *buffer, size_t size)
     }
 
   ctx->outbound.data.linelen = linelen;
-  return 0;
+  return (int)orig_size;
 }
 
 
 /* Write out any buffered data 
-   This fucntion is used for GNU's custom streams */
+   This function is used for GNU's custom streams */
 int
 _assuan_cookie_write_flush (void *cookie)
 {
