@@ -1,3 +1,9 @@
+2004-12-22  Werner Koch  <wk@g10code.com>
+
+	Released 0.6.9.
+
+	For security reasons switched to automake 1.9.
+
 2004-12-18  Werner Koch  <wk@g10code.com>
 
 	* autogen.sh: Add Option --build-w32.

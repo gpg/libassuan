@@ -1,6 +1,7 @@
-Noteworthy changes in version 0.6.9 
+Noteworthy changes in version 0.6.9 (2004-12-22)
 ------------------------------------------------
 
+ * Ported to W32 based systems.
 
 
 Noteworthy changes in version 0.6.8 (2004-11-25)
@@ -73,7 +74,7 @@ Noteworthy changes in version 0.6.0 (2003-08-06)
  * Initial release as a standalone library.
 
 
- Copyright 2003 Free Software Foundation, Inc.
+ Copyright 2003, 2004 Free Software Foundation, Inc.
 
  This file is free software; as a special exception the author gives
  unlimited permission to copy and/or distribute it, with or without

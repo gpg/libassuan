@@ -18,12 +18,12 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
 
 # Process this file with autoconf to produce a configure script.
-AC_PREREQ(2.57)
-min_automake_version="1.7.6"
+AC_PREREQ(2.59)
+min_automake_version="1.9.3"
 
 # Version number: Remember to change it immediately *after* a release.
 #                 Add a "-cvs" prefix for non-released code.
-AC_INIT(libassuan, 0.6.9-cvs, gnupg-devel@gnupg.org)
+AC_INIT(libassuan, 0.6.9, gnupg-devel@gnupg.org)
 # Note, that this is not yet available as a shared library.
 
 PACKAGE=$PACKAGE_NAME

@@ -344,8 +344,7 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
                        NULL, OPEN_EXISTING, 0, NULL);
       if (nullfd == INVALID_HANDLE_VALUE)
         {
-          _assuan_log_printf ("can't open `/dev/nul': %s\n",
-                              w32_strerror (-1));
+          _assuan_log_printf ("can't open `nul': %s\n", w32_strerror (-1));
           CloseHandle (fd_to_handle (rp[0]));
           CloseHandle (fd_to_handle (rp[1]));
           CloseHandle (fd_to_handle (wp[0]));
@@ -363,8 +362,8 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
   /* Note: We inherit all handles flagged as inheritable.  This seems
      to be a security flaw but there seems to be no way of selecting
      handles to inherit. */
-  _assuan_log_printf ("CreateProcess, path=`%s' cmdline=`%s'\n",
-                      name, cmdline);
+/*   _assuan_log_printf ("CreateProcess, path=`%s' cmdline=`%s'\n", */
+/*                       name, cmdline); */
   if (!CreateProcess (name,                 /* Program to start.  */
                       cmdline,              /* Command line arguments.  */
                       &sec_attr,            /* Process security attributes.  */
@@ -401,10 +400,10 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
   CloseHandle (fd_to_handle (rp[1]));
   CloseHandle (fd_to_handle (wp[0]));
 
-  _assuan_log_printf ("CreateProcess ready: hProcess=%p hThread=%p"
-                      " dwProcessID=%d dwThreadId=%d\n",
-                      pi.hProcess, pi.hThread,
-                      (int) pi.dwProcessId, (int) pi.dwThreadId);
+/*   _assuan_log_printf ("CreateProcess ready: hProcess=%p hThread=%p" */
+/*                       " dwProcessID=%d dwThreadId=%d\n", */
+/*                       pi.hProcess, pi.hThread, */
+/*                       (int) pi.dwProcessId, (int) pi.dwThreadId); */
 
   ResumeThread (pi.hThread);
   CloseHandle (pi.hThread); 
