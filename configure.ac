@@ -128,14 +128,21 @@ AC_DECL_SYS_SIGLIST
 
 AC_CHECK_FUNCS(flockfile funlockfile)
 
-AC_REPLACE_FUNCS(fopencookie)
-# FIXME: Print a warning when fopencookie is not available.
+# Check for funopen
+AC_CHECK_FUNCS(funopen)
+if test $ac_cv_func_funopen != yes; then
+  # No funopen but we can implement that in terms of fopencookie.
+  AC_CHECK_FUNCS(fopencookie, AC_LIBOBJ(funopen), AC_MSG_ERROR([[
+No implementation of fopencookie or funopen available.
+]]))
+
 AC_REPLACE_FUNCS(isascii)
 AC_REPLACE_FUNCS(putc_unlocked)
 AC_REPLACE_FUNCS(memrchr)
 
 AC_CONFIG_FILES([
 Makefile
+common/Makefile
 src/Makefile
 src/libassuan-config
 doc/Makefile

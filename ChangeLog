@@ -1,5 +1,14 @@
 2003-02-18  Neal H. Walfield  <neal@g10code.de>
 
+	* common: New directory.
+	* Makefile.am (SUBDIRS): Add common.
+
+	* configure.ac: Check for funopen.  If not present, check for
+	fopencookie and implement it in terms of that.  Otherwise, fail.
+	(AC_CONFIG_FILES): Add common/Makefile.
+
+2003-02-18  Neal H. Walfield  <neal@g10code.de>
+
 	* configure.ac (AC_CONFIG_FILES): Add src/libassuan-config.
 	(LIBASSUAN_CONFIG_LIBS, LIBASSUAN_CONFIG_CFLAGS): New variables.
 	AC_SUBST them.

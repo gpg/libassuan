@@ -1,5 +1,12 @@
 2003-02-18  Neal H. Walfield  <neal@g10code.de>
 
+	* assuan-handler.c (_IO_cookie_io_functions_t): Remove.
+	(cookie_io_functions_t): Remove.
+	(fopencookie): Remove prototype.
+	(assuan_get_data_fp): Use funopen, not fopencookie.
+
+2003-02-18  Neal H. Walfield  <neal@g10code.de>
+
 	* libassuan-config.in: New file.
 	* Makefile.am (bin_PROGRAMS): New variable.
 

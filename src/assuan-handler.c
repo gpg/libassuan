@@ -1,5 +1,5 @@
 /* assuan-handler.c - dispatch commands 
- *	Copyright (C) 2001, 2002 Free Software Foundation, Inc.
+ *	Copyright (C) 2001, 2002, 2003 Free Software Foundation, Inc.
  *
  * This file is part of Assuan.
  *
@@ -27,27 +27,6 @@
 
 #define spacep(p)  (*(p) == ' ' || *(p) == '\t')
 #define digitp(a) ((a) >= '0' && (a) <= '9')
-
-
-#if !HAVE_FOPENCOOKIE
-/* Provide structure for our dummy replacement function.  Usually this
-   is defined in ../common/util.h but assuan should be self
-   contained. */
-/* Fixme: Remove fopencoookie :-(( */
-typedef struct
-{
-  ssize_t (*read)(void*,char*,size_t);
-  ssize_t (*write)(void*,const char*,size_t);
-  int (*seek)(void*,off_t*,int);
-  int (*close)(void*);
-} _IO_cookie_io_functions_t;
-typedef _IO_cookie_io_functions_t cookie_io_functions_t;
-FILE *fopencookie (void *cookie, const char *opentype,
-                   cookie_io_functions_t funclist);
-#endif /*!HAVE_FOPENCOOKIE*/
-
-
-
 
 static int
 dummy_handler (ASSUAN_CONTEXT ctx, char *line)
@@ -636,12 +615,10 @@ assuan_get_data_fp (ASSUAN_CONTEXT ctx)
   if (ctx->outbound.data.fp)
     return ctx->outbound.data.fp;
   
-  cookie_fnc.read = NULL; 
-  cookie_fnc.write = _assuan_cookie_write_data;
-  cookie_fnc.seek = NULL;
-  cookie_fnc.close = _assuan_cookie_write_flush;
 
-  ctx->outbound.data.fp = fopencookie (ctx, "wb", cookie_fnc);
+  ctx->outbound.data.fp = funopen (ctx, 0,
+				   _assuan_cookie_write_data,
+				   0, _assuan_cookie_write_flush);
   ctx->outbound.data.error = 0;
   return ctx->outbound.data.fp;
 }
