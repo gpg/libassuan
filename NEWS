@@ -1,8 +1,10 @@
-Noteworthy changes in version 0.6.1 (unreleased)
+Noteworthy changes in version 0.6.1 (2003-11-17)
 ------------------------------------------------
 
  * Fixed a bug in assuan_inquire which led to an Invalid_Value error
    for large inquiry parameters.
+
+ * Fixed a bug in the client socket connect code.
 
 
 Noteworthy changes in version 0.6.0 (2003-08-06)
