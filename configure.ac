@@ -18,7 +18,7 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
 
 # Process this file with autoconf to produce a configure script.
-AC_PREREQ(2.52)
+AC_PREREQ(2.57)
 # Version number: Remember to change it immediately *after* a release.
 #                 Add a "-cvs" prefix for non-released code.
 AC_INIT(libassuan, 0.0.1-cvs, gpa-dev@gnupg.org)
@@ -26,27 +26,10 @@ AC_INIT(libassuan, 0.0.1-cvs, gpa-dev@gnupg.org)
 PACKAGE=$PACKAGE_NAME
 VERSION=$PACKAGE_VERSION
 
+AM_INIT_AUTOMAKE
+AM_MAINTAINER_MODE
 AC_CONFIG_SRCDIR(src/assuan.h)
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE($PACKAGE, $VERSION)
-AM_MAINTAINER_MODE
-
-AH_TOP([
-/* We need this, because some autoconf tests rely on this (e.g. stpcpy)
-   and it should be used for new programs anyway. */
-#define _GNU_SOURCE  1
-])
-
-AH_BOTTOM([
-/* Some global constants. */
-#ifdef HAVE_DRIVE_LETTERS
-#define GNUPG_DEFAULT_HOMEDIR "c:/gnupg"
-#else
-#define GNUPG_DEFAULT_HOMEDIR "~/.gnupg"
-#endif 
-#define GNUPG_PRIVATE_KEYS_DIR "private-keys-v1.d"
-])
-
 
 
 AC_SUBST(PACKAGE)
@@ -55,6 +38,15 @@ AC_DEFINE_UNQUOTED(PACKAGE, "$PACKAGE", [Name of this package])
 AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Version of this package])
 AC_DEFINE_UNQUOTED(PACKAGE_BUGREPORT, "$PACKAGE_BUGREPORT",
                                         [Bug report address])
+
+
+
+AH_TOP([
+/* We need this, because some autoconf tests rely on this (e.g. stpcpy)
+   and it should be used for new programs anyway. */
+#define _GNU_SOURCE  1
+])
+
 
 # Checks for programs.
 missing_dir=`cd $ac_aux_dir && pwd`
@@ -76,34 +68,6 @@ if test "$GCC" = yes; then
     CFLAGS="$CFLAGS -Wall -Wcast-align -Wshadow -Wstrict-prototypes"
 fi
 
-case "${target}" in
-    *-*-mingw32*)
-        PRINTABLE_OS_NAME="MingW32"
-        AC_DEFINE(HAVE_DOSISH_SYSTEM,1,
-                  [defined if we run on some of the PCDOS like systems 
-                   (DOS, Windoze. OS/2) with special properties like
-                    no file modes])
-        ;;
-    i?86-emx-os2 | i?86-*-os2*emx )
-        PRINTABLE_OS_NAME="OS/2"
-        ;;
-    i?86-*-msdosdjgpp*)
-        PRINTABLE_OS_NAME="MSDOS/DJGPP"
-        try_dynload=no
-        ;;
-    *-linux*)
-        PRINTABLE_OS_NAME="GNU/Linux"
-        ;;
-dnl let that after linux to avoid gnu-linux problems
-    *-gnu*)
-        PRINTABLE_OS_NAME="GNU/Hurd"
-        ;;
-    *)
-        PRINTABLE_OS_NAME=`uname -s || echo "Unknown"`
-        ;;
-esac
-AC_DEFINE_UNQUOTED(PRINTABLE_OS_NAME, "$PRINTABLE_OS_NAME",
-                   [A human readable text with the name of the OS])
 
 # For src/libassuan-config.in
 LIBASSUAN_CONFIG_LIBS="-lassuan"
@@ -141,11 +105,9 @@ AC_REPLACE_FUNCS(isascii)
 AC_REPLACE_FUNCS(putc_unlocked)
 AC_REPLACE_FUNCS(memrchr)
 
-AC_CONFIG_FILES([ po/Makefile.in m4/Makefile 
-Makefile
-src/Makefile
-src/libassuan-config
-doc/Makefile
-tests/Makefile
-])
+# Create the config file.
+AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([m4/Makefile])
+AC_CONFIG_FILES([src/Makefile src/libassuan-config])
+AC_CONFIG_FILES([doc/Makefile])
 AC_OUTPUT
