@@ -529,7 +529,7 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
 	    {
 	      while (*fdp != -1 && *fdp != i)
 		fdp++;
-`	    }
+	    }
 
           if (!(fdp && *fdp != -1))
             close(i);

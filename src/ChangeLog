@@ -1,3 +1,8 @@
+2004-12-19  Moritz Schulte  <moritz@g10code.com>
+
+	* assuan-pipe-connect.c (assuan_pipe_connect2): Removed "`"
+	character at beginning of line 532.
+
 2004-12-18  Werner Koch  <wk@g10code.com>
 
 	* assuan-logging.c (_assuan_w32_strerror): New. 
