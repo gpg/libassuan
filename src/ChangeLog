@@ -1,3 +1,8 @@
+2003-11-11  Moritz Schulte  <mo@g10code.com>
+
+	* assuan-socket-connect.c (assuan_socket_connect): Fix computation
+	of socket address length.
+
 2003-08-13  Werner Koch  <wk@gnupg.org>
 
 	* assuan-inquire.c (assuan_inquire): Increase length of cmdbuf to

@@ -95,9 +95,9 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
 
   memset (&srvr_addr, 0, sizeof srvr_addr);
   srvr_addr.sun_family = AF_LOCAL;
-  len = strlen (srvr_addr.sun_path) + 1;
-  memcpy (srvr_addr.sun_path, name, len);
-  len += (offsetof (struct sockaddr_un, sun_path));
+  strncpy (srvr_addr.sun_path, name, sizeof (srvr_addr.sun_path) - 1);
+  srvr_addr.sun_path[sizeof (srvr_addr.sun_path) - 1] = 0;
+  len = SUN_LEN (&srvr_addr);
 
   if (connect (fd, (struct sockaddr *) &srvr_addr, len) == -1)
     {
