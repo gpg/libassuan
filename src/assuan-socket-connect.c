@@ -85,6 +85,7 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
   int fd;
   struct sockaddr_un srvr_addr;
   size_t len;
+  const char *s;
 
 #ifdef HAVE_W32_SYSTEM
   _assuan_log_printf ("%s: name =`%s'\n", __FUNCTION__, name);
@@ -95,9 +96,14 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
   *r_ctx = NULL;
 
   /* We require that the name starts with a slash, so that we can
-     alter reuse this function for other socket types */
-  if (*name != DIRSEP_C && *name != '/')
+     alter reuse this function for other socket types.  To make things
+     easier we allow an optional dirver prefix.  */
+  s = name;
+  if (*s && s[1] == ':')
+    s += 2;
+  if (*s != DIRSEP_C && *s != '/')
     return ASSUAN_Invalid_Value;
+
   if (strlen (name)+1 >= sizeof srvr_addr.sun_path)
     return ASSUAN_Invalid_Value;
 
