@@ -86,13 +86,17 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
   struct sockaddr_un srvr_addr;
   size_t len;
 
+#ifdef HAVE_W32_SYSTEM
+  _assuan_log_printf ("%s: name =`%s'\n", __FUNCTION__, name);
+#endif
+
   if (!r_ctx || !name)
     return ASSUAN_Invalid_Value;
   *r_ctx = NULL;
 
-  /* we require that the name starts with a slash, so that we can
+  /* We require that the name starts with a slash, so that we can
      alter reuse this function for other socket types */
-  if (*name != DIRSEP_C)
+  if (*name != DIRSEP_C && *name != '/')
     return ASSUAN_Invalid_Value;
   if (strlen (name)+1 >= sizeof srvr_addr.sun_path)
     return ASSUAN_Invalid_Value;
@@ -102,6 +106,9 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
       return err;
   ctx->deinit_handler = do_deinit;
   ctx->finish_handler = do_finish;
+#ifdef HAVE_W32_SYSTEM
+  _assuan_log_printf ("%s: got context\n", __FUNCTION__ );
+#endif
 
   fd = _assuan_sock_new (PF_LOCAL, SOCK_STREAM, 0);
   if (fd == -1)
@@ -117,6 +124,10 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
   srvr_addr.sun_path[sizeof (srvr_addr.sun_path) - 1] = 0;
   len = SUN_LEN (&srvr_addr);
 
+#ifdef HAVE_W32_SYSTEM
+  _assuan_log_printf ("%s: about to connect\n", __FUNCTION__ );
+#endif
+
   if (_assuan_sock_connect (fd, (struct sockaddr *) &srvr_addr, len) == -1)
     {
       _assuan_log_printf ("can't connect to `%s': %s\n",
@@ -125,6 +136,9 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
       _assuan_close (fd);
       return ASSUAN_Connect_Failed;
     }
+#ifdef HAVE_W32_SYSTEM
+  _assuan_log_printf ("%s: connected\n", __FUNCTION__ );
+#endif
 
   ctx->inbound.fd = fd;
   ctx->outbound.fd = fd;

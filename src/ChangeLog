@@ -1,3 +1,18 @@
+2004-12-18  Werner Koch  <wk@g10code.com>
+
+	* assuan-logging.c (_assuan_w32_strerror): New. 
+	* assuan-defs.h (w32_strerror): new.
+	* assuan-pipe-connect.c (assuan_pipe_connect2, fix_signals):
+	Factored signal code out to new function.
+	(build_w32_commandline, create_inheritable_pipe): New.  Taken
+	from gnupg 1.9.
+	(assuan_pipe_connect2) [W32]: Implemented for W32.
+
+2004-12-14  Werner Koch  <wk@g10code.com>
+
+	* assuan-socket-connect.c (assuan_socket_connect): Always allow
+	NAME to start with a froward slash.
+
 2004-12-07  Werner Koch  <wk@g10code.com>
 
 	* assuan-logging.c, assuan-io.c: Include config.h

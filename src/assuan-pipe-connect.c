@@ -44,6 +44,44 @@
 #define MAX_OPEN_FDS 20
 #endif
 
+#ifdef HAVE_W32_SYSTEM
+/* We assume that a HANDLE can be represented by an int which should
+   be true for all i386 systems (HANDLE is defined as void *) and
+   these are the only systems for which Windows is available.  Further
+   we assume that -1 denotes an invalid handle.  */
+#define fd_to_handle(a)  ((HANDLE)(a))
+#define handle_to_fd(a)  ((int)(a))
+#define pid_to_handle(a) ((HANDLE)(a))
+#define handle_to_pid(a) ((int)(a))
+#endif /*HAVE_W32_SYSTEM*/
+
+
+/* This should be called to make sure that SIGPIPE gets ignored.  */
+static void
+fix_signals (void)
+{
+#ifndef HAVE_DOSISH_SYSTEM  /* No SIGPIPE for these systems.  */
+  static int fixed_signals;
+
+  if (!fixed_signals)
+    { 
+      struct sigaction act;
+        
+      sigaction (SIGPIPE, NULL, &act);
+      if (act.sa_handler == SIG_DFL)
+	{
+	  act.sa_handler = SIG_IGN;
+	  sigemptyset (&act.sa_mask);
+	  act.sa_flags = 0;
+	  sigaction (SIGPIPE, &act, NULL);
+        }
+      fixed_signals = 1;
+      /* FIXME: This is not MT safe */
+    }
+#endif /*HAVE_DOSISH_SYSTEM*/
+}
+
+
 #ifndef HAVE_W32_SYSTEM
 static int
 writen (int fd, const char *buffer, size_t length)
@@ -65,7 +103,6 @@ writen (int fd, const char *buffer, size_t length)
 }
 #endif
 
-#ifndef HAVE_W32_SYSTEM
 static int
 do_finish (assuan_context_t ctx)
 {
@@ -81,20 +118,122 @@ do_finish (assuan_context_t ctx)
     }
   if (ctx->pid != -1 && ctx->pid)
     {
+#ifdef HAVE_W32_SYSTEM
+      /* fixme: We need to check whether -1 is an invalid HANDLE and
+         what the heck a pid of Zero means. */
+#else /*!HAVE_W32_SYSTEM*/
+      /* FIXME: Does it really make sense to use the waitpid?  What
+         about using a double fork and forget abnout it. */
       waitpid (ctx->pid, NULL, 0);  /* FIXME Check return value.  */
       ctx->pid = -1;
+#endif /*!HAVE_W32_SYSTEM*/
     }
   return 0;
 }
-#endif
 
-#ifndef HAVE_W32_SYSTEM
 static void
 do_deinit (assuan_context_t ctx)
 {
   do_finish (ctx);
 }
-#endif
+
+
+#ifdef HAVE_W32_SYSTEM
+/* Build a command line for use with W32's CreateProcess.  On success
+   CMDLINE gets the address of a newly allocated string.  */
+static int
+build_w32_commandline (const char *pgmname, char * const *argv, char **cmdline)
+{
+  int i, n;
+  const char *s;
+  char *buf, *p;
+
+  *cmdline = NULL;
+  n = strlen (pgmname);
+  for (i=0; (s=argv[i]); i++)
+    {
+      n += strlen (s) + 1 + 2;  /* (1 space, 2 quoting */
+      for (; *s; s++)
+        if (*s == '\"')
+          n++;  /* Need to double inner quotes.  */
+    }
+  n++;
+
+  buf = p = xtrymalloc (n);
+  if (!buf)
+    return -1;
+
+  /* fixme: PGMNAME may not contain spaces etc. */
+  p = stpcpy (p, pgmname);
+  for (i=0; argv[i]; i++) 
+    {
+      if (!*argv[i]) /* Empty string. */
+        p = stpcpy (p, " \"\"");
+      else if (strpbrk (argv[i], " \t\n\v\f\""))
+        {
+          p = stpcpy (p, " \"");
+          for (s=argv[i]; *s; s++)
+            {
+              *p++ = *s;
+              if (*s == '\"')
+                *p++ = *s;
+            }
+          *p++ = '\"';
+          *p = 0;
+        }
+      else
+        p = stpcpy (stpcpy (p, " "), argv[i]);
+    }
+
+  *cmdline= buf;
+  return 0;
+}
+#endif /*HAVE_W32_SYSTEM*/
+
+
+#ifdef HAVE_W32_SYSTEM
+/* Create pipe where one end end is inheritable.  */
+static int
+create_inheritable_pipe (int filedes[2], int for_write)
+{
+  HANDLE r, w, h;
+  SECURITY_ATTRIBUTES sec_attr;
+
+  memset (&sec_attr, 0, sizeof sec_attr );
+  sec_attr.nLength = sizeof sec_attr;
+  sec_attr.bInheritHandle = FALSE;
+    
+  if (!CreatePipe (&r, &w, &sec_attr, 0))
+    {
+      _assuan_log_printf ("CreatePipe failed: %s\n", w32_strerror (-1));
+      return -1;
+    }
+
+  if (!DuplicateHandle (GetCurrentProcess(), for_write? r : w,
+                        GetCurrentProcess(), &h, 0,
+                        TRUE, DUPLICATE_SAME_ACCESS ))
+    {
+      _assuan_log_printf ("DuplicateHandle failed: %s\n", w32_strerror (-1));
+      CloseHandle (r);
+      CloseHandle (w);
+      return -1;
+    }
+  if (for_write)
+    {
+      CloseHandle (r);
+      r = h;
+    }
+  else
+    {
+      CloseHandle (w);
+      w = h;
+    }
+
+  filedes[0] = handle_to_fd (r);
+  filedes[1] = handle_to_fd (w);
+  return 0;
+}
+#endif /*HAVE_W32_SYSTEM*/
 
 
 /* Connect to a server over a pipe, creating the assuan context and
@@ -112,9 +251,163 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
                       void *atforkvalue)
 {
 #ifdef HAVE_W32_SYSTEM
-  return ASSUAN_Not_Implemented;
-#else
-  static int fixed_signals = 0;
+  assuan_error_t err;
+  int rp[2];
+  int wp[2];
+  char mypidstr[50];
+  char *cmdline;
+  SECURITY_ATTRIBUTES sec_attr;
+  PROCESS_INFORMATION pi = 
+    {
+      NULL,      /* Returns process handle.  */
+      0,         /* Returns primary thread handle.  */
+      0,         /* Returns pid.  */
+      0          /* Returns tid.  */
+    };
+  STARTUPINFO si;
+  int fd, *fdp;
+  HANDLE nullfd = INVALID_HANDLE_VALUE;
+
+  if (!ctx || !name || !argv || !argv[0])
+    return ASSUAN_Invalid_Value;
+
+  fix_signals ();
+
+  sprintf (mypidstr, "%lu", (unsigned long)getpid ());
+
+  /* Build the command line.  */
+  if (build_w32_commandline (name, argv, &cmdline))
+    return ASSUAN_Out_Of_Core;
+
+  /* Create thew two pipes. */
+  if (create_inheritable_pipe (rp, 0))
+    {
+      xfree (cmdline);
+      return ASSUAN_General_Error;
+    }
+  
+  if (create_inheritable_pipe (wp, 1))
+    {
+      CloseHandle (fd_to_handle (rp[0]));
+      CloseHandle (fd_to_handle (rp[1]));
+      xfree (cmdline);
+      return ASSUAN_General_Error;
+    }
+
+  
+  err = _assuan_new_context (ctx);
+  if (err)
+    {
+      CloseHandle (fd_to_handle (rp[0]));
+      CloseHandle (fd_to_handle (rp[1]));
+      CloseHandle (fd_to_handle (wp[0]));
+      CloseHandle (fd_to_handle (wp[1]));
+      xfree (cmdline);
+      return ASSUAN_General_Error;
+    }
+
+  (*ctx)->pipe_mode = 1;
+  (*ctx)->inbound.fd  = rp[0];  /* Our inbound is read end of read pipe. */
+  (*ctx)->outbound.fd = wp[1];  /* Our outbound is write end of write pipe. */
+  (*ctx)->deinit_handler = do_deinit;
+  (*ctx)->finish_handler = do_finish;
+
+
+  /* fixme: Actually we should set the "_assuan_pipe_connect_pid" env
+     variable.  However this requires us to write a full environment
+     handler, because the strings are expected in sorted order.  The
+     suggestion given in the MS Reference Library, to save the old
+     value, changeit, create proces and restore it, is not thread
+     safe.  */
+
+  /* Start the process.  */
+  memset (&sec_attr, 0, sizeof sec_attr );
+  sec_attr.nLength = sizeof sec_attr;
+  sec_attr.bInheritHandle = FALSE;
+  
+  memset (&si, 0, sizeof si);
+  si.cb = sizeof (si);
+  si.dwFlags = STARTF_USESTDHANDLES;
+  si.hStdInput  = fd_to_handle (wp[0]);
+  si.hStdOutput = fd_to_handle (rp[1]);
+
+  /* Dup stderr to /dev/null unless it is in the list of FDs to be
+     passed to the child. */
+  fd = fileno (stderr);
+  fdp = fd_child_list;
+  if (fdp)
+    {
+      for (; *fdp != -1 && *fdp != fd; fdp++)
+        ;
+    }
+  if (!fdp || *fdp == -1)
+    {
+      nullfd = CreateFile ("nul", GENERIC_WRITE,
+                       FILE_SHARE_READ | FILE_SHARE_WRITE,
+                       NULL, OPEN_EXISTING, 0, NULL);
+      if (nullfd == INVALID_HANDLE_VALUE)
+        {
+          _assuan_log_printf ("can't open `/dev/nul': %s\n",
+                              w32_strerror (-1));
+          CloseHandle (fd_to_handle (rp[0]));
+          CloseHandle (fd_to_handle (rp[1]));
+          CloseHandle (fd_to_handle (wp[0]));
+          CloseHandle (fd_to_handle (wp[1]));
+          xfree (cmdline);
+          _assuan_release_context (*ctx); 
+          return -1;
+        }
+      si.hStdError = nullfd;
+    }
+  else
+    si.hStdError = fd_to_handle (_get_osfhandle (fd));
+
+
+  /* Note: We inherit all handles flagged as inheritable.  This seems
+     to be a security flaw but there seems to be no way of selecting
+     handles to inherit. */
+  _assuan_log_printf ("CreateProcess, path=`%s' cmdline=`%s'",
+                      name, cmdline);
+  if (!CreateProcess (name,                 /* Program to start.  */
+                      cmdline,              /* Command line arguments.  */
+                      &sec_attr,            /* Process security attributes.  */
+                      &sec_attr,            /* Thread security attributes.  */
+                      TRUE,                 /* Inherit handles.  */
+                      (CREATE_DEFAULT_ERROR_MODE
+                       | GetPriorityClass (GetCurrentProcess ()))
+                       ,                    /* Creation flags.  */
+                      NULL,                 /* Environment.  */
+                      NULL,                 /* Use current drive/directory.  */
+                      &si,                  /* Startup information. */
+                      &pi                   /* Returns process information.  */
+                      ))
+    {
+      _assuan_log_printf ("CreateProcess failed: %s\n", w32_strerror (-1));
+      CloseHandle (fd_to_handle (rp[0]));
+      CloseHandle (fd_to_handle (rp[1]));
+      CloseHandle (fd_to_handle (wp[0]));
+      CloseHandle (fd_to_handle (wp[1]));
+      if (nullfd != INVALID_HANDLE_VALUE)
+        CloseHandle (nullfd);
+      xfree (cmdline);
+      _assuan_release_context (*ctx); 
+      return ASSUAN_General_Error;
+    }
+  xfree (cmdline);
+  cmdline = NULL;
+  if (nullfd != INVALID_HANDLE_VALUE)
+    {
+      CloseHandle (nullfd);
+      nullfd = INVALID_HANDLE_VALUE;
+    }
+
+  CloseHandle (fd_to_handle (rp[1]));
+  CloseHandle (fd_to_handle (wp[0]));
+
+  CloseHandle (pi.hThread); 
+  (*ctx)->pid = handle_to_pid (pi.hProcess);
+
+#else /*!HAVE_W32_SYSTEM*/
   assuan_error_t err;
   int rp[2];
   int wp[2];
@@ -123,21 +416,7 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
   if (!ctx || !name || !argv || !argv[0])
     return ASSUAN_Invalid_Value;
 
-  if (!fixed_signals)
-    { 
-      struct sigaction act;
-        
-      sigaction (SIGPIPE, NULL, &act);
-      if (act.sa_handler == SIG_DFL)
-	{
-	  act.sa_handler = SIG_IGN;
-	  sigemptyset (&act.sa_mask);
-	  act.sa_flags = 0;
-	  sigaction (SIGPIPE, &act, NULL);
-        }
-      fixed_signals = 1;
-      /* FIXME: This is not MT safe */
-    }
+  fix_signals ();
 
   sprintf (mypidstr, "%lu", (unsigned long)getpid ());
 
@@ -246,7 +525,7 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
 	    {
 	      while (*fdp != -1 && *fdp != i)
 		fdp++;
-	    }
+`	    }
 
           if (!(fdp && *fdp != -1))
             close(i);
@@ -272,6 +551,8 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
   close (rp[1]);
   close (wp[0]);
 
+#endif /*!HAVE_W32_SYSTEM*/
+
   /* initial handshake */
   {
     int okay, off;
@@ -295,7 +576,6 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
     }
 
   return err;
-#endif
 }
 
 

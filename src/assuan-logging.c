@@ -21,11 +21,14 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-#include "assuan-defs.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#ifdef HAVE_W32_SYSTEM
+#include <windows.h>
+#endif /*HAVE_W32_SYSTEM*/
+
+#include "assuan-defs.h"
 
 static char prefix_buffer[80];
 static FILE *_assuan_log;
@@ -90,3 +93,20 @@ _assuan_log_printf (const char *format, ...)
   vfprintf (fp, format, arg_ptr );
   va_end (arg_ptr);
 }
+
+
+
+#ifdef HAVE_W32_SYSTEM
+const char *
+_assuan_w32_strerror (int ec)
+{
+  static char strerr[256];
+  
+  if (ec == -1)
+    ec = (int)GetLastError ();
+  FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM, NULL, ec,
+                 MAKELANGID (LANG_NEUTRAL, SUBLANG_DEFAULT),
+                 strerr, sizeof (strerr)-1, NULL);
+  return strerr;    
+}
+#endif /*HAVE_W32_SYSTEM*/
