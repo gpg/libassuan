@@ -1,5 +1,9 @@
 2003-02-17  Neal H. Walfield  <neal@g10code.de>
 
+	* .cvsignore: New file.
+
+2003-02-17  Neal H. Walfield  <neal@g10code.de>
+
 	* Makefile.am (lib_LIBRARIES): Use this instead of . . .
 	(noinst_LIBRARIES): . . . this.
 	(include_HEADERS): New variable.
