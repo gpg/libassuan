@@ -49,7 +49,7 @@ assuan_disconnect (assuan_context_t ctx)
     }
 }
 
-/* Return the PID of the perr or -1 if not known. */
+/* Return the PID of the peer or -1 if not known. */
 pid_t
 assuan_get_pid (assuan_context_t ctx)
 {

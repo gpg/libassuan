@@ -118,10 +118,7 @@ do_finish (assuan_context_t ctx)
     }
   if (ctx->pid != -1 && ctx->pid)
     {
-#ifdef HAVE_W32_SYSTEM
-      /* fixme: We need to check whether -1 is an invalid HANDLE and
-         what the heck a pid of Zero means. */
-#else /*!HAVE_W32_SYSTEM*/
+#ifndef HAVE_W32_SYSTEM
       /* FIXME: Does it really make sense to use the waitpid?  What
          about using a double fork and forget abnout it. */
       waitpid (ctx->pid, NULL, 0);  /* FIXME Check return value.  */
@@ -142,14 +139,14 @@ do_deinit (assuan_context_t ctx)
 /* Build a command line for use with W32's CreateProcess.  On success
    CMDLINE gets the address of a newly allocated string.  */
 static int
-build_w32_commandline (const char *pgmname, char * const *argv, char **cmdline)
+build_w32_commandline (char * const *argv, char **cmdline)
 {
   int i, n;
   const char *s;
   char *buf, *p;
 
   *cmdline = NULL;
-  n = strlen (pgmname);
+  n = 0;
   for (i=0; (s=argv[i]); i++)
     {
       n += strlen (s) + 1 + 2;  /* (1 space, 2 quoting */
@@ -163,15 +160,15 @@ build_w32_commandline (const char *pgmname, char * const *argv, char **cmdline)
   if (!buf)
     return -1;
 
-  /* fixme: PGMNAME may not contain spaces etc. */
-  p = stpcpy (p, pgmname);
   for (i=0; argv[i]; i++) 
     {
+      if (i)
+        p = stpcpy (p, " ");
       if (!*argv[i]) /* Empty string. */
-        p = stpcpy (p, " \"\"");
+        p = stpcpy (p, "\"\"");
       else if (strpbrk (argv[i], " \t\n\v\f\""))
         {
-          p = stpcpy (p, " \"");
+          p = stpcpy (p, "\"");
           for (s=argv[i]; *s; s++)
             {
               *p++ = *s;
@@ -182,7 +179,7 @@ build_w32_commandline (const char *pgmname, char * const *argv, char **cmdline)
           *p = 0;
         }
       else
-        p = stpcpy (stpcpy (p, " "), argv[i]);
+        p = stpcpy (p, argv[i]);
     }
 
   *cmdline= buf;
@@ -276,7 +273,7 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
   sprintf (mypidstr, "%lu", (unsigned long)getpid ());
 
   /* Build the command line.  */
-  if (build_w32_commandline (name, argv, &cmdline))
+  if (build_w32_commandline (argv, &cmdline))
     return ASSUAN_Out_Of_Core;
 
   /* Create thew two pipes. */
@@ -366,7 +363,7 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
   /* Note: We inherit all handles flagged as inheritable.  This seems
      to be a security flaw but there seems to be no way of selecting
      handles to inherit. */
-  _assuan_log_printf ("CreateProcess, path=`%s' cmdline=`%s'",
+  _assuan_log_printf ("CreateProcess, path=`%s' cmdline=`%s'\n",
                       name, cmdline);
   if (!CreateProcess (name,                 /* Program to start.  */
                       cmdline,              /* Command line arguments.  */
@@ -374,8 +371,8 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
                       &sec_attr,            /* Thread security attributes.  */
                       TRUE,                 /* Inherit handles.  */
                       (CREATE_DEFAULT_ERROR_MODE
-                       | GetPriorityClass (GetCurrentProcess ()))
-                       ,                    /* Creation flags.  */
+                       | GetPriorityClass (GetCurrentProcess ())
+                       | CREATE_SUSPENDED), /* Creation flags.  */
                       NULL,                 /* Environment.  */
                       NULL,                 /* Use current drive/directory.  */
                       &si,                  /* Startup information. */
@@ -404,8 +401,15 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
   CloseHandle (fd_to_handle (rp[1]));
   CloseHandle (fd_to_handle (wp[0]));
 
+  _assuan_log_printf ("CreateProcess ready: hProcess=%p hThread=%p"
+                      " dwProcessID=%d dwThreadId=%d\n",
+                      pi.hProcess, pi.hThread,
+                      (int) pi.dwProcessId, (int) pi.dwThreadId);
+
+  ResumeThread (pi.hThread);
   CloseHandle (pi.hThread); 
-  (*ctx)->pid = handle_to_pid (pi.hProcess);
+  (*ctx)->pid = 0;  /* We don't use the PID. */
+  CloseHandle (pi.hProcess); /* We don't need to wait for the process. */
 
 #else /*!HAVE_W32_SYSTEM*/
   assuan_error_t err;
