@@ -1,3 +1,7 @@
+2004-11-26  Werner Koch  <wk@g10code.com>
+
+	* assuan-io.c [_WIN32]: Avoid warnings about unknown pragmas.
+
 2004-11-24  Werner Koch  <wk@g10code.com>
 
 	* assuan-logging.c (_assuan_log_printf): New.

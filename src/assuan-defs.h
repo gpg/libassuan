@@ -40,7 +40,7 @@
 
 #ifdef _WIN32
 #define AF_LOCAL AF_UNIX
-/* we need to prefix the structure with a sockaddr_in header so we can
+/* We need to prefix the structure with a sockaddr_in header so we can
    use it later for sendto and recvfrom. */
 struct sockaddr_un
 {
@@ -50,9 +50,11 @@ struct sockaddr_un
   char           sun_path[108-2-4]; /* Path name.  */
 };
 
-typedef int ssize_t;
+/* Not needed anymore because the current mingw32 defines this in
+   sys/types.h */
+/* typedef int ssize_t; */
 
-/* missing W32 functions */
+/* Missing W32 functions */
 int putc_unlocked (int c, FILE *stream);
 void * memrchr (const void *block, int c, size_t size);
 char * stpcpy (char *dest, const char *src);

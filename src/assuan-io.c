@@ -28,29 +28,31 @@
 extern ssize_t pth_read (int fd, void *buffer, size_t size);
 extern ssize_t pth_write (int fd, const void *buffer, size_t size);
 
+#ifndef _WIN32
 #pragma weak pth_read
 #pragma weak pth_write
+#endif
 
 ssize_t
 _assuan_simple_read (assuan_context_t ctx, void *buffer, size_t size)
 {
-  #ifndef _WIN32
+#ifndef _WIN32
   return (pth_read ? pth_read : read) (ctx->inbound.fd, buffer, size);
-  #else
+#else
   return pth_read ? pth_read (ctx->inbound.fd, buffer, size)
                   : recv (ctx->inbound.fd, buffer, size, 0);
-  #endif
+#endif
 }
 
 ssize_t
 _assuan_simple_write (assuan_context_t ctx, const void *buffer, size_t size)
 {
-  #ifndef _WIN32
+#ifndef _WIN32
   return (pth_write ? pth_write : write) (ctx->outbound.fd, buffer, size);
-  #else
+#else
   return pth_write ? pth_write (ctx->outbound.fd, buffer, size)
                    : send (ctx->outbound.fd, buffer, size, 0);
-  #endif
+#endif
 }
 
 
