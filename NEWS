@@ -3,6 +3,9 @@ Noteworthy changes in version 0.6.3 (unreleased)
 
  * Fixed a data corruption bug in assuan_get_data_fp.
 
+ * New function assuan_pipe_connect2.
+
+
 Noteworthy changes in version 0.6.2 (2003-12-18)
 ------------------------------------------------
 

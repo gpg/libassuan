@@ -97,10 +97,15 @@ do_deinit (ASSUAN_CONTEXT ctx)
 /* Connect to a server over a pipe, creating the assuan context and
    returning it in CTX.  The server filename is NAME, the argument
    vector in ARGV.  FD_CHILD_LIST is a -1 terminated list of file
-   descriptors not to close in the child.  */
+   descriptors not to close in the child.  ATFORK is called in the
+   child right after the fork; ATFORKVALUE is passed as the first
+   argument and 0 is passed as the second argument. The ATFORK
+   function should only act if the second value is 0. */
 AssuanError
-assuan_pipe_connect (ASSUAN_CONTEXT *ctx, const char *name, char *const argv[],
-		     int *fd_child_list)
+assuan_pipe_connect2 (ASSUAN_CONTEXT *ctx, const char *name, char *const argv[],
+                      int *fd_child_list,
+                      void (*atfork) (void *opaque, int reserved),
+                      void *atforkvalue)
 {
   static int fixed_signals = 0;
   AssuanError err;
@@ -167,6 +172,9 @@ assuan_pipe_connect (ASSUAN_CONTEXT *ctx, const char *name, char *const argv[],
       int i, n;
       char errbuf[512];
       int *fdp;
+
+      if (atfork)
+        atfork (atforkvalue, 0);
 
       /* Dup handles to stdin/stdout. */
       if (rp[1] != STDOUT_FILENO)
@@ -267,15 +275,13 @@ assuan_pipe_connect (ASSUAN_CONTEXT *ctx, const char *name, char *const argv[],
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+/* Connect to a server over a pipe, creating the assuan context and
+   returning it in CTX.  The server filename is NAME, the argument
+   vector in ARGV.  FD_CHILD_LIST is a -1 terminated list of file
+   descriptors not to close in the child.  */
+AssuanError
+assuan_pipe_connect (ASSUAN_CONTEXT *ctx, const char *name, char *const argv[],
+		     int *fd_child_list)
+{
+  return assuan_pipe_connect2 (ctx, name, argv, fd_child_list, NULL, NULL);
+}
