@@ -20,6 +20,7 @@
 
 #include "assuan-defs.h"
 #include <stdio.h>
+#include <string.h>
 
 static char prefix_buffer[80];
 static FILE *_assuan_log;
