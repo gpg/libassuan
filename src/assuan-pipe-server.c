@@ -45,33 +45,13 @@ finish_connection (ASSUAN_CONTEXT ctx)
   return 0;
 }
 
-/* Read from the pipe server.  */
-static ssize_t
-pipe_reader (ASSUAN_CONTEXT ctx, void *buf, size_t buflen)
-{
-#pragma weak pth_read
-  extern ssize_t pth_read (int, void *, size_t);
-
-  return (pth_read ? pth_read : read) (ctx->inbound.fd, buf, buflen);
-}
-
-/* Write to the pipe server.  */
-static ssize_t
-pipe_writer (ASSUAN_CONTEXT ctx, const void *buf, size_t buflen)
-{
-#pragma weak pth_write
-      
-  extern ssize_t pth_write (int, const void *, size_t);
-
-  return (pth_write ? pth_write : write) (ctx->outbound.fd, buf, buflen);
-}
-
 /* Create a new context.  Note that the handlers are set up for a pipe
    server/client - this way we don't need extra dummy functions */
 int
 _assuan_new_context (ASSUAN_CONTEXT *r_ctx)
 {
-  static struct assuan_io io = { pipe_reader, pipe_writer };
+  static struct assuan_io io = { _assuan_simple_read,
+				 _assuan_simple_write };
 
   ASSUAN_CONTEXT ctx;
   int rc;

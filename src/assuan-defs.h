@@ -22,11 +22,15 @@
 #define ASSUAN_DEFS_H
 
 #include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+
 #include "assuan.h"
 
 #define LINELENGTH ASSUAN_LINELENGTH
 
-struct cmdtbl_s {
+struct cmdtbl_s
+{
   const char *name;
   int cmd_id;
   int (*handler)(ASSUAN_CONTEXT, char *line);
@@ -90,6 +94,20 @@ struct assuan_context_s
   pid_t client_pid; /* for a socket server the PID of the client or -1
                        if not available */
 
+  /* Used for Unix domain sockets.  */
+  struct sockaddr_un myaddr;
+  struct sockaddr_un serveraddr;
+  /* When reading from datagram sockets, we must read an entire
+     message at a time.  This means that we have to do our own
+     buffering to be able to get the semantics of read.  */
+  void *domainbuffer;
+  /* Offset of start of buffer.  */
+  int domainbufferoffset;
+  /* Bytes buffered.  */
+  int domainbuffersize;
+  /* Memory allocated.  */
+  int domainbufferallocated;
+
   void (*deinit_handler)(ASSUAN_CONTEXT);  
   int (*accept_handler)(ASSUAN_CONTEXT);
   int (*finish_handler)(ASSUAN_CONTEXT);
@@ -146,6 +164,12 @@ void  _assuan_free (void *p);
 
 void _assuan_log_print_buffer (FILE *fp, const void *buffer, size_t  length);
 void _assuan_log_sanitized_string (const char *string);
+
+/*-- assuan-io.c --*/
+ssize_t _assuan_simple_read (ASSUAN_CONTEXT ctx, void *buffer, size_t size);
+ssize_t _assuan_simple_write (ASSUAN_CONTEXT ctx, const void *buffer,
+			      size_t size);
+
 
 #endif /*ASSUAN_DEFS_H*/
 

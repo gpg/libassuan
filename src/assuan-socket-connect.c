@@ -91,7 +91,8 @@ AssuanError
 assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
                        const char *name, pid_t server_pid)
 {
-  static struct assuan_io io = { socket_reader, socket_writer };
+  static struct assuan_io io = { _assuan_simple_read,
+				 _assuan_simple_write };
 
   AssuanError err;
   ASSUAN_CONTEXT ctx;
@@ -127,9 +128,9 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
     
   memset (&srvr_addr, 0, sizeof srvr_addr );
   srvr_addr.sun_family = AF_LOCAL;
-  strcpy (srvr_addr.sun_path, name);
-  len = (offsetof (struct sockaddr_un, sun_path)
-         + strlen (srvr_addr.sun_path) + 1);
+  len = strlen (srvr_addr.sun_path) + 1;
+  memcpy (srvr_addr.sun_path, name, len);
+  len += (offsetof (struct sockaddr_un, sun_path));
     
   if (connect (fd, (struct sockaddr*)&srvr_addr, len) == -1)
     {

@@ -1,3 +1,23 @@
+2002-11-23  Neal H. Walfield  <neal@cs.uml.edu>
+
+	* Makefile.am (libassuan_a_SOURCES): Add assuan-io.c.
+	* assuan-io.c: Restore.
+	(_assuan_simple_read): Rename from _assuan_read.
+	(_assuan_simple_write): Rename from _assuan_write.
+	* assuan-defs.h (_assuan_simple_read): New prototype.
+	(_assuan_simple_write): Likewise.
+	* assuan-pipe-server.c (pipe_reader): Remove.
+	(pipe_writer): Remove.
+	(_assuan_new_context): Initialize IO is with _assuan_simple_read
+	and _assuan_simple_write.
+	* assuan-socket-connect.c (socket_reader): Remove.
+	(socket_writer): Remove.
+	(assuan_socket_connect): Initialize IO is with _assuan_simple_read
+	and _assuan_simple_write.
+	* assuan-socket-server.c (io): New local variable.
+	(assuan_init_socket_server): Initialize CTX->io.
+	(assuan_init_connected_socket_server): Likewise.
+
 2002-11-23  Neal H. Walfield  <neal@g10code.de>
 
 	* assuan-buffer.c (readline): Use memrchr.
