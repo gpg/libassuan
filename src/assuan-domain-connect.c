@@ -49,12 +49,6 @@
 #define LOGERRORX(a)     fputs ((a), stderr)
 #endif
 
-static int
-do_finish (ASSUAN_CONTEXT ctx)
-{
-  return 0;
-}
-
 static void
 do_deinit (ASSUAN_CONTEXT ctx)
 {
@@ -69,7 +63,6 @@ do_deinit (ASSUAN_CONTEXT ctx)
       free (ctx->domainbuffer);
     }
 
-  /* XXX: Do we want to do this?  Most likely.  */
   unlink (ctx->myaddr.sun_path);
 }
 
@@ -191,7 +184,7 @@ domain_reader (ASSUAN_CONTEXT ctx, void *buf, size_t buflen)
   return len;
 }
 
-/* Write to the pipe server.  */
+/* Write to the domain server.  */
 static ssize_t
 domain_writer (ASSUAN_CONTEXT ctx, const void *buf, size_t buflen)
 {
@@ -245,8 +238,11 @@ _assuan_domain_init (ASSUAN_CONTEXT *r_ctx,
 
   /* Save it in case we need it later.  */
   ctx->pid = peer;
+
+  /* Override the default (NOP) handlers.  */
   ctx->deinit_handler = do_deinit;
-  ctx->finish_handler = do_finish;
+
+  /* Setup the socket.  */
 
   fd = socket (PF_LOCAL, SOCK_DGRAM, 0);
   if (fd == -1)
@@ -258,8 +254,10 @@ _assuan_domain_init (ASSUAN_CONTEXT *r_ctx,
 
   ctx->inbound.fd = fd;
   ctx->outbound.fd = fd;
-  ctx->io = &io;
 
+  /* And the io buffers.  */
+
+  ctx->io = &io;
   ctx->domainbuffer = 0;
   ctx->domainbufferoffset = 0;
   ctx->domainbuffersize = 0;
@@ -270,8 +268,10 @@ _assuan_domain_init (ASSUAN_CONTEXT *r_ctx,
   for (tries = 0; tries < TMP_MAX; tries ++)
     {
       char *p;
-      /* XXX: L_tmpnam must be shorter than sizeof (sun_path)!  */
       char buf[L_tmpnam];
+
+      /* XXX: L_tmpnam must be shorter than sizeof (sun_path)!  */
+      assert (L_tmpnam < sizeof (ctx->myaddr.sun_path));
 
       p = tmpnam (buf);
       if (! p)

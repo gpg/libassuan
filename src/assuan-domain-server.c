@@ -26,13 +26,6 @@
 
 #include "assuan-defs.h"
 
-static int
-accept_connection (ASSUAN_CONTEXT ctx)
-{
-  /* NOP.  */
-  return 0;
-}
-
 /* Initialize a server.  */
 AssuanError
 assuan_init_domain_server (ASSUAN_CONTEXT *r_ctx,
@@ -46,7 +39,8 @@ assuan_init_domain_server (ASSUAN_CONTEXT *r_ctx,
     return err;
 
   (*r_ctx)->is_server = 1;
-  (*r_ctx)->accept_handler = accept_connection;
+  /* A domain server can only be used once.  */
+  (*r_ctx)->pipe_mode = 1;
 
   return 0;
 }

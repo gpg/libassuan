@@ -1,5 +1,15 @@
 2002-11-24  Neal H. Walfield  <neal@g10code.de>
 
+	* assuan-domain-connect.c (do_finish): Remove.
+	(_assuan_domain_init): Use default handlers where possible.
+	Add an assert and update comments.
+	* assuan-domain-server.c (accept_connection): Remove.
+	(assuan_init_domain_server): Use default handlers where possible.
+	Put the server in pipe mode: it can only be used by a single
+	client.
+
+2002-11-24  Neal H. Walfield  <neal@g10code.de>
+
 	* assuan.h: Add prototype for assuan_domain_connect and
 	assuan_init_domain_server.
 	* assuan-defs.h: Include <unistd.h>.
