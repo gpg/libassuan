@@ -1,5 +1,9 @@
 2003-02-18  Neal H. Walfield  <neal@g10code.de>
 
+	* COPYING: New file.
+
+2003-02-18  Neal H. Walfield  <neal@g10code.de>
+
 	* configure.ac: Fix typo.
 	(AC_CONFIG_FILES): Remove common/Makefile.am.
 	* common: Remove directory.
