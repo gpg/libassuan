@@ -1,3 +1,7 @@
+2004-02-13  Werner Koch  <wk@gnupg.org>
+
+	* assuan-domain-connect.c: Removed the unneeded alloca.h.
+
 2004-01-24  Werner Koch  <wk@gnupg.org>
 
 	* assuan-pipe-connect.c (assuan_pipe_connect2): New as an
