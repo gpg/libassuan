@@ -1,3 +1,7 @@
+2004-02-15  Werner Koch  <wk@gnupg.org>
+
+	* memrchr.c (memrchr): Fixed implementation. Taken from gpgme.
+
 2004-02-13  Werner Koch  <wk@gnupg.org>
 
 	* assuan-domain-connect.c: Removed the unneeded alloca.h.
