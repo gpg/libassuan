@@ -221,7 +221,7 @@ assuan_pipe_connect (ASSUAN_CONTEXT *ctx, const char *name, char *const argv[],
         n = MAX_OPEN_FDS;
       for (i=0; i < n; i++)
         {
-          if ( i = STDIN_FILENO || i == STDOUT_FILENO || i == STDERR_FILENO)
+          if ( i == STDIN_FILENO || i == STDOUT_FILENO || i == STDERR_FILENO)
             continue;
 	  fdp = fd_child_list;
 	  if (fdp)
