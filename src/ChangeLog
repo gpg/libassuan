@@ -1,5 +1,7 @@
 2004-02-18  Werner Koch  <wk@gnupg.org>
 
+	* libassuan-config.in: Ignore setting of --prefix.
+
 	* assuan-handler.c (assuan_get_data_fp): Fail with ENOSYS if we
 	can't implement this.
 

@@ -49,17 +49,13 @@ while test $# -gt 0; do
 
   case $1 in
     --prefix=*)
-      prefix=$optarg
-      if test $exec_prefix_set = no ; then
-	exec_prefix=$optarg
-      fi
+      # Dummy
       ;;
     --prefix)
       echo_prefix=yes
       ;;
     --exec-prefix=*)
-      exec_prefix=$optarg
-      exec_prefix_set=yes
+      # Dummy
       ;;
     --exec-prefix)
       echo_exec_prefix=yes
