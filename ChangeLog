@@ -1,0 +1,21 @@
+2003-02-17  Neal H. Walfield  <neal@g10code.de>
+
+	* AUTHORS: New file.
+	* INSTALL: New file.
+	* Makefile.am: New file.
+	* NEWS: New file.
+	* README: New file.
+	* autogen.sh: New file, copied from newpg.
+	* configure.ac: New file, imported from newpg.
+	* depcomp: New file.
+	* install-sh: New file.
+	* missing: New file.
+	* mkinstalldirs: New file.
+
+	* doc: New directory.
+	* src: New directory.
+	* tests: New directory.
+
+
+
+
