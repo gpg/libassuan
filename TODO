@@ -1,1 +1,4 @@
-waitpid is used instead of pth_waitpid
+* waitpid is used instead of pth_waitpid as well as some  other
+  functions.
+* When turning libassuan into a shared library, provide a general
+  version as well as aPTh-enabled one.
