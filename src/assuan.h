@@ -28,6 +28,9 @@
 #ifdef __cplusplus
 extern "C"
 {
+#if 0
+}
+#endif
 #endif
 
 typedef enum
@@ -101,7 +104,9 @@ typedef enum
   ASSUAN_Card_Not_Present = 404,
   ASSUAN_Invalid_Id = 405
 
-} AssuanError;
+} assuan_error_t;
+
+typedef assuan_error_t AssuanError; /* Deprecated. */
 
 /* This is a list of pre-registered ASSUAN commands */
 typedef enum
@@ -123,68 +128,69 @@ typedef enum
 #define ASSUAN_LINELENGTH 1002 /* 1000 + [CR,]LF */
 
 struct assuan_context_s;
+typedef struct assuan_context_s *assuan_context_t;
 typedef struct assuan_context_s *ASSUAN_CONTEXT;
 
 /*-- assuan-handler.c --*/
-int assuan_register_command (ASSUAN_CONTEXT ctx,
+int assuan_register_command (assuan_context_t ctx,
                              const char *cmd_string,
-                             int (*handler)(ASSUAN_CONTEXT, char *));
-int assuan_register_bye_notify (ASSUAN_CONTEXT ctx,
-                                void (*fnc)(ASSUAN_CONTEXT));
-int assuan_register_reset_notify (ASSUAN_CONTEXT ctx,
-                                  void (*fnc)(ASSUAN_CONTEXT));
-int assuan_register_cancel_notify (ASSUAN_CONTEXT ctx,
-                                   void (*fnc)(ASSUAN_CONTEXT));
-int assuan_register_input_notify (ASSUAN_CONTEXT ctx,
-                                  void (*fnc)(ASSUAN_CONTEXT, const char *));
-int assuan_register_output_notify (ASSUAN_CONTEXT ctx,
-                                  void (*fnc)(ASSUAN_CONTEXT, const char *));
+                             int (*handler)(assuan_context_t, char *));
+int assuan_register_bye_notify (assuan_context_t ctx,
+                                void (*fnc)(assuan_context_t));
+int assuan_register_reset_notify (assuan_context_t ctx,
+                                  void (*fnc)(assuan_context_t));
+int assuan_register_cancel_notify (assuan_context_t ctx,
+                                   void (*fnc)(assuan_context_t));
+int assuan_register_input_notify (assuan_context_t ctx,
+                                  void (*fnc)(assuan_context_t, const char *));
+int assuan_register_output_notify (assuan_context_t ctx,
+                                  void (*fnc)(assuan_context_t, const char *));
 
-int assuan_register_option_handler (ASSUAN_CONTEXT ctx,
-                                    int (*fnc)(ASSUAN_CONTEXT,
+int assuan_register_option_handler (assuan_context_t ctx,
+                                    int (*fnc)(assuan_context_t,
                                                const char*, const char*));
 
-int assuan_process (ASSUAN_CONTEXT ctx);
-int assuan_process_next (ASSUAN_CONTEXT ctx);
-int assuan_get_active_fds (ASSUAN_CONTEXT ctx, int what,
+int assuan_process (assuan_context_t ctx);
+int assuan_process_next (assuan_context_t ctx);
+int assuan_get_active_fds (assuan_context_t ctx, int what,
                            int *fdarray, int fdarraysize);
 
 
-FILE *assuan_get_data_fp (ASSUAN_CONTEXT ctx);
-AssuanError assuan_set_okay_line (ASSUAN_CONTEXT ctx, const char *line);
-void assuan_write_status (ASSUAN_CONTEXT ctx,
+FILE *assuan_get_data_fp (assuan_context_t ctx);
+AssuanError assuan_set_okay_line (assuan_context_t ctx, const char *line);
+void assuan_write_status (assuan_context_t ctx,
                           const char *keyword, const char *text);
 
 /* Negotiate a file descriptor.  If LINE contains "FD=N", returns N
    assuming a local file descriptor.  If LINE contains "FD" reads a
    file descriptor via CTX and stores it in *RDF (the CTX must be
    capable of passing file descriptors).  */
-AssuanError assuan_command_parse_fd (ASSUAN_CONTEXT ctx, char *line,
+AssuanError assuan_command_parse_fd (assuan_context_t ctx, char *line,
 				     int *rfd);
 
 /*-- assuan-listen.c --*/
-AssuanError assuan_set_hello_line (ASSUAN_CONTEXT ctx, const char *line);
-AssuanError assuan_accept (ASSUAN_CONTEXT ctx);
-int assuan_get_input_fd (ASSUAN_CONTEXT ctx);
-int assuan_get_output_fd (ASSUAN_CONTEXT ctx);
-AssuanError assuan_close_input_fd (ASSUAN_CONTEXT ctx);
-AssuanError assuan_close_output_fd (ASSUAN_CONTEXT ctx);
+AssuanError assuan_set_hello_line (assuan_context_t ctx, const char *line);
+AssuanError assuan_accept (assuan_context_t ctx);
+int assuan_get_input_fd (assuan_context_t ctx);
+int assuan_get_output_fd (assuan_context_t ctx);
+AssuanError assuan_close_input_fd (assuan_context_t ctx);
+AssuanError assuan_close_output_fd (assuan_context_t ctx);
 
 
 /*-- assuan-pipe-server.c --*/
-int assuan_init_pipe_server (ASSUAN_CONTEXT *r_ctx, int filedes[2]);
-void assuan_deinit_server (ASSUAN_CONTEXT ctx);
+int assuan_init_pipe_server (assuan_context_t *r_ctx, int filedes[2]);
+void assuan_deinit_server (assuan_context_t ctx);
 
 /*-- assuan-socket-server.c --*/
-int assuan_init_socket_server (ASSUAN_CONTEXT *r_ctx, int listen_fd);
-int assuan_init_connected_socket_server (ASSUAN_CONTEXT *r_ctx, int fd);
+int assuan_init_socket_server (assuan_context_t *r_ctx, int listen_fd);
+int assuan_init_connected_socket_server (assuan_context_t *r_ctx, int fd);
 
 
 /*-- assuan-pipe-connect.c --*/
-AssuanError assuan_pipe_connect (ASSUAN_CONTEXT *ctx, const char *name,
+AssuanError assuan_pipe_connect (assuan_context_t *ctx, const char *name,
                                  char *const argv[], int *fd_child_list);
 /*-- assuan-socket-connect.c --*/
-AssuanError assuan_socket_connect (ASSUAN_CONTEXT *ctx, const char *name,
+AssuanError assuan_socket_connect (assuan_context_t *ctx, const char *name,
                                    pid_t server_pid);
 
 /*-- assuan-domain-connect.c --*/
@@ -193,7 +199,7 @@ AssuanError assuan_socket_connect (ASSUAN_CONTEXT *ctx, const char *name,
    bidirectional file descriptor (normally returned via socketpair)
    which the client can use to rendezvous with the server.  SERVER s
    the server's pid.  */
-AssuanError assuan_domain_connect (ASSUAN_CONTEXT *r_ctx,
+AssuanError assuan_domain_connect (assuan_context_t *r_ctx,
 				   int rendezvousfd,
 				   pid_t server);
 
@@ -202,18 +208,18 @@ AssuanError assuan_domain_connect (ASSUAN_CONTEXT *r_ctx,
 /* RENDEZVOUSFD is a bidirectional file descriptor (normally returned
    via socketpair) that the domain server can use to rendezvous with
    the client.  CLIENT is the client's pid.  */
-AssuanError assuan_init_domain_server (ASSUAN_CONTEXT *r_ctx,
+AssuanError assuan_init_domain_server (assuan_context_t *r_ctx,
 				       int rendezvousfd,
 				       pid_t client);
 
 
 /*-- assuan-connect.c --*/
-void assuan_disconnect (ASSUAN_CONTEXT ctx);
-pid_t assuan_get_pid (ASSUAN_CONTEXT ctx);
+void assuan_disconnect (assuan_context_t ctx);
+pid_t assuan_get_pid (assuan_context_t ctx);
 
 /*-- assuan-client.c --*/
 AssuanError 
-assuan_transact (ASSUAN_CONTEXT ctx,
+assuan_transact (assuan_context_t ctx,
                  const char *command,
                  AssuanError (*data_cb)(void *, const void *, size_t),
                  void *data_cb_arg,
@@ -224,35 +230,36 @@ assuan_transact (ASSUAN_CONTEXT ctx,
 
 
 /*-- assuan-inquire.c --*/
-AssuanError assuan_inquire (ASSUAN_CONTEXT ctx, const char *keyword,
-                            char **r_buffer, size_t *r_length, size_t maxlen);
+AssuanError assuan_inquire (assuan_context_t ctx, const char *keyword,
+                            unsigned char **r_buffer, size_t *r_length,
+                            size_t maxlen);
 
 /*-- assuan-buffer.c --*/
-AssuanError assuan_read_line (ASSUAN_CONTEXT ctx,
+AssuanError assuan_read_line (assuan_context_t ctx,
                               char **line, size_t *linelen);
-int assuan_pending_line (ASSUAN_CONTEXT ctx);
-AssuanError assuan_write_line (ASSUAN_CONTEXT ctx, const char *line );
-AssuanError assuan_send_data (ASSUAN_CONTEXT ctx,
+int assuan_pending_line (assuan_context_t ctx);
+AssuanError assuan_write_line (assuan_context_t ctx, const char *line );
+AssuanError assuan_send_data (assuan_context_t ctx,
                               const void *buffer, size_t length);
 
 /* The file descriptor must be pending before assuan_receivefd is
    call.  This means that assuan_sendfd should be called *before* the
    trigger is sent (normally via assuan_send_data ("I sent you a
    descriptor")).  */
-AssuanError assuan_sendfd (ASSUAN_CONTEXT ctx, int fd);
-AssuanError assuan_receivefd (ASSUAN_CONTEXT ctx, int *fd);
+AssuanError assuan_sendfd (assuan_context_t ctx, int fd);
+AssuanError assuan_receivefd (assuan_context_t ctx, int *fd);
 
 /*-- assuan-util.c --*/
 void assuan_set_malloc_hooks ( void *(*new_alloc_func)(size_t n),
                                void *(*new_realloc_func)(void *p, size_t n),
                                void (*new_free_func)(void*) );
-void assuan_set_log_stream (ASSUAN_CONTEXT ctx, FILE *fp);
-int assuan_set_error (ASSUAN_CONTEXT ctx, int err, const char *text);
-void assuan_set_pointer (ASSUAN_CONTEXT ctx, void *pointer);
-void *assuan_get_pointer (ASSUAN_CONTEXT ctx);
+void assuan_set_log_stream (assuan_context_t ctx, FILE *fp);
+int assuan_set_error (assuan_context_t ctx, int err, const char *text);
+void assuan_set_pointer (assuan_context_t ctx, void *pointer);
+void *assuan_get_pointer (assuan_context_t ctx);
 
-void assuan_begin_confidential (ASSUAN_CONTEXT ctx);
-void assuan_end_confidential (ASSUAN_CONTEXT ctx);
+void assuan_begin_confidential (assuan_context_t ctx);
+void assuan_end_confidential (assuan_context_t ctx);
 
 /*-- assuan-errors.c (built) --*/
 const char *assuan_strerror (AssuanError err);

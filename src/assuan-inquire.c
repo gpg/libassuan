@@ -136,7 +136,7 @@ free_membuf (struct membuf *mb)
  **/
 AssuanError
 assuan_inquire (ASSUAN_CONTEXT ctx, const char *keyword,
-                char **r_buffer, size_t *r_length, size_t maxlen)
+                unsigned char **r_buffer, size_t *r_length, size_t maxlen)
 {
   AssuanError rc;
   struct membuf mb;

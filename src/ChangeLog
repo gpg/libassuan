@@ -1,3 +1,14 @@
+2003-11-12  Werner Koch  <wk@gnupg.org>
+
+	* assuan-handler.c (process_request): Kludge to print better error
+	messages for gpg-error enabled programs.
+
+2003-11-06  Werner Koch  <wk@gnupg.org>
+
+	* assuan.h (assuan_context_t): New.  Should be used in favor of
+	ASSUAN_CONTEXT.
+	(assuan_error_t): New. To be used instead of AssuanError.
+
 2003-11-11  Moritz Schulte  <mo@g10code.com>
 
 	* assuan-socket-connect.c (assuan_socket_connect): Fix computation

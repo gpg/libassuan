@@ -390,7 +390,7 @@ my_strcasecmp (const char *a, const char *b)
 }
 
 /* Parse the line, break out the command, find it in the command
-   table, remove leading and white spaces from the arguments, all the
+   table, remove leading and white spaces from the arguments, call the
    handler with the argument line and return the error */
 static int 
 dispatch_command (ASSUAN_CONTEXT ctx, char *line, int linelen)
@@ -483,7 +483,7 @@ process_request (ASSUAN_CONTEXT ctx)
     }
   else 
     {
-      char errline[256];
+      char errline[300];
 
       if (rc < 100)
         sprintf (errline, "ERR %d server fault (%.50s)",
@@ -492,8 +492,40 @@ process_request (ASSUAN_CONTEXT ctx)
         {
           const char *text = ctx->err_no == rc? ctx->err_str:NULL;
 
-          sprintf (errline, "ERR %d %.50s%s%.100s",
-                   rc, assuan_strerror (rc), text? " - ":"", text?text:"");
+#if defined(__GNUC__) && defined(__ELF__)
+          /* If we have weak symbol support we try to use the rror
+             strings from libgpg-error without creating a dependency.
+             They are used for debugging purposes only, so there is no
+             problem if they are not available.  We need to make sure
+             that we are using elf because only this guarantees that
+             weak symbol support is available in case GNU ld is not
+             used. */
+          unsigned int source, code;
+
+          int gpg_strerror_r (unsigned int err, char *buf, size_t buflen)
+            __attribute__ ((weak));
+
+          const char *gpg_strsource (unsigned int err)
+            __attribute__ ((weak));
+
+          source = ((rc >> 24) & 0xff);
+          code = (rc & 0x00ffffff);
+          if (source && gpg_strsource && gpg_strerror_r)
+            {
+              /* Assume this is an libgpg-error. */
+              char ebuf[50];
+
+              gpg_strerror_r (rc, ebuf, sizeof ebuf );
+              sprintf (errline, "ERR %d %.50s <%.30s>%s%.100s",
+                       rc,
+                       ebuf,
+                       gpg_strsource (rc),
+                       text? " - ":"", text?text:"");
+            }
+          else
+#endif /* __GNUC__  && __ELF__ */
+            sprintf (errline, "ERR %d %.50s%s%.100s",
+                     rc, assuan_strerror (rc), text? " - ":"", text?text:"");
         }
       rc = assuan_write_line (ctx, errline);
     }
