@@ -19,12 +19,14 @@
 
 ## Process this file with automake to produce Makefile.in
 
-EXTRA_DIST = mkerrors
+EXTRA_DIST = mkerrors libassuan.m4
 INCLUDES = -I.. -I$(top_srcdir)/include
 BUILT_SOURCES = assuan-errors.c
 MOSTLYCLEANFILES = assuan-errors.c
 
 bin_SCRIPTS = libassuan-config
+m4datadir = $(datadir)/aclocal
+m4data_DATA = libassuan.m4
 lib_LIBRARIES = libassuan.a
 include_HEADERS = assuan.h
 

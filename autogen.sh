@@ -154,7 +154,7 @@ echo "Running gettextize...  Ignore non-fatal messages."
 echo "no" | gettextize 
 
 echo "Running $aclocal"
-$aclocal
+$aclocal -I m4
 echo "Running autoheader..."
 autoheader
 echo "Running $automake --gnu -a"

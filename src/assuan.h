@@ -127,7 +127,7 @@ typedef struct assuan_context_s *ASSUAN_CONTEXT;
 
 /*-- assuan-handler.c --*/
 int assuan_register_command (ASSUAN_CONTEXT ctx,
-                             int cmd_id, const char *cmd_string,
+                             const char *cmd_string,
                              int (*handler)(ASSUAN_CONTEXT, char *));
 int assuan_register_bye_notify (ASSUAN_CONTEXT ctx,
                                 void (*fnc)(ASSUAN_CONTEXT));

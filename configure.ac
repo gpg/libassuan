@@ -141,7 +141,7 @@ AC_REPLACE_FUNCS(isascii)
 AC_REPLACE_FUNCS(putc_unlocked)
 AC_REPLACE_FUNCS(memrchr)
 
-AC_CONFIG_FILES([
+AC_CONFIG_FILES([ po/Makefile.in m4/Makefile 
 Makefile
 src/Makefile
 src/libassuan-config
