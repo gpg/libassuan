@@ -1,3 +1,9 @@
+2004-11-16  Werner Koch  <wk@g10code.com>
+
+	* assuan-socket-connect.c (LOG): Fixed macro to print not only the
+	prefix.
+	* assuan-domain-connect.c, assuan-socket-connect.c (LOG): Ditto.
+
 2004-10-02  Werner Koch  <wk@g10code.com>
 
 	* assuan-socket-connect.c: Define SUN_LEN, AF_LOCAL and PF_LOCAL

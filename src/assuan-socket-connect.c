@@ -50,11 +50,10 @@
 
  
 
-
 #define LOG(format, args...) \
-	fprintf (assuan_get_assuan_log_stream (), \
-	         assuan_get_assuan_log_prefix (), \
-	         "%s" format , ## args)
+	fprintf (assuan_get_assuan_log_stream (), "%s%s" format , \
+        assuan_get_assuan_log_prefix (), \
+        assuan_get_assuan_log_prefix ()? ": ":"", ## args)
 
 static int
 do_finish (ASSUAN_CONTEXT ctx)
