@@ -1,3 +1,9 @@
+2003-02-18  Neal H. Walfield  <neal@g10code.de>
+
+	* configure.ac (AC_CONFIG_FILES): Add src/libassuan-config.
+	(LIBASSUAN_CONFIG_LIBS, LIBASSUAN_CONFIG_CFLAGS): New variables.
+	AC_SUBST them.
+
 2003-02-17  Neal H. Walfield  <neal@g10code.de>
 
 	* AUTHORS: New file.

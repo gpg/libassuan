@@ -105,6 +105,13 @@ esac
 AC_DEFINE_UNQUOTED(PRINTABLE_OS_NAME, "$PRINTABLE_OS_NAME",
                    [A human readable text with the name of the OS])
 
+# For src/libassuan-config.in
+LIBASSUAN_CONFIG_LIBS="-lassuan"
+LIBASSUAN_CONFIG_CFLAGS=""
+AC_SUBST(LIBASSUAN_CONFIG_LIBS)
+AC_SUBST(LIBASSUAN_CONFIG_CFLAGS)
+
+AC_CONFIG_COMMANDS([assuan-defs],[chmod +x src/libassuan-config])
 
 # Checks for header files.
 AC_HEADER_STDC
@@ -130,6 +137,7 @@ AC_REPLACE_FUNCS(memrchr)
 AC_CONFIG_FILES([
 Makefile
 src/Makefile
+src/libassuan-config
 doc/Makefile
 tests/Makefile
 ])

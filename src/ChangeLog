@@ -1,3 +1,8 @@
+2003-02-18  Neal H. Walfield  <neal@g10code.de>
+
+	* libassuan-config.in: New file.
+	* Makefile.am (bin_PROGRAMS): New variable.
+
 2003-02-17  Neal H. Walfield  <neal@g10code.de>
 
 	* .cvsignore: New file.

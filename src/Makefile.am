@@ -24,6 +24,7 @@ INCLUDES = -I.. -I$(top_srcdir)/include
 BUILT_SOURCES = assuan-errors.c
 MOSTLYCLEANFILES = assuan-errors.c
 
+bin_PROGRAMS = libassuan-config
 lib_LIBRARIES = libassuan.a
 include_HEADERS = assuan.h
 
