@@ -24,10 +24,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <unistd.h>
 #include <sys/types.h>
+#ifndef _WIN32
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <unistd.h>
+#else
+#include <windows.h>
+#endif
 
 #include "assuan-defs.h"
 
@@ -49,18 +53,22 @@
 #endif
 
  
-
+#ifdef _WIN32
+#warning implement it
+#define LOG(format, args...)
+#else
 #define LOG(format, args...) \
 	fprintf (assuan_get_assuan_log_stream (), "%s%s" format , \
         assuan_get_assuan_log_prefix (), \
         assuan_get_assuan_log_prefix ()? ": ":"", ## args)
+#endif
 
 static int
 do_finish (ASSUAN_CONTEXT ctx)
 {
   if (ctx->inbound.fd != -1)
     {
-      close (ctx->inbound.fd);
+      _assuan_close (ctx->inbound.fd);
     }
   ctx->inbound.fd = -1;
   ctx->outbound.fd = -1;
@@ -75,14 +83,14 @@ do_deinit (ASSUAN_CONTEXT ctx)
 /* Make a connection to the Unix domain socket NAME and return a new
    Assuan context in CTX.  SERVER_PID is currently not used but may
    become handy in the future.  */
-AssuanError
+assuan_error_t
 assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
                        const char *name, pid_t server_pid)
 {
   static struct assuan_io io = { _assuan_simple_read,
 				 _assuan_simple_write };
 
-  AssuanError err;
+  assuan_error_t err;
   ASSUAN_CONTEXT ctx;
   int fd;
   struct sockaddr_un srvr_addr;
@@ -94,7 +102,7 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
 
   /* we require that the name starts with a slash, so that we can
      alter reuse this function for other socket types */
-  if (*name != '/')
+  if (*name != DIRSEP_C)
     return ASSUAN_Invalid_Value;
   if (strlen (name)+1 >= sizeof srvr_addr.sun_path)
     return ASSUAN_Invalid_Value;
@@ -105,7 +113,7 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
   ctx->deinit_handler = do_deinit;
   ctx->finish_handler = do_finish;
 
-  fd = socket (PF_LOCAL, SOCK_STREAM, 0);
+  fd = _assuan_sock_new (PF_LOCAL, SOCK_STREAM, 0);
   if (fd == -1)
     {
       LOG ("can't create socket: %s\n", strerror (errno));
@@ -119,11 +127,11 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
   srvr_addr.sun_path[sizeof (srvr_addr.sun_path) - 1] = 0;
   len = SUN_LEN (&srvr_addr);
 
-  if (connect (fd, (struct sockaddr *) &srvr_addr, len) == -1)
+  if (_assuan_sock_connect (fd, (struct sockaddr *) &srvr_addr, len) == -1)
     {
       LOG ("can't connect to `%s': %s\n", name, strerror (errno));
       _assuan_release_context (ctx);
-      close (fd);
+      _assuan_close (fd);
       return ASSUAN_Connect_Failed;
     }
 
@@ -140,7 +148,7 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
       LOG ("can't connect to server: %s\n", assuan_strerror (err));
     else if (okay != 1)
       {
-	LOG ("can't connect to server: `");
+        /*LOG ("can't connect to server: `");*/
 	_assuan_log_sanitized_string (ctx->inbound.line);
 	fprintf (assuan_get_assuan_log_stream (), "'\n");
 	err = ASSUAN_Connect_Failed;

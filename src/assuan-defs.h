@@ -1,5 +1,5 @@
 /* assuan-defs.c - Internal definitions to Assuan
- *	Copyright (C) 2001, 2002 Free Software Foundation, Inc.
+ *	Copyright (C) 2001, 2002, 2004 Free Software Foundation, Inc.
  *
  * This file is part of Assuan.
  *
@@ -22,11 +22,41 @@
 #define ASSUAN_DEFS_H
 
 #include <sys/types.h>
+#ifndef _WIN32
 #include <sys/socket.h>
 #include <sys/un.h>
+#else
+#include <windows.h>
+#endif
 #include <unistd.h>
 
 #include "assuan.h"
+
+#ifndef _WIN32
+#define DIRSEP_C '/'
+#else
+#define DIRSEP_C '\\'
+#endif
+
+#ifdef _WIN32
+#define AF_LOCAL AF_UNIX
+/* we need to prefix the structure with a sockaddr_in header so we can
+   use it later for sendto and recvfrom. */
+struct sockaddr_un
+{
+  short          sun_family;
+  unsigned short sun_port;
+  struct         in_addr sun_addr;
+  char           sun_path[108-2-4]; /* Path name.  */
+};
+
+typedef int ssize_t;
+
+/* missing W32 functions */
+int putc_unlocked (int c, FILE *stream);
+void * memrchr (const void *block, int c, size_t size);
+char * stpcpy (char *dest, const char *src);
+#endif
 
 #define LINELENGTH ASSUAN_LINELENGTH
 
@@ -43,14 +73,14 @@ struct assuan_io
   /* Routine to write to output_fd.  */
   ssize_t (*write) (ASSUAN_CONTEXT, const void *, size_t);
   /* Send a file descriptor.  */
-  AssuanError (*sendfd) (ASSUAN_CONTEXT, int);
+  assuan_error_t (*sendfd) (ASSUAN_CONTEXT, int);
   /* Receive a file descriptor.  */
-  AssuanError (*receivefd) (ASSUAN_CONTEXT, int *);
+  assuan_error_t (*receivefd) (ASSUAN_CONTEXT, int *);
 };  
 
 struct assuan_context_s
 {
-  AssuanError err_no;
+  assuan_error_t err_no;
   const char *err_str;
   int os_errno;  /* last system error number used with certain error codes*/
 
@@ -141,7 +171,7 @@ void _assuan_release_context (ASSUAN_CONTEXT ctx);
 /* Make a connection to the Unix domain socket NAME and return a new
    Assuan context in CTX.  SERVER_PID is currently not used but may
    become handy in the future.  */
-AssuanError _assuan_domain_init (ASSUAN_CONTEXT *r_ctx,
+assuan_error_t _assuan_domain_init (ASSUAN_CONTEXT *r_ctx,
 				 int rendezvousfd,
 				 pid_t peer);
 
@@ -156,7 +186,7 @@ assuan_error_t _assuan_write_line (assuan_context_t ctx, const char *prefix,
                                    const char *line, size_t len);
 
 /*-- assuan-client.c --*/
-AssuanError _assuan_read_from_server (ASSUAN_CONTEXT ctx, int *okay, int *off);
+assuan_error_t _assuan_read_from_server (ASSUAN_CONTEXT ctx, int *okay, int *off);
 
 
 /*-- assuan-util.c --*/
@@ -182,6 +212,12 @@ void _assuan_set_default_log_stream (FILE *fp);
 ssize_t _assuan_simple_read (ASSUAN_CONTEXT ctx, void *buffer, size_t size);
 ssize_t _assuan_simple_write (ASSUAN_CONTEXT ctx, const void *buffer,
 			      size_t size);
+
+/*-- assuan-socket.c --*/
+int _assuan_close (int fd);
+int _assuan_sock_new (int domain, int type, int proto);
+int _assuan_sock_bind (int sockfd, struct sockaddr *addr, int addrlen);
+int _assuan_sock_connect (int sockfd, struct sockaddr *addr, int addrlen);
 
 #ifdef HAVE_FOPENCOOKIE
 /* We have to implement funopen in terms of glibc's fopencookie. */

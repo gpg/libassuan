@@ -29,13 +29,15 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/types.h>
+#ifndef _WIN32
 #include <sys/wait.h>
+#endif
 
 #include "assuan-defs.h"
 
 /* Disconnect and release the context CTX. */
 void
-assuan_disconnect (ASSUAN_CONTEXT ctx)
+assuan_disconnect (assuan_context_t ctx)
 {
   if (ctx)
     {
@@ -49,7 +51,8 @@ assuan_disconnect (ASSUAN_CONTEXT ctx)
 
 /* Return the PID of the perr or -1 if not known. */
 pid_t
-assuan_get_pid (ASSUAN_CONTEXT ctx)
+assuan_get_pid (assuan_context_t ctx)
 {
   return (ctx && ctx->pid)? ctx->pid : -1;
 }
+

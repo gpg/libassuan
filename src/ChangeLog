@@ -1,3 +1,20 @@
+2004-11-23  Timo Schulz  <twoaday@g10code.com>
+
+	* assuan-socket.c (_assuan_sock_connect): Get local port from
+	the sun_path[] file.
+	(_assuan_sock_bind): Write local port to the sun_path[] file.
+	* assuan-socket-connect.c (assuan_socket_connect): Use DIRSEP_C
+	for a better portability.
+	(assuan-defs.h): Define DIRSEP_C.
+	
+2004-11-22  Timo Schulz  <twoaday@g10code.com>
+
+	* assuan-io.c (_assuan_simple_read, _assuan_simple_write): W32
+	support.
+	* assuan-socket.c (_assuan_close): New.
+	(_assuan_sock_new): New.
+	(_assuan_sock_bind): New.
+	
 2004-11-16  Werner Koch  <wk@g10code.com>
 
 	* assuan-socket-connect.c (LOG): Fixed macro to print not only the

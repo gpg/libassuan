@@ -1,5 +1,5 @@
 /* assuan-io.c - Wraps the read and write functions.
- *	Copyright (C) 2002 Free Software Foundation, Inc.
+ *	Copyright (C) 2002, 2004 Free Software Foundation, Inc.
  *
  * This file is part of Assuan.
  *
@@ -21,6 +21,9 @@
 #include "assuan-defs.h"
 #include <sys/types.h>
 #include <unistd.h>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 extern ssize_t pth_read (int fd, void *buffer, size_t size);
 extern ssize_t pth_write (int fd, const void *buffer, size_t size);
@@ -29,13 +32,27 @@ extern ssize_t pth_write (int fd, const void *buffer, size_t size);
 #pragma weak pth_write
 
 ssize_t
-_assuan_simple_read (ASSUAN_CONTEXT ctx, void *buffer, size_t size)
+_assuan_simple_read (assuan_context_t ctx, void *buffer, size_t size)
 {
+  #ifndef _WIN32
   return (pth_read ? pth_read : read) (ctx->inbound.fd, buffer, size);
+  #else
+  return pth_read ? pth_read (ctx->inbound.fd, buffer, size)
+                  : recv (ctx->inbound.fd, buffer, size, 0);
+  #endif
 }
 
 ssize_t
-_assuan_simple_write (ASSUAN_CONTEXT ctx, const void *buffer, size_t size)
+_assuan_simple_write (assuan_context_t ctx, const void *buffer, size_t size)
 {
+  #ifndef _WIN32
   return (pth_write ? pth_write : write) (ctx->outbound.fd, buffer, size);
+  #else
+  return pth_write ? pth_write (ctx->outbound.fd, buffer, size)
+                   : send (ctx->outbound.fd, buffer, size, 0);
+  #endif
 }
+
+
+
+

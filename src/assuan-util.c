@@ -73,7 +73,7 @@ _assuan_free (void *p)
   can take out a descriptive text.  Inside the assuan code, use the
   macro set_error instead of this function. */
 int
-assuan_set_error (ASSUAN_CONTEXT ctx, int err, const char *text)
+assuan_set_error (assuan_context_t ctx, int err, const char *text)
 {
   ctx->err_no = err;
   ctx->err_str = text;
@@ -81,21 +81,21 @@ assuan_set_error (ASSUAN_CONTEXT ctx, int err, const char *text)
 }
 
 void
-assuan_set_pointer (ASSUAN_CONTEXT ctx, void *pointer)
+assuan_set_pointer (assuan_context_t ctx, void *pointer)
 {
   if (ctx)
     ctx->user_pointer = pointer;
 }
 
 void *
-assuan_get_pointer (ASSUAN_CONTEXT ctx)
+assuan_get_pointer (assuan_context_t ctx)
 {
   return ctx? ctx->user_pointer : NULL;
 }
 
 
 void
-assuan_set_log_stream (ASSUAN_CONTEXT ctx, FILE *fp)
+assuan_set_log_stream (assuan_context_t ctx, FILE *fp)
 {
   if (ctx)
     {
@@ -108,7 +108,7 @@ assuan_set_log_stream (ASSUAN_CONTEXT ctx, FILE *fp)
 
 
 void
-assuan_begin_confidential (ASSUAN_CONTEXT ctx)
+assuan_begin_confidential (assuan_context_t ctx)
 {
   if (ctx)
     {
@@ -117,7 +117,7 @@ assuan_begin_confidential (ASSUAN_CONTEXT ctx)
 }
 
 void
-assuan_end_confidential (ASSUAN_CONTEXT ctx)
+assuan_end_confidential (assuan_context_t ctx)
 {
   if (ctx)
     {

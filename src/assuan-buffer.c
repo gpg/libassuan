@@ -25,6 +25,9 @@
 #include <errno.h>
 #include <unistd.h>
 #include <assert.h>
+#ifdef _WIN32
+#include <process.h>
+#endif
 #include "assuan-defs.h"
 
 static int
@@ -49,12 +52,12 @@ writen (ASSUAN_CONTEXT ctx, const char *buffer, size_t length)
 /* Read an entire line.  */
 static int
 readline (ASSUAN_CONTEXT ctx, char *buf, size_t buflen,
-	  int *r_nread, int *eof)
+	  int *r_nread, int *r_eof)
 {
   size_t nleft = buflen;
   char *p;
 
-  *eof = 0;
+  *r_eof = 0;
   *r_nread = 0;
   while (nleft > 0)
     {
@@ -68,7 +71,7 @@ readline (ASSUAN_CONTEXT ctx, char *buf, size_t buflen,
         }
       else if (!n)
         {
-          *eof = 1;
+          *r_eof = 1;
           break; /* allow incomplete lines */
         }
       p = buf;
@@ -203,10 +206,10 @@ _assuan_read_line (ASSUAN_CONTEXT ctx)
    Returns 0 on success or an assuan error code.
    See also: assuan_pending_line().
 */
-AssuanError
+assuan_error_t
 assuan_read_line (ASSUAN_CONTEXT ctx, char **line, size_t *linelen)
 {
-  AssuanError err;
+  assuan_error_t err;
 
   if (!ctx)
     return ASSUAN_Invalid_Value;
@@ -283,7 +286,7 @@ _assuan_write_line (assuan_context_t ctx, const char *prefix,
 }
 
 
-AssuanError 
+assuan_error_t 
 assuan_write_line (ASSUAN_CONTEXT ctx, const char *line)
 {
   size_t len;
@@ -445,7 +448,7 @@ _assuan_cookie_write_flush (void *cookie)
  * Return value: 0 on success or an error code
  **/
 
-AssuanError
+assuan_error_t
 assuan_send_data (ASSUAN_CONTEXT ctx, const void *buffer, size_t length)
 {
   if (!ctx)
@@ -471,7 +474,7 @@ assuan_send_data (ASSUAN_CONTEXT ctx, const void *buffer, size_t length)
   return 0;
 }
 
-AssuanError
+assuan_error_t
 assuan_sendfd (ASSUAN_CONTEXT ctx, int fd)
 {
   if (! ctx->io->sendfd)
@@ -481,7 +484,7 @@ assuan_sendfd (ASSUAN_CONTEXT ctx, int fd)
   return ctx->io->sendfd (ctx, fd);
 }
 
-AssuanError
+assuan_error_t
 assuan_receivefd (ASSUAN_CONTEXT ctx, int *fd)
 {
   if (! ctx->io->receivefd)

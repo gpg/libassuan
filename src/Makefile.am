@@ -49,7 +49,8 @@ libassuan_a_SOURCES = \
 	assuan-io.c \
 	assuan-domain-connect.c \
 	assuan-domain-server.c \
-	assuan-logging.c
+	assuan-logging.c \
+	assuan-socket.c
 
 libassuan_a_LIBADD = @LIBOBJS@
 

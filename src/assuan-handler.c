@@ -135,7 +135,7 @@ std_handler_end (ASSUAN_CONTEXT ctx, char *line)
   return set_error (ctx, Not_Implemented, NULL); 
 }
 
-AssuanError
+assuan_error_t
 assuan_command_parse_fd (ASSUAN_CONTEXT ctx, char *line, int *rfd)
 {
   char *endp;
@@ -657,7 +657,7 @@ assuan_get_data_fp (ASSUAN_CONTEXT ctx)
 
 /* Set the text used for the next OK reponse.  This string is
    automatically reset to NULL after the next command. */
-AssuanError
+assuan_error_t
 assuan_set_okay_line (ASSUAN_CONTEXT ctx, const char *line)
 {
   if (!ctx)

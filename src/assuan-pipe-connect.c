@@ -17,7 +17,7 @@
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA 
  */
-
+#ifndef _WIN32
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -30,7 +30,11 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/types.h>
+#ifndef _WIN32
 #include <sys/wait.h>
+#else
+#include <windows.h>
+#endif
 
 #include "assuan-defs.h"
 
@@ -66,16 +70,16 @@ writen (int fd, const char *buffer, size_t length)
 
 
 static int
-do_finish (ASSUAN_CONTEXT ctx)
+do_finish (assuan_context_t ctx)
 {
   if (ctx->inbound.fd != -1)
     {
-      close (ctx->inbound.fd);
+      _assuan_close (ctx->inbound.fd);
       ctx->inbound.fd = -1;
     }
   if (ctx->outbound.fd != -1)
     {
-      close (ctx->outbound.fd);
+      _assuan_close (ctx->outbound.fd);
       ctx->outbound.fd = -1;
     }
   if (ctx->pid != -1 && ctx->pid)
@@ -87,7 +91,7 @@ do_finish (ASSUAN_CONTEXT ctx)
 }
 
 static void
-do_deinit (ASSUAN_CONTEXT ctx)
+do_deinit (assuan_context_t ctx)
 {
   do_finish (ctx);
 }
@@ -101,14 +105,14 @@ do_deinit (ASSUAN_CONTEXT ctx)
    child right after the fork; ATFORKVALUE is passed as the first
    argument and 0 is passed as the second argument. The ATFORK
    function should only act if the second value is 0. */
-AssuanError
-assuan_pipe_connect2 (ASSUAN_CONTEXT *ctx, const char *name, char *const argv[],
+assuan_error_t
+assuan_pipe_connect2 (assuan_context_t *ctx, const char *name, char *const argv[],
                       int *fd_child_list,
                       void (*atfork) (void *opaque, int reserved),
                       void *atforkvalue)
 {
   static int fixed_signals = 0;
-  AssuanError err;
+  assuan_error_t err;
   int rp[2];
   int wp[2];
   char mypidstr[50];
@@ -289,9 +293,10 @@ assuan_pipe_connect2 (ASSUAN_CONTEXT *ctx, const char *name, char *const argv[],
    returning it in CTX.  The server filename is NAME, the argument
    vector in ARGV.  FD_CHILD_LIST is a -1 terminated list of file
    descriptors not to close in the child.  */
-AssuanError
-assuan_pipe_connect (ASSUAN_CONTEXT *ctx, const char *name, char *const argv[],
+assuan_error_t
+assuan_pipe_connect (assuan_context_t *ctx, const char *name, char *const argv[],
 		     int *fd_child_list)
 {
   return assuan_pipe_connect2 (ctx, name, argv, fd_child_list, NULL, NULL);
 }
+#endif
