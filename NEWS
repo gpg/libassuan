@@ -1,6 +1,7 @@
 Noteworthy changes in version 0.6.8
 ------------------------------------------------
 
+ * assuan_write_status does now return an error code.
 
 
 Noteworthy changes in version 0.6.7 (2004-09-27)

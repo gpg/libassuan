@@ -1,3 +1,7 @@
+2004-11-24  Werner Koch  <wk@g10code.com>
+
+	* assuan-socket.c[!_WIN32]: Fixed includes.
+
 2004-11-23  Timo Schulz  <twoaday@g10code.com>
 
 	* assuan-socket.c (_assuan_sock_connect): Get local port from
@@ -7,6 +11,10 @@
 	for a better portability.
 	(assuan-defs.h): Define DIRSEP_C.
 	
+2004-11-19  Werner Koch  <wk@g10code.com>
+
+	* assuan-handler.c (assuan_write_status): Return an error code.
+
 2004-11-22  Timo Schulz  <twoaday@g10code.com>
 
 	* assuan-io.c (_assuan_simple_read, _assuan_simple_write): W32

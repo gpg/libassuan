@@ -18,14 +18,14 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 #include <config.h>
-#ifndef _WIN32
-#include <sys/socket.h>
-#else
 #include <stdio.h>
-#include <io.h>
+#ifdef _WIN32
 #include <windows.h>
-#include "assuan-defs.h"
+#include <io.h>
+#else
+#include <sys/socket.h>
 #endif
+#include "assuan-defs.h"
 
 int
 _assuan_close (int fd)

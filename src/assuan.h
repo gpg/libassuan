@@ -167,8 +167,8 @@ int assuan_get_active_fds (assuan_context_t ctx, int what,
 
 FILE *assuan_get_data_fp (assuan_context_t ctx);
 assuan_error_t assuan_set_okay_line (assuan_context_t ctx, const char *line);
-void assuan_write_status (assuan_context_t ctx,
-                          const char *keyword, const char *text);
+assuan_error_t assuan_write_status (assuan_context_t ctx,
+                                    const char *keyword, const char *text);
 
 /* Negotiate a file descriptor.  If LINE contains "FD=N", returns N
    assuming a local file descriptor.  If LINE contains "FD" reads a
