@@ -19,6 +19,8 @@
 
 # Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.57)
+min_automake_version="1.7.6"
+
 # Version number: Remember to change it immediately *after* a release.
 #                 Add a "-cvs" prefix for non-released code.
 AC_INIT(libassuan, 0.6.2-cvs, gnupg-devel@gnupg.org)

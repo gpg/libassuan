@@ -1,3 +1,11 @@
+2003-12-08  Werner Koch  <wk@gnupg.org>
+
+	* TODO: New.
+	* Makefile.am: Add README.CVS and autogen.sh
+	* README.CVS: New.
+	* autogen.sh: Revamped.
+	* configure.ac: Add automake version number for autgen.sh use.
+
 2003-11-17  Werner Koch  <wk@gnupg.org>
 
 	Released 0.6.1.
