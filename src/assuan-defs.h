@@ -184,10 +184,12 @@ ssize_t _assuan_simple_write (ASSUAN_CONTEXT ctx, const void *buffer,
 
 #ifdef HAVE_FOPENCOOKIE
 /* We have to implement funopen in terms of glibc's fopencookie. */
-FILE *funopen(const void *cookie, cookie_read_function_t *readfn,
-              cookie_write_function_t *writefn,
-              cookie_seek_function_t *seekfn,
-              cookie_close_function_t *closefn);
+FILE *_assuan_funopen(void *cookie,
+                      cookie_read_function_t *readfn,
+                      cookie_write_function_t *writefn,
+                      cookie_seek_function_t *seekfn,
+                      cookie_close_function_t *closefn);
+#define funopen(a,r,w,s,c) _assuan_funopen ((a), (r), (w), (s), (c))
 #endif /*HAVE_FOPENCOOKIE*/
 
 #endif /*ASSUAN_DEFS_H*/

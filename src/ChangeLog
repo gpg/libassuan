@@ -1,3 +1,10 @@
+2003-12-11  Werner Koch  <wk@gnupg.org>
+
+	* funopen.c (_assuan_funopen): Renamed from funopen, to keep the
+	name space clean and avoid duplicate definitions if another
+	library uses the same replacement.
+	* assuan-defs.h (funopen): Renamed prototype and add a macro.
+
 2003-12-08  Werner Koch  <wk@gnupg.org>
 
 	* TODO: Removed.
