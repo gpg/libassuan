@@ -1,3 +1,8 @@
+2004-11-27  Werner Koch  <wk@g10code.com>
+
+	* assuan-socket.c: Include sys/types.h.  Noted by Michael
+	Nottebrock.
+
 2004-11-26  Werner Koch  <wk@g10code.com>
 
 	* assuan-io.c [_WIN32]: Avoid warnings about unknown pragmas.

@@ -23,6 +23,7 @@
 #include <windows.h>
 #include <io.h>
 #else
+#include <sys/types.h>
 #include <sys/socket.h>
 #endif
 #include "assuan-defs.h"
