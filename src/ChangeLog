@@ -1,3 +1,7 @@
+2003-02-22  Neal H. Walfield  <neal@g10code.de>
+
+	* Makefile.am (bin_SCRIPTS): Renamed from bin_PROGRAMS.
+
 2003-02-18  Neal H. Walfield  <neal@g10code.de>
 
 	* Makefile.am (libassuan_a_LIBADD): New variable.
