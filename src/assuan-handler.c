@@ -637,6 +637,7 @@ assuan_get_active_fds (ASSUAN_CONTEXT ctx, int what,
 FILE *
 assuan_get_data_fp (ASSUAN_CONTEXT ctx)
 {
+#if defined (HAVE_FOPENCOOKIE) || defined (HAVE_FUNOPEN)
   if (ctx->outbound.data.fp)
     return ctx->outbound.data.fp;
   
@@ -646,6 +647,10 @@ assuan_get_data_fp (ASSUAN_CONTEXT ctx)
 				   0, _assuan_cookie_write_flush);
   ctx->outbound.data.error = 0;
   return ctx->outbound.data.fp;
+#else
+  errno = ENOSYS;
+  return NULL;
+#endif
 }
 
 
