@@ -134,7 +134,7 @@ _assuan_log_print_buffer (FILE *fp, const void *buffer, size_t length)
   int n;
 
   for (n=length,s=buffer; n; n--, s++)
-    if  (!isascii (*s) || iscntrl (*s) || !isprint (*s))
+    if  ((!isascii (*s) || iscntrl (*s) || !isprint (*s)) && !(*s >= 0x80))
       break;
 
   s = buffer;
@@ -198,7 +198,7 @@ _assuan_log_sanitized_string (const char *string)
 	  break;
 
 	default:
-	  if (isascii (*s) && isprint (*s))
+	  if ((isascii (*s) && isprint (*s)) || (*s >= 0x80))
 	    putc_unlocked (*s, fp);
 	  else
 	    {

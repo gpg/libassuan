@@ -1,3 +1,14 @@
+2004-04-19  Werner Koch  <wk@gnupg.org>
+
+	* assuan-socket-server.c, assuan-socket-connect.c: Includes
+	sys/types.h.  Reported by Michael Nottebrock.
+	* assuan-domain-connect.c: Ditto.
+
+2004-04-13  Werner Koch  <wk@gnupg.org>
+
+	* assuan-util.c (_assuan_log_print_buffer): Relaxed quoting.
+	(_assuan_log_sanitized_string): Ditto.
+
 2004-03-14  Werner Koch  <wk@gnupg.org>
 
 	* assuan-handler.c: Include <errno.h>.  Reported by Bernd Kuhls.
