@@ -1,4 +1,4 @@
-Noteworthy changes in version 0.6.6
+Noteworthy changes in version 0.6.6 (2004-06-08)
 ------------------------------------------------
 
  * assuan_set_hello_line may now take a multi line argument where the
