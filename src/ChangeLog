@@ -1,5 +1,13 @@
 2002-11-20  Neal H. Walfield  <neal@g10code.de>
 
+	* assuan-socket-connect.c (assuan_socket_connect): Pass PF_LOCAL
+	to socket(), not AF_UNIX: it expects a PF_* macro and the former
+	is more portable.
+	(assuan_socket_connect): Use AF_LOCAL, not AF_UNIX which is more
+	POSIXy.
+
+2002-11-20  Neal H. Walfield  <neal@g10code.de>
+
 	* assuan-defs.h (struct assuan_io): New structure.
 	(struct assuan_context_s): New field, io.
 	(_assuan_read): Depreciated.

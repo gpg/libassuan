@@ -117,7 +117,7 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
   ctx->deinit_handler = do_deinit;
   ctx->finish_handler = do_finish;
 
-  fd = socket (AF_UNIX, SOCK_STREAM, 0);
+  fd = socket (PF_LOCAL, SOCK_STREAM, 0);
   if (fd == -1)
     {
       LOGERROR1 ("can't create socket: %s\n", strerror (errno));
@@ -126,7 +126,7 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
     }
     
   memset (&srvr_addr, 0, sizeof srvr_addr );
-  srvr_addr.sun_family = AF_UNIX;
+  srvr_addr.sun_family = AF_LOCAL;
   strcpy (srvr_addr.sun_path, name);
   len = (offsetof (struct sockaddr_un, sun_path)
          + strlen (srvr_addr.sun_path) + 1);
