@@ -103,7 +103,7 @@ typedef enum
   ASSUAN_Invalid_Card = 402,
   ASSUAN_No_PKCS15_App = 403,
   ASSUAN_Card_Not_Present = 404,
-  ASSUAN_Invalid_Id = 405
+  ASSUAN_Invalid_Id = 405,
 
   /* Error codes in the range 1000 to 9999 may be used by applications
      at their own discretion. */
