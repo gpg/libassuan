@@ -544,7 +544,7 @@ process_request (ASSUAN_CONTEXT ctx)
  * assuan_process:
  * @ctx: assuan context
  * 
- * This fucntion is used to handle the assuan protocol after a
+ * This function is used to handle the assuan protocol after a
  * connection has been established using assuan_accept().  This is the
  * main protocol handler.
  * 

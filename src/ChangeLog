@@ -1,3 +1,14 @@
+2005-03-22  Werner Koch  <wk@g10code.com>
+
+	* assuan-defs.h (struct assuan_io): Renamed elements READ and
+	WRITE to READFNC and WRITEFNC to avoid problems with read defined
+	as macros.  Changed callers.  Noted by Ville Skyttä.
+
+2005-02-24  Werner Koch  <wk@g10code.com>
+
+	* assuan-client.c (assuan_transact): Handle empty and comment
+	commands correctly.
+
 2004-12-20  Werner Koch  <wk@g10code.com>
 
 	* assuan-socket-connect.c (assuan_socket_connect) [W32]: Allow for

@@ -144,6 +144,9 @@ assuan_transact (ASSUAN_CONTEXT ctx,
   if (rc)
     return rc;
 
+  if (*command == '#' || !*command)
+    return 0; /* Don't expect a response for a comment line.  */
+
  again:
   rc = _assuan_read_from_server (ctx, &okay, &off);
   if (rc)
