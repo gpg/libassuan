@@ -31,7 +31,8 @@
 #define xtoi_2(p)   ((xtoi_1(p) * 16) + xtoi_1((p)+1))
 
 
-struct membuf {
+struct membuf
+{
   size_t len;
   size_t size;
   char *buf;

@@ -1,5 +1,5 @@
 # Assuan Makefile
-# Copyright (C) 2001, 2002 Free Software Foundation, Inc.
+# Copyright (C) 2001, 2002, 2003 Free Software Foundation, Inc.
 #
 # This file is part of Assuan.
 #
@@ -24,12 +24,12 @@ INCLUDES = -I.. -I$(top_srcdir)/include
 BUILT_SOURCES = assuan-errors.c
 MOSTLYCLEANFILES = assuan-errors.c
 
-noinst_LIBRARIES = libassuan.a
+lib_LIBRARIES = libassuan.a
+include_HEADERS = assuan.h
 
 
 #libassuan_a_LDFLAGS =
 libassuan_a_SOURCES = \
-	assuan.h \
 	assuan-defs.h \
 	assuan-util.c \
 	assuan-errors.c \
@@ -45,7 +45,8 @@ libassuan_a_SOURCES = \
 	assuan-socket-connect.c \
 	assuan-io.c \
 	assuan-domain-connect.c \
-	assuan-domain-server.c
+	assuan-domain-server.c \
+	assuan-logging.c
 
 assuan-errors.c : assuan.h
 	$(srcdir)/mkerrors < $(srcdir)/assuan.h > assuan-errors.c

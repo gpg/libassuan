@@ -1,5 +1,5 @@
 /* assuan-domain-connect.c - Assuan unix domain socket based client
- *	Copyright (C) 2002 Free Software Foundation, Inc.
+ *	Copyright (C) 2002, 2003 Free Software Foundation, Inc.
  *
  * This file is part of Assuan.
  *
@@ -36,18 +36,11 @@
 
 #include "assuan-defs.h"
 
-#ifdef HAVE_JNLIB_LOGGING
-#include "../jnlib/logging.h"
-#define LOGERROR(a)      log_error ((a))
-#define LOGERROR1(a,b)   log_error ((a), (b))
-#define LOGERROR2(a,b,c) log_error ((a), (b), (c))
-#define LOGERRORX(a)     log_printf ((a))
-#else
-#define LOGERROR(a)      fprintf (stderr, (a))
-#define LOGERROR1(a,b)   fprintf (stderr, (a), (b))
-#define LOGERROR2(a,b,c) fprintf (stderr, (a), (b), (c))
-#define LOGERRORX(a)     fputs ((a), stderr)
-#endif
+#define LOG(format, args...) \
+	fprintf (assuan_get_assuan_log_stream (), \
+	         assuan_get_assuan_log_prefix (), \
+	         "%s" format , ## args)
+
 
 static void
 do_deinit (ASSUAN_CONTEXT ctx)
@@ -91,11 +84,12 @@ domain_reader (ASSUAN_CONTEXT ctx, void *buf, size_t buflen)
       struct msghdr msg;
       struct iovec iovec;
       struct sockaddr_un sender;
-      struct 
+      struct
       {
 	struct cmsghdr hdr;
 	int fd;
-      } cmsg;
+      }
+      cmsg;
 
       memset (&msg, 0, sizeof (msg));
 
@@ -169,15 +163,15 @@ domain_reader (ASSUAN_CONTEXT ctx, void *buf, size_t buflen)
 	  /* XXX: Arg.  Not from whom we expected!  What do we want to
 	     do?  Should we just ignore it?  We shall do the latter
 	     for the moment.  */
-	  LOGERROR1 ("Not setup to receive messages from: `%s'.",
-		     ((struct sockaddr_un *) msg.msg_name)->sun_path);
+	  LOG ("Not setup to receive messages from: `%s'.",
+	       ((struct sockaddr_un *) msg.msg_name)->sun_path);
 	  goto start;
 	}
 
       len = recvmsg (ctx->inbound.fd, &msg, 0);
       if (len < 0)
 	{
-	  LOGERROR1 ("domain_reader: %s\n", strerror (errno));
+	  LOG ("domain_reader: %s\n", strerror (errno));
 	  return -1;
 	}
 
@@ -193,16 +187,16 @@ domain_reader (ASSUAN_CONTEXT ctx, void *buf, size_t buflen)
 			 sizeof (int) * (ctx->pendingfdscount + 1));
 	  if (! tmp)
 	    {
-	      LOGERROR1 ("domain_reader: %s\n", strerror (errno));
+	      LOG ("domain_reader: %s\n", strerror (errno));
 	      return -1;
 	    }
 
 	  ctx->pendingfds = tmp;
-	  ctx->pendingfds[ctx->pendingfdscount ++]
-	    = * (int *) CMSG_DATA (&cmsg.hdr);
+	  ctx->pendingfds[ctx->pendingfdscount++]
+	    = *(int *) CMSG_DATA (&cmsg.hdr);
 
-	  LOGERROR1 ("Received file descriptor %d from peer.\n",
-		     ctx->pendingfds[ctx->pendingfdscount - 1]);
+	  LOG ("Received file descriptor %d from peer.\n",
+	       ctx->pendingfds[ctx->pendingfdscount - 1]);
 	}
 
       if (len == 0)
@@ -247,7 +241,7 @@ domain_writer (ASSUAN_CONTEXT ctx, const void *buf, size_t buflen)
 
   len = sendmsg (ctx->outbound.fd, &msg, 0);
   if (len < 0)
-    LOGERROR1 ("domain_writer: %s\n", strerror (errno));
+    LOG ("domain_writer: %s\n", strerror (errno));
 
   return len;
 }
@@ -256,11 +250,12 @@ static AssuanError
 domain_sendfd (ASSUAN_CONTEXT ctx, int fd)
 {
   struct msghdr msg;
-  struct 
+  struct
   {
     struct cmsghdr hdr;
     int fd;
-  } cmsg;
+  }
+  cmsg;
   int len;
 
   memset (&msg, 0, sizeof (msg));
@@ -279,12 +274,12 @@ domain_sendfd (ASSUAN_CONTEXT ctx, int fd)
   msg.msg_control = &cmsg;
   msg.msg_controllen = sizeof (cmsg);
 
-  * (int *) CMSG_DATA (&cmsg.hdr) = fd;
+  *(int *) CMSG_DATA (&cmsg.hdr) = fd;
 
   len = sendmsg (ctx->outbound.fd, &msg, 0);
   if (len < 0)
     {
-      LOGERROR1 ("domain_sendfd: %s\n", strerror (errno));
+      LOG ("domain_sendfd: %s\n", strerror (errno));
       return ASSUAN_General_Error;
     }
   else
@@ -296,7 +291,7 @@ domain_receivefd (ASSUAN_CONTEXT ctx, int *fd)
 {
   if (ctx->pendingfds == 0)
     {
-      LOGERROR ("No pending file descriptors!\n");
+      LOG ("No pending file descriptors!\n");
       return ASSUAN_General_Error;
     }
 
@@ -324,9 +319,7 @@ domain_receivefd (ASSUAN_CONTEXT ctx, int *fd)
    Assuan context in CTX.  SERVER_PID is currently not used but may
    become handy in the future.  */
 AssuanError
-_assuan_domain_init (ASSUAN_CONTEXT *r_ctx,
-		     int rendezvousfd,
-		     pid_t peer)
+_assuan_domain_init (ASSUAN_CONTEXT *r_ctx, int rendezvousfd, pid_t peer)
 {
   static struct assuan_io io = { domain_reader, domain_writer,
 				 domain_sendfd, domain_receivefd };
@@ -356,7 +349,7 @@ _assuan_domain_init (ASSUAN_CONTEXT *r_ctx,
   fd = socket (PF_LOCAL, SOCK_DGRAM, 0);
   if (fd == -1)
     {
-      LOGERROR1 ("can't create socket: %s\n", strerror (errno));
+      LOG ("can't create socket: %s\n", strerror (errno));
       _assuan_release_context (ctx);
       return ASSUAN_General_Error;
     }
@@ -387,13 +380,13 @@ _assuan_domain_init (ASSUAN_CONTEXT *r_ctx,
       p = tmpnam (buf);
       if (! p)
 	{
-	  LOGERROR ("cannot determine an appropriate temporary file "
-		    "name.  DOS in progress?\n");
+	  LOG ("cannot determine an appropriate temporary file "
+	       "name.  DOS in progress?\n");
 	  _assuan_release_context (ctx);
 	  close (fd);
 	  return ASSUAN_General_Error;
 	}
-	  
+
       memset (&ctx->myaddr, 0, sizeof ctx->myaddr);
       ctx->myaddr.sun_family = AF_LOCAL;
       len = strlen (buf) + 1;
@@ -407,8 +400,8 @@ _assuan_domain_init (ASSUAN_CONTEXT *r_ctx,
 
   if (err)
     {
-      LOGERROR2 ("can't bind to `%s': %s\n", ctx->myaddr.sun_path,
-		 strerror (errno));
+      LOG ("can't bind to `%s': %s\n", ctx->myaddr.sun_path,
+	   strerror (errno));
       _assuan_release_context (ctx);
       close (fd);
       return ASSUAN_Connect_Failed;
@@ -422,7 +415,7 @@ _assuan_domain_init (ASSUAN_CONTEXT *r_ctx,
     fp = fdopen (rendezvousfd, "w+");
     if (! fp)
       {
-	LOGERROR1 ("can't open rendezvous port: %s\n", strerror (errno));
+	LOG ("can't open rendezvous port: %s\n", strerror (errno));
 	return ASSUAN_Connect_Failed;
       }
 
@@ -452,9 +445,7 @@ _assuan_domain_init (ASSUAN_CONTEXT *r_ctx,
 }
 
 AssuanError
-assuan_domain_connect (ASSUAN_CONTEXT *r_ctx,
-		       int rendezvousfd,
-		       pid_t peer)
+assuan_domain_connect (ASSUAN_CONTEXT * r_ctx, int rendezvousfd, pid_t peer)
 {
   AssuanError aerr;
   int okay, off;
@@ -466,12 +457,12 @@ assuan_domain_connect (ASSUAN_CONTEXT *r_ctx,
   /* Initial handshake.  */
   aerr = _assuan_read_from_server (*r_ctx, &okay, &off);
   if (aerr)
-    LOGERROR1 ("can't connect to server: %s\n", assuan_strerror (aerr));
+    LOG ("can't connect to server: %s\n", assuan_strerror (aerr));
   else if (okay != 1)
     {
-      LOGERROR ("can't connect to server: `");
+      LOG ("can't connect to server: `");
       _assuan_log_sanitized_string ((*r_ctx)->inbound.line);
-      LOGERRORX ("'\n");
+      fprintf (assuan_get_assuan_log_stream (), "'\n");
       aerr = ASSUAN_Connect_Failed;
     }
 

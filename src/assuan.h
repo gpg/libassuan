@@ -1,5 +1,5 @@
 /* assuan.c - Definitions for the Assuan protocol
- *	Copyright (C) 2001, 2002 Free Software Foundation, Inc.
+ *	Copyright (C) 2001, 2002, 2003 Free Software Foundation, Inc.
  *
  * This file is part of Assuan.
  *
@@ -26,18 +26,17 @@
 #include <unistd.h>
 
 #ifdef __cplusplus
-extern "C" { 
-#if 0
- }
-#endif
+extern "C"
+{
 #endif
 
-typedef enum {
+typedef enum
+{
   ASSUAN_No_Error = 0,
   ASSUAN_General_Error = 1,
   ASSUAN_Out_Of_Core = 2,
   ASSUAN_Invalid_Value = 3,
-  ASSUAN_Timeout = 4,  
+  ASSUAN_Timeout = 4,
   ASSUAN_Read_Error = 5,
   ASSUAN_Write_Error = 6,
   ASSUAN_Problem_Starting_Server = 7,
@@ -105,7 +104,8 @@ typedef enum {
 } AssuanError;
 
 /* This is a list of pre-registered ASSUAN commands */
-typedef enum {
+typedef enum
+{
   ASSUAN_CMD_NOP = 0,
   ASSUAN_CMD_CANCEL,    /* cancel the current request */
   ASSUAN_CMD_BYE,
@@ -257,8 +257,21 @@ void assuan_end_confidential (ASSUAN_CONTEXT ctx);
 /*-- assuan-errors.c (built) --*/
 const char *assuan_strerror (AssuanError err);
 
+/*-- assuan-logging.c --*/
+
+/* Set the stream to which assuan should log.  By default, this is
+   stderr.  */
+extern void assuan_set_assuan_log_stream (FILE *fp);
+
+/* Return the stream which is currently being using for logging.  */
+extern FILE *assuan_get_assuan_log_stream (void);
+
+/* User defined call back.  Return a prefix to be used at the start of
+   a line emitted by assuan on the log stream.  The default
+   implementation returns the empty string, i.e. ""  */
+extern const char *assuan_get_assuan_log_prefix (void);
 
 #ifdef __cplusplus
 }
 #endif
-#endif /*ASSUAN_H*/
+#endif /* ASSUAN_H */

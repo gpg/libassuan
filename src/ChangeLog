@@ -1,3 +1,49 @@
+2003-02-17  Neal H. Walfield  <neal@g10code.de>
+
+	* Makefile.am (lib_LIBRARIES): Use this instead of . . .
+	(noinst_LIBRARIES): . . . this.
+	(include_HEADERS): New variable.
+	(libassuan_a_SOURCES): Remove assuan.h, add assuan-logging.c.
+
+	* assuan.h (assuan_set_assuan_log_stream): New prototype.
+	(assuan_get_assuan_log_stream): Likewise.
+	(assuan_get_assuan_log_prefix): Likewise.
+	* assuan-logging.c: New file.
+
+	* assuan-buffer.c [HAVE_JNLIB_LOGGIN]: Do not include
+	"../jnlib/logging.h".
+	(my_log_prefix): Remove function.
+	(_assuan_read_line): Use assuan_get_assuan_log_prefix in lieu of
+	my_log_prefix.
+	(assuan_write_line): Likewise.
+	(_assuan_cookie_write_data): Likewise.
+	(_assuan_cookie_write_flush): Likewise.
+	* assuan-domain-connect.c (LOGERROR, LOGERROR1, LOGERROR2,
+	LOGERRORX):  Remove.
+	(LOG): New macro.
+	(domain_reader): Use it.
+	(domain_writer): Likewise.
+	(domain_sendfd): Likewise.
+	(domain_receivefd): Likewise.
+	(_assuan_domain_init): Likewise.
+	(assuan_domain_connect): Likewise.
+	* assuan-pipe-connect.c [HAVE_JNLIB_LOGGIN]: Do not include
+	"../jnlib/logging.h".
+	(LOGERROR, LOGERROR1, LOGERROR2, LOGERRORX):  Remove.
+	(LOG): New macro.
+	(assuan_pipe_connect): Use it.
+	* assuan-socket-connect.c [HAVE_JNLIB_LOGGIN]: Do not include
+	"../jnlib/logging.h".
+	(LOGERROR, LOGERROR1, LOGERROR2, LOGERRORX):  Remove.
+	(LOG): New macro.
+	(assuan_socket_connect): Use it.
+	(socket_reader): Remove dead code.
+	(socket_writer): Likewise.
+	* assuan-util.c [HAVE_JNLIB_LOGGIN]: Do not include
+	"../jnlib/logging.h".
+	(_assuan_log_sanitized_string): Use assuan_get_assuan_log_stream,
+	not jnlib.
+
 2002-11-24  Neal H. Walfield  <neal@g10code.de>
 
 	* assuan.h (assuan_command_parse_fd): New prototype.
@@ -377,11 +423,6 @@
 	than a line.
 	* assuan-defs.h: Add space in the context for this.
 
-	
-     ***********************************************************
-     * Please note that Assuan is maintained as part of GnuPG. *
-     * You may find it source-copied in other packages.        *
-     ***********************************************************	
 	
  Copyright 2001, 2002 Free Software Foundation, Inc.
 
