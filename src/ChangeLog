@@ -1,3 +1,11 @@
+2002-10-31  Neal H. Walfield  <neal@g10code.de>
+
+	* assuan-util.c: Include <ctype.h>.
+	(_assuan_log_print_buffer): Elide the magic numbers preferring the
+	standard isfoo functions.  Use putc_unlocked where possible.
+	(_assuan_log_sanitized_string): Rewrite to use putc_unlocked and
+	the isfoo functions.
+
 2002-09-05  Neal H. Walfield  <neal@g10code.de>
 
 	* assuan-defs.h (_assuan_read_wrapper): Depreciated.
