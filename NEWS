@@ -1,7 +1,7 @@
-Noteworthy changes in version 0.6.5
+Noteworthy changes in version 0.6.5 (2004-04-29)
 ------------------------------------------------
 
- * Pass the clien's pid to a pipe server.
+ * Pass the client's pid to a pipe server.
 
 
 Noteworthy changes in version 0.6.4 (2004-02-20)
