@@ -7,13 +7,13 @@ Copyright @copyright{} 2002, 2003 Free Software Foundation, Inc.
 @end macro
 @macro permissionnotice
 Permission is granted to copy, distribute and/or modify this document
-under the terms of the GNU Free Documentation License, Version 1.1 or
-any later version published by the Free Software Foundation; with no
-Invariant Sections, with no Front-Cover texts, and with no Back-Cover
-texts.  A copy of the license is included in the section entitled
-``GNU Free Documentation License''.
+under the terms of the GNU General Public License as published by the
+Free Software Foundation; either version 2 of the License, or (at your
+option) any later version. The text of the license can be found in the
+section entitled ``Copying''.
 @end macro
 
+@include version.texi
 
 @settitle Developing with Assuan
 
@@ -93,31 +93,34 @@ Boston, MA 02111-1307 USA
 @page
 
 
+@ifnottex
 @node Top
 @top Introduction
 @cindex introduction
 
 This manual documents how to exploit the Assuan library, a simple
 interprocess communcation library.
+@end ifnottex
 
 @menu
 * Introduction::        An introduction to and the motivation behind Assuan.
 * Assuan::              Description of the Assuan protocol.
+* Implementation::      Overview of the implementation.
 
 Miscellaneous
 
 * Library Copying::     GNU Lesser General Public License says
-                        how you can copy and share Assuan
-* GNU Free Documentation License:: How you can copy and share this manual.
+                        how you can copy and share Assuan.
+* Copying::             How you can copy and share this manual.
 
 Indices
 
 * Option Index::        Index to command line options.
 * Index::	        Index of concepts and symbol names.
+
 @end menu
 
-@include lgpl.texi
-@include fdl.texi
+
 
 @node Introduction
 @chapter Introduction to Assuan
@@ -169,7 +172,7 @@ Goals:
 @itemize @bullet
 @item Common framework for module communication
 @item Easy debugging
-@item Easy module testing 
+@item Easy module testing
 @item Extendible
 @item Optional authentication and encryption facility
 @item Usable by access external hardware
@@ -190,7 +193,8 @@ Design criteria:
 @item Subliminal channels are not an issue
 @end itemize
 
-Implementation:
+@node Implementation
+@chapter Implementation
 
 The implementation is line based with a maximum line size of 1000
 octects.  The default IPC mechanism are Unix Domain Sockets.
@@ -211,7 +215,15 @@ state.
 All textual messages are assumed to be in UTF-8 unless otherwise noted.
 
 
-Server responses:
+@menu
+* Server responses::    Description of server responses.
+* Client requests::     Description of client requests.
+* Error codes::         List of error and status codes.
+@end menu
+
+
+@node Server responses
+@section Server responses
 
 @table @code
 @item OK  [<arbitary debugging information>]
@@ -252,11 +264,11 @@ treated as a communication error. (The rationale for having a line
 length limit is to allow for easier multiplexing of multiple channels).
 
 
-Client requests:
+@node Client requests
+@section Client requests
 
 The server waits for client requests after he sent an Okay or Error.
-The client should not issue a request in other cases with the
-exception of the CANCEL command.
+The client should not issue a request in other cases.
 
 @example
 @var{command} <parameters>
@@ -303,9 +315,8 @@ all protocols and partly directly supported by the Assuan library:
 
 @table @code
 @item CANCEL
-This is the one special command which aborts the current request.  It can
-be sent at any time and the server will stop its operation right before
-it would send the next response line (of any type).
+This command is used for future extenxions.  It may today be used to
+cancel outstanding requests in an asynchronous protocol.
 
 @item BYE
 Close the connect, the server will reply with an @code{OK}.
@@ -322,22 +333,90 @@ should release all resources associated with the connection.
 @item END
 Used by a client to mark the end of raw data.  The server may send END
 to indicate a partial end of data.
+
+@item HELP
+Reserved for future extensions.
+
+@item QUIT
+Reserved for future extensions.
+
 @end table
 
 
-Error Codes:
+@node Error codes
+@section Error codes
 
 Here we keep a list of error codes used in any Assuan based
 protocol.  The format is the string @code{ERR}, white space, the error
 number, white space, a textual description of the error.
 
+General error codes pertaining to the actual Assuan operations:
+
 @table @code
-
-@item 100 Unknown Command
-@item 101 Not Implemented
-
-
+@item 0  Success
+@item 1  General error
+@item 2  Out of core
+@item 3  Invalid value
+@item 4  Timeout
+@item 5  Read error
+@item 6  Write error
+@item 7  Problem starting server
+@item 8  Not a server
+@item 9  Not a client
+@item 10 Nested commands
+@item 11 Invalid response
+@item 12 No data callback
+@item 13 No inquire callback
+@item 14 Connect failed
+@item 15 Accept failed
 @end table
+
+Error codes used as status codes in the Assuan protocol:
+
+@table @code
+@item 100 Not implemented
+@item 101 Server fault (catch all error code)
+@item 102 Invalid command
+@item 103 Unknown command
+@item 104 Syntax error
+@item 105 Parameter error
+@item 106 Parameter conflict
+@item 107 Line too long
+@item 108 Line not terminated
+@item 109 No input
+@item 110 No output
+@item 111 Canceled
+@item 112 Unsupported algorithm
+@item 113 Server resource problem
+@item 114 Server I/O error
+@item 115 Server bug
+@item 116 No data available
+@item 117 Invalid data
+@item 118 Unexpected command
+@item 119 Too much data
+@item 120 Inquire unknown
+@item 121 Inquire error
+@item 122 Invalid option
+@item 123 Invalid index
+@item 124 Unexpected status
+@item 125 Unexpected data
+@item 126 Invalid status
+@item 128 Not confirmed
+@end table
+
+For historical reasons a few more error codes are defined in
+@file{assuan.h}; they should not be used be new applications.
+
+Errror codes in the range @var{ASSUAN_USER_ERROR_FIRST} to
+@var{ASSUAN_USER_ERROR_LAST} may be used at the applications own
+discretion. Error codes greater than 65535 are not defined by Assuan
+and may also be used by applications --- note that the GnuPG system
+maps libgpg-error codes into this range.
+
+
+
+@include lgpl.texi
+@include gpl.texi
 
 
 @c ---------------------------------------------------------------------

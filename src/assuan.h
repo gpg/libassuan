@@ -52,7 +52,7 @@ typedef enum
   ASSUAN_Connect_Failed = 14,
   ASSUAN_Accept_Failed = 15,
 
-  /* error codes above 99 are meant as status codes */
+  /* Error codes above 99 are meant as status codes */
   ASSUAN_Not_Implemented = 100,
   ASSUAN_Server_Fault    = 101,
   ASSUAN_Invalid_Command = 102,
@@ -83,6 +83,7 @@ typedef enum
 
   ASSUAN_Not_Confirmed = 128,
 
+  /* Warning: Don't use the rror codes, below they are deprecated. */
   ASSUAN_Bad_Certificate = 201,
   ASSUAN_Bad_Certificate_Chain = 202,
   ASSUAN_Missing_Certificate = 203,
@@ -104,11 +105,18 @@ typedef enum
   ASSUAN_Card_Not_Present = 404,
   ASSUAN_Invalid_Id = 405
 
+  /* Error codes in the range 1000 to 9999 may be used by applications
+     at their own discretion. */
+  ASSUAN_USER_ERROR_FIRST = 1000,
+  ASSUAN_USER_ERROR_LAST = 9999
+
 } assuan_error_t;
 
 typedef assuan_error_t AssuanError; /* Deprecated. */
 
 /* This is a list of pre-registered ASSUAN commands */
+/* NOTE, these command IDs are now deprectated and solely exists for
+   compatibility reasons. */
 typedef enum
 {
   ASSUAN_CMD_NOP = 0,
@@ -124,6 +132,7 @@ typedef enum
 
   ASSUAN_CMD_USER = 256  /* Other commands should be used with this offset*/
 } AssuanCommand;
+
 
 #define ASSUAN_LINELENGTH 1002 /* 1000 + [CR,]LF */
 
@@ -157,7 +166,7 @@ int assuan_get_active_fds (assuan_context_t ctx, int what,
 
 
 FILE *assuan_get_data_fp (assuan_context_t ctx);
-AssuanError assuan_set_okay_line (assuan_context_t ctx, const char *line);
+assuan_error_t assuan_set_okay_line (assuan_context_t ctx, const char *line);
 void assuan_write_status (assuan_context_t ctx,
                           const char *keyword, const char *text);
 
@@ -165,16 +174,16 @@ void assuan_write_status (assuan_context_t ctx,
    assuming a local file descriptor.  If LINE contains "FD" reads a
    file descriptor via CTX and stores it in *RDF (the CTX must be
    capable of passing file descriptors).  */
-AssuanError assuan_command_parse_fd (assuan_context_t ctx, char *line,
+assuan_error_t assuan_command_parse_fd (assuan_context_t ctx, char *line,
 				     int *rfd);
 
 /*-- assuan-listen.c --*/
-AssuanError assuan_set_hello_line (assuan_context_t ctx, const char *line);
-AssuanError assuan_accept (assuan_context_t ctx);
+assuan_error_t assuan_set_hello_line (assuan_context_t ctx, const char *line);
+assuan_error_t assuan_accept (assuan_context_t ctx);
 int assuan_get_input_fd (assuan_context_t ctx);
 int assuan_get_output_fd (assuan_context_t ctx);
-AssuanError assuan_close_input_fd (assuan_context_t ctx);
-AssuanError assuan_close_output_fd (assuan_context_t ctx);
+assuan_error_t assuan_close_input_fd (assuan_context_t ctx);
+assuan_error_t assuan_close_output_fd (assuan_context_t ctx);
 
 
 /*-- assuan-pipe-server.c --*/
@@ -187,10 +196,10 @@ int assuan_init_connected_socket_server (assuan_context_t *r_ctx, int fd);
 
 
 /*-- assuan-pipe-connect.c --*/
-AssuanError assuan_pipe_connect (assuan_context_t *ctx, const char *name,
+assuan_error_t assuan_pipe_connect (assuan_context_t *ctx, const char *name,
                                  char *const argv[], int *fd_child_list);
 /*-- assuan-socket-connect.c --*/
-AssuanError assuan_socket_connect (assuan_context_t *ctx, const char *name,
+assuan_error_t assuan_socket_connect (assuan_context_t *ctx, const char *name,
                                    pid_t server_pid);
 
 /*-- assuan-domain-connect.c --*/
@@ -199,7 +208,7 @@ AssuanError assuan_socket_connect (assuan_context_t *ctx, const char *name,
    bidirectional file descriptor (normally returned via socketpair)
    which the client can use to rendezvous with the server.  SERVER s
    the server's pid.  */
-AssuanError assuan_domain_connect (assuan_context_t *r_ctx,
+assuan_error_t assuan_domain_connect (assuan_context_t *r_ctx,
 				   int rendezvousfd,
 				   pid_t server);
 
@@ -208,7 +217,7 @@ AssuanError assuan_domain_connect (assuan_context_t *r_ctx,
 /* RENDEZVOUSFD is a bidirectional file descriptor (normally returned
    via socketpair) that the domain server can use to rendezvous with
    the client.  CLIENT is the client's pid.  */
-AssuanError assuan_init_domain_server (assuan_context_t *r_ctx,
+assuan_error_t assuan_init_domain_server (assuan_context_t *r_ctx,
 				       int rendezvousfd,
 				       pid_t client);
 
@@ -218,36 +227,36 @@ void assuan_disconnect (assuan_context_t ctx);
 pid_t assuan_get_pid (assuan_context_t ctx);
 
 /*-- assuan-client.c --*/
-AssuanError 
+assuan_error_t 
 assuan_transact (assuan_context_t ctx,
                  const char *command,
-                 AssuanError (*data_cb)(void *, const void *, size_t),
+                 assuan_error_t (*data_cb)(void *, const void *, size_t),
                  void *data_cb_arg,
-                 AssuanError (*inquire_cb)(void*, const char *),
+                 assuan_error_t (*inquire_cb)(void*, const char *),
                  void *inquire_cb_arg,
-                 AssuanError (*status_cb)(void*, const char *),
+                 assuan_error_t (*status_cb)(void*, const char *),
                  void *status_cb_arg);
 
 
 /*-- assuan-inquire.c --*/
-AssuanError assuan_inquire (assuan_context_t ctx, const char *keyword,
+assuan_error_t assuan_inquire (assuan_context_t ctx, const char *keyword,
                             unsigned char **r_buffer, size_t *r_length,
                             size_t maxlen);
 
 /*-- assuan-buffer.c --*/
-AssuanError assuan_read_line (assuan_context_t ctx,
+assuan_error_t assuan_read_line (assuan_context_t ctx,
                               char **line, size_t *linelen);
 int assuan_pending_line (assuan_context_t ctx);
-AssuanError assuan_write_line (assuan_context_t ctx, const char *line );
-AssuanError assuan_send_data (assuan_context_t ctx,
+assuan_error_t assuan_write_line (assuan_context_t ctx, const char *line );
+assuan_error_t assuan_send_data (assuan_context_t ctx,
                               const void *buffer, size_t length);
 
 /* The file descriptor must be pending before assuan_receivefd is
    call.  This means that assuan_sendfd should be called *before* the
    trigger is sent (normally via assuan_send_data ("I sent you a
    descriptor")).  */
-AssuanError assuan_sendfd (assuan_context_t ctx, int fd);
-AssuanError assuan_receivefd (assuan_context_t ctx, int *fd);
+assuan_error_t assuan_sendfd (assuan_context_t ctx, int fd);
+assuan_error_t assuan_receivefd (assuan_context_t ctx, int *fd);
 
 /*-- assuan-util.c --*/
 void assuan_set_malloc_hooks ( void *(*new_alloc_func)(size_t n),
@@ -262,7 +271,7 @@ void assuan_begin_confidential (assuan_context_t ctx);
 void assuan_end_confidential (assuan_context_t ctx);
 
 /*-- assuan-errors.c (built) --*/
-const char *assuan_strerror (AssuanError err);
+const char *assuan_strerror (assuan_error_t err);
 
 /*-- assuan-logging.c --*/
 

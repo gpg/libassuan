@@ -1,3 +1,10 @@
+2003-12-18  Werner Koch  <wk@gnupg.org>
+
+	* assuan.h (AssuanCommand): Clarified that these are now
+	deprecated and actually useless.
+	(assuan_error_t): Clarified and added ASSUAN_USER_ERROR_FIRST,
+	ASSUAN_USER_ERROR_LAST.
+
 2003-12-16  Werner Koch  <wk@gnupg.org>
 
 	* assuan-buffer.c: Changed formatting of the debug output prefix.

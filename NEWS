@@ -1,10 +1,12 @@
-Noteworthy changes in version 0.6.2 (unreleased)
+Noteworthy changes in version 0.6.2 (2003-12-18)
 ------------------------------------------------
 
  * New function assuan_set_assuan_log_prefix to store a log prefix to
    be used when no context is available. The existing function
    assuan_get_assuan_log_context is not anymore declared as user
    overridable.
+
+ * Documentation cleanups. 
 
 Noteworthy changes in version 0.6.1 (2003-11-17)
 ------------------------------------------------

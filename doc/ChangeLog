@@ -1,3 +1,11 @@
+2003-12-18  Werner Koch  <wk@gnupg.org>
+
+	* assuan.texi: Changed copyright to GPL because this is not a book
+	but useful documentation in other software too.  Reworked
+	sectioning, updated list of error codes.
+	* gpl.texi: Added.
+	* fdl.texi: Removed.
+
 2003-08-06  Werner Koch  <wk@gnupg.org>
 
 	* lgpl.texi: New.

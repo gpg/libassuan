@@ -21,5 +21,5 @@
 
 info_TEXINFOS = assuan.texi
 
-assuan_TEXINFOS = lgpl.texi fdl.texi
+assuan_TEXINFOS = lgpl.texi gpl.texi
 
