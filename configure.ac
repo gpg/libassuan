@@ -135,6 +135,7 @@ if test $ac_cv_func_funopen != yes; then
   AC_CHECK_FUNCS(fopencookie, AC_LIBOBJ(funopen), AC_MSG_ERROR([[
 No implementation of fopencookie or funopen available.
 ]]))
+fi
 
 AC_REPLACE_FUNCS(isascii)
 AC_REPLACE_FUNCS(putc_unlocked)
@@ -142,7 +143,6 @@ AC_REPLACE_FUNCS(memrchr)
 
 AC_CONFIG_FILES([
 Makefile
-common/Makefile
 src/Makefile
 src/libassuan-config
 doc/Makefile

@@ -49,5 +49,7 @@ libassuan_a_SOURCES = \
 	assuan-domain-server.c \
 	assuan-logging.c
 
+libassuan_a_LIBADD = @LIBOBJS@
+
 assuan-errors.c : assuan.h
 	$(srcdir)/mkerrors < $(srcdir)/assuan.h > assuan-errors.c

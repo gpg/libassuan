@@ -1,5 +1,13 @@
 2003-02-18  Neal H. Walfield  <neal@g10code.de>
 
+	* Makefile.am (libassuan_a_LIBADD): New variable.
+	* funopen.c: Move from ../common.
+	* isascii.c: Likewise.
+	* memrchr.c: Likewise.
+	* putc_unlocked.c: Likewise.
+	
+2003-02-18  Neal H. Walfield  <neal@g10code.de>
+
 	* assuan-handler.c (_IO_cookie_io_functions_t): Remove.
 	(cookie_io_functions_t): Remove.
 	(fopencookie): Remove prototype.
