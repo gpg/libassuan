@@ -1,3 +1,7 @@
+2004-03-14  Werner Koch  <wk@gnupg.org>
+
+	* assuan-handler.c: Include <errno.h>.  Reported by Bernd Kuhls.
+
 2004-02-18  Werner Koch  <wk@gnupg.org>
 
 	* libassuan-config.in: Ignore setting of --prefix.
