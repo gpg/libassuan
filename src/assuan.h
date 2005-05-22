@@ -134,6 +134,18 @@ typedef enum
 } AssuanCommand;
 
 
+/* Definitions of flags for assuan_set_flag(). */
+typedef enum
+  {
+    /* When using a pipe server, by default Assuan will wait for the
+       forked process to die in assuan_disconnect.  In certain cases
+       this is not desirable.  By setting this flag, the waitpid will
+       be skipped and the caller is responsible to cleanup a forked
+       process. */
+    ASSUAN_NO_WAITPID = 1
+  } 
+assuan_flag_t;
+
 #define ASSUAN_LINELENGTH 1002 /* 1000 + [CR,]LF */
 
 struct assuan_context_s;
@@ -273,6 +285,15 @@ void *assuan_get_pointer (assuan_context_t ctx);
 
 void assuan_begin_confidential (assuan_context_t ctx);
 void assuan_end_confidential (assuan_context_t ctx);
+
+/* For context CTX, set the flag FLAG to VALUE.  Values for flags
+   are usually 1 or 0 but certain flags might allow for other values;
+   see the description of the type assuan_flag_t for details. */
+void assuan_set_flag (assuan_context_t ctx, assuan_flag_t flag, int value);
+
+/* Return the VALUE of FLAG in context CTX. */ 
+int  assuan_get_flag (assuan_context_t ctx, assuan_flag_t flag);
+
 
 /*-- assuan-errors.c (built) --*/
 const char *assuan_strerror (assuan_error_t err);

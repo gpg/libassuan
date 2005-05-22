@@ -1,3 +1,12 @@
+2005-05-21  Werner Koch  <wk@g10code.com>
+
+	* assuan-util.c (assuan_set_flag, assuan_get_flag): New.
+	* assuan-defs.h (struct assuan_context_s): New field flags.
+	* assuan.h (assuan_flag_t): New with one flag value
+	ASSUAN_NO_WAITPID for now.
+	* assuan-pipe-connect.c (do_finish): Take care of the no_waitpid
+	flag.
+
 2005-04-04  Werner Koch  <wk@g10code.com>
 
 	* assuan-util.c (_assuan_calloc): Avoid integer overflow.

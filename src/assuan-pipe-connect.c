@@ -119,9 +119,8 @@ do_finish (assuan_context_t ctx)
   if (ctx->pid != -1 && ctx->pid)
     {
 #ifndef HAVE_W32_SYSTEM
-      /* FIXME: Does it really make sense to use the waitpid?  What
-         about using a double fork and forget abnout it. */
-      waitpid (ctx->pid, NULL, 0);  /* FIXME Check return value.  */
+      if (!ctx->flags.no_waitpid)
+        waitpid (ctx->pid, NULL, 0); 
       ctx->pid = -1;
 #endif /*!HAVE_W32_SYSTEM*/
     }

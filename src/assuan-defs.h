@@ -84,15 +84,22 @@ struct assuan_context_s
 {
   assuan_error_t err_no;
   const char *err_str;
-  int os_errno;  /* last system error number used with certain error codes*/
+  int os_errno;       /* Last system error number used with certain
+                         error codes. */
+
+  /* Context specific flags (cf. assuan_flag_t). */
+  struct 
+  {
+    unsigned int no_waitpid:1; /* See ASSUAN_NO_WAITPID. */
+  } flags; 
 
   int confidential;
-  int is_server;  /* set if this is context belongs to a server */
+  int is_server;      /* Set if this is context belongs to a server */
   int in_inquire;
   char *hello_line;
-  char *okay_line; /* see assan_set_okay_line() */
+  char *okay_line;    /* See assuan_set_okay_line() */
   
-  void *user_pointer;  /* for assuan_[gs]et_pointer () */
+  void *user_pointer;  /* For assuan_get_pointer and assuan-set_pointer (). */
 
   FILE *log_fp;
 
@@ -125,6 +132,7 @@ struct assuan_context_s
   pid_t pid;	  /* The the pid of the peer. */
   int listen_fd;  /* The fd we are listening on (used by socket servers) */
   int connected_fd; /* helper */
+
 
   /* Used for Unix domain sockets.  */
   struct sockaddr_un myaddr;

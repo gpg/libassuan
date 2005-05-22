@@ -136,6 +136,36 @@ assuan_end_confidential (assuan_context_t ctx)
     }
 }
 
+
+
+/* For context CTX, set the flag FLAG to VALUE.  Values for flags
+   are usually 1 or 0 but certain flags might allow for other values;
+   see the description of the type assuan_flag_t for details. */
+void
+assuan_set_flag (assuan_context_t ctx, assuan_flag_t flag, int value)
+{
+  if (!ctx)
+    return;
+  switch (flag)
+    {
+    case ASSUAN_NO_WAITPID: ctx->flags.no_waitpid = value; break;
+    }
+}
+
+/* Return the VALUE of FLAG in context CTX. */ 
+int
+assuan_get_flag (assuan_context_t ctx, assuan_flag_t flag)
+{
+  if (!ctx)
+    return 0;
+  switch (flag)
+    {
+    case ASSUAN_NO_WAITPID: return ctx->flags.no_waitpid;
+    }
+  return 0;
+}
+
+
 /* Dump a possibly binary string (used for debugging).  Distinguish
    ascii text from binary and print it accordingly.  */
 void
