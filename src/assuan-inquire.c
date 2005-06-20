@@ -135,7 +135,7 @@ free_membuf (struct membuf *mb)
  * Return value: 0 on success or an ASSUAN error code
  **/
 assuan_error_t
-assuan_inquire (ASSUAN_CONTEXT ctx, const char *keyword,
+assuan_inquire (assuan_context_t ctx, const char *keyword,
                 unsigned char **r_buffer, size_t *r_length, size_t maxlen)
 {
   assuan_error_t rc;

@@ -256,8 +256,8 @@ assuan_transact (assuan_context_t ctx,
 
 /*-- assuan-inquire.c --*/
 assuan_error_t assuan_inquire (assuan_context_t ctx, const char *keyword,
-                            unsigned char **r_buffer, size_t *r_length,
-                            size_t maxlen);
+                               unsigned char **r_buffer, size_t *r_length,
+                               size_t maxlen);
 
 /*-- assuan-buffer.c --*/
 assuan_error_t assuan_read_line (assuan_context_t ctx,

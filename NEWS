@@ -1,5 +1,5 @@
-Noteworthy changes in version 0.6.10
-------------------------------------------------
+Noteworthy changes in version 0.6.10 (2005-06-20)
+-------------------------------------------------
 
  * New functions assuan_get_flag and assuan_set_flag.
 
