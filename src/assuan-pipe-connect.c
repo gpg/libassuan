@@ -60,6 +60,7 @@
 static void
 fix_signals (void)
 {
+#ifndef _ASSUAN_NO_FIXED_SIGNALS
 #ifndef HAVE_DOSISH_SYSTEM  /* No SIGPIPE for these systems.  */
   static int fixed_signals;
 
@@ -79,6 +80,7 @@ fix_signals (void)
       /* FIXME: This is not MT safe */
     }
 #endif /*HAVE_DOSISH_SYSTEM*/
+#endif /*!_ASSUAN_NO_FIXED_SIGNALS*/
 }
 
 
@@ -119,9 +121,11 @@ do_finish (assuan_context_t ctx)
   if (ctx->pid != -1 && ctx->pid)
     {
 #ifndef HAVE_W32_SYSTEM
+#ifndef _ASSUAN_USE_DOUBLE_FORK
       if (!ctx->flags.no_waitpid)
         waitpid (ctx->pid, NULL, 0); 
       ctx->pid = -1;
+#endif
 #endif /*!HAVE_W32_SYSTEM*/
     }
   return 0;
@@ -339,8 +343,8 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
   if (!fdp || *fdp == -1)
     {
       nullfd = CreateFile ("nul", GENERIC_WRITE,
-                       FILE_SHARE_READ | FILE_SHARE_WRITE,
-                       NULL, OPEN_EXISTING, 0, NULL);
+                           FILE_SHARE_READ | FILE_SHARE_WRITE,
+                           NULL, OPEN_EXISTING, 0, NULL);
       if (nullfd == INVALID_HANDLE_VALUE)
         {
           _assuan_log_printf ("can't open `nul': %s\n", w32_strerror (-1));
@@ -361,8 +365,8 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
   /* Note: We inherit all handles flagged as inheritable.  This seems
      to be a security flaw but there seems to be no way of selecting
      handles to inherit. */
-/*   _assuan_log_printf ("CreateProcess, path=`%s' cmdline=`%s'\n", */
-/*                       name, cmdline); */
+  /*   _assuan_log_printf ("CreateProcess, path=`%s' cmdline=`%s'\n", */
+  /*                       name, cmdline); */
   if (!CreateProcess (name,                 /* Program to start.  */
                       cmdline,              /* Command line arguments.  */
                       &sec_attr,            /* Process security attributes.  */
@@ -399,10 +403,10 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
   CloseHandle (fd_to_handle (rp[1]));
   CloseHandle (fd_to_handle (wp[0]));
 
-/*   _assuan_log_printf ("CreateProcess ready: hProcess=%p hThread=%p" */
-/*                       " dwProcessID=%d dwThreadId=%d\n", */
-/*                       pi.hProcess, pi.hThread, */
-/*                       (int) pi.dwProcessId, (int) pi.dwThreadId); */
+  /*   _assuan_log_printf ("CreateProcess ready: hProcess=%p hThread=%p" */
+  /*                       " dwProcessID=%d dwThreadId=%d\n", */
+  /*                       pi.hProcess, pi.hThread, */
+  /*                       (int) pi.dwProcessId, (int) pi.dwThreadId); */
 
   ResumeThread (pi.hThread);
   CloseHandle (pi.hThread); 
@@ -447,6 +451,8 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
   (*ctx)->deinit_handler = do_deinit;
   (*ctx)->finish_handler = do_finish;
 
+  /* FIXME: For GPGME we should better use _gpgme_io_spawn.  The PID
+     stored here is actually soon useless.  */
   (*ctx)->pid = fork ();
   if ((*ctx)->pid < 0)
     {
@@ -460,95 +466,113 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
 
   if ((*ctx)->pid == 0)
     {
-      int i, n;
-      char errbuf[512];
-      int *fdp;
-
-      if (atfork)
-        atfork (atforkvalue, 0);
-
-      /* Dup handles to stdin/stdout. */
-      if (rp[1] != STDOUT_FILENO)
+#ifdef _ASSUAN_USE_DOUBLE_FORK      
+      if ((pid = fork ()) == 0)
+#endif
 	{
-	  if (dup2 (rp[1], STDOUT_FILENO) == -1)
-	    {
-	      _assuan_log_printf ("dup2 failed in child: %s\n",
-                                  strerror (errno));
-	      _exit (4);
-	    }
-	}
-      if (wp[0] != STDIN_FILENO)
-	{
-	  if (dup2 (wp[0], STDIN_FILENO) == -1)
-	    {
-	      _assuan_log_printf ("dup2 failed in child: %s\n",
-                                  strerror (errno));
-	      _exit (4);
-	    }
-	}
+          int i, n;
+          char errbuf[512];
+          int *fdp;
+          
+          if (atfork)
+            atfork (atforkvalue, 0);
 
-      /* Dup stderr to /dev/null unless it is in the list of FDs to be
-         passed to the child. */
-      fdp = fd_child_list;
-      if (fdp)
-        {
-          for (; *fdp != -1 && *fdp != STDERR_FILENO; fdp++)
-            ;
+          /* Dup handles to stdin/stdout. */
+          if (rp[1] != STDOUT_FILENO)
+            {
+              if (dup2 (rp[1], STDOUT_FILENO) == -1)
+                {
+                  _assuan_log_printf ("dup2 failed in child: %s\n",
+                                      strerror (errno));
+                  _exit (4);
+                }
+            }
+          if (wp[0] != STDIN_FILENO)
+            {
+              if (dup2 (wp[0], STDIN_FILENO) == -1)
+                {
+                  _assuan_log_printf ("dup2 failed in child: %s\n",
+                                      strerror (errno));
+                  _exit (4);
+                }
+            }
+
+          /* Dup stderr to /dev/null unless it is in the list of FDs to be
+             passed to the child. */
+          fdp = fd_child_list;
+          if (fdp)
+            {
+              for (; *fdp != -1 && *fdp != STDERR_FILENO; fdp++)
+                ;
+            }
+          if (!fdp || *fdp == -1)
+            {
+              int fd = open ("/dev/null", O_WRONLY);
+              if (fd == -1)
+                {
+                  _assuan_log_printf ("can't open `/dev/null': %s\n",
+                                      strerror (errno));
+                  _exit (4);
+                }
+              if (dup2 (fd, STDERR_FILENO) == -1)
+                {
+                  _assuan_log_printf ("dup2(dev/null, 2) failed: %s\n",
+                                      strerror (errno));
+                  _exit (4);
+                }
+            }
+
+
+          /* Close all files which will not be duped and are not in the
+             fd_child_list. */
+          n = sysconf (_SC_OPEN_MAX);
+          if (n < 0)
+            n = MAX_OPEN_FDS;
+          for (i=0; i < n; i++)
+            {
+              if ( i == STDIN_FILENO || i == STDOUT_FILENO
+                   || i == STDERR_FILENO)
+                continue;
+              fdp = fd_child_list;
+              if (fdp)
+                {
+                  while (*fdp != -1 && *fdp != i)
+                    fdp++;
+                }
+
+              if (!(fdp && *fdp != -1))
+                close(i);
+            }
+          errno = 0;
+
+          /* We store our parents pid in the environment so that the
+             execed assuan server is able to read the actual pid of the
+             client.  The server can't use getppid becuase it might have
+             been double forked before the assuan server has been
+             initialized. */
+          setenv ("_assuan_pipe_connect_pid", mypidstr, 1);
+
+          execv (name, argv); 
+          /* oops - use the pipe to tell the parent about it */
+          snprintf (errbuf, sizeof(errbuf)-1,
+                    "ERR %d can't exec `%s': %.50s\n",
+                    ASSUAN_Problem_Starting_Server, name, strerror (errno));
+          errbuf[sizeof(errbuf)-1] = 0;
+          writen (1, errbuf, strlen (errbuf));
+          _exit (4);
         }
-      if (!fdp || *fdp == -1)
-        {
-	  int fd = open ("/dev/null", O_WRONLY);
-	  if (fd == -1)
-	    {
-	      _assuan_log_printf ("can't open `/dev/null': %s\n",
-                                  strerror (errno));
-	      _exit (4);
-	    }
-	  if (dup2 (fd, STDERR_FILENO) == -1)
-	    {
-	      _assuan_log_printf ("dup2(dev/null, 2) failed: %s\n",
-                                  strerror (errno));
-	      _exit (4);
-	    }
-	}
-
-
-      /* Close all files which will not be duped and are not in the
-         fd_child_list. */
-      n = sysconf (_SC_OPEN_MAX);
-      if (n < 0)
-        n = MAX_OPEN_FDS;
-      for (i=0; i < n; i++)
-        {
-          if ( i == STDIN_FILENO || i == STDOUT_FILENO || i == STDERR_FILENO)
-            continue;
-	  fdp = fd_child_list;
-	  if (fdp)
-	    {
-	      while (*fdp != -1 && *fdp != i)
-		fdp++;
-	    }
-
-          if (!(fdp && *fdp != -1))
-            close(i);
-        }
-      errno = 0;
-
-      /* We store our parents pid in the environment so that the
-         execed assuan server is able to read the actual pid of the
-         client.  The server can't use getppid becuase it might have
-         been double forked before the assuan server has been
-         initialized. */
-      setenv ("_assuan_pipe_connect_pid", mypidstr, 1);
-
-      execv (name, argv); 
-      /* oops - use the pipe to tell the parent about it */
-      snprintf (errbuf, sizeof(errbuf)-1, "ERR %d can't exec `%s': %.50s\n",
-                ASSUAN_Problem_Starting_Server, name, strerror (errno));
-      errbuf[sizeof(errbuf)-1] = 0;
-      writen (1, errbuf, strlen (errbuf));
-      _exit (4);
+#ifdef _ASSUAN_USE_DOUBLE_FORK
+      if (pid == -1)
+	_exit (1);
+      else
+	_exit (0);
+#endif
     }
+
+#ifdef _ASSUAN_USE_DOUBLE_FORK
+  waitpid ((*ctx)->pid, NULL, 0);
+  (*ctx)->pid = -1;
+#endif
 
   close (rp[1]);
   close (wp[0]);

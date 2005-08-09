@@ -1,3 +1,14 @@
+2005-08-09  Werner Koch  <wk@g10code.com>
+
+	* mkerrors: Include config.h into assuan-errors.c.  This is
+	required so that assuan.h knows about the W32 macro.
+
+	* assuan.h [_ASSUAN_EXT_SYM_PREFIX]: New.
+	* assuan-io.c [_ASSUAN_NO_PTH]: New.
+	* assuan-pipe-connect.c (fix_signals) [_ASSUAN_NO_FIXED_SIGNALS]: New.
+	(assuan_pipe_connect2) [_ASSUAN_USE_DOUBLE_FORK]: Use double fork.
+	(fix_signals) [_ASSUAN_USE_DOUBLE_FORK]: Do not wait..
+	
 2005-05-21  Werner Koch  <wk@g10code.com>
 
 	* assuan-util.c (assuan_set_flag, assuan_get_flag): New.

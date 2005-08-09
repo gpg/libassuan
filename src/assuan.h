@@ -1,5 +1,5 @@
-/* assuan.c - Definitions for the Assuan protocol
- *	Copyright (C) 2001, 2002, 2003 Free Software Foundation, Inc.
+/* assuan.c - Definitions for the Assuan IPC library
+ * Copyright (C) 2001, 2002, 2003, 2005 Free Software Foundation, Inc.
  *
  * This file is part of Assuan.
  *
@@ -25,6 +25,128 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+
+/* To use this file with libraries the following macros are often
+   useful:
+
+   #define _ASSUAN_EXT_SYM_PREFIX _foo_
+   
+     This prefixes all external symbols with "_foo_".
+
+   #define _ASSUAN_NO_PTH 
+
+     This avoids inclusion of special GNU Pth hacks.
+
+   #define _ASSUAN_NO_FIXED_SIGNALS 
+
+     This disables changing of certain signal handler; i.e. SIGPIPE.
+
+   #define _ASSUAN_USE_DOUBLE_FORK
+
+     Use a double fork approach when connecting to a server through a pipe.
+ */
+
+
+#ifdef _ASSUAN_EXT_SYM_PREFIX
+#define _ASSUAN_PREFIX1(x,y) x ## y
+#define _ASSUAN_PREFIX2(x,y) _ASSUAN_PREFIX1(x,y)
+#define _ASSUAN_PREFIX(x) _ASSUAN_PREFIX2(_ASSUAN_EXT_SYM_PREFIX,x)
+#define assuan_ _ASSUAN_PREFIX(assuan_)
+#define assuan_register_command _ASSUAN_PREFIX(assuan_register_command)
+#define assuan_register_bye_notify _ASSUAN_PREFIX(assuan_register_bye_notify)
+#define assuan_register_reset_notify \
+  _ASSUAN_PREFIX(assuan_register_reset_notify)
+#define assuan_register_cancel_notify \
+  _ASSUAN_PREFIX(assuan_register_cancel_notify)
+#define assuan_register_input_notify \
+  _ASSUAN_PREFIX(assuan_register_input_notify)
+#define assuan_register_output_notify \
+  _ASSUAN_PREFIX(assuan_register_output_notify)
+#define assuan_register_option_handler \
+  _ASSUAN_PREFIX(assuan_register_option_handler)
+#define assuan_process _ASSUAN_PREFIX(assuan_process)
+#define assuan_process_next _ASSUAN_PREFIX(assuan_process_next)
+#define assuan_get_active_fds _ASSUAN_PREFIX(assuan_get_active_fds)
+#define assuan_get_data_fp _ASSUAN_PREFIX(assuan_get_data_fp)
+#define assuan_set_okay_line _ASSUAN_PREFIX(assuan_set_okay_line)
+#define assuan_write_status _ASSUAN_PREFIX(assuan_write_status)
+#define assuan_command_parse_fd _ASSUAN_PREFIX(assuan_command_parse_fd)
+#define assuan_set_hello_line _ASSUAN_PREFIX(assuan_set_hello_line)
+#define assuan_accept _ASSUAN_PREFIX(assuan_accept)
+#define assuan_get_input_fd _ASSUAN_PREFIX(assuan_get_input_fd)
+#define assuan_get_output_fd _ASSUAN_PREFIX(assuan_get_output_fd)
+#define assuan_close_input_fd _ASSUAN_PREFIX(assuan_close_input_fd)
+#define assuan_close_output_fd _ASSUAN_PREFIX(assuan_close_output_fd)
+#define assuan_init_pipe_server _ASSUAN_PREFIX(assuan_init_pipe_server)
+#define assuan_deinit_server _ASSUAN_PREFIX(assuan_deinit_server)
+#define assuan_init_socket_server _ASSUAN_PREFIX(assuan_init_socket_server)
+#define assuan_init_connected_socket_server \
+  _ASSUAN_PREFIX(assuan_init_connected_socket_server)
+#define assuan_pipe_connect _ASSUAN_PREFIX(assuan_pipe_connect)
+#define assuan_socket_connect _ASSUAN_PREFIX(assuan_socket_connect)
+#define assuan_domain_connect _ASSUAN_PREFIX(assuan_domain_connect)
+#define assuan_init_domain_server _ASSUAN_PREFIX(assuan_init_domain_server)
+#define assuan_disconnect _ASSUAN_PREFIX(assuan_disconnect)
+#define assuan_get_pid _ASSUAN_PREFIX(assuan_get_pid)
+#define assuan_transact _ASSUAN_PREFIX(assuan_transact)
+#define assuan_inquire _ASSUAN_PREFIX(assuan_inquire)
+#define assuan_read_line _ASSUAN_PREFIX(assuan_read_line)
+#define assuan_pending_line _ASSUAN_PREFIX(assuan_pending_line)
+#define assuan_write_line _ASSUAN_PREFIX(assuan_write_line)
+#define assuan_send_data _ASSUAN_PREFIX(assuan_send_data)
+#define assuan_sendfd _ASSUAN_PREFIX(assuan_sendfd)
+#define assuan_receivefd _ASSUAN_PREFIX(assuan_receivefd)
+#define assuan_set_malloc_hooks _ASSUAN_PREFIX(assuan_set_malloc_hooks)
+#define assuan_set_log_stream _ASSUAN_PREFIX(assuan_set_log_stream)
+#define assuan_set_error _ASSUAN_PREFIX(assuan_set_error)
+#define assuan_set_pointer _ASSUAN_PREFIX(assuan_set_pointer)
+#define assuan_get_pointer _ASSUAN_PREFIX(assuan_get_pointer)
+#define assuan_begin_confidential _ASSUAN_PREFIX(assuan_begin_confidential)
+#define assuan_end_confidential _ASSUAN_PREFIX(assuan_end_confidential)
+#define assuan_strerror _ASSUAN_PREFIX(assuan_strerror)
+#define assuan_set_assuan_log_stream \
+  _ASSUAN_PREFIX(assuan_set_assuan_log_stream)
+#define assuan_get_assuan_log_stream \
+  _ASSUAN_PREFIX(assuan_get_assuan_log_stream)
+#define assuan_get_assuan_log_prefix \
+  _ASSUAN_PREFIX(assuan_get_assuan_log_prefix)
+#define assuan_set_flag _ASSUAN_PREFIX(assuan_set_flag)
+#define assuan_get_flag _ASSUAN_PREFIX(assuan_get_flag)
+
+/* And now the internal functions, argh...  */
+#define _assuan_read_line _ASSUAN_PREFIX(_assuan_read_line)
+#define _assuan_cookie_write_data _ASSUAN_PREFIX(_assuan_cookie_write_data)
+#define _assuan_cookie_write_flush _ASSUAN_PREFIX(_assuan_cookie_write_flush)
+#define _assuan_read_from_server _ASSUAN_PREFIX(_assuan_read_from_server)
+#define _assuan_domain_init _ASSUAN_PREFIX(_assuan_domain_init)
+#define _assuan_register_std_commands \
+  _ASSUAN_PREFIX(_assuan_register_std_commands)
+#define _assuan_simple_read _ASSUAN_PREFIX(_assuan_simple_read)
+#define _assuan_simple_write _ASSUAN_PREFIX(_assuan_simple_write)
+#define _assuan_simple_read _ASSUAN_PREFIX(_assuan_simple_read)
+#define _assuan_simple_write _ASSUAN_PREFIX(_assuan_simple_write)
+#define _assuan_new_context _ASSUAN_PREFIX(_assuan_new_context)
+#define _assuan_release_context _ASSUAN_PREFIX(_assuan_release_context)
+#define _assuan_malloc _ASSUAN_PREFIX(_assuan_malloc)
+#define _assuan_realloc _ASSUAN_PREFIX(_assuan_realloc)
+#define _assuan_calloc _ASSUAN_PREFIX(_assuan_calloc)
+#define _assuan_free _ASSUAN_PREFIX(_assuan_free)
+#define _assuan_log_print_buffer _ASSUAN_PREFIX(_assuan_log_print_buffer)
+#define _assuan_log_sanitized_string \
+  _ASSUAN_PREFIX(_assuan_log_sanitized_string)
+#define _assuan_log_printf _ASSUAN_PREFIX(_assuan_log_printf)
+#define _assuan_set_default_log_stream \
+  _ASSUAN_PREFIX(_assuan_set_default_log_stream)
+#define _assuan_w32_strerror _ASSUAN_PREFIX(_assuan_w32_strerror)
+#define _assuan_write_line _ASSUAN_PREFIX(_assuan_write_line)
+#define _assuan_close _ASSUAN_PREFIX(_assuan_close)   
+#define _assuan_sock_new _ASSUAN_PREFIX(_assuan_sock_new)  
+#define _assuan_sock_bind _ASSUAN_PREFIX(_assuan_sock_bind)
+#define _assuan_sock_connect _ASSUAN_PREFIX(_assuan_sock_connect)
+
+#endif /*_ASSUAN_EXT_SYM_PREFIX*/
+
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -32,6 +154,7 @@ extern "C"
 }
 #endif
 #endif
+
 
 typedef enum
 {
