@@ -1,3 +1,11 @@
+2005-10-01  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan-client.c (assuan_transact): Change LINE, S and D from
+	unsigned char * to char * to silence gcc warning.
+	* assuan-util.c (_assuan_log_sanitized_string): Add explicit cast
+	to silence gcc warning.
+	* assuan-inquire.c (assuan_inquire): Likewise.
+
 2005-09-08  Marcus Brinkmann  <marcus@g10code.com>
 
 	* assuan-pipe-connect.c (assuan_pipe_connect2): Add missing
