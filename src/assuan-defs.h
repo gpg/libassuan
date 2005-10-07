@@ -1,5 +1,5 @@
 /* assuan-defs.c - Internal definitions to Assuan
- *	Copyright (C) 2001, 2002, 2004 Free Software Foundation, Inc.
+ *	Copyright (C) 2001, 2002, 2004, 2005 Free Software Foundation, Inc.
  *
  * This file is part of Assuan.
  *
@@ -250,6 +250,17 @@ FILE *_assuan_funopen(void *cookie,
                       cookie_close_function_t *closefn);
 #define funopen(a,r,w,s,c) _assuan_funopen ((a), (r), (w), (s), (c))
 #endif /*HAVE_FOPENCOOKIE*/
+
+/* Prototypes for replacement functions.  */
+#ifndef HAVE_MEMRCHR
+void *memrchr (const void *block, int c, size_t size);
+#endif
+#ifndef HAVE_STPCPY
+char *stpcpy (char *dest, const char *src);
+#endif
+#ifndef HAVE_SETENV
+int setenv (const char *name, const char *value, int replace);
+#endif
 
 #endif /*ASSUAN_DEFS_H*/
 

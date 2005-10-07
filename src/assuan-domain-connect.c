@@ -1,5 +1,5 @@
 /* assuan-domain-connect.c - Assuan unix domain socket based client
- *	Copyright (C) 2002, 2003 Free Software Foundation, Inc.
+ *	Copyright (C) 2002, 2003, 2005 Free Software Foundation, Inc.
  *
  * This file is part of Assuan.
  *
@@ -55,6 +55,29 @@
 #endif
 
 
+
+/* Read an integer from byte address ADDR.  Works even if ADDR is
+   misaligned.  */
+static int
+read_int (const char *addr)
+{
+  int val;
+
+  memcpy (&val, addr, sizeof (int));
+
+  return val;
+}
+
+
+/* Write the integer VAL to byte address ADDR.  Works even if ADDR is
+   misaligned.  */
+static void
+write_int (char *addr, int val)
+{
+  memcpy (addr, &val, sizeof (int));
+}
+ 
+
 static void
 do_deinit (assuan_context_t ctx)
 {
@@ -207,7 +230,7 @@ domain_reader (assuan_context_t ctx, void *buf, size_t buflen)
 
 	  ctx->pendingfds = tmp;
 	  ctx->pendingfds[ctx->pendingfdscount++]
-	    = *(int *) CMSG_DATA (&cmsg.hdr);
+	    = read_int (CMSG_DATA (&cmsg.hdr));
 
 	  _assuan_log_printf ("received file descriptor %d from peer\n",
 	       ctx->pendingfds[ctx->pendingfdscount - 1]);
@@ -299,7 +322,7 @@ domain_sendfd (assuan_context_t ctx, int fd)
   msg.msg_control = &cmsg;
   msg.msg_controllen = sizeof (cmsg);
 
-  *(int *) CMSG_DATA (&cmsg.hdr) = fd;
+  write_int (CMSG_DATA (&cmsg.hdr), fd);
 
   len = sendmsg (ctx->outbound.fd, &msg, 0);
   if (len < 0)

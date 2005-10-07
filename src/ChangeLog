@@ -1,3 +1,14 @@
+2005-10-07  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan-defs.h (memrchr) [!HAVE_MEMRCHR]: New prototype.
+	(stpcpy) [!HAVE_STPCPY]: Likewise.
+	* stpcpy.c: New LGPL'ed file from the GNU C Library.
+	* setenv.c: New file.
+	* assuan-domain-connect.c (read_int): New function.
+	(write_int): New function.
+	(domain_reader): Use read_int.
+	(domain_sendfd): Use write_int.
+
 2005-10-01  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan.h (assuan_pipe_connect, assuan_pipe_connect2): Make type
