@@ -1,3 +1,15 @@
+2005-10-08  Marcus Brinkmann  <marcus@g10code.de>
+
+	* configure.ac: Check for socket library and add it to
+	LIBASSUAN_CONFIG_LIBS if necessary.
+
+2005-10-07  Marcus Brinkmann  <marcus@g10code.de>
+
+	* configure.ac: Invoke AC_CANONICAL_HOST.  Define _XOPEN_SOURCE,
+	_XOPEN_SOURCE_EXTENDED and __EXTENSIONS__ on Solaris.
+	Add stpcy as replacement function.
+	Add setenv as replacement function (and check for unistd.h).
+
 2005-06-20  Werner Koch  <wk@g10code.com>
 
 	Released 0.6.10.

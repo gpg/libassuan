@@ -34,6 +34,7 @@ AM_MAINTAINER_MODE
 AC_CONFIG_SRCDIR(src/assuan.h)
 AM_CONFIG_HEADER(config.h)
 
+AC_CANONICAL_HOST
 AC_GNU_SOURCE
 
 
@@ -77,6 +78,11 @@ case "${host}" in
         have_dosish_system=yes
         have_w32_system=yes
         ;;
+    *-solaris*)
+	AC_DEFINE(_XOPEN_SOURCE, 500, Activate extensions on Solaris)
+	AC_DEFINE(_XOPEN_SOURCE_EXTENDED, 1, Activate extensions on Solaris)
+	AC_DEFINE(__EXTENSIONS__, 1, Activate extensions on Solaris)
+	;;
 esac
 
 if test "$have_dosish_system" = yes; then
@@ -92,13 +98,19 @@ if test "$have_w32_system" = yes; then
 fi
 dnl AM_CONDITIONAL(HAVE_W32_SYSTEM, test "$have_w32_system" = yes)
 
-
+# Check for network libraries.
+NETLIBS=
+AC_CHECK_FUNC(setsockopt, , AC_CHECK_LIB(socket, setsockopt,
+	[NETLIBS="-lsocket"]))
 
 # For src/libassuan-config.in
 LIBASSUAN_CONFIG_LIBS="-lassuan"
 LIBASSUAN_CONFIG_CFLAGS=""
 if test "$have_w32_system" = yes; then
   LIBASSUAN_CONFIG_LIBS="$LIBASSUAN_CONFIG_LIBS -lwsock32"
+fi
+if test x"$NETLIBS" != x; then
+  LIBASSUAN_CONFIG_LIBS="$LIBASSUAN_CONFIG_LIBS $NETLIBS"
 fi
 AC_SUBST(LIBASSUAN_CONFIG_LIBS)
 AC_SUBST(LIBASSUAN_CONFIG_CFLAGS)
@@ -139,6 +151,10 @@ fi
 AC_REPLACE_FUNCS(isascii)
 AC_REPLACE_FUNCS(putc_unlocked)
 AC_REPLACE_FUNCS(memrchr)
+AC_REPLACE_FUNCS(stpcpy)
+# Check for unistd.h for setenv replacement function.
+AC_CHECK_HEADERS(unistd.h)
+AC_REPLACE_FUNCS(setenv)
 
 # Create the config files.
 AC_CONFIG_FILES([Makefile])
