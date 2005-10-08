@@ -20,6 +20,8 @@
 # include <config.h>
 #endif
 
+#include "assuan-defs.h"
+
 #define __builtin_expect(cond,val) (cond)
 
 #include <errno.h>
@@ -108,7 +110,7 @@ static char **last_environ;
    must be used directly.  This is all complicated by the fact that we try
    to reuse values once generated for a `setenv' call since we can never
    free the strings.  */
-int
+static int
 __add_to_environ (const char *name, const char *value, const char *combined,
 		  int replace)
 {

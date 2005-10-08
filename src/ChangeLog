@@ -1,3 +1,10 @@
+2005-10-08  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan-defs.h (setenv, unsetenv, clearenv) [!HAVE_SETENV]:
+	Define to _assuan_*.
+	* setenv.c: Include "assuan-defs.h".
+	(__add_to_environ): Make static.
+
 2005-10-07  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan-defs.h (memrchr) [!HAVE_MEMRCHR]: New prototype.
