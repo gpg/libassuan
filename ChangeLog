@@ -1,3 +1,9 @@
+2005-10-24  Werner Koch  <wk@g10code.com>
+
+	* COPYING.LESSER: Added.
+	* README.CVS: Renamed to ..
+	* README.SVN: .. this.
+
 2005-10-08  Marcus Brinkmann  <marcus@g10code.de>
 
 	* configure.ac: Check for socket library and add it to

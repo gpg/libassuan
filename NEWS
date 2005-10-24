@@ -4,6 +4,8 @@ Noteworthy changes in version 0.6.11
  * Internal cleanups to make inclusion of the code into libraries
    easier.
 
+ * Made clear that the software is under the LGPL.
+
 
 Noteworthy changes in version 0.6.10 (2005-06-20)
 -------------------------------------------------

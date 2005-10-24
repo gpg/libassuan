@@ -1,3 +1,10 @@
+2005-10-24  Werner Koch  <wk@g10code.com>
+
+	* putc_unlocked.c, memrchr.c, isascii.c, funopen.c: Changed
+	distribution terms to LGPL.  This are small and trivial files so
+	there are no obstacles of doing so.
+	* assuan-socket.c: Likewise, the stated GPL was not intended.
+
 2005-10-08  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan-defs.h (setenv, unsetenv, clearenv) [!HAVE_SETENV]:
