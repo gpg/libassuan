@@ -125,7 +125,9 @@ _assuan_read_from_server (ASSUAN_CONTEXT ctx, int *okay, int *off)
  * 
  * Return value: 0 on success or error code.  The error code may be
  * the one one returned by the server in error lines or from the
- * callback functions.
+ * callback functions.  Take care: When a callback returns an error
+ * this function returns immediately with an error and thus the caller
+ * will altter return an Assuan error (write erro in most cases).
  **/
 assuan_error_t
 assuan_transact (ASSUAN_CONTEXT ctx,
