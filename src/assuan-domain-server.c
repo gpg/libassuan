@@ -27,15 +27,18 @@
 
 #include "assuan-defs.h"
 
-/* Initialize a server.  */
+/* Initialize a server.  RENDEZVOUSFD is a bidirectional file
+   descriptor (normally returned via socketpair) that the domain
+   server can use to rendezvous with the client.  CLIENT is the
+   client's pid.  */
 assuan_error_t
 assuan_init_domain_server (ASSUAN_CONTEXT *r_ctx,
 			   int rendezvousfd,
-			   pid_t peer)
+			   pid_t client)
 {
   assuan_error_t err;
 
-  err = _assuan_domain_init (r_ctx, rendezvousfd, peer);
+  err = _assuan_domain_init (r_ctx, rendezvousfd, client);
   if (err)
     return err;
 

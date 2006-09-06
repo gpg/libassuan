@@ -60,7 +60,7 @@
 /* Read an integer from byte address ADDR.  Works even if ADDR is
    misaligned.  */
 static int
-read_int (const char *addr)
+read_int (const void *addr)
 {
   int val;
 
@@ -73,7 +73,7 @@ read_int (const char *addr)
 /* Write the integer VAL to byte address ADDR.  Works even if ADDR is
    misaligned.  */
 static void
-write_int (char *addr, int val)
+write_int (void *addr, int val)
 {
   memcpy (addr, &val, sizeof (int));
 }
@@ -90,7 +90,7 @@ do_deinit (assuan_context_t ctx)
   if (ctx->domainbuffer)
     {
       assert (ctx->domainbufferallocated);
-      free (ctx->domainbuffer);
+      xfree (ctx->domainbuffer);
     }
 
   if (ctx->pendingfds)
@@ -101,7 +101,7 @@ do_deinit (assuan_context_t ctx)
       for (i = 0; i < ctx->pendingfdscount; i ++)
 	_assuan_close (ctx->pendingfds[i]);
 
-      free (ctx->pendingfds);
+      xfree (ctx->pendingfds);
     }
 
   unlink (ctx->myaddr.sun_path);
@@ -126,8 +126,7 @@ domain_reader (assuan_context_t ctx, void *buf, size_t buflen)
       {
 	struct cmsghdr hdr;
 	int fd;
-      }
-      cmsg;
+      } cmsg;
 
       memset (&msg, 0, sizeof (msg));
 
@@ -147,7 +146,7 @@ domain_reader (assuan_context_t ctx, void *buf, size_t buflen)
 	  len = recvmsg (ctx->inbound.fd, &msg, MSG_PEEK);
 	  if (len < 0)
 	    {
-	      printf ("domain_reader: %m\n");
+	      _assuan_log_printf ("domain_reader: %s\n", strerror (errno));
 	      return -1;
 	    }
 
@@ -171,11 +170,11 @@ domain_reader (assuan_context_t ctx, void *buf, size_t buflen)
 	      else
 		size *= 2;
 
-	      tmp = malloc (size);
+	      tmp = xtrymalloc (size);
 	      if (! tmp)
 		return -1;
 
-	      free (ctx->domainbuffer);
+	      xfree (ctx->domainbuffer);
 	      ctx->domainbuffer = tmp;
 	      ctx->domainbufferallocated = size;
 	    }
@@ -221,8 +220,8 @@ domain_reader (assuan_context_t ctx, void *buf, size_t buflen)
 	{
 	  void *tmp;
 
-	  tmp = realloc (ctx->pendingfds,
-			 sizeof (int) * (ctx->pendingfdscount + 1));
+	  tmp = xtryrealloc (ctx->pendingfds,
+                             sizeof (int) * (ctx->pendingfdscount + 1));
 	  if (! tmp)
 	    {
 	      _assuan_log_printf ("domain_reader: %s\n", strerror (errno));
@@ -303,8 +302,7 @@ domain_sendfd (assuan_context_t ctx, int fd)
   {
     struct cmsghdr hdr;
     int fd;
-  }
-  cmsg;
+  } cmsg;
   int len;
 
   memset (&msg, 0, sizeof (msg));
@@ -329,7 +327,7 @@ domain_sendfd (assuan_context_t ctx, int fd)
   if (len < 0)
     {
       _assuan_log_printf ("domain_sendfd: %s\n", strerror (errno));
-      return ASSUAN_General_Error;
+      return _assuan_error (ASSUAN_General_Error);
     }
   else
     return 0;
@@ -345,22 +343,28 @@ domain_receivefd (assuan_context_t ctx, int *fd)
   if (ctx->pendingfds == 0)
     {
       _assuan_log_printf ("no pending file descriptors!\n");
-      return ASSUAN_General_Error;
+      return _assuan_error (ASSUAN_General_Error);
     }
 
   *fd = ctx->pendingfds[0];
   if (-- ctx->pendingfdscount == 0)
     {
-      free (ctx->pendingfds);
+      xfree (ctx->pendingfds);
       ctx->pendingfds = 0;
     }
-  else
-    /* Fix the array.  */
+  else /* Fix the array.  */
     {
+      void *tmp;
+
       memmove (ctx->pendingfds, ctx->pendingfds + 1,
 	       ctx->pendingfdscount * sizeof (int));
-      ctx->pendingfds = realloc (ctx->pendingfds,
-				 ctx->pendingfdscount * sizeof (int));
+      tmp = xtryrealloc (ctx->pendingfds,
+                         ctx->pendingfdscount * sizeof (int));
+      if (tmp)
+        ctx->pendingfds = tmp;
+      /* Note: we ignore an shrinking error here thus the next realloc
+         to increase the size will succeed as the block is already of
+         the then requested size. */
     }
 #endif
   return 0;
@@ -368,9 +372,6 @@ domain_receivefd (assuan_context_t ctx, int *fd)
 
 
 
-/* Make a connection to the Unix domain socket NAME and return a new
-   Assuan context in CTX.  SERVER_PID is currently not used but may
-   become handy in the future.  */
 assuan_error_t
 _assuan_domain_init (assuan_context_t *r_ctx, int rendezvousfd, pid_t peer)
 {
@@ -384,7 +385,7 @@ _assuan_domain_init (assuan_context_t *r_ctx, int rendezvousfd, pid_t peer)
   int tries;
 
   if (!r_ctx)
-    return ASSUAN_Invalid_Value;
+    return _assuan_error (ASSUAN_Invalid_Value);
   *r_ctx = NULL;
 
   err = _assuan_new_context (&ctx); 
@@ -404,7 +405,7 @@ _assuan_domain_init (assuan_context_t *r_ctx, int rendezvousfd, pid_t peer)
     {
       _assuan_log_printf ("can't create socket: %s\n", strerror (errno));
       _assuan_release_context (ctx);
-      return ASSUAN_General_Error;
+      return _assuan_error (ASSUAN_General_Error);
     }
   
   ctx->inbound.fd = fd;
@@ -438,7 +439,7 @@ _assuan_domain_init (assuan_context_t *r_ctx, int rendezvousfd, pid_t peer)
             "name.  DoS in progress?\n");
 	  _assuan_release_context (ctx);
 	  _assuan_close (fd);
-	  return ASSUAN_General_Error;
+	  return _assuan_error (ASSUAN_General_Error);
 	}
 
       memset (&ctx->myaddr, 0, sizeof ctx->myaddr);
@@ -458,7 +459,7 @@ _assuan_domain_init (assuan_context_t *r_ctx, int rendezvousfd, pid_t peer)
            strerror (errno));
       _assuan_release_context (ctx);
       _assuan_close (fd);
-      return ASSUAN_Connect_Failed;
+      return _assuan_error (ASSUAN_Connect_Failed);
     }
 
   /* Rendezvous with our peer.  */
@@ -469,8 +470,9 @@ _assuan_domain_init (assuan_context_t *r_ctx, int rendezvousfd, pid_t peer)
     fp = fdopen (rendezvousfd, "w+");
     if (! fp)
       {
-	_assuan_log_printf ("can't open rendezvous port: %s\n", strerror (errno));
-	return ASSUAN_Connect_Failed;
+	_assuan_log_printf ("can't open rendezvous port: %s\n",
+                            strerror (errno));
+	return _assuan_error (ASSUAN_Connect_Failed);
       }
 
     /* Send our address.  */
@@ -498,13 +500,17 @@ _assuan_domain_init (assuan_context_t *r_ctx, int rendezvousfd, pid_t peer)
   return 0;
 }
 
+/* Connect to a Unix domain socket server.  RENDEZVOUSFD is
+   bidirectional file descriptor (normally returned via socketpair)
+   which the client can use to rendezvous with the server.  SERVER is
+   the server's pid.  */
 assuan_error_t
-assuan_domain_connect (assuan_context_t * r_ctx, int rendezvousfd, pid_t peer)
+assuan_domain_connect (assuan_context_t *r_ctx, int rendezvousfd, pid_t server)
 {
   assuan_error_t aerr;
   int okay, off;
 
-  aerr = _assuan_domain_init (r_ctx, rendezvousfd, peer);
+  aerr = _assuan_domain_init (r_ctx, rendezvousfd, server);
   if (aerr)
     return aerr;
 
@@ -518,7 +524,7 @@ assuan_domain_connect (assuan_context_t * r_ctx, int rendezvousfd, pid_t peer)
       _assuan_log_printf ("can't connect to server: `");
       _assuan_log_sanitized_string ((*r_ctx)->inbound.line);
       fprintf (assuan_get_assuan_log_stream (), "'\n");
-      aerr = ASSUAN_Connect_Failed;
+      aerr = _assuan_error (ASSUAN_Connect_Failed);
     }
 
   if (aerr)

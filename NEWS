@@ -1,10 +1,17 @@
-Noteworthy changes in version 0.6.11
+Noteworthy changes in version 0.9.0
 -------------------------------------------------
 
  * Internal cleanups to make inclusion of the code into libraries
    easier.
 
  * Made clear that the software is under the LGPL.
+
+ * New function assuan_set_assuan_err_source.  All gpg-error enabled
+   software should call this right at startup to switch libassuan into
+   the gpg-error style mode.  All error codes are then returned as
+   gpg-error style codes (GPG_ERR_ASS_* as well as others).
+   If the new macro _ASSUAN_ONLY_GPG_ERRORS is defned all old
+   definitions are excluded from assuan.h.
 
 
 Noteworthy changes in version 0.6.10 (2005-06-20)

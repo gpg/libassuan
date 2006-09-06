@@ -23,7 +23,7 @@ min_automake_version="1.9.3"
 
 # Version number: Remember to change it immediately *after* a release.
 #                 Add a "-cvs" prefix for non-released code.
-AC_INIT(libassuan, 0.6.11-cvs, gnupg-devel@gnupg.org)
+AC_INIT(libassuan, 0.9.0-cvs, gnupg-devel@gnupg.org)
 # Note, that this is not yet available as a shared library.
 
 PACKAGE=$PACKAGE_NAME
@@ -66,6 +66,11 @@ AC_PROG_RANLIB
 if test "$GCC" = yes; then
     CFLAGS="$CFLAGS -Wall -Wcast-align -Wshadow -Wstrict-prototypes"
 fi
+
+
+AH_BOTTOM([
+#define _ASSUAN_IN_LIBASSUAN 1
+])
 
 
 # 
@@ -160,6 +165,7 @@ AC_REPLACE_FUNCS(setenv)
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([doc/Makefile])
+AC_CONFIG_FILES([tests/Makefile])
 AC_CONFIG_FILES([src/libassuan-config], [chmod +x src/libassuan-config])
 
 AC_OUTPUT

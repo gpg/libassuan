@@ -54,5 +54,5 @@ libassuan_a_SOURCES = \
 
 libassuan_a_LIBADD = @LIBOBJS@
 
-assuan-errors.c : assuan.h
+assuan-errors.c : assuan.h mkerrors
 	$(srcdir)/mkerrors < $(srcdir)/assuan.h > assuan-errors.c

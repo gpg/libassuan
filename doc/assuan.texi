@@ -175,7 +175,7 @@ Goals:
 @item Easy module testing
 @item Extendible
 @item Optional authentication and encryption facility
-@item Usable by access external hardware
+@item Usable to access external hardware
 @end itemize
 
 
@@ -261,7 +261,7 @@ A client should only check the first letter of each line and then skip
 over to the next token (except for data lines where the raw data starts
 exactly after 2 bytes).  Lines larger than 1000 bytes should be
 treated as a communication error. (The rationale for having a line
-length limit is to allow for easier multiplexing of multiple channels).
+length limit is to allow for easier multiplexing of several channels).
 
 
 @node Client requests
@@ -405,7 +405,7 @@ Error codes used as status codes in the Assuan protocol:
 @end table
 
 For historical reasons a few more error codes are defined in
-@file{assuan.h}; they should not be used be new applications.
+@file{assuan.h}; they should not be used by new applications.
 
 Errror codes in the range @var{ASSUAN_USER_ERROR_FIRST} to
 @var{ASSUAN_USER_ERROR_LAST} may be used at the applications own

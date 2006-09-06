@@ -246,7 +246,7 @@ assuan_register_command (ASSUAN_CONTEXT ctx,
     cmd_name = NULL;
 
   if (!cmd_name)
-    return ASSUAN_Invalid_Value;
+    return _assuan_error (ASSUAN_Invalid_Value);
 
   if (!handler)
     { /* find a default handler. */
@@ -269,7 +269,7 @@ assuan_register_command (ASSUAN_CONTEXT ctx,
       ctx->cmdtbl_size = 50;
       ctx->cmdtbl = xtrycalloc ( ctx->cmdtbl_size, sizeof *ctx->cmdtbl);
       if (!ctx->cmdtbl)
-        return ASSUAN_Out_Of_Core;
+        return _assuan_error (ASSUAN_Out_Of_Core);
       ctx->cmdtbl_used = 0;
     }
   else if (ctx->cmdtbl_used >= ctx->cmdtbl_size)
@@ -278,7 +278,7 @@ assuan_register_command (ASSUAN_CONTEXT ctx,
 
       x = xtryrealloc ( ctx->cmdtbl, (ctx->cmdtbl_size+10) * sizeof *x);
       if (!x)
-        return ASSUAN_Out_Of_Core;
+        return _assuan_error (ASSUAN_Out_Of_Core);
       ctx->cmdtbl = x;
       ctx->cmdtbl_size += 50;
     }
@@ -293,7 +293,7 @@ int
 assuan_register_bye_notify (ASSUAN_CONTEXT ctx, void (*fnc)(ASSUAN_CONTEXT))
 {
   if (!ctx)
-    return ASSUAN_Invalid_Value;
+    return _assuan_error (ASSUAN_Invalid_Value);
   ctx->bye_notify_fnc = fnc;
   return 0;
 }
@@ -302,7 +302,7 @@ int
 assuan_register_reset_notify (ASSUAN_CONTEXT ctx, void (*fnc)(ASSUAN_CONTEXT))
 {
   if (!ctx)
-    return ASSUAN_Invalid_Value;
+    return _assuan_error (ASSUAN_Invalid_Value);
   ctx->reset_notify_fnc = fnc;
   return 0;
 }
@@ -311,7 +311,7 @@ int
 assuan_register_cancel_notify (ASSUAN_CONTEXT ctx, void (*fnc)(ASSUAN_CONTEXT))
 {
   if (!ctx)
-    return ASSUAN_Invalid_Value;
+    return _assuan_error (ASSUAN_Invalid_Value);
   ctx->cancel_notify_fnc = fnc;
   return 0;
 }
@@ -322,7 +322,7 @@ assuan_register_option_handler (ASSUAN_CONTEXT ctx,
                                           const char*, const char*))
 {
   if (!ctx)
-    return ASSUAN_Invalid_Value;
+    return _assuan_error (ASSUAN_Invalid_Value);
   ctx->option_handler_fnc = fnc;
   return 0;
 }
@@ -332,7 +332,7 @@ assuan_register_input_notify (ASSUAN_CONTEXT ctx,
                               void (*fnc)(ASSUAN_CONTEXT, const char *))
 {
   if (!ctx)
-    return ASSUAN_Invalid_Value;
+    return _assuan_error (ASSUAN_Invalid_Value);
   ctx->input_notify_fnc = fnc;
   return 0;
 }
@@ -342,7 +342,7 @@ assuan_register_output_notify (ASSUAN_CONTEXT ctx,
                               void (*fnc)(ASSUAN_CONTEXT, const char *))
 {
   if (!ctx)
-    return ASSUAN_Invalid_Value;
+    return _assuan_error (ASSUAN_Invalid_Value);
   ctx->output_notify_fnc = fnc;
   return 0;
 }
@@ -407,7 +407,7 @@ dispatch_command (ASSUAN_CONTEXT ctx, char *line, int linelen)
   for (p=line; *p && *p != ' ' && *p != '\t'; p++)
     ;
   if (p==line)
-    return set_error (ctx, Invalid_Command, "leading white-space"); 
+    return set_error (ctx, Syntax_Error, "leading white-space"); 
   if (*p) 
     { /* Skip over leading WS after the keyword */
       *p++ = 0;
@@ -447,7 +447,7 @@ process_request (ASSUAN_CONTEXT ctx)
   int rc;
 
   if (ctx->in_inquire)
-    return ASSUAN_Nested_Commands;
+    return _assuan_error (ASSUAN_Nested_Commands);
 
   rc = _assuan_read_line (ctx);
   if (rc)
@@ -478,7 +478,7 @@ process_request (ASSUAN_CONTEXT ctx)
     {
       rc = assuan_write_line (ctx, ctx->okay_line? ctx->okay_line : "OK");
     }
-  else if (rc == -1)
+  else if (err_is_eof (rc))
     { /* No error checking because the peer may have already disconnect */ 
       assuan_write_line (ctx, "OK closing connection");
       ctx->finish_handler (ctx);
@@ -489,7 +489,7 @@ process_request (ASSUAN_CONTEXT ctx)
 
       if (rc < 100)
         sprintf (errline, "ERR %d server fault (%.50s)",
-                 ASSUAN_Server_Fault, assuan_strerror (rc));
+                 _assuan_error (ASSUAN_Server_Fault), assuan_strerror (rc));
       else
         {
           const char *text = ctx->err_no == rc? ctx->err_str:NULL;
@@ -499,7 +499,7 @@ process_request (ASSUAN_CONTEXT ctx)
              strings from libgpg-error without creating a dependency.
              They are used for debugging purposes only, so there is no
              problem if they are not available.  We need to make sure
-             that we are using elf because only this guarantees that
+             that we are using ELF because only this guarantees that
              weak symbol support is available in case GNU ld is not
              used. */
           unsigned int source, code;
@@ -561,7 +561,7 @@ assuan_process (ASSUAN_CONTEXT ctx)
     rc = process_request (ctx);
   } while (!rc);
 
-  if (rc == -1)
+  if (err_is_eof (rc))
     rc = 0;
 
   return rc;
@@ -662,7 +662,7 @@ assuan_error_t
 assuan_set_okay_line (ASSUAN_CONTEXT ctx, const char *line)
 {
   if (!ctx)
-    return ASSUAN_Invalid_Value;
+    return _assuan_error (ASSUAN_Invalid_Value);
   if (!line)
     {
       xfree (ctx->okay_line);
@@ -674,7 +674,7 @@ assuan_set_okay_line (ASSUAN_CONTEXT ctx, const char *line)
          we should allocate the entire line in secure memory */
       char *buf = xtrymalloc (3+strlen(line)+1);
       if (!buf)
-        return ASSUAN_Out_Of_Core;
+        return _assuan_error (ASSUAN_Out_Of_Core);
       strcpy (buf, "OK ");
       strcpy (buf+3, line);
       xfree (ctx->okay_line);
@@ -694,7 +694,7 @@ assuan_write_status (ASSUAN_CONTEXT ctx, const char *keyword, const char *text)
   assuan_error_t ae;
 
   if ( !ctx || !keyword)
-    return ASSUAN_Invalid_Value;
+    return _assuan_error (ASSUAN_Invalid_Value);
   if (!text)
     text = "";
 

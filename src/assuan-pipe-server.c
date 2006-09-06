@@ -66,7 +66,7 @@ _assuan_new_context (ASSUAN_CONTEXT *r_ctx)
   *r_ctx = NULL;
   ctx = xtrycalloc (1, sizeof *ctx);
   if (!ctx)
-    return ASSUAN_Out_Of_Core;
+    return _assuan_error (ASSUAN_Out_Of_Core);
   ctx->input_fd = -1;
   ctx->output_fd = -1;
 

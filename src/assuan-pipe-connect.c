@@ -270,7 +270,7 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
   HANDLE nullfd = INVALID_HANDLE_VALUE;
 
   if (!ctx || !name || !argv || !argv[0])
-    return ASSUAN_Invalid_Value;
+    return _assuan_error (ASSUAN_Invalid_Value);
 
   fix_signals ();
 
@@ -278,13 +278,13 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
 
   /* Build the command line.  */
   if (build_w32_commandline (argv, &cmdline))
-    return ASSUAN_Out_Of_Core;
+    return _assuan_error (ASSUAN_Out_Of_Core);
 
   /* Create thew two pipes. */
   if (create_inheritable_pipe (rp, 0))
     {
       xfree (cmdline);
-      return ASSUAN_General_Error;
+      return _assuan_error (ASSUAN_General_Error);
     }
   
   if (create_inheritable_pipe (wp, 1))
@@ -292,7 +292,7 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
       CloseHandle (fd_to_handle (rp[0]));
       CloseHandle (fd_to_handle (rp[1]));
       xfree (cmdline);
-      return ASSUAN_General_Error;
+      return _assuan_error (ASSUAN_General_Error);
     }
 
   
@@ -304,7 +304,7 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
       CloseHandle (fd_to_handle (wp[0]));
       CloseHandle (fd_to_handle (wp[1]));
       xfree (cmdline);
-      return ASSUAN_General_Error;
+      return _assuan_error (ASSUAN_General_Error);
     }
 
   (*ctx)->pipe_mode = 1;
@@ -391,7 +391,7 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
         CloseHandle (nullfd);
       xfree (cmdline);
       _assuan_release_context (*ctx); 
-      return ASSUAN_General_Error;
+      return _assuan_error (ASSUAN_General_Error);
     }
   xfree (cmdline);
   cmdline = NULL;
@@ -421,20 +421,20 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
   char mypidstr[50];
 
   if (!ctx || !name || !argv || !argv[0])
-    return ASSUAN_Invalid_Value;
+    return _assuan_error (ASSUAN_Invalid_Value);
 
   fix_signals ();
 
   sprintf (mypidstr, "%lu", (unsigned long)getpid ());
 
   if (pipe (rp) < 0)
-    return ASSUAN_General_Error;
+    return _assuan_error (ASSUAN_General_Error);
 
   if (pipe (wp) < 0)
     {
       close (rp[0]);
       close (rp[1]);
-      return ASSUAN_General_Error;
+      return _assuan_error (ASSUAN_General_Error);
     }
   
   err = _assuan_new_context (ctx);
@@ -462,7 +462,7 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
       close (wp[0]);
       close (wp[1]);
       _assuan_release_context (*ctx); 
-      return ASSUAN_General_Error;
+      return _assuan_error (ASSUAN_General_Error);
     }
 
   if ((*ctx)->pid == 0)
@@ -559,7 +559,8 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
           /* oops - use the pipe to tell the parent about it */
           snprintf (errbuf, sizeof(errbuf)-1,
                     "ERR %d can't exec `%s': %.50s\n",
-                    ASSUAN_Problem_Starting_Server, name, strerror (errno));
+                    _assuan_error (ASSUAN_Problem_Starting_Server),
+                    name, strerror (errno));
           errbuf[sizeof(errbuf)-1] = 0;
           writen (1, errbuf, strlen (errbuf));
           _exit (4);
@@ -594,7 +595,7 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
       {
 	_assuan_log_printf ("can't connect server: `%s'\n",
                             (*ctx)->inbound.line);
-	err = ASSUAN_Connect_Failed;
+	err = _assuan_error (ASSUAN_Connect_Failed);
       }
   }
 

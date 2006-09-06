@@ -27,24 +27,32 @@
 #include <unistd.h>
 
 
-/* To use this file with libraries the following macros are often
-   useful:
+/* To use this file with libraries the following macros are useful:
 
-   #define _ASSUAN_EXT_SYM_PREFIX _foo_
+     #define _ASSUAN_EXT_SYM_PREFIX _foo_
    
      This prefixes all external symbols with "_foo_".
 
-   #define _ASSUAN_NO_PTH 
+     #define _ASSUAN_ONLY_GPG_ERRORS
 
-     This avoids inclusion of special GNU Pth hacks.
+     If this is defined all old-style Assuan error codes are made
+     inactive as well as other dereacted stuff.
 
-   #define _ASSUAN_NO_FIXED_SIGNALS 
+   The follwing macros are used internally in the implementation of
+   libassuan:
 
-     This disables changing of certain signal handler; i.e. SIGPIPE.
+     #define _ASSUAN_NO_PTH 
 
-   #define _ASSUAN_USE_DOUBLE_FORK
+       This avoids inclusion of special GNU Pth hacks.
 
-     Use a double fork approach when connecting to a server through a pipe.
+     #define _ASSUAN_NO_FIXED_SIGNALS 
+
+       This disables changing of certain signal handler; i.e. SIGPIPE.
+
+     #define _ASSUAN_USE_DOUBLE_FORK
+
+       Use a double fork approach when connecting to a server through
+       a pipe.
  */
 
 
@@ -105,6 +113,8 @@
 #define assuan_begin_confidential _ASSUAN_PREFIX(assuan_begin_confidential)
 #define assuan_end_confidential _ASSUAN_PREFIX(assuan_end_confidential)
 #define assuan_strerror _ASSUAN_PREFIX(assuan_strerror)
+#define assuan_set_assuan_err_source \
+  _ASSUAN_PREFIX(assuan_set_assuan_err_source)
 #define assuan_set_assuan_log_stream \
   _ASSUAN_PREFIX(assuan_set_assuan_log_stream)
 #define assuan_get_assuan_log_stream \
@@ -156,19 +166,27 @@ extern "C"
 #endif
 #endif
 
-
+#ifndef _ASSUAN_ONLY_GPG_ERRORS
+/* Assuan error codes.  These are only used by old applications or
+   those applications which won't make use of libgpg-error. */
 typedef enum
 {
+#ifndef _ASSUAN_IN_LIBASSUAN
   ASSUAN_No_Error = 0,
+#endif
   ASSUAN_General_Error = 1,
   ASSUAN_Out_Of_Core = 2,
   ASSUAN_Invalid_Value = 3,
+#ifndef _ASSUAN_IN_LIBASSUAN
   ASSUAN_Timeout = 4,
+#endif
   ASSUAN_Read_Error = 5,
   ASSUAN_Write_Error = 6,
   ASSUAN_Problem_Starting_Server = 7,
   ASSUAN_Not_A_Server = 8,
+#ifndef _ASSUAN_IN_LIBASSUAN
   ASSUAN_Not_A_Client = 9,
+#endif
   ASSUAN_Nested_Commands = 10,
   ASSUAN_Invalid_Response = 11,
   ASSUAN_No_Data_Callback = 12,
@@ -179,24 +197,33 @@ typedef enum
   /* Error codes above 99 are meant as status codes */
   ASSUAN_Not_Implemented = 100,
   ASSUAN_Server_Fault    = 101,
+#ifndef _ASSUAN_IN_LIBASSUAN
   ASSUAN_Invalid_Command = 102,
+#endif
   ASSUAN_Unknown_Command = 103,
   ASSUAN_Syntax_Error    = 104,
+#ifndef _ASSUAN_IN_LIBASSUAN
   ASSUAN_Parameter_Error = 105,
+#endif
   ASSUAN_Parameter_Conflict = 106,
   ASSUAN_Line_Too_Long = 107,
   ASSUAN_Line_Not_Terminated = 108,
+#ifndef _ASSUAN_IN_LIBASSUAN
   ASSUAN_No_Input = 109,
   ASSUAN_No_Output = 110,
+#endif
   ASSUAN_Canceled = 111,
+#ifndef _ASSUAN_IN_LIBASSUAN
   ASSUAN_Unsupported_Algorithm = 112,
   ASSUAN_Server_Resource_Problem = 113,
   ASSUAN_Server_IO_Error = 114,
   ASSUAN_Server_Bug = 115,
   ASSUAN_No_Data_Available = 116,
   ASSUAN_Invalid_Data = 117,
+#endif
   ASSUAN_Unexpected_Command = 118,
   ASSUAN_Too_Much_Data = 119,
+#ifndef _ASSUAN_IN_LIBASSUAN
   ASSUAN_Inquire_Unknown = 120,
   ASSUAN_Inquire_Error = 121,
   ASSUAN_Invalid_Option = 122,
@@ -207,7 +234,7 @@ typedef enum
   ASSUAN_Locale_Problem = 127,
   ASSUAN_Not_Confirmed = 128,
 
-  /* Warning: Don't use the rror codes, below they are deprecated. */
+  /* Warning: Don't use the Error codes, below they are deprecated. */
   ASSUAN_Bad_Certificate = 201,
   ASSUAN_Bad_Certificate_Chain = 202,
   ASSUAN_Missing_Certificate = 203,
@@ -233,7 +260,7 @@ typedef enum
      at their own discretion. */
   ASSUAN_USER_ERROR_FIRST = 1000,
   ASSUAN_USER_ERROR_LAST = 9999
-
+#endif
 } assuan_error_t;
 
 typedef assuan_error_t AssuanError; /* Deprecated. */
@@ -258,6 +285,13 @@ typedef enum
 } AssuanCommand;
 
 
+#else  /*!_ASSUAN_ONLY_GPG_ERRORS*/
+
+typedef int assuan_error_t;
+
+#endif /*!_ASSUAN_ONLY_GPG_ERRORS*/
+
+
 /* Definitions of flags for assuan_set_flag(). */
 typedef enum
   {
@@ -274,7 +308,9 @@ assuan_flag_t;
 
 struct assuan_context_s;
 typedef struct assuan_context_s *assuan_context_t;
+#ifndef _ASSUAN_ONLY_GPG_ERRORS
 typedef struct assuan_context_s *ASSUAN_CONTEXT;
+#endif /*_ASSUAN_ONLY_GPG_ERRORS*/
 
 /*-- assuan-handler.c --*/
 int assuan_register_command (assuan_context_t ctx,
@@ -351,8 +387,8 @@ assuan_error_t assuan_socket_connect (assuan_context_t *ctx, const char *name,
    which the client can use to rendezvous with the server.  SERVER s
    the server's pid.  */
 assuan_error_t assuan_domain_connect (assuan_context_t *r_ctx,
-				   int rendezvousfd,
-				   pid_t server);
+                                      int rendezvousfd,
+                                      pid_t server);
 
 /*-- assuan-domain-server.c --*/
 
@@ -360,8 +396,8 @@ assuan_error_t assuan_domain_connect (assuan_context_t *r_ctx,
    via socketpair) that the domain server can use to rendezvous with
    the client.  CLIENT is the client's pid.  */
 assuan_error_t assuan_init_domain_server (assuan_context_t *r_ctx,
-				       int rendezvousfd,
-				       pid_t client);
+                                          int rendezvousfd,
+                                          pid_t client);
 
 
 /*-- assuan-connect.c --*/
@@ -421,8 +457,20 @@ void assuan_set_flag (assuan_context_t ctx, assuan_flag_t flag, int value);
 int  assuan_get_flag (assuan_context_t ctx, assuan_flag_t flag);
 
 
-/*-- assuan-errors.c (built) --*/
+/*-- assuan-errors.c --*/
+
+#ifndef _ASSUAN_ONLY_GPG_ERRORS
+/* Return a string describing the assuan error.  The use of this
+   function is deprecated; it is better to call
+   assuan_set_assuan_err_source once and then make use libgpg-error. */
 const char *assuan_strerror (assuan_error_t err);
+#endif /*_ASSUAN_ONLY_GPG_ERRORS*/
+
+/* Enable gpg-error style error codes.  ERRSOURCE is one of gpg-error
+   sources.  Note, that this function is not thread-safe and should be
+   used right at startup. Switching back to the old style mode is not
+   supported. */
+void assuan_set_assuan_err_source (int errsource);
 
 /*-- assuan-logging.c --*/
 

@@ -79,7 +79,7 @@ accept_connection (assuan_context_t ctx)
   if (fd == -1)
     {
       ctx->os_errno = errno;
-      return ASSUAN_Accept_Failed;
+      return _assuan_error (ASSUAN_Accept_Failed);
     }
 
   ctx->connected_fd = fd;
@@ -119,7 +119,7 @@ assuan_init_socket_server (assuan_context_t *r_ctx, int listen_fd)
   *r_ctx = NULL;
   ctx = xtrycalloc (1, sizeof *ctx);
   if (!ctx)
-    return ASSUAN_Out_Of_Core;
+    return _assuan_error (ASSUAN_Out_Of_Core);
   ctx->is_server = 1;
   ctx->input_fd = -1;
   ctx->output_fd = -1;
@@ -153,7 +153,7 @@ assuan_init_connected_socket_server (assuan_context_t *r_ctx, int fd)
   *r_ctx = NULL;
   ctx = xtrycalloc (1, sizeof *ctx);
   if (!ctx)
-    return ASSUAN_Out_Of_Core;
+    return _assuan_error (ASSUAN_Out_Of_Core);
   ctx->is_server = 1;
   ctx->pipe_mode = 1; /* we want a second accept to indicate EOF */
   ctx->input_fd = -1;

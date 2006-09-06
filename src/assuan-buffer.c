@@ -31,6 +31,9 @@
 #endif
 #include "assuan-defs.h"
 
+
+/* Extended version of write(2) to guarantee that all bytes are
+   written.  Returns 0 on success or -1 and ERRNO on failure. */
 static int
 writen (ASSUAN_CONTEXT ctx, const char *buffer, size_t length)
 {
@@ -50,7 +53,9 @@ writen (ASSUAN_CONTEXT ctx, const char *buffer, size_t length)
   return 0;  /* okay */
 }
 
-/* Read an entire line.  */
+/* Read an entire line. Returns 0 on success or -1 and ERRNo on
+   failure.  EOF is indictated by setting the integer at address
+   R_EOF.  */
 static int
 readline (ASSUAN_CONTEXT ctx, char *buf, size_t buflen,
 	  int *r_nread, int *r_eof)
@@ -89,6 +94,7 @@ readline (ASSUAN_CONTEXT ctx, char *buf, size_t buflen,
 }
 
 
+/* Function returns an Assuan error. */
 int
 _assuan_read_line (ASSUAN_CONTEXT ctx)
 {
@@ -129,19 +135,20 @@ _assuan_read_line (ASSUAN_CONTEXT ctx)
   if (rc)
     {
       if (ctx->log_fp)
-	fprintf (ctx->log_fp, "%s[%u.%p] DBG: <- [Error: %s]\n",
+	fprintf (ctx->log_fp, "%s[%u.%d] DBG: <- [Error: %s]\n",
 		 assuan_get_assuan_log_prefix (),
-                 (unsigned int)getpid (), ctx, strerror (errno));
-      return ASSUAN_Read_Error;
+                 (unsigned int)getpid (), ctx->inbound.fd,
+                 strerror (errno));
+      return _assuan_error (ASSUAN_Read_Error);
     }
   if (!nread)
     {
       assert (ctx->inbound.eof);
       if (ctx->log_fp)
-	fprintf (ctx->log_fp, "%s[%u.%p] DBG: <- [EOF]\n",
+	fprintf (ctx->log_fp, "%s[%u.%d] DBG: <- [EOF]\n",
 		 assuan_get_assuan_log_prefix (),
-                 (unsigned int)getpid (), ctx);
-      return -1;
+                 (unsigned int)getpid (), ctx->inbound.fd);
+      return _assuan_error (-1);
     }
 
   ctx->inbound.attic.pending = 0;
@@ -171,9 +178,9 @@ _assuan_read_line (ASSUAN_CONTEXT ctx)
       ctx->inbound.linelen = endp - line;
       if (ctx->log_fp)
 	{
-	  fprintf (ctx->log_fp, "%s[%u.%p] DBG: <- ",
+	  fprintf (ctx->log_fp, "%s[%u.%d] DBG: <- ",
 		   assuan_get_assuan_log_prefix (),
-                   (unsigned int)getpid (), ctx);
+                   (unsigned int)getpid (), ctx->inbound.fd);
 	  if (ctx->confidential)
 	    fputs ("[Confidential data not shown]", ctx->log_fp);
 	  else
@@ -187,13 +194,14 @@ _assuan_read_line (ASSUAN_CONTEXT ctx)
   else
     {
       if (ctx->log_fp)
-	fprintf (ctx->log_fp, "%s[%u.%p] DBG: <- [Invalid line]\n",
+	fprintf (ctx->log_fp, "%s[%u.%d] DBG: <- [Invalid line]\n",
 		 assuan_get_assuan_log_prefix (),
-                 (unsigned int)getpid (), ctx);
+                 (unsigned int)getpid (), ctx->inbound.fd);
       *line = 0;
       ctx->inbound.linelen = 0;
-      return ctx->inbound.eof ? ASSUAN_Line_Not_Terminated
-	: ASSUAN_Line_Too_Long;
+      return _assuan_error (ctx->inbound.eof 
+                            ? ASSUAN_Line_Not_Terminated
+                            : ASSUAN_Line_Too_Long);
     }
 }
 
@@ -213,7 +221,7 @@ assuan_read_line (ASSUAN_CONTEXT ctx, char **line, size_t *linelen)
   assuan_error_t err;
 
   if (!ctx)
-    return ASSUAN_Invalid_Value;
+    return _assuan_error (ASSUAN_Invalid_Value);
 
   err = _assuan_read_line (ctx);
   *line = ctx->inbound.line;
@@ -242,10 +250,10 @@ _assuan_write_line (assuan_context_t ctx, const char *prefix,
   if (len + prefixlen + 2 > ASSUAN_LINELENGTH)
     {
       if (ctx->log_fp)
-        fprintf (ctx->log_fp, "%s[%u.%p] DBG: -> "
+        fprintf (ctx->log_fp, "%s[%u.%d] DBG: -> "
                  "[supplied line too long -truncated]\n",
                  assuan_get_assuan_log_prefix (),
-                 (unsigned int)getpid (), ctx);
+                 (unsigned int)getpid (), ctx->inbound.fd);
       if (prefixlen > 5)
         prefixlen = 5;
       if (len > ASSUAN_LINELENGTH - prefixlen - 2)
@@ -255,9 +263,9 @@ _assuan_write_line (assuan_context_t ctx, const char *prefix,
   /* Fixme: we should do some kind of line buffering.  */
   if (ctx->log_fp)
     {
-      fprintf (ctx->log_fp, "%s[%u.%p] DBG: -> ",
+      fprintf (ctx->log_fp, "%s[%u.%d] DBG: -> ",
 	       assuan_get_assuan_log_prefix (),
-               (unsigned int)getpid (), ctx);
+               (unsigned int)getpid (), ctx->inbound.fd);
       if (ctx->confidential)
 	fputs ("[Confidential data not shown]", ctx->log_fp);
       else
@@ -269,18 +277,18 @@ _assuan_write_line (assuan_context_t ctx, const char *prefix,
     {
       rc = writen (ctx, prefix, prefixlen);
       if (rc)
-        rc = ASSUAN_Write_Error;
+        rc = _assuan_error (ASSUAN_Write_Error);
     }
   if (!rc)
     {
       rc = writen (ctx, line, len);
       if (rc)
-        rc = ASSUAN_Write_Error;
+        rc = _assuan_error (ASSUAN_Write_Error);
       if (!rc)
         {
           rc = writen (ctx, "\n", 1);
           if (rc)
-            rc = ASSUAN_Write_Error;
+            rc = _assuan_error (ASSUAN_Write_Error);
         }
     }
   return rc;
@@ -294,7 +302,7 @@ assuan_write_line (ASSUAN_CONTEXT ctx, const char *line)
   const char *s;
 
   if (!ctx)
-    return ASSUAN_Invalid_Value;
+    return _assuan_error (ASSUAN_Invalid_Value);
 
   /* Make sure that we never take a LF from the user - this might
      violate the protocol. */
@@ -302,10 +310,10 @@ assuan_write_line (ASSUAN_CONTEXT ctx, const char *line)
   len = s? (s-line) : strlen (line);
 
   if (ctx->log_fp && s)
-    fprintf (ctx->log_fp, "%s[%u.%p] DBG: -> "
-             "[supplied line contained a LF -truncated]\n",
+    fprintf (ctx->log_fp, "%s[%u.%d] DBG: -> "
+             "[supplied line contained a LF - truncated]\n",
              assuan_get_assuan_log_prefix (),
-             (unsigned int)getpid (), ctx);
+             (unsigned int)getpid (), ctx->inbound.fd);
 
   return _assuan_write_line (ctx, NULL, line, len);
 }
@@ -360,9 +368,9 @@ _assuan_cookie_write_data (void *cookie, const char *buffer, size_t orig_size)
         {
           if (ctx->log_fp)
             {
-	      fprintf (ctx->log_fp, "%s[%u.%p] DBG: -> ",
+	      fprintf (ctx->log_fp, "%s[%u.%d] DBG: -> ",
 		       assuan_get_assuan_log_prefix (),
-                       (unsigned int)getpid (), ctx);
+                       (unsigned int)getpid (), ctx->inbound.fd);
 
               if (ctx->confidential)
                 fputs ("[Confidential data not shown]", ctx->log_fp);
@@ -376,7 +384,7 @@ _assuan_cookie_write_data (void *cookie, const char *buffer, size_t orig_size)
           linelen++;
           if (writen (ctx, ctx->outbound.data.line, linelen))
             {
-              ctx->outbound.data.error = ASSUAN_Write_Error;
+              ctx->outbound.data.error = _assuan_error (ASSUAN_Write_Error);
               return 0;
             }
           line = ctx->outbound.data.line;
@@ -408,9 +416,9 @@ _assuan_cookie_write_flush (void *cookie)
     {
       if (ctx->log_fp)
 	{
-	  fprintf (ctx->log_fp, "%s[%u.%p] DBG: -> ",
+	  fprintf (ctx->log_fp, "%s[%u.%d] DBG: -> ",
 		   assuan_get_assuan_log_prefix (),
-                   (unsigned int)getpid (), ctx);
+                   (unsigned int)getpid (), ctx->inbound.fd);
 	  if (ctx->confidential)
 	    fputs ("[Confidential data not shown]", ctx->log_fp);
 	  else
@@ -422,7 +430,7 @@ _assuan_cookie_write_flush (void *cookie)
       linelen++;
       if (writen (ctx, ctx->outbound.data.line, linelen))
         {
-          ctx->outbound.data.error = ASSUAN_Write_Error;
+          ctx->outbound.data.error = _assuan_error (ASSUAN_Write_Error);
           return 0;
         }
       ctx->outbound.data.linelen = 0;
@@ -453,9 +461,9 @@ assuan_error_t
 assuan_send_data (ASSUAN_CONTEXT ctx, const void *buffer, size_t length)
 {
   if (!ctx)
-    return ASSUAN_Invalid_Value;
+    return _assuan_error (ASSUAN_Invalid_Value);
   if (!buffer && length)
-    return ASSUAN_Invalid_Value;
+    return _assuan_error (ASSUAN_Invalid_Value);
 
   if (!buffer)
     { /* flush what we have */

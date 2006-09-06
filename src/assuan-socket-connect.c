@@ -89,7 +89,7 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
   const char *s;
 
   if (!r_ctx || !name)
-    return ASSUAN_Invalid_Value;
+    return _assuan_error (ASSUAN_Invalid_Value);
   *r_ctx = NULL;
 
   /* We require that the name starts with a slash, so that we can
@@ -99,10 +99,10 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
   if (*s && s[1] == ':')
     s += 2;
   if (*s != DIRSEP_C && *s != '/')
-    return ASSUAN_Invalid_Value;
+    return _assuan_error (ASSUAN_Invalid_Value);
 
   if (strlen (name)+1 >= sizeof srvr_addr.sun_path)
-    return ASSUAN_Invalid_Value;
+    return _assuan_error (ASSUAN_Invalid_Value);
 
   err = _assuan_new_context (&ctx); 
   if (err)
@@ -116,7 +116,7 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
     {
       _assuan_log_printf ("can't create socket: %s\n", strerror (errno));
       _assuan_release_context (ctx);
-      return ASSUAN_General_Error;
+      return _assuan_error (ASSUAN_General_Error);
     }
 
   memset (&srvr_addr, 0, sizeof srvr_addr);
@@ -132,7 +132,7 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
                           name, strerror (errno));
       _assuan_release_context (ctx);
       _assuan_close (fd);
-      return ASSUAN_Connect_Failed;
+      return _assuan_error (ASSUAN_Connect_Failed);
     }
 
   ctx->inbound.fd = fd;
@@ -152,7 +152,7 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
         /*LOG ("can't connect to server: `");*/
 	_assuan_log_sanitized_string (ctx->inbound.line);
 	fprintf (assuan_get_assuan_log_stream (), "'\n");
-	err = ASSUAN_Connect_Failed;
+	err = _assuan_error (ASSUAN_Connect_Failed);
       }
   }
 

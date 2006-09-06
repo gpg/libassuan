@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
- * USA. 
+ * USA.
  */
 
 #ifndef ASSUAN_DEFS_H
@@ -63,12 +63,16 @@ char * stpcpy (char *dest, const char *src);
 
 #define LINELENGTH ASSUAN_LINELENGTH
 
+
 struct cmdtbl_s
 {
   const char *name;
   int (*handler)(ASSUAN_CONTEXT, char *line);
 };
 
+
+/* A structure to dispatch I/O functions.  All these functions need to
+   return 0 on success and set ERRNO on failure.  */
 struct assuan_io
 {
   /* Routine to read from input_fd.  */
@@ -79,8 +83,10 @@ struct assuan_io
   assuan_error_t (*sendfd) (ASSUAN_CONTEXT, int);
   /* Receive a file descriptor.  */
   assuan_error_t (*receivefd) (ASSUAN_CONTEXT, int *);
-};  
+};
 
+
+/* The context we use with most functions. */
 struct assuan_context_s
 {
   assuan_error_t err_no;
@@ -89,17 +95,17 @@ struct assuan_context_s
                          error codes. */
 
   /* Context specific flags (cf. assuan_flag_t). */
-  struct 
+  struct
   {
     unsigned int no_waitpid:1; /* See ASSUAN_NO_WAITPID. */
-  } flags; 
+  } flags;
 
   int confidential;
   int is_server;      /* Set if this is context belongs to a server */
   int in_inquire;
   char *hello_line;
   char *okay_line;    /* See assuan_set_okay_line() */
-  
+
   void *user_pointer;  /* For assuan_get_pointer and assuan-set_pointer (). */
 
   FILE *log_fp;
@@ -123,14 +129,14 @@ struct assuan_context_s
     struct {
       FILE *fp;
       char line[LINELENGTH];
-      int linelen; 
+      int linelen;
       int error;
-    } data; 
+    } data;
   } outbound;
 
   int pipe_mode;  /* We are in pipe mode, i.e. we can handle just one
                      connection and must terminate then */
-  pid_t pid;	  /* The the pid of the peer. */
+  pid_t pid;	  /* The pid of the peer. */
   int listen_fd;  /* The fd we are listening on (used by socket servers) */
   int connected_fd; /* helper */
 
@@ -152,7 +158,7 @@ struct assuan_context_s
   int *pendingfds;
   int pendingfdscount;
 
-  void (*deinit_handler)(ASSUAN_CONTEXT);  
+  void (*deinit_handler)(ASSUAN_CONTEXT);
   int (*accept_handler)(ASSUAN_CONTEXT);
   int (*finish_handler)(ASSUAN_CONTEXT);
 
@@ -183,8 +189,8 @@ void _assuan_release_context (ASSUAN_CONTEXT ctx);
    Assuan context in CTX.  SERVER_PID is currently not used but may
    become handy in the future.  */
 assuan_error_t _assuan_domain_init (ASSUAN_CONTEXT *r_ctx,
-				 int rendezvousfd,
-				 pid_t peer);
+                                    int rendezvousfd,
+                                    pid_t peer);
 
 /*-- assuan-handler.c --*/
 int _assuan_register_std_commands (ASSUAN_CONTEXT ctx);
@@ -199,6 +205,23 @@ assuan_error_t _assuan_write_line (assuan_context_t ctx, const char *prefix,
 /*-- assuan-client.c --*/
 assuan_error_t _assuan_read_from_server (ASSUAN_CONTEXT ctx, int *okay, int *off);
 
+/*-- assuan-error.c --*/
+
+
+/* Map error codes as used in this implementaion to the libgpg-error
+   codes. */
+int _assuan_error (int oldcode);
+
+/* Extrac the erro code from A.  This works for both the old and the
+   new style error codes. This needs to be whenever an error code is
+   compared. */
+#define err_code(a) ((a) & 0x00ffffff)
+
+/* Check whether A is the erro code for EOF.  We allow forold and new
+   style EOF error codes here.  */
+#define err_is_eof(a) ((a) == (-1) || err_code (a) == 16383)
+
+
 
 /*-- assuan-util.c --*/
 void *_assuan_malloc (size_t n);
@@ -211,7 +234,8 @@ void  _assuan_free (void *p);
 #define xtryrealloc(a,b) _assuan_realloc((a),(b))
 #define xfree(a)         _assuan_free ((a))
 
-#define set_error(c,e,t) assuan_set_error ((c), ASSUAN_ ## e, (t))
+#define set_error(c,e,t) \
+        assuan_set_error ((c), _assuan_error (ASSUAN_ ## e), (t))
 
 void _assuan_log_print_buffer (FILE *fp, const void *buffer, size_t  length);
 void _assuan_log_sanitized_string (const char *string);
@@ -267,4 +291,3 @@ int setenv (const char *name, const char *value, int replace);
 #endif
 
 #endif /*ASSUAN_DEFS_H*/
-

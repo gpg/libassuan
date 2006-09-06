@@ -1,3 +1,37 @@
+2006-09-06  Werner Koch  <wk@g10code.com>
+
+	* assuan.h (_ASSUAN_ONLY_GPG_ERRORS): New.
+
+	* assuan-handler.c (dispatch_command): Use Syntax_Error instead of
+	Invalid_Command.
+
+	* assuan-domain-connect.c: Changed alloc malloc/free/realloc to
+	xtrymalloc et al.
+	(read_int, write_int): Make args void pointers.
+	(domain_receivefd): Take care of realloc shrinking failure.
+
+	* assuan-buffer.c (_assuan_read_line, _assuan_write_line)
+	(assuan_write_line, _assuan_cookie_write_data)
+	(_assuan_cookie_write_flush): Print the inbound fd instead of the
+	address of the context when logging I/0.  This makes it more
+	readable.
+
+2006-09-05  Werner Koch  <wk@g10code.com>
+
+	* assuan-defs.h (err_code, err_is_eof): New.
+
+	* mkerrors (_assuan_error): New.  Wrapped all error code
+	assignments in a call to this.
+	(assuan_strerror): Map gpg-style error codes back. Also print a
+	string for the old EOF code.
+	(assuan_set_assuan_err_source): New.
+
+	* assuan-logging.c (_assuan_log_printf): Do not change ERRNO and
+	print the pid.
+
+	* assuan-domain-connect.c (domain_reader): Replaced plain printf
+	by assuan_log function.
+
 2005-10-24  Werner Koch  <wk@g10code.com>
 
 	* putc_unlocked.c, memrchr.c, isascii.c, funopen.c: Changed

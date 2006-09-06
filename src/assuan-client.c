@@ -104,7 +104,7 @@ _assuan_read_from_server (ASSUAN_CONTEXT ctx, int *okay, int *off)
       *off = 3;
     }
   else
-    rc = ASSUAN_Invalid_Response;
+    rc = _assuan_error (ASSUAN_Invalid_Response);
   return rc;
 }
 
@@ -113,7 +113,7 @@ _assuan_read_from_server (ASSUAN_CONTEXT ctx, int *okay, int *off)
 /**
  * assuan_transact:
  * @ctx: The Assuan context
- * @command: Coimmand line to be send to server
+ * @command: Command line to be send to the server
  * @data_cb: Callback function for data lines
  * @data_cb_arg: first argument passed to @data_cb
  * @inquire_cb: Callback function for a inquire response
@@ -167,7 +167,7 @@ assuan_transact (ASSUAN_CONTEXT ctx,
   else if (okay == 2)
     {
       if (!data_cb)
-        rc = ASSUAN_No_Data_Callback;
+        rc = _assuan_error (ASSUAN_No_Data_Callback);
       else 
         {
           char *s, *d;
@@ -196,7 +196,7 @@ assuan_transact (ASSUAN_CONTEXT ctx,
         {
           assuan_write_line (ctx, "END"); /* get out of inquire mode */
           _assuan_read_from_server (ctx, &okay, &off); /* dummy read */
-          rc = ASSUAN_No_Inquire_Callback;
+          rc = _assuan_error (ASSUAN_No_Inquire_Callback);
         }
       else
         {
@@ -217,7 +217,7 @@ assuan_transact (ASSUAN_CONTEXT ctx,
   else if (okay == 5)
     {
       if (!data_cb)
-        rc = ASSUAN_No_Data_Callback;
+        rc = _assuan_error (ASSUAN_No_Data_Callback);
       else 
         {
           rc = data_cb (data_cb_arg, NULL, 0);

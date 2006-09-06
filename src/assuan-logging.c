@@ -28,6 +28,7 @@
 #ifdef HAVE_W32_SYSTEM
 #include <windows.h>
 #endif /*HAVE_W32_SYSTEM*/
+#include <errno.h>
 
 #include "assuan-defs.h"
 
@@ -81,18 +82,17 @@ _assuan_log_printf (const char *format, ...)
   va_list arg_ptr;
   FILE *fp;
   const char *prf;
-
+  int save_errno = errno;
+  
   fp = assuan_get_assuan_log_stream ();
   prf = assuan_get_assuan_log_prefix ();
   if (*prf)
-    {
-      fputs (prf, fp);
-      fputs (": ", fp);
-    }
+    fprintf (fp, "%s[%u]: ", prf, (unsigned int)getpid ());
 
   va_start (arg_ptr, format);
   vfprintf (fp, format, arg_ptr );
   va_end (arg_ptr);
+  errno = save_errno;
 }
 
 
