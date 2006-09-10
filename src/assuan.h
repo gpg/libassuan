@@ -430,9 +430,8 @@ assuan_error_t assuan_send_data (assuan_context_t ctx,
                               const void *buffer, size_t length);
 
 /* The file descriptor must be pending before assuan_receivefd is
-   call.  This means that assuan_sendfd should be called *before* the
-   trigger is sent (normally via assuan_send_data ("I sent you a
-   descriptor")).  */
+   called.  This means that assuan_sendfd should be called *before* the
+   trigger is sent (normally via assuan_write_line ("INPUT FD")).  */
 assuan_error_t assuan_sendfd (assuan_context_t ctx, int fd);
 assuan_error_t assuan_receivefd (assuan_context_t ctx, int *fd);
 

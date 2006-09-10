@@ -1,3 +1,13 @@
+2006-09-10  Werner Koch  <wk@g10code.com>
+
+	* assuan-util.c (_assuan_log_print_buffer)
+	(_assuan_log_sanitized_string,assuan_set_log_stream): Moved to ..
+	* assuan-logging.c: .. here.
+	(_assuan_log_print_buffer): Only print the leading bytes in hex
+	log mode unless the new env variable ASSUAN_FULL_LOGGING has been
+	set.
+	(_assuan_set_default_log_stream): Test this env variable.
+
 2006-09-06  Werner Koch  <wk@g10code.com>
 
 	* assuan.h (_ASSUAN_ONLY_GPG_ERRORS): New.

@@ -13,6 +13,9 @@ Noteworthy changes in version 0.9.0
    If the new macro _ASSUAN_ONLY_GPG_ERRORS is defned all old
    definitions are excluded from assuan.h.
 
+ * Logging of hex strings is now limited to 16 bytes.  To enable
+   printing of the full data, a new environment variable
+   ASSUAN_FULL_LOGGING may be set to any value.
 
 Noteworthy changes in version 0.6.10 (2005-06-20)
 -------------------------------------------------

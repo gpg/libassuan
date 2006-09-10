@@ -237,9 +237,6 @@ void  _assuan_free (void *p);
 #define set_error(c,e,t) \
         assuan_set_error ((c), _assuan_error (ASSUAN_ ## e), (t))
 
-void _assuan_log_print_buffer (FILE *fp, const void *buffer, size_t  length);
-void _assuan_log_sanitized_string (const char *string);
-
 #ifdef HAVE_W32_SYSTEM
 const char *_assuan_w32_strerror (int ec);
 #define w32_strerror(e) _assuan_w32_strerror ((e))
@@ -254,6 +251,9 @@ void _assuan_log_printf (const char *format, ...)
  __attribute__ ((format (printf,1,2)))
 #endif
      ;
+void _assuan_log_print_buffer (FILE *fp, const void *buffer, size_t  length);
+void _assuan_log_sanitized_string (const char *string);
+
 
 /*-- assuan-io.c --*/
 ssize_t _assuan_simple_read (ASSUAN_CONTEXT ctx, void *buffer, size_t size);

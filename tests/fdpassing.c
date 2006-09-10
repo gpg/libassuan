@@ -42,7 +42,28 @@
 static int
 cmd_echo (assuan_context_t ctx, char *line)
 {
+  int fd;
+  int c;
+  FILE *fp;
+
   log_info ("got ECHO command (%s)\n", line);
+
+  fd = assuan_get_input_fd (ctx);
+  if (fd == -1)
+    return ASSUAN_No_Input;
+  fp = fdopen (dup (fd), "r");
+  if (!fp)
+    {
+      log_error ("fdopen failed on input fd: %s\n", strerror (errno));
+      return ASSUAN_General_Error;
+    }
+  log_info ("printing input to stdout:\n");
+  while ( (c=getc (fp)) != -1)
+    putc (c, stdout); 
+  fflush (stdout); 
+  log_info ("done printing input to stdout\n");
+
+  fclose (fp);
   return 0;
 }
 
@@ -123,6 +144,8 @@ client (int fd)
 {
   int rc;
   assuan_context_t ctx;
+  FILE *fp;
+  int i;
 
   log_info ("client started on fd %d\n", fd);
 
@@ -132,7 +155,37 @@ client (int fd)
       log_error ("assuan_domain_connect failed: %s\n", assuan_strerror (rc));
       return -1;
     }
-      
+
+  fp = fopen ("/etc/motd", "r");
+  if (!fp)
+    {
+      log_error ("failed to open `%s': %s\n", "/etc/motd", strerror (errno));
+      return -1;
+    }
+
+  rc = assuan_sendfd (ctx, fileno (fp));
+  if (rc)
+    {
+      log_error ("assuan_sendfd failed: %s\n", assuan_strerror (rc));
+      return -1;
+    }
+  
+  rc = assuan_transact (ctx, "INPUT FD", NULL, NULL, NULL, NULL, NULL, NULL);
+  if (rc)
+    {
+      log_error ("sending INPUT FD failed: %s\n", assuan_strerror (rc));
+      return -1;
+    }
+
+
+  rc = assuan_transact (ctx, "ECHO", NULL, NULL, NULL, NULL, NULL, NULL);
+  if (rc)
+    {
+      log_error ("sending ECHO failed: %s\n", assuan_strerror (rc));
+      return -1;
+    }
+
+  sleep (100);
 
   assuan_disconnect (ctx);
   return 0;
