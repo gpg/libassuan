@@ -408,11 +408,11 @@ pid_t assuan_get_pid (assuan_context_t ctx);
 assuan_error_t 
 assuan_transact (assuan_context_t ctx,
                  const char *command,
-                 assuan_error_t (*data_cb)(void *, const void *, size_t),
+                 int (*data_cb)(void *, const void *, size_t),
                  void *data_cb_arg,
-                 assuan_error_t (*inquire_cb)(void*, const char *),
+                 int (*inquire_cb)(void*, const char *),
                  void *inquire_cb_arg,
-                 assuan_error_t (*status_cb)(void*, const char *),
+                 int (*status_cb)(void*, const char *),
                  void *status_cb_arg);
 
 

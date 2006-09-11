@@ -132,11 +132,11 @@ _assuan_read_from_server (ASSUAN_CONTEXT ctx, int *okay, int *off)
 assuan_error_t
 assuan_transact (ASSUAN_CONTEXT ctx,
                  const char *command,
-                 assuan_error_t (*data_cb)(void *, const void *, size_t),
+                 int (*data_cb)(void *, const void *, size_t),
                  void *data_cb_arg,
-                 assuan_error_t (*inquire_cb)(void*, const char *),
+                 int (*inquire_cb)(void*, const char *),
                  void *inquire_cb_arg,
-                 assuan_error_t (*status_cb)(void*, const char *),
+                 int (*status_cb)(void*, const char *),
                  void *status_cb_arg)
 {
   int rc, okay, off;
