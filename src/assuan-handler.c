@@ -479,7 +479,7 @@ process_request (ASSUAN_CONTEXT ctx)
       rc = assuan_write_line (ctx, ctx->okay_line? ctx->okay_line : "OK");
     }
   else if (err_is_eof (rc))
-    { /* No error checking because the peer may have already disconnect */ 
+    { /* No error checking because the peer may have already disconnect. */ 
       assuan_write_line (ctx, "OK closing connection");
       ctx->finish_handler (ctx);
     }

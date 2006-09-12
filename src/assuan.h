@@ -347,7 +347,7 @@ assuan_error_t assuan_write_status (assuan_context_t ctx,
    file descriptor via CTX and stores it in *RDF (the CTX must be
    capable of passing file descriptors).  */
 assuan_error_t assuan_command_parse_fd (assuan_context_t ctx, char *line,
-				     int *rfd);
+                                        int *rfd);
 
 /*-- assuan-listen.c --*/
 assuan_error_t assuan_set_hello_line (assuan_context_t ctx, const char *line);
@@ -368,36 +368,27 @@ int assuan_init_connected_socket_server (assuan_context_t *r_ctx, int fd);
 
 
 /*-- assuan-pipe-connect.c --*/
-assuan_error_t assuan_pipe_connect (assuan_context_t *ctx, const char *name,
+assuan_error_t assuan_pipe_connect (assuan_context_t *ctx,
+                                    const char *name,
 				    const char *const argv[],
 				    int *fd_child_list);
-assuan_error_t assuan_pipe_connect2 (assuan_context_t *ctx, const char *name,
+assuan_error_t assuan_pipe_connect2 (assuan_context_t *ctx,
+                                     const char *name,
                                      const char *const argv[],
 				     int *fd_child_list,
                                      void (*atfork) (void*, int),
                                      void *atforkvalue);
+assuan_error_t assuan_pipe_connect_ext (assuan_context_t *ctx, 
+                                        const char *name,
+                                        const char *const argv[],
+                                        int *fd_child_list,
+                                        void (*atfork) (void *, int),
+                                        void *atforkvalue);
+
 /*-- assuan-socket-connect.c --*/
 assuan_error_t assuan_socket_connect (assuan_context_t *ctx, const char *name,
                                       pid_t server_pid);
 
-/*-- assuan-domain-connect.c --*/
-
-/* Connect to a Unix domain socket server.  RENDEZVOUSFD is
-   bidirectional file descriptor (normally returned via socketpair)
-   which the client can use to rendezvous with the server.  SERVER s
-   the server's pid.  */
-assuan_error_t assuan_domain_connect (assuan_context_t *r_ctx,
-                                      int rendezvousfd,
-                                      pid_t server);
-
-/*-- assuan-domain-server.c --*/
-
-/* RENDEZVOUSFD is a bidirectional file descriptor (normally returned
-   via socketpair) that the domain server can use to rendezvous with
-   the client.  CLIENT is the client's pid.  */
-assuan_error_t assuan_init_domain_server (assuan_context_t *r_ctx,
-                                          int rendezvousfd,
-                                          pid_t client);
 
 
 /*-- assuan-connect.c --*/

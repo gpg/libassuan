@@ -111,8 +111,28 @@ assuan_init_pipe_server (ASSUAN_CONTEXT *r_ctx, int filedes[2])
       ctx->inbound.fd  = _get_osfhandle (filedes[0]);
       ctx->outbound.fd = _get_osfhandle (filedes[1]);
 #else
-      ctx->inbound.fd  = filedes[0];
-      ctx->outbound.fd = filedes[1];
+      s = getenv ("_assuan_connection_fd");
+      if (!filedes && s && *s && atoi (s) >= 0 )
+        {
+          /* Well, we are called with an bi-directional file
+             descriptor.  Prepare for using sendmsg/recvmsg.  In this
+             case we ignore the passed file descriptors. */
+          ctx->inbound.fd  = ctx->outbound.fd = atoi (s);
+          _assuan_init_uds_io (ctx);
+          ctx->deinit_handler = _assuan_uds_deinit;
+        }
+      else if (filedes)
+        {
+          /* Standard pipe server. */
+          ctx->inbound.fd  = filedes[0];
+          ctx->outbound.fd = filedes[1];
+        }
+      else
+        {
+          _assuan_release_context (*r_ctx);
+          *r_ctx = NULL;
+          return ASSUAN_Problem_Starting_Server;
+        }
 #endif
       ctx->pipe_mode = 1;
 

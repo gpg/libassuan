@@ -34,6 +34,10 @@
 
 #include "assuan-defs.h"
 
+static struct assuan_io io = { _assuan_simple_read,
+			       _assuan_simple_write };
+
+
 static int
 accept_connection_bottom (assuan_context_t ctx)
 {
@@ -104,9 +108,6 @@ deinit_socket_server (assuan_context_t ctx)
 {
   finish_connection (ctx);
 }
-
-static struct assuan_io io = { _assuan_simple_read,
-			       _assuan_simple_write };
 
 /* Initialize a server for the socket LISTEN_FD which has already be
    put into listen mode */

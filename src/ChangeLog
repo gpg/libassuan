@@ -1,3 +1,35 @@
+2006-09-12  Werner Koch  <wk@g10code.com>
+
+	* assuan-defs.h (DIM, DIMof): New.
+
+	* assuan-domain-server.c: Removed.
+	* assuan-domain-connect.c: Renamed to ..
+	* assuan-uds.c: this.
+	(domain_reader, domain_writer, domain_sendfd, domain_receivefd) 
+	(assuan_domain_connect, _assuan_domain_init): Removed. 
+	(uds_reader, uds_writer, uds_sendfd, uds_receivefd) 
+	(_assuan_init_uds_io): New.
+	(_assuan_uds_deinit): New.
+
+	* assuan-io.c (_assuan_simple_sendmsg, _assuan_simple_recvmsg): New.
+	(my_pth_fdmode, my_pth_select): New.
+
+2006-09-11  Werner Koch  <wk@g10code.com>
+
+	* assuan-pipe-server.c (assuan_init_pipe_server): Allow for
+	FILEDES to be NULL and try to start as a socketpair server in this
+	case.
+
+	* assuan-pipe-connect.c (assuan_pipe_connect2): Split up into two
+	functions (unix and w32) for clarity.
+	(pipe_connect_unix): This is the new fucntion.  Add USE_CMSG flag.
+	(pipe_connect_w32): Ditto.
+	(initial_handshake): Factored out code.
+	(socketpair_connect): New.
+	(assuan_pipe_connect_ext): New.
+	(do_finish): Handle case if outbound and inbound fd are the same.
+	This is to support socketpairs.
+
 2006-09-10  Werner Koch  <wk@g10code.com>
 
 	* assuan-util.c (_assuan_log_print_buffer)

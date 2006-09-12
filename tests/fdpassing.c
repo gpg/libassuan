@@ -45,23 +45,28 @@ cmd_echo (assuan_context_t ctx, char *line)
   int fd;
   int c;
   FILE *fp;
+  int nbytes;
 
   log_info ("got ECHO command (%s)\n", line);
 
   fd = assuan_get_input_fd (ctx);
   if (fd == -1)
     return ASSUAN_No_Input;
-  fp = fdopen (dup (fd), "r");
+  fp = fdopen (fd, "r");
   if (!fp)
     {
       log_error ("fdopen failed on input fd: %s\n", strerror (errno));
       return ASSUAN_General_Error;
     }
   log_info ("printing input to stdout:\n");
+  nbytes = 0;
   while ( (c=getc (fp)) != -1)
-    putc (c, stdout); 
+    {
+      putc (c, stdout); 
+      nbytes++;
+    }
   fflush (stdout); 
-  log_info ("done printing input to stdout\n");
+  log_info ("done printing %d bytes to stdout\n", nbytes);
 
   fclose (fp);
   return 0;
@@ -93,22 +98,21 @@ register_commands (assuan_context_t ctx)
 
 
 static void
-server (int fd)
+server (void)
 {
   int rc;
   assuan_context_t ctx;
 
-  log_info ("server started on fd %d\n", fd);
+  log_info ("server started\n");
 
-  rc = assuan_init_domain_server (&ctx, fd, (pid_t)(-1));
+  rc = assuan_init_pipe_server (&ctx, NULL);
   if (rc)
-    log_fatal ("assuan_init_domain_server failed: %s\n", assuan_strerror (rc));
+    log_fatal ("assuan_init_pipe_server failed: %s\n", assuan_strerror (rc));
 
   rc = register_commands (ctx);
   if (rc)
     log_fatal ("register_commands failed: %s\n", assuan_strerror(rc));
 
-  assuan_set_assuan_log_prefix (log_prefix);
   assuan_set_log_stream (ctx, stderr);
 
   for (;;) 
@@ -116,7 +120,8 @@ server (int fd)
       rc = assuan_accept (ctx);
       if (rc)
         {
-          log_error ("assuan_accept failed: %s\n", assuan_strerror (rc));
+          if (rc != -1)
+            log_error ("assuan_accept failed: %s\n", assuan_strerror (rc));
           break;
         }
 
@@ -140,52 +145,50 @@ server (int fd)
 
 /* Client main.  If true is returned, a disconnect has not been done. */
 static int
-client (int fd)
+client (assuan_context_t ctx)
 {
   int rc;
-  assuan_context_t ctx;
   FILE *fp;
   int i;
 
-  log_info ("client started on fd %d\n", fd);
+  log_info ("client started\n");
 
-  rc = assuan_domain_connect (&ctx, fd, (pid_t)(-1));
-  if (rc)
+  for (i=0; i < 8; i++)
     {
-      log_error ("assuan_domain_connect failed: %s\n", assuan_strerror (rc));
-      return -1;
+      fp = fopen ("/etc/motd", "r");
+      if (!fp)
+        {
+          log_error ("failed to open `%s': %s\n", "/etc/motd",
+                     strerror (errno));
+          return -1;
+        }
+      
+      rc = assuan_sendfd (ctx, fileno (fp));
+      if (rc)
+        {
+          log_error ("assuan_sendfd failed: %s\n", assuan_strerror (rc));
+          return -1;
+        }
+      fclose (fp);
+
+      rc = assuan_transact (ctx, "INPUT FD", NULL, NULL, NULL, NULL,
+                            NULL, NULL);
+      if (rc)
+        {
+          log_error ("sending INPUT FD failed: %s\n", assuan_strerror (rc));
+          return -1;
+        }
+
+      rc = assuan_transact (ctx, "ECHO", NULL, NULL, NULL, NULL, NULL, NULL);
+      if (rc)
+        {
+          log_error ("sending ECHO failed: %s\n", assuan_strerror (rc));
+          return -1;
+        }
     }
 
-  fp = fopen ("/etc/motd", "r");
-  if (!fp)
-    {
-      log_error ("failed to open `%s': %s\n", "/etc/motd", strerror (errno));
-      return -1;
-    }
-
-  rc = assuan_sendfd (ctx, fileno (fp));
-  if (rc)
-    {
-      log_error ("assuan_sendfd failed: %s\n", assuan_strerror (rc));
-      return -1;
-    }
-  
-  rc = assuan_transact (ctx, "INPUT FD", NULL, NULL, NULL, NULL, NULL, NULL);
-  if (rc)
-    {
-      log_error ("sending INPUT FD failed: %s\n", assuan_strerror (rc));
-      return -1;
-    }
-
-
-  rc = assuan_transact (ctx, "ECHO", NULL, NULL, NULL, NULL, NULL, NULL);
-  if (rc)
-    {
-      log_error ("sending ECHO failed: %s\n", assuan_strerror (rc));
-      return -1;
-    }
-
-  sleep (100);
+  /* Give us some time to check with lsof that all descriptors are closed. */
+/*   sleep (10); */
 
   assuan_disconnect (ctx);
   return 0;
@@ -204,8 +207,12 @@ main (int argc, char **argv)
 {
   int last_argc = -1;
   const char *srcdir = getenv ("srcdir");
-  int fds[2];
-  pid_t pid;
+  assuan_context_t ctx;
+  int err;
+  int no_close_fds[2];
+  const char *arglist[10];
+  int is_server = 0;
+  int with_exec = 0;
   
   if (!srcdir)
     srcdir = ".";
@@ -223,7 +230,10 @@ main (int argc, char **argv)
           puts (
 "usage: ./fdpassing [options]\n"
 "\n"
-"       Options are --verbose and --debug");
+"Options:\n"
+"  --verbose      Show what is going on\n"
+"  --with-exec    Exec the child.  Default is just a fork\n"
+);
           exit (0);
         }
       if (!strcmp (*argv, "--verbose"))
@@ -236,29 +246,60 @@ main (int argc, char **argv)
           verbose = debug = 1;
           argc--; argv++;
         }
+      else if (!strcmp (*argv, "--server"))
+        {
+          is_server = 1;
+          argc--; argv++;
+        }
+      else if (!strcmp (*argv, "--with-exec"))
+        {
+          with_exec = 1;
+          argc--; argv++;
+        }
     }
 
-  /* Create a socketpair.  */
-  if ( socketpair (AF_LOCAL, SOCK_STREAM, 0, fds) )
-    log_fatal ("socketpair failed: %s\n", strerror (errno));
+  assuan_set_assuan_log_prefix (log_prefix);
+  assuan_set_assuan_log_stream (stderr);
 
-  /* Fork and run server and client.  */
-  pid = fork ();
-  if (pid == (pid_t)(-1))
-    log_fatal ("fork failed: %s\n", strerror (errno));
-  if (!pid)
+  if (is_server)
     {
-      server (fds[0]); /* The child is our server. */
+      server ();
       log_info ("server finished\n");
     }
   else
     {
-      if (client (fds[1])) /* The parent is the client.  */
+      no_close_fds[0] = 2;
+      no_close_fds[1] = -1;
+      if (with_exec)
         {
-          log_info ("waiting for server to terminate...\n");
-          waitpid (pid, NULL, 0); 
+          arglist[0] = "fdpassing";
+          arglist[1] = "--server";
+          arglist[2] = verbose? "--verbose":NULL;
+          arglist[3] = NULL;
         }
-      log_info ("client finished\n");
+      err = assuan_pipe_connect_ext (&ctx, with_exec? "./fdpassing":NULL,
+                                     with_exec? arglist :NULL,
+                                     no_close_fds, NULL, NULL);
+      if (err)
+        {
+          log_error ("assuan_pipe_connect failed: %s\n",assuan_strerror (err));
+          return 1;
+        }
+      
+      if (!ctx)
+        {
+          server ();
+          log_info ("server finished\n");
+        }
+      else
+        {
+          if (client (ctx)) 
+            {
+              log_info ("waiting for server to terminate...\n");
+              assuan_disconnect (ctx);
+            }
+          log_info ("client finished\n");
+        }
     }
 
   return errorcount? 1:0;

@@ -106,7 +106,7 @@ struct assuan_context_s
   char *hello_line;
   char *okay_line;    /* See assuan_set_okay_line() */
 
-  void *user_pointer;  /* For assuan_get_pointer and assuan-set_pointer (). */
+  void *user_pointer;  /* For assuan_get_pointer and assuan_set_pointer (). */
 
   FILE *log_fp;
 
@@ -116,7 +116,7 @@ struct assuan_context_s
     char line[LINELENGTH];
     int linelen;  /* w/o CR, LF - might not be the same as
                      strlen(line) due to embedded nuls. However a nul
-                     is always written at this pos */
+                     is always written at this pos. */
     struct {
       char line[LINELENGTH];
       int linelen ;
@@ -135,7 +135,7 @@ struct assuan_context_s
   } outbound;
 
   int pipe_mode;  /* We are in pipe mode, i.e. we can handle just one
-                     connection and must terminate then */
+                     connection and must terminate then. */
   pid_t pid;	  /* The pid of the peer. */
   int listen_fd;  /* The fd we are listening on (used by socket servers) */
   int connected_fd; /* helper */
@@ -144,19 +144,19 @@ struct assuan_context_s
   /* Used for Unix domain sockets.  */
   struct sockaddr_un myaddr;
   struct sockaddr_un serveraddr;
-  /* When reading from datagram sockets, we must read an entire
-     message at a time.  This means that we have to do our own
-     buffering to be able to get the semantics of read.  */
-  void *domainbuffer;
-  /* Offset of start of buffer.  */
-  int domainbufferoffset;
-  /* Bytes buffered.  */
-  int domainbuffersize;
-  /* Memory allocated.  */
-  int domainbufferallocated;
 
-  int *pendingfds;
-  int pendingfdscount;
+  /* Structure used for unix domain socket buffering.  FIXME: We don't
+     use datagrams anymore thus we could get away with a simpler
+     buffering approach. */
+  struct {
+    void *buffer;         /* Malloced buffer. */
+    int bufferallocated;  /* Memory allocated.  */
+    int bufferoffset;     /* Offset of start of buffer.  */
+    int buffersize;       /* Bytes buffered.  */
+    
+    int pendingfds[5];    /* Array to save received descriptors.  */
+    int pendingfdscount;  /* Number of received descriptors. */
+  } uds;
 
   void (*deinit_handler)(ASSUAN_CONTEXT);
   int (*accept_handler)(ASSUAN_CONTEXT);
@@ -184,13 +184,10 @@ struct assuan_context_s
 int _assuan_new_context (ASSUAN_CONTEXT *r_ctx);
 void _assuan_release_context (ASSUAN_CONTEXT ctx);
 
-/*-- assuan-domain-connect.c --*/
-/* Make a connection to the Unix domain socket NAME and return a new
-   Assuan context in CTX.  SERVER_PID is currently not used but may
-   become handy in the future.  */
-assuan_error_t _assuan_domain_init (ASSUAN_CONTEXT *r_ctx,
-                                    int rendezvousfd,
-                                    pid_t peer);
+/*-- assuan-uds.c --*/
+void _assuan_uds_deinit (assuan_context_t ctx);
+void _assuan_init_uds_io (assuan_context_t ctx);
+
 
 /*-- assuan-handler.c --*/
 int _assuan_register_std_commands (ASSUAN_CONTEXT ctx);
@@ -259,6 +256,8 @@ void _assuan_log_sanitized_string (const char *string);
 ssize_t _assuan_simple_read (ASSUAN_CONTEXT ctx, void *buffer, size_t size);
 ssize_t _assuan_simple_write (ASSUAN_CONTEXT ctx, const void *buffer,
 			      size_t size);
+ssize_t _assuan_simple_sendmsg (assuan_context_t ctx, struct msghdr *msg);
+ssize_t _assuan_simple_recvmsg (assuan_context_t ctx, struct msghdr *msg);
 
 /*-- assuan-socket.c --*/
 int _assuan_close (int fd);
@@ -289,5 +288,10 @@ char *stpcpy (char *dest, const char *src);
 #define clearenv _assuan_clearenv
 int setenv (const char *name, const char *value, int replace);
 #endif
+
+
+#define DIM(v)		     (sizeof(v)/sizeof((v)[0]))
+#define DIMof(type,member)   DIM(((type *)0)->member)
+
 
 #endif /*ASSUAN_DEFS_H*/
