@@ -10,7 +10,6 @@
   for unknown inquiries, albeit dirmngr itself would handle the
   returns for assuan_inquire gracefully.  We need to check all
   applications whether it is safe to change this.
-* Check the system error to assuan error translation
 * Do a configure test for SO_PEERCRED.
   We already use HAVE_SO_PEERCRED buty it never gets defined.
 * Replace assuan_pipe_connect2 by  assuan_pipe_connect.

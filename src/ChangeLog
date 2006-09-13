@@ -1,4 +1,28 @@
+2006-09-13  Werner Koch  <wk@g10code.com>
+
+	* assuan-client.c (assuan_transact): Need to map the error code.
+	* mkerrors: Need to map ASSUAN_No_Secret_Key.
+
+	* assuan-pipe-server.c (is_valid_socket): New.
+	(assuan_init_pipe_server): Use UDS with the environmet variable is
+	set and a valid descriptor is given.  Ignore FILEDES in this case.
+
+	* assuan-socket-server.c (assuan_init_socket_server_ext): New.
+	Changed other init fucntions to make use of it.
+
+	* assuan-handler.c (assuan_command_parse_fd): Allow for lowercase
+	"fd".
+	(std_handler_reset): Close pending fds.
+	* assuan-uds.c (uds_receivefd): Fixed.
+	(_assuan_uds_close_fds): New.
+
+	* assuan-socket-connect.c (assuan_socket_connect_ext): New. Takes
+	all code of assuan_socket_connect plus an option to use sendmsg.
+	* assuan-pipe-connect.c (assuan_pipe_connect_ext): New arg FLAGS.
+
 2006-09-12  Werner Koch  <wk@g10code.com>
+
+	* assuan-buffer.c (_assuan_write_line): Also log the prefix.
 
 	* assuan-defs.h (DIM, DIMof): New.
 

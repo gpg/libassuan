@@ -185,6 +185,7 @@ int _assuan_new_context (ASSUAN_CONTEXT *r_ctx);
 void _assuan_release_context (ASSUAN_CONTEXT ctx);
 
 /*-- assuan-uds.c --*/
+void _assuan_uds_close_fds (assuan_context_t ctx);
 void _assuan_uds_deinit (assuan_context_t ctx);
 void _assuan_init_uds_io (assuan_context_t ctx);
 

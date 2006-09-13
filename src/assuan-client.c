@@ -160,7 +160,7 @@ assuan_transact (ASSUAN_CONTEXT ctx,
 
   if (!okay)
     {
-      rc = atoi (line);
+      rc = _assuan_error (atoi (line));
       if (rc < 100)
         rc = ASSUAN_Server_Fault;
     }

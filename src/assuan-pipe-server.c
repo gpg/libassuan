@@ -22,6 +22,8 @@
 #include <config.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #ifdef HAVE_W32_SYSTEM
 #include <windows.h>
@@ -89,6 +91,18 @@ _assuan_new_context (ASSUAN_CONTEXT *r_ctx)
 }
 
 
+/* Returns true if atoi(S) denotes a valid socket. */
+static int
+is_valid_socket (const char *s)
+{
+  struct stat buf;
+
+  if ( fstat (atoi (s), &buf ) )
+    return 0;
+  return S_ISSOCK (buf.st_mode);
+}
+
+
 int
 assuan_init_pipe_server (ASSUAN_CONTEXT *r_ctx, int filedes[2])
 {
@@ -112,7 +126,7 @@ assuan_init_pipe_server (ASSUAN_CONTEXT *r_ctx, int filedes[2])
       ctx->outbound.fd = _get_osfhandle (filedes[1]);
 #else
       s = getenv ("_assuan_connection_fd");
-      if (!filedes && s && *s && atoi (s) >= 0 )
+      if (s && *s && is_valid_socket (s) )
         {
           /* Well, we are called with an bi-directional file
              descriptor.  Prepare for using sendmsg/recvmsg.  In this
@@ -121,7 +135,7 @@ assuan_init_pipe_server (ASSUAN_CONTEXT *r_ctx, int filedes[2])
           _assuan_init_uds_io (ctx);
           ctx->deinit_handler = _assuan_uds_deinit;
         }
-      else if (filedes)
+      else if (filedes && filedes[0] != -1 && filedes[1] != -1 )
         {
           /* Standard pipe server. */
           ctx->inbound.fd  = filedes[0];

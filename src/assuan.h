@@ -91,10 +91,12 @@
 #define assuan_init_socket_server _ASSUAN_PREFIX(assuan_init_socket_server)
 #define assuan_init_connected_socket_server \
   _ASSUAN_PREFIX(assuan_init_connected_socket_server)
+#define assuan_init_socket_server_ext \
+  _ASSUAN_PREFIX(assuan_init_socket_server-ext)
 #define assuan_pipe_connect _ASSUAN_PREFIX(assuan_pipe_connect)
+#define assuan_pipe_connect_ext _ASSUAN_PREFIX(assuan_pipe_connect_ext)
 #define assuan_socket_connect _ASSUAN_PREFIX(assuan_socket_connect)
-#define assuan_domain_connect _ASSUAN_PREFIX(assuan_domain_connect)
-#define assuan_init_domain_server _ASSUAN_PREFIX(assuan_init_domain_server)
+#define assuan_socket_connect_ext _ASSUAN_PREFIX(assuan_socket_connect_ext)
 #define assuan_disconnect _ASSUAN_PREFIX(assuan_disconnect)
 #define assuan_get_pid _ASSUAN_PREFIX(assuan_get_pid)
 #define assuan_transact _ASSUAN_PREFIX(assuan_transact)
@@ -365,7 +367,8 @@ void assuan_deinit_server (assuan_context_t ctx);
 /*-- assuan-socket-server.c --*/
 int assuan_init_socket_server (assuan_context_t *r_ctx, int listen_fd);
 int assuan_init_connected_socket_server (assuan_context_t *r_ctx, int fd);
-
+int assuan_init_socket_server_ext (assuan_context_t *r_ctx, int fd,
+                                   unsigned int flags);
 
 /*-- assuan-pipe-connect.c --*/
 assuan_error_t assuan_pipe_connect (assuan_context_t *ctx,
@@ -383,13 +386,17 @@ assuan_error_t assuan_pipe_connect_ext (assuan_context_t *ctx,
                                         const char *const argv[],
                                         int *fd_child_list,
                                         void (*atfork) (void *, int),
-                                        void *atforkvalue);
+                                        void *atforkvalue,
+                                        unsigned int flags);
 
 /*-- assuan-socket-connect.c --*/
-assuan_error_t assuan_socket_connect (assuan_context_t *ctx, const char *name,
+assuan_error_t assuan_socket_connect (assuan_context_t *ctx, 
+                                      const char *name,
                                       pid_t server_pid);
-
-
+assuan_error_t assuan_socket_connect_ext (assuan_context_t *ctx,
+                                          const char *name,
+                                          pid_t server_pid,
+                                          unsigned int flags);
 
 /*-- assuan-connect.c --*/
 void assuan_disconnect (assuan_context_t ctx);

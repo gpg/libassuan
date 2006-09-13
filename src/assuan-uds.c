@@ -45,7 +45,10 @@
 #include "assuan-defs.h"
 
 
-/* Read from a unix domain socket using sendmsg.  */
+/* Read from a unix domain socket using sendmsg. 
+
+   FIXME: We don't need the buffering. It is a leftover from the time
+   when we used datagrams. */
 static ssize_t
 uds_reader (assuan_context_t ctx, void *buf, size_t buflen)
 {
@@ -215,16 +218,19 @@ static assuan_error_t
 uds_receivefd (assuan_context_t ctx, int *fd)
 {
 #ifndef HAVE_W32_SYSTEM
-  if (!ctx->uds.pendingfds)
+  int i;
+
+  if (!ctx->uds.pendingfdscount)
     {
       _assuan_log_printf ("no pending file descriptors!\n");
       return _assuan_error (ASSUAN_General_Error);
     }
+  assert (ctx->uds.pendingfdscount <= DIM(ctx->uds.pendingfds));
 
   *fd = ctx->uds.pendingfds[0];
-  if (--ctx->uds.pendingfdscount)
-    memmove (ctx->uds.pendingfds, ctx->uds.pendingfds + 1,
-             ctx->uds.pendingfdscount * sizeof (int));
+  for (i=1; i < ctx->uds.pendingfdscount; i++)
+    ctx->uds.pendingfds[i-1] = ctx->uds.pendingfds[i];
+  ctx->uds.pendingfdscount--;
 
   return 0;
 #else
@@ -233,12 +239,21 @@ uds_receivefd (assuan_context_t ctx, int *fd)
 }
 
 
+/* Close all pending fds. */
+void
+_assuan_uds_close_fds (assuan_context_t ctx)
+{
+  int i;
+
+  for (i = 0; i < ctx->uds.pendingfdscount; i++)
+    _assuan_close (ctx->uds.pendingfds[i]);
+  ctx->uds.pendingfdscount = 0;
+}
+
 /* Deinitialize the unix domain socket I/O functions.  */
 void
 _assuan_uds_deinit (assuan_context_t ctx)
 {
-  int i;
-
   /* First call the finish_handler which should close descriptors etc. */
   ctx->finish_handler (ctx);
 
@@ -249,11 +264,8 @@ _assuan_uds_deinit (assuan_context_t ctx)
       xfree (ctx->uds.buffer);
     }
 
-  for (i = 0; i < ctx->uds.pendingfdscount; i++)
-    _assuan_close (ctx->uds.pendingfds[i]);
-  ctx->uds.pendingfdscount = 0;
+  _assuan_uds_close_fds (ctx);
 }
-
 
 
 /* Helper function to initialize a context for domain I/O. */

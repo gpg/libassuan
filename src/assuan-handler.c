@@ -37,20 +37,20 @@ static int my_strcasecmp (const char *a, const char *b);
 
 
 static int
-dummy_handler (ASSUAN_CONTEXT ctx, char *line)
+dummy_handler (assuan_context_t ctx, char *line)
 {
   return set_error (ctx, Server_Fault, "no handler registered");
 }
 
 
 static int
-std_handler_nop (ASSUAN_CONTEXT ctx, char *line)
+std_handler_nop (assuan_context_t ctx, char *line)
 {
   return 0; /* okay */
 }
   
 static int
-std_handler_cancel (ASSUAN_CONTEXT ctx, char *line)
+std_handler_cancel (assuan_context_t ctx, char *line)
 {
   if (ctx->cancel_notify_fnc)
     ctx->cancel_notify_fnc (ctx);
@@ -58,7 +58,7 @@ std_handler_cancel (ASSUAN_CONTEXT ctx, char *line)
 }
 
 static int
-std_handler_option (ASSUAN_CONTEXT ctx, char *line)
+std_handler_option (assuan_context_t ctx, char *line)
 {
   char *key, *value, *p;
 
@@ -105,7 +105,7 @@ std_handler_option (ASSUAN_CONTEXT ctx, char *line)
 }
   
 static int
-std_handler_bye (ASSUAN_CONTEXT ctx, char *line)
+std_handler_bye (assuan_context_t ctx, char *line)
 {
   if (ctx->bye_notify_fnc)
     ctx->bye_notify_fnc (ctx);
@@ -115,33 +115,35 @@ std_handler_bye (ASSUAN_CONTEXT ctx, char *line)
 }
   
 static int
-std_handler_auth (ASSUAN_CONTEXT ctx, char *line)
+std_handler_auth (assuan_context_t ctx, char *line)
 {
   return set_error (ctx, Not_Implemented, NULL); 
 }
   
 static int
-std_handler_reset (ASSUAN_CONTEXT ctx, char *line)
+std_handler_reset (assuan_context_t ctx, char *line)
 {
   if (ctx->reset_notify_fnc)
     ctx->reset_notify_fnc (ctx);
   assuan_close_input_fd (ctx);
   assuan_close_output_fd (ctx);
+  _assuan_uds_close_fds (ctx);
   return 0;
 }
   
 static int
-std_handler_end (ASSUAN_CONTEXT ctx, char *line)
+std_handler_end (assuan_context_t ctx, char *line)
 {
   return set_error (ctx, Not_Implemented, NULL); 
 }
 
 assuan_error_t
-assuan_command_parse_fd (ASSUAN_CONTEXT ctx, char *line, int *rfd)
+assuan_command_parse_fd (assuan_context_t ctx, char *line, int *rfd)
 {
   char *endp;
 
-  if (strncmp (line, "FD", 2) != 0 || (line[2] != '=' && line[2] != '\0'))
+  if ( (strncmp (line, "FD", 2) && strncmp (line, "fd", 2))
+       || (line[2] != '=' && line[2] != '\0'))
     return set_error (ctx, Syntax_Error, "FD[=<n>] expected");
   line += 2;
   if (*line == '=')
@@ -150,7 +152,7 @@ assuan_command_parse_fd (ASSUAN_CONTEXT ctx, char *line, int *rfd)
       if (!digitp (*line))
 	return set_error (ctx, Syntax_Error, "number required");
       *rfd = strtoul (line, &endp, 10);
-      /* remove that argument so that a notify handler won't see it */
+      /* Remove that argument so that a notify handler won't see it. */
       memset (line, ' ', endp? (endp-line):strlen(line));
 
       if (*rfd == ctx->inbound.fd)
@@ -166,7 +168,7 @@ assuan_command_parse_fd (ASSUAN_CONTEXT ctx, char *line, int *rfd)
 
 /* Format is INPUT FD=<n> */
 static int
-std_handler_input (ASSUAN_CONTEXT ctx, char *line)
+std_handler_input (assuan_context_t ctx, char *line)
 {
   int rc, fd;
 
@@ -181,7 +183,7 @@ std_handler_input (ASSUAN_CONTEXT ctx, char *line)
 
 /* Format is OUTPUT FD=<n> */
 static int
-std_handler_output (ASSUAN_CONTEXT ctx, char *line)
+std_handler_output (assuan_context_t ctx, char *line)
 {
   int rc, fd;
 
@@ -203,7 +205,7 @@ std_handler_output (ASSUAN_CONTEXT ctx, char *line)
    with default handlers */
 static struct {
   const char *name;
-  int (*handler)(ASSUAN_CONTEXT, char *line);
+  int (*handler)(assuan_context_t, char *line);
   int always; /* always initialize this command */
 } std_cmd_table[] = {
   { "NOP",    std_handler_nop, 1 },
@@ -235,9 +237,9 @@ static struct {
  * Return value: 0 on success or an error code
  **/
 int
-assuan_register_command (ASSUAN_CONTEXT ctx,
+assuan_register_command (assuan_context_t ctx,
                          const char *cmd_name,
-                         int (*handler)(ASSUAN_CONTEXT, char *))
+                         int (*handler)(assuan_context_t, char *))
 {
   int i;
   const char *s;
@@ -290,7 +292,8 @@ assuan_register_command (ASSUAN_CONTEXT ctx,
 }
 
 int
-assuan_register_bye_notify (ASSUAN_CONTEXT ctx, void (*fnc)(ASSUAN_CONTEXT))
+assuan_register_bye_notify (assuan_context_t ctx,
+                            void (*fnc)(assuan_context_t))
 {
   if (!ctx)
     return _assuan_error (ASSUAN_Invalid_Value);
@@ -299,7 +302,8 @@ assuan_register_bye_notify (ASSUAN_CONTEXT ctx, void (*fnc)(ASSUAN_CONTEXT))
 }
 
 int
-assuan_register_reset_notify (ASSUAN_CONTEXT ctx, void (*fnc)(ASSUAN_CONTEXT))
+assuan_register_reset_notify (assuan_context_t ctx,
+                              void (*fnc)(assuan_context_t))
 {
   if (!ctx)
     return _assuan_error (ASSUAN_Invalid_Value);
@@ -308,7 +312,8 @@ assuan_register_reset_notify (ASSUAN_CONTEXT ctx, void (*fnc)(ASSUAN_CONTEXT))
 }
 
 int
-assuan_register_cancel_notify (ASSUAN_CONTEXT ctx, void (*fnc)(ASSUAN_CONTEXT))
+assuan_register_cancel_notify (assuan_context_t ctx,
+                               void (*fnc)(assuan_context_t))
 {
   if (!ctx)
     return _assuan_error (ASSUAN_Invalid_Value);
@@ -317,8 +322,8 @@ assuan_register_cancel_notify (ASSUAN_CONTEXT ctx, void (*fnc)(ASSUAN_CONTEXT))
 }
 
 int
-assuan_register_option_handler (ASSUAN_CONTEXT ctx,
-                               int (*fnc)(ASSUAN_CONTEXT,
+assuan_register_option_handler (assuan_context_t ctx,
+                               int (*fnc)(assuan_context_t,
                                           const char*, const char*))
 {
   if (!ctx)
@@ -328,8 +333,8 @@ assuan_register_option_handler (ASSUAN_CONTEXT ctx,
 }
 
 int
-assuan_register_input_notify (ASSUAN_CONTEXT ctx,
-                              void (*fnc)(ASSUAN_CONTEXT, const char *))
+assuan_register_input_notify (assuan_context_t ctx,
+                              void (*fnc)(assuan_context_t, const char *))
 {
   if (!ctx)
     return _assuan_error (ASSUAN_Invalid_Value);
@@ -338,8 +343,8 @@ assuan_register_input_notify (ASSUAN_CONTEXT ctx,
 }
 
 int
-assuan_register_output_notify (ASSUAN_CONTEXT ctx,
-                              void (*fnc)(ASSUAN_CONTEXT, const char *))
+assuan_register_output_notify (assuan_context_t ctx,
+                              void (*fnc)(assuan_context_t, const char *))
 {
   if (!ctx)
     return _assuan_error (ASSUAN_Invalid_Value);
@@ -350,7 +355,7 @@ assuan_register_output_notify (ASSUAN_CONTEXT ctx,
 
 /* Helper to register the standards commands */
 int
-_assuan_register_std_commands (ASSUAN_CONTEXT ctx)
+_assuan_register_std_commands (assuan_context_t ctx)
 {
   int i, rc;
 
@@ -371,7 +376,7 @@ _assuan_register_std_commands (ASSUAN_CONTEXT ctx)
 /* Process the special data lines.  The "D " has already been removed
    from the line.  As all handlers this function may modify the line.  */
 static int
-handle_data_line (ASSUAN_CONTEXT ctx, char *line, int linelen)
+handle_data_line (assuan_context_t ctx, char *line, int linelen)
 {
   return set_error (ctx, Not_Implemented, NULL);
 }
@@ -395,7 +400,7 @@ my_strcasecmp (const char *a, const char *b)
    table, remove leading and white spaces from the arguments, call the
    handler with the argument line and return the error */
 static int 
-dispatch_command (ASSUAN_CONTEXT ctx, char *line, int linelen)
+dispatch_command (assuan_context_t ctx, char *line, int linelen)
 {
   char *p;
   const char *s;
@@ -442,7 +447,7 @@ dispatch_command (ASSUAN_CONTEXT ctx, char *line, int linelen)
 
 
 static int
-process_request (ASSUAN_CONTEXT ctx)
+process_request (assuan_context_t ctx)
 {
   int rc;
 
@@ -553,7 +558,7 @@ process_request (ASSUAN_CONTEXT ctx)
  * failed.  Note, that no error is returned for operational errors.
  **/
 int
-assuan_process (ASSUAN_CONTEXT ctx)
+assuan_process (assuan_context_t ctx)
 {
   int rc;
 
@@ -580,7 +585,7 @@ assuan_process (ASSUAN_CONTEXT ctx)
  * Return value: -1 for end of server, 0 on success or an error code
  **/
 int 
-assuan_process_next (ASSUAN_CONTEXT ctx)
+assuan_process_next (assuan_context_t ctx)
 {
   return process_request (ctx);
 }
@@ -604,7 +609,7 @@ assuan_process_next (ASSUAN_CONTEXT ctx)
  * error which is most likely a too small fdarray.
  **/
 int 
-assuan_get_active_fds (ASSUAN_CONTEXT ctx, int what,
+assuan_get_active_fds (assuan_context_t ctx, int what,
                        int *fdarray, int fdarraysize)
 {
   int n = 0;
@@ -637,7 +642,7 @@ assuan_get_active_fds (ASSUAN_CONTEXT ctx, int what,
    implementaion for systems w/o a glibc, a simple implementation
    could use a child process */
 FILE *
-assuan_get_data_fp (ASSUAN_CONTEXT ctx)
+assuan_get_data_fp (assuan_context_t ctx)
 {
 #if defined (HAVE_FOPENCOOKIE) || defined (HAVE_FUNOPEN)
   if (ctx->outbound.data.fp)
@@ -659,7 +664,7 @@ assuan_get_data_fp (ASSUAN_CONTEXT ctx)
 /* Set the text used for the next OK reponse.  This string is
    automatically reset to NULL after the next command. */
 assuan_error_t
-assuan_set_okay_line (ASSUAN_CONTEXT ctx, const char *line)
+assuan_set_okay_line (assuan_context_t ctx, const char *line)
 {
   if (!ctx)
     return _assuan_error (ASSUAN_Invalid_Value);
@@ -686,7 +691,8 @@ assuan_set_okay_line (ASSUAN_CONTEXT ctx, const char *line)
 
 
 assuan_error_t
-assuan_write_status (ASSUAN_CONTEXT ctx, const char *keyword, const char *text)
+assuan_write_status (assuan_context_t ctx,
+                     const char *keyword, const char *text)
 {
   char buffer[256];
   char *helpbuf;

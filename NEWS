@@ -17,9 +17,10 @@ Noteworthy changes in version 0.9.0
    printing of the full data, a new environment variable
    ASSUAN_FULL_LOGGING may be set to any value.
 
- * Removed the assuan_domain fucntions.  Added new function
-   assuan_pipe_connect_ext to allow connections on a socketpair and to
-   pass descriptors.
+ * Removed the assuan_domain functions. 
+
+ * New functions assuan_pipe_connect_ext and assuan_socket_connext_ext
+   to allow connections on a socketpair and to pass descriptors.
 
 
 Noteworthy changes in version 0.6.10 (2005-06-20)

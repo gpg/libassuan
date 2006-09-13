@@ -114,39 +114,24 @@ deinit_socket_server (assuan_context_t ctx)
 int
 assuan_init_socket_server (assuan_context_t *r_ctx, int listen_fd)
 {
-  assuan_context_t ctx;
-  int rc;
-
-  *r_ctx = NULL;
-  ctx = xtrycalloc (1, sizeof *ctx);
-  if (!ctx)
-    return _assuan_error (ASSUAN_Out_Of_Core);
-  ctx->is_server = 1;
-  ctx->input_fd = -1;
-  ctx->output_fd = -1;
-
-  ctx->inbound.fd = -1;
-  ctx->outbound.fd = -1;
-
-  ctx->listen_fd = listen_fd;
-  ctx->connected_fd = -1;
-  ctx->deinit_handler = deinit_socket_server;
-  ctx->accept_handler = accept_connection;
-  ctx->finish_handler = finish_connection;
-
-  ctx->io = &io;
-
-  rc = _assuan_register_std_commands (ctx);
-  if (rc)
-    xfree (ctx);
-  else
-    *r_ctx = ctx;
-  return rc;
+  return assuan_init_socket_server_ext (r_ctx, listen_fd, 0);
 }
 
 /* Initialize a server using the already accepted socket FD. */
 int
 assuan_init_connected_socket_server (assuan_context_t *r_ctx, int fd)
+{
+  return assuan_init_socket_server_ext (r_ctx, fd, 2);
+}
+
+
+/* 
+   Flag bits: 0 - use sendmsg/recvmsg to allow descriptor passing
+              1 - FD has already been accepted.
+*/
+int
+assuan_init_socket_server_ext (assuan_context_t *r_ctx, int fd,
+                               unsigned int flags)
 {
   assuan_context_t ctx;
   int rc;
@@ -156,20 +141,33 @@ assuan_init_connected_socket_server (assuan_context_t *r_ctx, int fd)
   if (!ctx)
     return _assuan_error (ASSUAN_Out_Of_Core);
   ctx->is_server = 1;
-  ctx->pipe_mode = 1; /* we want a second accept to indicate EOF */
+  if ((flags & 2))
+    ctx->pipe_mode = 1; /* We want a second accept to indicate EOF. */
   ctx->input_fd = -1;
   ctx->output_fd = -1;
 
   ctx->inbound.fd = -1;
   ctx->outbound.fd = -1;
 
-  ctx->io = &io;
-
-  ctx->listen_fd = -1;
-  ctx->connected_fd = fd;
-  ctx->deinit_handler = deinit_socket_server;
-  ctx->accept_handler = accept_connection_bottom;
+  if ((flags & 2))
+    {
+      ctx->listen_fd = -1;
+      ctx->connected_fd = fd;
+    }
+  else
+    {
+      ctx->listen_fd = fd;
+      ctx->connected_fd = -1;
+    }
+  ctx->deinit_handler = (flags & 1)? _assuan_uds_deinit:deinit_socket_server;
+  ctx->accept_handler = ((flags & 2)
+                         ? accept_connection_bottom 
+                         : accept_connection);
   ctx->finish_handler = finish_connection;
+
+  ctx->io = &io;
+  if ((flags & 1))
+    _assuan_init_uds_io (ctx);
 
   rc = _assuan_register_std_commands (ctx);
   if (rc)
@@ -178,5 +176,3 @@ assuan_init_connected_socket_server (assuan_context_t *r_ctx, int fd)
     *r_ctx = ctx;
   return rc;
 }
-
-

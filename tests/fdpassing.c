@@ -279,7 +279,7 @@ main (int argc, char **argv)
         }
       err = assuan_pipe_connect_ext (&ctx, with_exec? "./fdpassing":NULL,
                                      with_exec? arglist :NULL,
-                                     no_close_fds, NULL, NULL);
+                                     no_close_fds, NULL, NULL, 1);
       if (err)
         {
           log_error ("assuan_pipe_connect failed: %s\n",assuan_strerror (err));

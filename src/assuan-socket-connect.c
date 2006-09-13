@@ -55,7 +55,7 @@
 
  
 static int
-do_finish (ASSUAN_CONTEXT ctx)
+do_finish (assuan_context_t ctx)
 {
   if (ctx->inbound.fd != -1)
     {
@@ -67,22 +67,37 @@ do_finish (ASSUAN_CONTEXT ctx)
 }
 
 static void
-do_deinit (ASSUAN_CONTEXT ctx)
+do_deinit (assuan_context_t ctx)
 {
   do_finish (ctx);
 }
+
+
 /* Make a connection to the Unix domain socket NAME and return a new
    Assuan context in CTX.  SERVER_PID is currently not used but may
    become handy in the future.  */
 assuan_error_t
-assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
+assuan_socket_connect (assuan_context_t *r_ctx,
                        const char *name, pid_t server_pid)
+{
+  return assuan_socket_connect_ext (r_ctx, name, server_pid, 0);
+}
+
+
+/* Make a connection to the Unix domain socket NAME and return a new
+   Assuan context in CTX.  SERVER_PID is currently not used but may
+   become handy in the future.  With flags set to 1 sendmsg and
+   recvmesg are used. */
+assuan_error_t
+assuan_socket_connect_ext (assuan_context_t *r_ctx,
+                           const char *name, pid_t server_pid,
+                           unsigned int flags)
 {
   static struct assuan_io io = { _assuan_simple_read,
 				 _assuan_simple_write };
 
   assuan_error_t err;
-  ASSUAN_CONTEXT ctx;
+  assuan_context_t ctx;
   int fd;
   struct sockaddr_un srvr_addr;
   size_t len;
@@ -92,9 +107,9 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
     return _assuan_error (ASSUAN_Invalid_Value);
   *r_ctx = NULL;
 
-  /* We require that the name starts with a slash, so that we can
-     alter reuse this function for other socket types.  To make things
-     easier we allow an optional dirver prefix.  */
+  /* We require that the name starts with a slash, so that we
+     eventually can reuse this function for other socket types.  To
+     make things easier we allow an optional dirver prefix.  */
   s = name;
   if (*s && s[1] == ':')
     s += 2;
@@ -107,9 +122,8 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
   err = _assuan_new_context (&ctx); 
   if (err)
       return err;
-  ctx->deinit_handler = do_deinit;
+  ctx->deinit_handler = ((flags&1))? _assuan_uds_deinit :  do_deinit;
   ctx->finish_handler = do_finish;
-
 
   fd = _assuan_sock_new (PF_LOCAL, SOCK_STREAM, 0);
   if (fd == -1)
@@ -138,7 +152,9 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
   ctx->inbound.fd = fd;
   ctx->outbound.fd = fd;
   ctx->io = &io;
-
+  if ((flags&1))
+    _assuan_init_uds_io (ctx);
+ 
   /* initial handshake */
   {
     int okay, off;
@@ -164,3 +180,5 @@ assuan_socket_connect (ASSUAN_CONTEXT *r_ctx,
     *r_ctx = ctx;
   return 0;
 }
+
+

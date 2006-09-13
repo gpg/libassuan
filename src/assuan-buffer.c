@@ -269,7 +269,11 @@ _assuan_write_line (assuan_context_t ctx, const char *prefix,
       if (ctx->confidential)
 	fputs ("[Confidential data not shown]", ctx->log_fp);
       else
-	_assuan_log_print_buffer (ctx->log_fp, line, len);
+        {
+          if (prefixlen)
+            _assuan_log_print_buffer (ctx->log_fp, prefix, prefixlen);
+          _assuan_log_print_buffer (ctx->log_fp, line, len);
+        }
       putc ('\n', ctx->log_fp);
     }
 

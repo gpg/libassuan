@@ -512,7 +512,7 @@ socketpair_connect (assuan_context_t *ctx,
                     _assuan_error (ASSUAN_Problem_Starting_Server),
                     name, strerror (errno));
           errbuf[sizeof(errbuf)-1] = 0;
-          writen (1, errbuf, strlen (errbuf));
+          writen (fds[1], errbuf, strlen (errbuf));
           _exit (4);
         }
 #ifdef _ASSUAN_USE_DOUBLE_FORK
@@ -842,31 +842,41 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
 }
 
 
-/* Connect to a server over a socketpair, creating the assuan context
-   and returning it in CTX.  The server filename is NAME, the argument
-   vector in ARGV.  FD_CHILD_LIST is a -1 terminated list of file
-   descriptors not to close in the child.  ATFORK is called in the
-   child right after the fork; ATFORKVALUE is passed as the first
-   argument and 0 is passed as the second argument. The ATFORK
-   function should only act if the second value is 0.  
+/* Connect to a server over a full-duplex socket (i.e. created by
+   socketpair), creating the assuan context and returning it in CTX.
+   The server filename is NAME, the argument vector in ARGV.
+   FD_CHILD_LIST is a -1 terminated list of file descriptors not to
+   close in the child.  ATFORK is called in the child right after the
+   fork; ATFORKVALUE is passed as the first argument and 0 is passed
+   as the second argument. The ATFORK function should only act if the
+   second value is 0.
+
+   For now FLAGS may either take the value 0 to behave like
+   assuan_pipe_connect2 or 1 to enable the described full-duplex
+   socket behaviour.
 
    If NAME as well as ARGV are NULL, no exec is done but the same
    process is continued.  However all file descriptors are closed and
-   some specila environment variables are set. To let the caller
-   detect whether the cild or the parent continues, the child returns
+   some special environment variables are set. To let the caller
+   detect whether the child or the parent continues, the child returns
    a CTX of NULL. */
 assuan_error_t
 assuan_pipe_connect_ext (assuan_context_t *ctx,
                          const char *name, const char *const argv[],
                          int *fd_child_list,
                          void (*atfork) (void *opaque, int reserved),
-                         void *atforkvalue)
+                         void *atforkvalue, unsigned int flags)
 {
+  if ((flags & 1))
+    {
 #ifdef HAVE_W32_SYSTEM
-  return _assuan_error (ASSUAN_Not_Implemented);
+      return _assuan_error (ASSUAN_Not_Implemented);
 #else
-  return socketpair_connect (ctx, name, argv, fd_child_list,
-                             atfork, atforkvalue);
+      return socketpair_connect (ctx, name, argv, fd_child_list,
+                                 atfork, atforkvalue);
 #endif
+    }
+  else
+    return pipe_connect (ctx, name, argv, fd_child_list, atfork, atforkvalue);
 }
 

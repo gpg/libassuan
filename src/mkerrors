@@ -83,6 +83,7 @@ _assuan_error (int oldcode)
     case ASSUAN_Unexpected_Command:      n = 274; break;
     case ASSUAN_Unknown_Command:         n = 275; break;
     case ASSUAN_Canceled:                n = 277; break;
+    case ASSUAN_No_Secret_Key:           n =  17; break;
 
     case ASSUAN_Read_Error:
       switch (errno)
@@ -119,8 +120,7 @@ _assuan_error (int oldcode)
     case -1: n = 16383 /*GPG_ERR_EOF*/; break;
 
     default:
-      assert (!"unmapped error code used in libassuan!!");
-      n = 257; /* Just in case someone compiled with NDEBUG.  */
+      n = 257; 
       break;
     }
 
