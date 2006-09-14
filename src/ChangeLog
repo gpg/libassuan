@@ -1,3 +1,15 @@
+2006-09-14  Werner Koch  <wk@g10code.com>
+
+	* assuan-io.c (_assuan_waitpid): New.  Changed all waitpid calls
+	to this.
+
+	* assuan.h (_ASSUAN_DEPRECATED): New internal macro.
+	(assuan_pipe_connect2): Declare deprecated.
+	(assuan_init_connected_socket_server): Declare deprecated.
+
+	* assuan-connect.c (assuan_get_peercred): New.
+	* assuan-socket-server.c (accept_connection_bottom): Save uid and gid.
+
 2006-09-13  Werner Koch  <wk@g10code.com>
 
 	* assuan-client.c (assuan_transact): Need to map the error code.

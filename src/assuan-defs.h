@@ -67,7 +67,7 @@ char * stpcpy (char *dest, const char *src);
 struct cmdtbl_s
 {
   const char *name;
-  int (*handler)(ASSUAN_CONTEXT, char *line);
+  int (*handler)(assuan_context_t, char *line);
 };
 
 
@@ -76,13 +76,13 @@ struct cmdtbl_s
 struct assuan_io
 {
   /* Routine to read from input_fd.  */
-  ssize_t (*readfnc) (ASSUAN_CONTEXT, void *, size_t);
+  ssize_t (*readfnc) (assuan_context_t, void *, size_t);
   /* Routine to write to output_fd.  */
-  ssize_t (*writefnc) (ASSUAN_CONTEXT, const void *, size_t);
+  ssize_t (*writefnc) (assuan_context_t, const void *, size_t);
   /* Send a file descriptor.  */
-  assuan_error_t (*sendfd) (ASSUAN_CONTEXT, int);
+  assuan_error_t (*sendfd) (assuan_context_t, int);
   /* Receive a file descriptor.  */
-  assuan_error_t (*receivefd) (ASSUAN_CONTEXT, int *);
+  assuan_error_t (*receivefd) (assuan_context_t, int *);
 };
 
 
@@ -140,6 +140,12 @@ struct assuan_context_s
   int listen_fd;  /* The fd we are listening on (used by socket servers) */
   int connected_fd; /* helper */
 
+  struct {
+    int   valid;   /* Whether this structure has valid information. */
+    pid_t pid;     /* The pid of the peer. */
+    uid_t uid;     /* The uid of the peer. */
+    gid_t gid;     /* The gid of the peer. */
+  } peercred;
 
   /* Used for Unix domain sockets.  */
   struct sockaddr_un myaddr;
@@ -158,20 +164,20 @@ struct assuan_context_s
     int pendingfdscount;  /* Number of received descriptors. */
   } uds;
 
-  void (*deinit_handler)(ASSUAN_CONTEXT);
-  int (*accept_handler)(ASSUAN_CONTEXT);
-  int (*finish_handler)(ASSUAN_CONTEXT);
+  void (*deinit_handler)(assuan_context_t);
+  int (*accept_handler)(assuan_context_t);
+  int (*finish_handler)(assuan_context_t);
 
   struct cmdtbl_s *cmdtbl;
   size_t cmdtbl_used; /* used entries */
   size_t cmdtbl_size; /* allocated size of table */
 
-  void (*bye_notify_fnc)(ASSUAN_CONTEXT);
-  void (*reset_notify_fnc)(ASSUAN_CONTEXT);
-  void (*cancel_notify_fnc)(ASSUAN_CONTEXT);
-  int  (*option_handler_fnc)(ASSUAN_CONTEXT,const char*, const char*);
-  void (*input_notify_fnc)(ASSUAN_CONTEXT, const char *);
-  void (*output_notify_fnc)(ASSUAN_CONTEXT, const char *);
+  void (*bye_notify_fnc)(assuan_context_t);
+  void (*reset_notify_fnc)(assuan_context_t);
+  void (*cancel_notify_fnc)(assuan_context_t);
+  int  (*option_handler_fnc)(assuan_context_t,const char*, const char*);
+  void (*input_notify_fnc)(assuan_context_t, const char *);
+  void (*output_notify_fnc)(assuan_context_t, const char *);
 
   int input_fd;   /* set by INPUT command */
   int output_fd;  /* set by OUTPUT command */
@@ -181,8 +187,8 @@ struct assuan_context_s
 };
 
 /*-- assuan-pipe-server.c --*/
-int _assuan_new_context (ASSUAN_CONTEXT *r_ctx);
-void _assuan_release_context (ASSUAN_CONTEXT ctx);
+int _assuan_new_context (assuan_context_t *r_ctx);
+void _assuan_release_context (assuan_context_t ctx);
 
 /*-- assuan-uds.c --*/
 void _assuan_uds_close_fds (assuan_context_t ctx);
@@ -191,17 +197,18 @@ void _assuan_init_uds_io (assuan_context_t ctx);
 
 
 /*-- assuan-handler.c --*/
-int _assuan_register_std_commands (ASSUAN_CONTEXT ctx);
+int _assuan_register_std_commands (assuan_context_t ctx);
 
 /*-- assuan-buffer.c --*/
-int _assuan_read_line (ASSUAN_CONTEXT ctx);
+int _assuan_read_line (assuan_context_t ctx);
 int _assuan_cookie_write_data (void *cookie, const char *buffer, size_t size);
 int _assuan_cookie_write_flush (void *cookie);
 assuan_error_t _assuan_write_line (assuan_context_t ctx, const char *prefix,
                                    const char *line, size_t len);
 
 /*-- assuan-client.c --*/
-assuan_error_t _assuan_read_from_server (ASSUAN_CONTEXT ctx, int *okay, int *off);
+assuan_error_t _assuan_read_from_server (assuan_context_t ctx,
+                                         int *okay, int *off);
 
 /*-- assuan-error.c --*/
 
@@ -254,8 +261,10 @@ void _assuan_log_sanitized_string (const char *string);
 
 
 /*-- assuan-io.c --*/
-ssize_t _assuan_simple_read (ASSUAN_CONTEXT ctx, void *buffer, size_t size);
-ssize_t _assuan_simple_write (ASSUAN_CONTEXT ctx, const void *buffer,
+pid_t _assuan_waitpid (pid_t pid, int *status, int options);
+
+ssize_t _assuan_simple_read (assuan_context_t ctx, void *buffer, size_t size);
+ssize_t _assuan_simple_write (assuan_context_t ctx, const void *buffer,
 			      size_t size);
 ssize_t _assuan_simple_sendmsg (assuan_context_t ctx, struct msghdr *msg);
 ssize_t _assuan_simple_recvmsg (assuan_context_t ctx, struct msghdr *msg);

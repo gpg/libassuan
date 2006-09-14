@@ -43,16 +43,24 @@ accept_connection_bottom (assuan_context_t ctx)
 {
   int fd = ctx->connected_fd;
 
+  ctx->peercred.valid = 0;
 #ifdef HAVE_SO_PEERCRED
   {
-    /* This overrides any already set PID if the function returns a
-       valid one. */
     struct ucred cr; 
-    int cl = sizeof cr;
+    socklen_t cl = sizeof cr;
 
-    if ( !getsockopt (fd, SOL_SOCKET, SO_PEERCRED, &cr, &cl)
-         && cr.pid != (pid_t)-1 && cr.pid ) 
-      ctx->pid = cr.pid;
+    if ( !getsockopt (fd, SOL_SOCKET, SO_PEERCRED, &cr, &cl))
+      {
+         ctx->peercred.pid = cr.pid;
+         ctx->peercred.uid = cr.uid;
+         ctx->peercred.gid = cr.gid;
+         ctx->peercred.valid = 1;
+
+         /* This overrides any already set PID if the function returns
+            a valid one. */
+         if (cr.pid != (pid_t)-1 && cr.pid) 
+           ctx->pid = cr.pid;
+      }
   }
 #endif
 
@@ -117,7 +125,8 @@ assuan_init_socket_server (assuan_context_t *r_ctx, int listen_fd)
   return assuan_init_socket_server_ext (r_ctx, listen_fd, 0);
 }
 
-/* Initialize a server using the already accepted socket FD. */
+/* Initialize a server using the already accepted socket FD.  This
+   fucntion is deprecated. */
 int
 assuan_init_connected_socket_server (assuan_context_t *r_ctx, int fd)
 {

@@ -558,6 +558,7 @@ to use threads.
 @menu
 * Data Types::                  Data types used by @sc{libassuan}.
 * Initializing the library::    How to initialize the library.
+* Reading and Writing::         How to communicate with the peer.
 @end menu
 
 
@@ -566,16 +567,17 @@ to use threads.
 @section Data Types used by the library
 
 @sc{libassuan} uses a context approach to keep state.  The following
-data type is used all over the palce:
+data type is used all over the place:
 
 @deftp {Data type} assuan_context_t
 The @code{assuan_context_t} type is a pointer to an object mainted
-internally by the library.  Certain assuan fucntions allocate such a
+internally by the library.  Certain Assuan functions allocate such a
 context and return it to the caller using this data type. Other
 functions take this data type to access the state created by these
 functions.
 @end deftp
 
+@noindent
 For compatibility with older versions of @sc{libassuan} a data
 type for error return values exists:
 
@@ -605,6 +607,7 @@ and @code{free}).  If you write your own functions please take care to
 set @code{errno} whenever an error has occured.
 @end deftypefun
 
+@noindent
 To integrate assuan logging and diagnostics into your own logging
 system, you may use the following two functions:
 
@@ -618,7 +621,7 @@ thread-asfe and thus it is highly recommended to use this function to
 setup a proper default.
 @end deftypefun
 
-@deftypefun void assuan_set_assuan_log_prefix (const char *@var{text})
+@deftypefun void assuan_set_assuan_log_prefix (@w{const char *@var{text}})
 Set the prefix to be used at the start of a line emitted by assuan
 on the log stream to @var{text}.  The default is the empty string. 
 @end deftypefun
@@ -638,13 +641,112 @@ assuan_set_assuan_err_source (GPG_ERR_SOURCE_DEFAULT);
 @end smallexample
 @end deftypefun
 
+@node Reading and Writing
+@section How to communicate with the peer
+
+What would be a IPC library without the ability to read and write data?
+Not very useful.  Libassuan has high level functions to take care of of
+the more boring stuff but eventully actually data needs to be written.
+
+@noindent
+The basic read and write functions are:
+
+@deftypefun assuan_error_t assuan_read_line (@w{assuan_context_t @var{ctx}}, @w{char **@var{line}}, @w{size_t *@var{linelen}})
+
+Read the next line from the client or server and store a pointer to the
+buffer holding that line at the address @var{line}.  The valid length of
+the lines is stored at the address of @var{linelen}. This buffer is
+valid until the next read operation on the same context @var{ctx}.  You
+may modify the contet of this buffer.  The buffer is invalid (i.e. must
+not be used) if an error is returned.  This function returns @code{0} on
+success or an error code.
+@end deftypefun
+
+@deftypefun assuan_error_t assuan_write_line (@w{assuan_context_t @var{ctx}}, @w{const char *@var{line}})
+
+Write the string @var{line} to the other end.  This string needs to be a
+proper formatted Assuan protocol line and should not include a linefeed.
+Sending linefeed or Nul characters is not possible and not alowed by the
+assuan protocol.  This fucntion shall not be used for sendind data (D)
+lines.  This function returns @code{0} on success or an error code.
+@end deftypefun
+
+@noindent 
+To actually send bulk data lines a specialized function is available:
+
+@deftypefun assuan_error_t assuan_send_data (@w{assuan_context_t @var{ctx}}, @w{const void *@var{buffer}}, @w{size_t @var{length}})
+
+This function is used by a server or a client to send
+@var{length} bytes of bulk data in @var{buffer} to the other end.
+The data will be escaped as required by the Assuan protocol and
+may get buffered until a line is full.  To force sending the data out
+@var{buffer} may be passed as @code{NULL} and @var{length} be @code{0}.
+
+When used by a client this flush operation does also send the
+terminating @code{END} command to terminate the response on an
+``INQUIRE'' response.  Note, that the fucntion @code{assuan_transact}
+takes care of sending this @code{END} itself.
+
+@noindent
+This function returns @code{0} on success or an error code.
+@end deftypefun
+
+
+
+
 @c 
 @c     C L I E N T   C O D E
 @c
 @node Client code
 @chapter How to develop an Assuan client
 
-foo
+
+
+
+assuan_error_t assuan_pipe_connect (assuan_context_t *ctx,
+                                    const char *name,
+				    const char *const argv[],
+				    int *fd_child_list);
+assuan_error_t assuan_pipe_connect2 (assuan_context_t *ctx,
+                                     const char *name,
+                                     const char *const argv[],
+				     int *fd_child_list,
+                                     void (*atfork) (void*, int),
+                                     void *atforkvalue);
+assuan_error_t assuan_pipe_connect_ext (assuan_context_t *ctx, 
+                                        const char *name,
+                                        const char *const argv[],
+                                        int *fd_child_list,
+                                        void (*atfork) (void *, int),
+                                        void *atforkvalue,
+                                        unsigned int flags);
+
+assuan_error_t assuan_socket_connect (assuan_context_t *ctx, 
+                                      const char *name,
+                                      pid_t server_pid);
+assuan_error_t assuan_socket_connect_ext (assuan_context_t *ctx,
+                                          const char *name,
+                                          pid_t server_pid,
+                                          unsigned int flags);
+
+void assuan_disconnect (assuan_context_t ctx);
+
+assuan_error_t 
+assuan_transact (assuan_context_t ctx,
+                 const char *command,
+                 int (*data_cb)(void *, const void *, size_t),
+                 void *data_cb_arg,
+                 int (*inquire_cb)(void*, const char *),
+                 void *inquire_cb_arg,
+                 int (*status_cb)(void*, const char *),
+                 void *status_cb_arg);
+
+
+/* The file descriptor must be pending before assuan_receivefd is
+   called.  This means that assuan_sendfd should be called *before* the
+   trigger is sent (normally via assuan_write_line ("INPUT FD")).  */
+assuan_error_t assuan_sendfd (assuan_context_t ctx, int fd);
+assuan_error_t assuan_receivefd (assuan_context_t ctx, int *fd);
 
 
 @c 
@@ -654,6 +756,59 @@ foo
 @chapter How to develop an Assuan server
 
 bar
+int assuan_register_command (assuan_context_t ctx,
+                             const char *cmd_string,
+                             int (*handler)(assuan_context_t, char *));
+int assuan_register_bye_notify (assuan_context_t ctx,
+                                void (*fnc)(assuan_context_t));
+int assuan_register_reset_notify (assuan_context_t ctx,
+                                  void (*fnc)(assuan_context_t));
+int assuan_register_cancel_notify (assuan_context_t ctx,
+                                   void (*fnc)(assuan_context_t));
+int assuan_register_input_notify (assuan_context_t ctx,
+                                  void (*fnc)(assuan_context_t, const char *));
+int assuan_register_output_notify (assuan_context_t ctx,
+                                  void (*fnc)(assuan_context_t, const char *));
+
+int assuan_register_option_handler (assuan_context_t ctx,
+                                    int (*fnc)(assuan_context_t,
+                                               const char*, const char*));
+
+int assuan_process (assuan_context_t ctx);
+int assuan_process_next (assuan_context_t ctx);
+
+FILE *assuan_get_data_fp (assuan_context_t ctx);
+assuan_error_t assuan_set_okay_line (assuan_context_t ctx, const char *line);
+assuan_error_t assuan_write_status (assuan_context_t ctx,
+                                    const char *keyword, const char *text);
+
+/* Negotiate a file descriptor.  If LINE contains "FD=N", returns N
+   assuming a local file descriptor.  If LINE contains "FD" reads a
+   file descriptor via CTX and stores it in *RDF (the CTX must be
+   capable of passing file descriptors).  */
+assuan_error_t assuan_command_parse_fd (assuan_context_t ctx, char *line,
+                                        int *rfd);
+
+assuan_error_t assuan_set_hello_line (assuan_context_t ctx, const char *line);
+assuan_error_t assuan_accept (assuan_context_t ctx);
+int assuan_get_input_fd (assuan_context_t ctx);
+int assuan_get_output_fd (assuan_context_t ctx);
+assuan_error_t assuan_close_input_fd (assuan_context_t ctx);
+assuan_error_t assuan_close_output_fd (assuan_context_t ctx);
+
+int assuan_init_pipe_server (assuan_context_t *r_ctx, int filedes[2]);
+void assuan_deinit_server (assuan_context_t ctx);
+
+int assuan_init_socket_server (assuan_context_t *r_ctx, int listen_fd);
+int assuan_init_connected_socket_server (assuan_context_t *r_ctx, int fd);
+int assuan_init_socket_server_ext (assuan_context_t *r_ctx, int fd,
+                                   unsigned int flags);
+
+assuan_error_t assuan_inquire (assuan_context_t ctx, const char *keyword,
+                               unsigned char **r_buffer, size_t *r_length,
+                               size_t maxlen);
+
+
 
 @c
 @c     U T I L I T I E S
@@ -661,7 +816,76 @@ bar
 @node Utilities
 @chapter Utility functions
 
-baz
+
+void assuan_set_log_stream (assuan_context_t ctx, FILE *fp);
+int assuan_set_error (assuan_context_t ctx, int err, const char *text);
+void assuan_set_pointer (assuan_context_t ctx, void *pointer);
+void *assuan_get_pointer (assuan_context_t ctx);
+
+void assuan_begin_confidential (assuan_context_t ctx);
+void assuan_end_confidential (assuan_context_t ctx);
+
+/* For context CTX, set the flag FLAG to VALUE.  Values for flags
+   are usually 1 or 0 but certain flags might allow for other values;
+   see the description of the type assuan_flag_t for details. */
+void assuan_set_flag (assuan_context_t ctx, assuan_flag_t flag, int value);
+
+typedef enum
+    /* When using a pipe server, by default Assuan will wait for the
+       forked process to die in assuan_disconnect.  In certain cases
+       this is not desirable.  By setting this flag, the waitpid will
+       be skipped and the caller is responsible to cleanup a forked
+       process. */
+    ASSUAN_NO_WAITPID = 1
+assuan_flag_t;
+
+
+
+/* Return the VALUE of FLAG in context CTX. */ 
+int  assuan_get_flag (assuan_context_t ctx, assuan_flag_t flag);
+
+
+const char *assuan_strerror (assuan_error_t err);
+
+
+@deftypefun pid_t assuan_get_pid (@w{assuan_context_t @var{ctx}})
+
+This function returns the pid of the connected connected peer.  If that
+pid is not known @code{-1} is returned.  Note that it is not always
+possible to learn the pid of the other process. For a pipe based server
+the client knows it instantly and a mechnism is in palce to let the
+server learn it.  For socket based servers the pid is only available on
+systems providing the ``SO_PEERCRED'' socket option @footnote{to our
+knowledge only the Linux kernel has this feature}.
+@end deftypefun
+
+
+@deftypefun assuan_error_t assuan_get_peercred (@w{assuan_context_t @var{ctx}}, @w{pid_t *@var{pid}}, @w{uid_t *@var{uid}}, @w{gid_t *@var{pid}})
+
+Return user credentials of the peer. This will work only on certain
+systems and only when connected over a socket.  If you are not
+interested in some of the values, pass @code{NULL} instead of the
+address of an appropriate variable.  @var{pid}, @var{uid} and @var{gid}
+are only set if the function succeeds and returns with @code{0}.
+
+As of now only the server is able to retrieve this information.  Note,
+that for getting the pid of the peer @code{assuan_get_pid} is usually
+better suited.
+@end deftypefun
+
+
+int assuan_get_active_fds (assuan_context_t ctx, int what,
+                           int *fdarray, int fdarraysize);
+
+int assuan_pending_line (assuan_context_t ctx);
+
+/* Return the stream which is currently being using for global logging.  */
+FILE *assuan_get_assuan_log_stream (void);
+
+/* Return a prefix to be used at the start of a line emitted by assuan
+   on the log stream.  The default implementation returns the empty
+   string, i.e. ""  */
+const char *assuan_get_assuan_log_prefix (void);
 
 
 @c ---------------------------------------------------------------------

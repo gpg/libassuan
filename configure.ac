@@ -1,29 +1,31 @@
 # configure.ac - for libassuan
-#       Copyright (C) 2001, 2002, 2003 Free Software Foundation, Inc,
+# Copyright (C) 2001, 2002, 2003, 2006 Free Software Foundation, Inc,
 # 
-# This file is part of GnuPG.
-# 
-# GnuPG is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-# 
-# GnuPG is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-# 
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
+# This file is part of Assuan.
+#
+# Assuan is free software; you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as
+# published by the Free Software Foundation; either version 2.1 of
+# the License, or (at your option) any later version.
+#
+# Assuan is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, 
+# MA 02110-1301, USA 
 
 # Process this file with autoconf to produce a configure script.
+
 AC_PREREQ(2.59)
 min_automake_version="1.9.3"
 
 # Version number: Remember to change it immediately *after* a release.
 #                 Add a "-cvs" prefix for non-released code.
-AC_INIT(libassuan, 0.9.0-cvs, gnupg-devel@gnupg.org)
+AC_INIT(libassuan, 0.9.0, gnupg-devel@gnupg.org)
 # Note, that this is not yet available as a shared library.
 
 PACKAGE=$PACKAGE_NAME
@@ -132,6 +134,9 @@ AC_TYPE_SIZE_T
 AC_TYPE_SIGNAL
 AC_DECL_SYS_SIGLIST
 
+gl_TYPE_SOCKLEN_T
+
+
 # Checks for library functions.
 
 AC_CHECK_FUNCS(flockfile funlockfile)
@@ -161,8 +166,31 @@ AC_REPLACE_FUNCS(stpcpy)
 AC_CHECK_HEADERS(unistd.h)
 AC_REPLACE_FUNCS(setenv)
 
+
+#
+# Check for the getsockopt SO_PEERCRED
+#
+AC_MSG_CHECKING(for SO_PEERCRED)
+AC_CACHE_VAL(assuan_cv_sys_so_peercred,
+      [AC_TRY_COMPILE([#include <sys/socket.h>], 
+         [struct ucred cr; 
+          int cl = sizeof cr;
+          getsockopt (1, SOL_SOCKET, SO_PEERCRED, &cr, &cl);],
+          assuan_cv_sys_so_peercred=yes,
+          assuan_cv_sys_so_peercred=no)
+       ])
+AC_MSG_RESULT($assuan_cv_sys_so_peercred) 
+if test $assuan_cv_sys_so_peercred = yes; then
+  AC_DEFINE(HAVE_SO_PEERCRED, 1,
+            [Defined if SO_PEERCRED is supported (Linux specific)])
+fi
+
+
+
+
 # Create the config files.
 AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([m4/Makefile])
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([doc/Makefile])
 AC_CONFIG_FILES([tests/Makefile])

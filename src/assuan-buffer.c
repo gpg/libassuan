@@ -35,7 +35,7 @@
 /* Extended version of write(2) to guarantee that all bytes are
    written.  Returns 0 on success or -1 and ERRNO on failure. */
 static int
-writen (ASSUAN_CONTEXT ctx, const char *buffer, size_t length)
+writen (assuan_context_t ctx, const char *buffer, size_t length)
 {
   while (length)
     {
@@ -57,7 +57,7 @@ writen (ASSUAN_CONTEXT ctx, const char *buffer, size_t length)
    failure.  EOF is indictated by setting the integer at address
    R_EOF.  */
 static int
-readline (ASSUAN_CONTEXT ctx, char *buf, size_t buflen,
+readline (assuan_context_t ctx, char *buf, size_t buflen,
 	  int *r_nread, int *r_eof)
 {
   size_t nleft = buflen;
@@ -96,7 +96,7 @@ readline (ASSUAN_CONTEXT ctx, char *buf, size_t buflen,
 
 /* Function returns an Assuan error. */
 int
-_assuan_read_line (ASSUAN_CONTEXT ctx)
+_assuan_read_line (assuan_context_t ctx)
 {
   char *line = ctx->inbound.line;
   int nread, atticlen;
@@ -216,7 +216,7 @@ _assuan_read_line (ASSUAN_CONTEXT ctx)
    See also: assuan_pending_line().
 */
 assuan_error_t
-assuan_read_line (ASSUAN_CONTEXT ctx, char **line, size_t *linelen)
+assuan_read_line (assuan_context_t ctx, char **line, size_t *linelen)
 {
   assuan_error_t err;
 
@@ -233,7 +233,7 @@ assuan_read_line (ASSUAN_CONTEXT ctx, char **line, size_t *linelen)
 /* Return true if a full line is buffered (i.e. an entire line may be
    read without any I/O).  */
 int
-assuan_pending_line (ASSUAN_CONTEXT ctx)
+assuan_pending_line (assuan_context_t ctx)
 {
   return ctx && ctx->inbound.attic.pending;
 }
@@ -300,7 +300,7 @@ _assuan_write_line (assuan_context_t ctx, const char *prefix,
 
 
 assuan_error_t 
-assuan_write_line (ASSUAN_CONTEXT ctx, const char *line)
+assuan_write_line (assuan_context_t ctx, const char *line)
 {
   size_t len;
   const char *s;
@@ -329,7 +329,7 @@ assuan_write_line (ASSUAN_CONTEXT ctx, const char *line)
 int
 _assuan_cookie_write_data (void *cookie, const char *buffer, size_t orig_size)
 {
-  ASSUAN_CONTEXT ctx = cookie;
+  assuan_context_t ctx = cookie;
   size_t size = orig_size;
   char *line;
   size_t linelen;
@@ -406,7 +406,7 @@ _assuan_cookie_write_data (void *cookie, const char *buffer, size_t orig_size)
 int
 _assuan_cookie_write_flush (void *cookie)
 {
-  ASSUAN_CONTEXT ctx = cookie;
+  assuan_context_t ctx = cookie;
   char *line;
   size_t linelen;
 
@@ -462,7 +462,7 @@ _assuan_cookie_write_flush (void *cookie)
  **/
 
 assuan_error_t
-assuan_send_data (ASSUAN_CONTEXT ctx, const void *buffer, size_t length)
+assuan_send_data (assuan_context_t ctx, const void *buffer, size_t length)
 {
   if (!ctx)
     return _assuan_error (ASSUAN_Invalid_Value);
@@ -488,7 +488,7 @@ assuan_send_data (ASSUAN_CONTEXT ctx, const void *buffer, size_t length)
 }
 
 assuan_error_t
-assuan_sendfd (ASSUAN_CONTEXT ctx, int fd)
+assuan_sendfd (assuan_context_t ctx, int fd)
 {
   if (! ctx->io->sendfd)
     return set_error (ctx, Not_Implemented,
@@ -498,7 +498,7 @@ assuan_sendfd (ASSUAN_CONTEXT ctx, int fd)
 }
 
 assuan_error_t
-assuan_receivefd (ASSUAN_CONTEXT ctx, int *fd)
+assuan_receivefd (assuan_context_t ctx, int *fd)
 {
   if (! ctx->io->receivefd)
     return set_error (ctx, Not_Implemented,

@@ -1,3 +1,11 @@
+2006-09-14  Werner Koch  <wk@g10code.com>
+
+	Released 0.9.0.
+
+	* configure.ac: Check for S_PEERCRED.  Include check for socklen_t.
+	* m4/sys_socket_h.m4, m4/onceonly.m4, m4/socklen.m4: New.
+	* m4/Makefile.am: New.
+
 2006-09-05  Werner Koch  <wk@g10code.com>
 
 	* configure.ac (AH_BOTTOM): Define _ASSUAN_IN_LIBASSUAN.

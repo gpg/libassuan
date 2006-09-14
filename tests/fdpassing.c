@@ -124,6 +124,9 @@ server (void)
             log_error ("assuan_accept failed: %s\n", assuan_strerror (rc));
           break;
         }
+      
+      log_info ("client connected.  Client's pid is %ld\n",
+                (long)assuan_get_pid (ctx));
 
       rc = assuan_process (ctx);
       if (rc)
@@ -151,9 +154,10 @@ client (assuan_context_t ctx)
   FILE *fp;
   int i;
 
-  log_info ("client started\n");
+  log_info ("client started. Servers's pid is %ld\n",
+            (long)assuan_get_pid (ctx));
 
-  for (i=0; i < 8; i++)
+  for (i=0; i < 6; i++)
     {
       fp = fopen ("/etc/motd", "r");
       if (!fp)

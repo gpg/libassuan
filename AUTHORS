@@ -13,6 +13,8 @@ Neal H. Walfield  <neal@g10code.de>
 Marcus Brinkmann  <marcus@g10code.de>
  - Bug fixes.
 
+g10 Code GmbH   <info@g10code.com> 
+ - all work indicated by mail addresses in ChangeLogs
 
 
 Libassuan was orginally part of NewPG, a temporary fork of GnuPG, and

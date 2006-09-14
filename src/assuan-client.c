@@ -34,7 +34,7 @@
 
 
 assuan_error_t
-_assuan_read_from_server (ASSUAN_CONTEXT ctx, int *okay, int *off)
+_assuan_read_from_server (assuan_context_t ctx, int *okay, int *off)
 {
   char *line;
   int linelen;
@@ -130,7 +130,7 @@ _assuan_read_from_server (ASSUAN_CONTEXT ctx, int *okay, int *off)
  * will altter return an Assuan error (write erro in most cases).
  **/
 assuan_error_t
-assuan_transact (ASSUAN_CONTEXT ctx,
+assuan_transact (assuan_context_t ctx,
                  const char *command,
                  int (*data_cb)(void *, const void *, size_t),
                  void *data_cb_arg,

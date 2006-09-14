@@ -25,13 +25,16 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
 #if HAVE_SYS_UIO_H
-#include <sys/uio.h>
+# include <sys/uio.h>
 #endif
 #include <unistd.h>
 #include <errno.h>
 #ifdef HAVE_W32_SYSTEM
-#include <windows.h>
+# include <windows.h>
+#else
+# include <sys/wait.h>
 #endif
 
 #include "assuan-defs.h"
@@ -46,12 +49,14 @@
 
 
 #ifndef _ASSUAN_NO_PTH
+extern pid_t   pth_waitpid (pid_t pid, int *status, int options);
 extern ssize_t pth_read (int fd, void *buffer, size_t size);
 extern ssize_t pth_write (int fd, const void *buffer, size_t size);
 extern int     pth_fdmode (int, int);
 extern int     pth_select(int, fd_set*, fd_set*, fd_set*, struct timeval*);
 
 #ifndef HAVE_W32_SYSTEM
+#pragma weak pth_waitpid
 #pragma weak pth_read
 #pragma weak pth_write
 #pragma weak pth_fdmode
@@ -84,6 +89,17 @@ my_pth_select (int nfd, fd_set *rfds, fd_set *wfds, fd_set *efds,
 }
 #endif /*_ASSUAN_NO_PTH*/
 
+#ifndef HAVE_W32_SYSTEM
+pid_t 
+_assuan_waitpid (pid_t pid, int *status, int options)
+{
+#ifdef _ASSUAN_NO_PTH
+  return waitpid (pid, status, options);
+#else
+  return (pth_waitpid ? pth_waitpid : waitpid) (pid, status, options);
+#endif
+}
+#endif
 
 
 ssize_t
@@ -98,7 +114,7 @@ _assuan_simple_read (assuan_context_t ctx, void *buffer, size_t size)
   return pth_read ? pth_read (ctx->inbound.fd, buffer, size)
                   : recv (ctx->inbound.fd, buffer, size, 0);
 # endif
-# endif
+#endif
 }
 
 ssize_t

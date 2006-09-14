@@ -99,6 +99,7 @@
 #define assuan_socket_connect_ext _ASSUAN_PREFIX(assuan_socket_connect_ext)
 #define assuan_disconnect _ASSUAN_PREFIX(assuan_disconnect)
 #define assuan_get_pid _ASSUAN_PREFIX(assuan_get_pid)
+#define assuan_get_peercred _ASSUAN_PREFIX(assuan_get_peercred)
 #define assuan_transact _ASSUAN_PREFIX(assuan_transact)
 #define assuan_inquire _ASSUAN_PREFIX(assuan_inquire)
 #define assuan_read_line _ASSUAN_PREFIX(assuan_read_line)
@@ -168,9 +169,25 @@ extern "C"
 #endif
 #endif
 
-#ifndef _ASSUAN_ONLY_GPG_ERRORS
+
+/* Check for compiler features.  */
+#if __GNUC__
+#define _ASSUAN_GCC_VERSION (__GNUC__ * 10000 \
+                            + __GNUC_MINOR__ * 100 \
+                            + __GNUC_PATCHLEVEL__)
+
+#if _ASSUAN_GCC_VERSION > 30100
+#define _ASSUAN_DEPRECATED  __attribute__ ((__deprecated__))
+#endif
+#endif
+#ifndef _ASSUAN_DEPRECATED
+#define _ASSUAN_DEPRECATED
+#endif
+
+
 /* Assuan error codes.  These are only used by old applications or
    those applications which won't make use of libgpg-error. */
+#ifndef _ASSUAN_ONLY_GPG_ERRORS
 typedef enum
 {
 #ifndef _ASSUAN_IN_LIBASSUAN
@@ -311,7 +328,7 @@ assuan_flag_t;
 struct assuan_context_s;
 typedef struct assuan_context_s *assuan_context_t;
 #ifndef _ASSUAN_ONLY_GPG_ERRORS
-typedef struct assuan_context_s *ASSUAN_CONTEXT;
+typedef struct assuan_context_s *ASSUAN_CONTEXT _ASSUAN_DEPRECATED;
 #endif /*_ASSUAN_ONLY_GPG_ERRORS*/
 
 /*-- assuan-handler.c --*/
@@ -366,7 +383,8 @@ void assuan_deinit_server (assuan_context_t ctx);
 
 /*-- assuan-socket-server.c --*/
 int assuan_init_socket_server (assuan_context_t *r_ctx, int listen_fd);
-int assuan_init_connected_socket_server (assuan_context_t *r_ctx, int fd);
+int assuan_init_connected_socket_server (assuan_context_t *r_ctx, 
+                                         int fd) _ASSUAN_DEPRECATED;
 int assuan_init_socket_server_ext (assuan_context_t *r_ctx, int fd,
                                    unsigned int flags);
 
@@ -380,7 +398,7 @@ assuan_error_t assuan_pipe_connect2 (assuan_context_t *ctx,
                                      const char *const argv[],
 				     int *fd_child_list,
                                      void (*atfork) (void*, int),
-                                     void *atforkvalue);
+                                     void *atforkvalue) _ASSUAN_DEPRECATED;
 assuan_error_t assuan_pipe_connect_ext (assuan_context_t *ctx, 
                                         const char *name,
                                         const char *const argv[],
@@ -401,6 +419,8 @@ assuan_error_t assuan_socket_connect_ext (assuan_context_t *ctx,
 /*-- assuan-connect.c --*/
 void assuan_disconnect (assuan_context_t ctx);
 pid_t assuan_get_pid (assuan_context_t ctx);
+assuan_error_t assuan_get_peercred (assuan_context_t ctx,
+                                    pid_t *pid, uid_t *uid, gid_t *gid);
 
 /*-- assuan-client.c --*/
 assuan_error_t 

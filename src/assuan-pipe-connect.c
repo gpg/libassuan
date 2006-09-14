@@ -126,7 +126,7 @@ do_finish (assuan_context_t ctx)
 #ifndef HAVE_W32_SYSTEM
 #ifndef _ASSUAN_USE_DOUBLE_FORK
       if (!ctx->flags.no_waitpid)
-        waitpid (ctx->pid, NULL, 0); 
+        _assuan_waitpid (ctx->pid, NULL, 0); 
       ctx->pid = -1;
 #endif
 #endif /*!HAVE_W32_SYSTEM*/
@@ -342,7 +342,7 @@ pipe_connect_unix (assuan_context_t *ctx,
     }
 
 #ifdef _ASSUAN_USE_DOUBLE_FORK
-  waitpid ((*ctx)->pid, NULL, 0);
+  _assuan_waitpid ((*ctx)->pid, NULL, 0);
   (*ctx)->pid = -1;
 #endif
 
@@ -525,7 +525,7 @@ socketpair_connect (assuan_context_t *ctx,
 
 
 #ifdef _ASSUAN_USE_DOUBLE_FORK
-  waitpid ((*ctx)->pid, NULL, 0);
+  _assuan_waitpid ((*ctx)->pid, NULL, 0);
   (*ctx)->pid = -1;
 #endif
 
@@ -824,13 +824,7 @@ assuan_pipe_connect (assuan_context_t *ctx, const char *name,
 }
 
 
-/* Connect to a server over a pipe, creating the assuan context and
-   returning it in CTX.  The server filename is NAME, the argument
-   vector in ARGV.  FD_CHILD_LIST is a -1 terminated list of file
-   descriptors not to close in the child.  ATFORK is called in the
-   child right after the fork; ATFORKVALUE is passed as the first
-   argument and 0 is passed as the second argument. The ATFORK
-   function should only act if the second value is 0. */
+
 assuan_error_t
 assuan_pipe_connect2 (assuan_context_t *ctx,
                       const char *name, const char *const argv[],

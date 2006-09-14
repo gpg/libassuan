@@ -1,5 +1,5 @@
-Noteworthy changes in version 0.9.0
--------------------------------------------------
+Noteworthy changes in version 0.9.0 (2006-09-14)
+------------------------------------------------
 
  * Internal cleanups to make inclusion of the code into libraries
    easier.
@@ -17,10 +17,12 @@ Noteworthy changes in version 0.9.0
    printing of the full data, a new environment variable
    ASSUAN_FULL_LOGGING may be set to any value.
 
- * Removed the assuan_domain functions. 
+ * Removed the assuan_domain_* functions. 
 
- * New functions assuan_pipe_connect_ext and assuan_socket_connext_ext
+ * New functions assuan_pipe_connect_ext and assuan_socket_connect_ext
    to allow connections on a socketpair and to pass descriptors.
+
+ * New function assuan_get_peercred.
 
 
 Noteworthy changes in version 0.6.10 (2005-06-20)
