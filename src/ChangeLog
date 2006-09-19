@@ -1,5 +1,7 @@
 2006-09-19  Marcus Brinkmann  <marcus@g10code.de>
 
+	* assuan.h (enum): Avoid trailing comma in enumerator list.  Ugh.
+
 	* mkerrors (_assuan_error): Change return type to assuan_error_t.
 	* assuan-buffer.c (_assuan_read_line): Change return type to
 	assuan_error_t.  Map returned value of -1.

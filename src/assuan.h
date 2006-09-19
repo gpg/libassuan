@@ -241,8 +241,9 @@ typedef enum
   ASSUAN_Invalid_Data = 117,
 #endif
   ASSUAN_Unexpected_Command = 118,
-  ASSUAN_Too_Much_Data = 119,
+  ASSUAN_Too_Much_Data = 119
 #ifndef _ASSUAN_IN_LIBASSUAN
+  ,  /* Avoid trailing comma in enumerator list.  */
   ASSUAN_Inquire_Unknown = 120,
   ASSUAN_Inquire_Error = 121,
   ASSUAN_Invalid_Option = 122,
