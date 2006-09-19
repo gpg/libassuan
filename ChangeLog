@@ -4,6 +4,7 @@
 	(client): New arg FNAME to replace hardwired file name.
 	(main): Pass motd to client.
 	* tests/Makefile.am (AM_CPPFLAGS): Removed.
+	(EXTRA_DIST): Add motd.
 
 2006-09-19  Marcus Brinkmann  <marcus@g10code.de>
 
