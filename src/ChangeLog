@@ -1,5 +1,12 @@
 2006-09-19  Marcus Brinkmann  <marcus@g10code.de>
 
+	* mkerrors (_assuan_error): Change return type to assuan_error_t.
+	* assuan-buffer.c (_assuan_read_line): Change return type to
+	assuan_error_t.  Map returned value of -1.
+	(_assuan_write_line): Change type of RC to assuan_error_t.
+	* assuan-defs.h (_assuan_read_line, _assuan_error): Likewise for
+	prototypes.
+
 	* assuan-defs.h (unsetenv): Define correctly.
 
 2006-09-14  Werner Koch  <wk@g10code.com>

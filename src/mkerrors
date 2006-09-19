@@ -52,7 +52,7 @@ assuan_set_assuan_err_source (int errsource)
 
 /* Helper to map old style Assuan error codes to gpg-error codes.
    This is used internally to keep an compatible ABI. */
-int
+assuan_error_t
 _assuan_error (int oldcode)
 {
   unsigned int n;

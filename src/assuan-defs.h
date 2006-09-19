@@ -200,7 +200,7 @@ void _assuan_init_uds_io (assuan_context_t ctx);
 int _assuan_register_std_commands (assuan_context_t ctx);
 
 /*-- assuan-buffer.c --*/
-int _assuan_read_line (assuan_context_t ctx);
+assuan_error_t _assuan_read_line (assuan_context_t ctx);
 int _assuan_cookie_write_data (void *cookie, const char *buffer, size_t size);
 int _assuan_cookie_write_flush (void *cookie);
 assuan_error_t _assuan_write_line (assuan_context_t ctx, const char *prefix,
@@ -215,7 +215,7 @@ assuan_error_t _assuan_read_from_server (assuan_context_t ctx,
 
 /* Map error codes as used in this implementaion to the libgpg-error
    codes. */
-int _assuan_error (int oldcode);
+assuan_error_t _assuan_error (int oldcode);
 
 /* Extrac the erro code from A.  This works for both the old and the
    new style error codes. This needs to be whenever an error code is

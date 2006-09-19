@@ -95,7 +95,7 @@ readline (assuan_context_t ctx, char *buf, size_t buflen,
 
 
 /* Function returns an Assuan error. */
-int
+assuan_error_t
 _assuan_read_line (assuan_context_t ctx)
 {
   char *line = ctx->inbound.line;
@@ -104,7 +104,7 @@ _assuan_read_line (assuan_context_t ctx)
   char *endp = 0;
 
   if (ctx->inbound.eof)
-    return -1;
+    return _assuan_error (-1);
 
   atticlen = ctx->inbound.attic.linelen;
   if (atticlen)
@@ -243,7 +243,7 @@ assuan_error_t
 _assuan_write_line (assuan_context_t ctx, const char *prefix,
                     const char *line, size_t len)
 {
-  int rc = 0;
+  assuan_error_t rc = 0;
   size_t prefixlen = prefix? strlen (prefix):0;
 
   /* Make sure that the line is short enough. */

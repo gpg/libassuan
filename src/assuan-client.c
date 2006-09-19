@@ -139,7 +139,8 @@ assuan_transact (assuan_context_t ctx,
                  int (*status_cb)(void*, const char *),
                  void *status_cb_arg)
 {
-  int rc, okay, off;
+  assuan_error_t rc;
+  int okay, off;
   char *line;
   int linelen;
 
