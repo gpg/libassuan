@@ -92,7 +92,7 @@
 #define assuan_init_connected_socket_server \
   _ASSUAN_PREFIX(assuan_init_connected_socket_server)
 #define assuan_init_socket_server_ext \
-  _ASSUAN_PREFIX(assuan_init_socket_server-ext)
+  _ASSUAN_PREFIX(assuan_init_socket_server_ext)
 #define assuan_pipe_connect _ASSUAN_PREFIX(assuan_pipe_connect)
 #define assuan_pipe_connect_ext _ASSUAN_PREFIX(assuan_pipe_connect_ext)
 #define assuan_socket_connect _ASSUAN_PREFIX(assuan_socket_connect)

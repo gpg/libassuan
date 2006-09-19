@@ -1,3 +1,8 @@
+2006-09-19  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan.h (assuan_init_socket_server_ext)
+	[_ASSUAN_EXT_SYM_PREFIX]: Fix typo in macro.
+
 2006-09-19  Werner Koch  <wk@g10code.com>
 
 	* assuan-defs.h (putc_unlocked): Add prototype.
