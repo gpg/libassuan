@@ -51,6 +51,7 @@
 # define AF_LOCAL AF_UNIX
 #endif
 
+
 #ifdef _POSIX_OPEN_MAX
 #define MAX_OPEN_FDS _POSIX_OPEN_MAX
 #else
@@ -332,7 +333,7 @@ pipe_connect_unix (assuan_context_t *ctx,
           setenv ("_assuan_pipe_connect_pid", mypidstr, 1);
 
           /* Make sure that we never pass a connection fd variable
-             when using a simple pipe. */
+             when using a simple pipe.  */
           unsetenv ("_assuan_connection_fd");
 
           execv (name, (char *const *) argv); 

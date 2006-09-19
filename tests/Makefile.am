@@ -29,7 +29,6 @@ CLEANFILES =
 
 TESTS = fdpassing
 
-AM_CPPFLAGS = -DSRCDIR=$(srcdir)
 AM_CFLAGS = # $(GPG_ERROR_CFLAGS)
 
 noinst_HEADERS = common.h

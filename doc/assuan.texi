@@ -745,6 +745,7 @@ assuan_transact (assuan_context_t ctx,
 /* The file descriptor must be pending before assuan_receivefd is
    called.  This means that assuan_sendfd should be called *before* the
    trigger is sent (normally via assuan_write_line ("INPUT FD")).  */
+@anchor{fun-assuan_sendfd}
 assuan_error_t assuan_sendfd (assuan_context_t ctx, int fd);
 assuan_error_t assuan_receivefd (assuan_context_t ctx, int *fd);
 

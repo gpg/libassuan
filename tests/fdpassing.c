@@ -32,13 +32,6 @@
 #include "../src/assuan.h"
 #include "common.h"
 
-#ifndef SRCDIR
-#define SRCDIR "/etc"
-#endif
-#define STRINGIFY2(str) #str
-#define STRINGIFY(str) STRINGIFY2(str)
-#define MOTD STRINGIFY(SRCDIR) "/motd"
-
 
 /*
 
@@ -65,7 +58,6 @@ cmd_echo (assuan_context_t ctx, char *line)
       log_error ("fdopen failed on input fd: %s\n", strerror (errno));
       return ASSUAN_General_Error;
     }
-  log_info ("printing input to stdout:\n");
   nbytes = 0;
   while ( (c=getc (fp)) != -1)
     {
@@ -155,7 +147,7 @@ server (void)
 
 /* Client main.  If true is returned, a disconnect has not been done. */
 static int
-client (assuan_context_t ctx)
+client (assuan_context_t ctx, const char *fname)
 {
   int rc;
   FILE *fp;
@@ -166,10 +158,10 @@ client (assuan_context_t ctx)
 
   for (i=0; i < 6; i++)
     {
-      fp = fopen (MOTD, "r");
+      fp = fopen (fname, "r");
       if (!fp)
         {
-          log_error ("failed to open `%s': %s\n", MOTD,
+          log_error ("failed to open `%s': %s\n", fname,
                      strerror (errno));
           return -1;
         }
@@ -217,16 +209,13 @@ int
 main (int argc, char **argv)
 {
   int last_argc = -1;
-  const char *srcdir = getenv ("srcdir");
   assuan_context_t ctx;
   int err;
   int no_close_fds[2];
   const char *arglist[10];
   int is_server = 0;
   int with_exec = 0;
-  
-  if (!srcdir)
-    srcdir = ".";
+  char *fname = prepend_srcdir ("motd");
 
   if (argc)
     {
@@ -269,6 +258,7 @@ main (int argc, char **argv)
         }
     }
 
+
   assuan_set_assuan_log_prefix (log_prefix);
   assuan_set_assuan_log_stream (stderr);
 
@@ -304,7 +294,7 @@ main (int argc, char **argv)
         }
       else
         {
-          if (client (ctx)) 
+          if (client (ctx, fname)) 
             {
               log_info ("waiting for server to terminate...\n");
               assuan_disconnect (ctx);

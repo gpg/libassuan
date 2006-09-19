@@ -188,105 +188,103 @@ extern "C"
 /* Assuan error codes.  These are only used by old applications or
    those applications which won't make use of libgpg-error. */
 #ifndef _ASSUAN_ONLY_GPG_ERRORS
-typedef enum
-{
 #ifndef _ASSUAN_IN_LIBASSUAN
-  ASSUAN_No_Error = 0,
+#define  ASSUAN_No_Error 0
 #endif
-  ASSUAN_General_Error = 1,
-  ASSUAN_Out_Of_Core = 2,
-  ASSUAN_Invalid_Value = 3,
+#define  ASSUAN_General_Error 1
+#define  ASSUAN_Out_Of_Core 2
+#define  ASSUAN_Invalid_Value 3
 #ifndef _ASSUAN_IN_LIBASSUAN
-  ASSUAN_Timeout = 4,
+#define  ASSUAN_Timeout 4
 #endif
-  ASSUAN_Read_Error = 5,
-  ASSUAN_Write_Error = 6,
-  ASSUAN_Problem_Starting_Server = 7,
-  ASSUAN_Not_A_Server = 8,
+#define  ASSUAN_Read_Error 5
+#define  ASSUAN_Write_Error 6
+#define  ASSUAN_Problem_Starting_Server 7
+#define  ASSUAN_Not_A_Server 8
 #ifndef _ASSUAN_IN_LIBASSUAN
-  ASSUAN_Not_A_Client = 9,
+#define  ASSUAN_Not_A_Client 9
 #endif
-  ASSUAN_Nested_Commands = 10,
-  ASSUAN_Invalid_Response = 11,
-  ASSUAN_No_Data_Callback = 12,
-  ASSUAN_No_Inquire_Callback = 13,
-  ASSUAN_Connect_Failed = 14,
-  ASSUAN_Accept_Failed = 15,
+#define  ASSUAN_Nested_Commands 10
+#define  ASSUAN_Invalid_Response 11
+#define  ASSUAN_No_Data_Callback 12
+#define  ASSUAN_No_Inquire_Callback 13
+#define  ASSUAN_Connect_Failed 14
+#define  ASSUAN_Accept_Failed 15
 
   /* Error codes above 99 are meant as status codes */
-  ASSUAN_Not_Implemented = 100,
-  ASSUAN_Server_Fault    = 101,
+#define  ASSUAN_Not_Implemented 100
+#define  ASSUAN_Server_Fault    101
 #ifndef _ASSUAN_IN_LIBASSUAN
-  ASSUAN_Invalid_Command = 102,
+#define  ASSUAN_Invalid_Command 102
 #endif
-  ASSUAN_Unknown_Command = 103,
-  ASSUAN_Syntax_Error    = 104,
+#define  ASSUAN_Unknown_Command 103
+#define  ASSUAN_Syntax_Error    104
 #ifndef _ASSUAN_IN_LIBASSUAN
-  ASSUAN_Parameter_Error = 105,
+#define  ASSUAN_Parameter_Error 105
 #endif
-  ASSUAN_Parameter_Conflict = 106,
-  ASSUAN_Line_Too_Long = 107,
-  ASSUAN_Line_Not_Terminated = 108,
+#define  ASSUAN_Parameter_Conflict 106
+#define  ASSUAN_Line_Too_Long 107
+#define  ASSUAN_Line_Not_Terminated 108
 #ifndef _ASSUAN_IN_LIBASSUAN
-  ASSUAN_No_Input = 109,
-  ASSUAN_No_Output = 110,
+#define  ASSUAN_No_Input 109
+#define  ASSUAN_No_Output 110
 #endif
-  ASSUAN_Canceled = 111,
+#define  ASSUAN_Canceled 111
 #ifndef _ASSUAN_IN_LIBASSUAN
-  ASSUAN_Unsupported_Algorithm = 112,
-  ASSUAN_Server_Resource_Problem = 113,
-  ASSUAN_Server_IO_Error = 114,
-  ASSUAN_Server_Bug = 115,
-  ASSUAN_No_Data_Available = 116,
-  ASSUAN_Invalid_Data = 117,
+#define  ASSUAN_Unsupported_Algorithm 112
+#define  ASSUAN_Server_Resource_Problem 113
+#define  ASSUAN_Server_IO_Error 114
+#define  ASSUAN_Server_Bug 115
+#define  ASSUAN_No_Data_Available 116
+#define  ASSUAN_Invalid_Data 117
 #endif
-  ASSUAN_Unexpected_Command = 118,
-  ASSUAN_Too_Much_Data = 119
+#define  ASSUAN_Unexpected_Command 118
+#define  ASSUAN_Too_Much_Data 119
 #ifndef _ASSUAN_IN_LIBASSUAN
-  ,  /* Avoid trailing comma in enumerator list.  */
-  ASSUAN_Inquire_Unknown = 120,
-  ASSUAN_Inquire_Error = 121,
-  ASSUAN_Invalid_Option = 122,
-  ASSUAN_Invalid_Index = 123,
-  ASSUAN_Unexpected_Status = 124,
-  ASSUAN_Unexpected_Data = 125,
-  ASSUAN_Invalid_Status = 126,
-  ASSUAN_Locale_Problem = 127,
-  ASSUAN_Not_Confirmed = 128,
+#define  ASSUAN_Inquire_Unknown 120
+#define  ASSUAN_Inquire_Error 121
+#define  ASSUAN_Invalid_Option 122
+#define  ASSUAN_Invalid_Index 123
+#define  ASSUAN_Unexpected_Status 124
+#define  ASSUAN_Unexpected_Data 125
+#define  ASSUAN_Invalid_Status 126
+#define  ASSUAN_Locale_Problem 127
+#define  ASSUAN_Not_Confirmed 128
 
   /* Warning: Don't use the Error codes, below they are deprecated. */
-  ASSUAN_Bad_Certificate = 201,
-  ASSUAN_Bad_Certificate_Chain = 202,
-  ASSUAN_Missing_Certificate = 203,
-  ASSUAN_Bad_Signature = 204,
-  ASSUAN_No_Agent = 205,
-  ASSUAN_Agent_Error = 206,
-  ASSUAN_No_Public_Key = 207,
-  ASSUAN_No_Secret_Key = 208,
-  ASSUAN_Invalid_Name = 209,
+#define  ASSUAN_Bad_Certificate 201
+#define  ASSUAN_Bad_Certificate_Chain 202
+#define  ASSUAN_Missing_Certificate 203
+#define  ASSUAN_Bad_Signature 204
+#define  ASSUAN_No_Agent 205
+#define  ASSUAN_Agent_Error 206
+#define  ASSUAN_No_Public_Key 207
+#define  ASSUAN_No_Secret_Key 208
+#define  ASSUAN_Invalid_Name 209
 
-  ASSUAN_Cert_Revoked = 301,
-  ASSUAN_No_CRL_For_Cert = 302,
-  ASSUAN_CRL_Too_Old = 303,
-  ASSUAN_Not_Trusted = 304,
+#define  ASSUAN_Cert_Revoked 301
+#define  ASSUAN_No_CRL_For_Cert 302
+#define  ASSUAN_CRL_Too_Old 303
+#define  ASSUAN_Not_Trusted 304
 
-  ASSUAN_Card_Error = 401,
-  ASSUAN_Invalid_Card = 402,
-  ASSUAN_No_PKCS15_App = 403,
-  ASSUAN_Card_Not_Present = 404,
-  ASSUAN_Invalid_Id = 405,
+#define  ASSUAN_Card_Error 401
+#define  ASSUAN_Invalid_Card 402
+#define  ASSUAN_No_PKCS15_App 403
+#define  ASSUAN_Card_Not_Present 404
+#define  ASSUAN_Invalid_Id 405
 
   /* Error codes in the range 1000 to 9999 may be used by applications
      at their own discretion. */
-  ASSUAN_USER_ERROR_FIRST = 1000,
-  ASSUAN_USER_ERROR_LAST = 9999
+#define  ASSUAN_USER_ERROR_FIRST 1000
+#define  ASSUAN_USER_ERROR_LAST 9999
 #endif
-} assuan_error_t;
 
-typedef assuan_error_t AssuanError; /* Deprecated. */
+typedef int assuan_error_t;
+
+typedef assuan_error_t AssuanError _ASSUAN_DEPRECATED; 
 
 /* This is a list of pre-registered ASSUAN commands */
-/* NOTE, these command IDs are now deprectated and solely exists for
+/* Note, these command IDs are now deprectated and solely exists for
    compatibility reasons. */
 typedef enum
 {

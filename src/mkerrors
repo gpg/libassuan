@@ -140,7 +140,7 @@ _assuan_error (int oldcode)
  * Return value: String with the error description.
  **/
 const char *
-assuan_strerror (AssuanError err)
+assuan_strerror (assuan_error_t err)
 {
   const char *s;
   static char buf[50];
@@ -150,11 +150,10 @@ assuan_strerror (AssuanError err)
 EOF
 
 awk '
-/ASSUAN_No_Error/    { okay=1 }
-!okay              {next}
-/}/                { exit 0 }
-/^#/               {next}
-/ASSUAN_[A-Za-z_]*/ { print_code($1) }
+/ASSUAN_No_Error/        { okay=1 }
+!okay                    {next}
+/^#define[ ]+ASSUAN_[A-Za-z_]*/ { print_code($2) }
+/ASSUAN_USER_ERROR_LAST/ { exit 0 }
 
 
 function print_code( s )

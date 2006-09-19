@@ -85,7 +85,7 @@ accept_connection (assuan_context_t ctx)
 {
   int fd;
   struct sockaddr_un clnt_addr;
-  size_t len = sizeof clnt_addr;
+  socklen_t len = sizeof clnt_addr;
 
   fd = accept (ctx->listen_fd, (struct sockaddr*)&clnt_addr, &len );
   if (fd == -1)
