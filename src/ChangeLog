@@ -1,3 +1,7 @@
+2006-09-19  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan-defs.h (unsetenv): Define correctly.
+
 2006-09-14  Werner Koch  <wk@g10code.com>
 
 	* assuan-io.c (_assuan_waitpid): New.  Changed all waitpid calls

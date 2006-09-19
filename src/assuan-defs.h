@@ -294,7 +294,7 @@ char *stpcpy (char *dest, const char *src);
 #endif
 #ifndef HAVE_SETENV
 #define setenv _assuan_setenv
-#define unsetenv _assuan_setenv
+#define unsetenv _assuan_unsetenv
 #define clearenv _assuan_clearenv
 int setenv (const char *name, const char *value, int replace);
 #endif
