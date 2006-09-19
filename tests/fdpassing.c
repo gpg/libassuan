@@ -32,6 +32,13 @@
 #include "../src/assuan.h"
 #include "common.h"
 
+#ifndef SRCDIR
+#define SRCDIR "/etc"
+#endif
+#define STRINGIFY2(str) #str
+#define STRINGIFY(str) STRINGIFY2(str)
+#define MOTD STRINGIFY(SRCDIR) "/motd"
+
 
 /*
 
@@ -159,10 +166,10 @@ client (assuan_context_t ctx)
 
   for (i=0; i < 6; i++)
     {
-      fp = fopen ("/etc/motd", "r");
+      fp = fopen (MOTD, "r");
       if (!fp)
         {
-          log_error ("failed to open `%s': %s\n", "/etc/motd",
+          log_error ("failed to open `%s': %s\n", MOTD,
                      strerror (errno));
           return -1;
         }
