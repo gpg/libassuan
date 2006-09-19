@@ -39,6 +39,18 @@
 
 #include "assuan-defs.h"
 
+/* Hacks for Slowaris.  */
+#ifndef PF_LOCAL
+# ifdef PF_UNIX
+#  define PF_LOCAL PF_UNIX
+# else
+#  define PF_LOCAL AF_UNIX
+# endif
+#endif
+#ifndef AF_LOCAL
+# define AF_LOCAL AF_UNIX
+#endif
+
 #ifdef _POSIX_OPEN_MAX
 #define MAX_OPEN_FDS _POSIX_OPEN_MAX
 #else

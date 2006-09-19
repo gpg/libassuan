@@ -1,5 +1,8 @@
 2006-09-19  Marcus Brinkmann  <marcus@g10code.de>
 
+	* assuan-pipe-connect.c: Add hacks for Slowaris.
+	* assuan-socket.c: Likewise here.
+
 	* assuan.h (enum): Avoid trailing comma in enumerator list.  Ugh.
 
 	* mkerrors (_assuan_error): Change return type to assuan_error_t.
