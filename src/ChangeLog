@@ -1,3 +1,9 @@
+2006-09-28  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan-client.c (assuan_transact): Do not convert error on
+	status line, it is already a gpg-error.  Do convert
+	ASSUAN_Server_Fault.
+
 2006-09-19  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan.h (assuan_init_socket_server_ext)
