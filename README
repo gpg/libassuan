@@ -1,5 +1,5 @@
-  Libassuan
- ===========
+                              Libassuan
+                             ===========
 
 This is the IPC library used by GnuPG 1.9, GPGME and a few other
 packages.  It used to be included with the latter packages but we

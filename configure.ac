@@ -25,7 +25,7 @@ min_automake_version="1.9.3"
 
 # Version number: Remember to change it immediately *after* a release.
 #                 Add a "-cvs" prefix for non-released code.
-AC_INIT(libassuan, 0.9.1-cvs, gnupg-devel@gnupg.org)
+AC_INIT(libassuan, 0.9.1, gnupg-devel@gnupg.org)
 # Note, that this is not yet available as a shared library.
 
 PACKAGE=$PACKAGE_NAME
@@ -35,8 +35,9 @@ AM_INIT_AUTOMAKE
 AM_MAINTAINER_MODE
 AC_CONFIG_SRCDIR(src/assuan.h)
 AM_CONFIG_HEADER(config.h)
-
 AC_CANONICAL_HOST
+AB_INIT
+
 AC_GNU_SOURCE
 
 
