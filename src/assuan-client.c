@@ -162,8 +162,10 @@ assuan_transact (assuan_context_t ctx,
   if (!okay)
     {
       rc = atoi (line);
-      if (rc < 100)
+      if (rc > 0 && rc < 100)
         rc = _assuan_error (ASSUAN_Server_Fault);
+      else if (rc > 0 && rc <= 128)
+        rc = _assuan_error (rc);
     }
   else if (okay == 2)
     {

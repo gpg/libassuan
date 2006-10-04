@@ -1,3 +1,8 @@
+2006-10-04  Werner Koch  <wk@g10code.com>
+
+	* assuan-client.c (assuan_transact): Need to map old assuan status
+	codes so that for example CANCELED is correctly mapped.
+
 2006-09-28  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan-client.c (assuan_transact): Do not convert error on
