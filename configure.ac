@@ -25,7 +25,7 @@ min_automake_version="1.9.3"
 
 # Version number: Remember to change it immediately *after* a release.
 #                 Add a "-cvs" prefix for non-released code.
-AC_INIT(libassuan, 0.9.2, gnupg-devel@gnupg.org)
+AC_INIT(libassuan, 0.9.3-cvs, gnupg-devel@gnupg.org)
 # Note, that this is not yet available as a shared library.
 
 PACKAGE=$PACKAGE_NAME
@@ -106,23 +106,38 @@ if test "$have_w32_system" = yes; then
 fi
 dnl AM_CONDITIONAL(HAVE_W32_SYSTEM, test "$have_w32_system" = yes)
 
+#
+# See whether we can build a Pth enabled version
+#
+GNUPG_PATH_PTH
+AM_CONDITIONAL(HAVE_PTH, test "$have_pth" = "yes")
+
+
 # Check for network libraries.
 NETLIBS=
 AC_CHECK_FUNC(setsockopt, , AC_CHECK_LIB(socket, setsockopt,
 	[NETLIBS="-lsocket"]))
 
 # For src/libassuan-config.in
-LIBASSUAN_CONFIG_LIBS="-lassuan"
+LIBASSUAN_CONFIG_LIB="-lassuan"
 LIBASSUAN_CONFIG_CFLAGS=""
+LIBASSUAN_CONFIG_API_VERSION="1"
+LIBASSUAN_CONFIG_THREAD_MODULES=
+if test "$have_pth" = yes; then
+LIBASSUAN_CONFIG_THREAD_MODULES="pth"
+fi
+LIBASSUAN_CONFIG_EXTRA_LIBS=
 if test "$have_w32_system" = yes; then
-  LIBASSUAN_CONFIG_LIBS="$LIBASSUAN_CONFIG_LIBS -lwsock32"
+  LIBASSUAN_CONFIG_EXTRA_LIBS="$LIBASSUAN_CONFIG_EXTRA_LIBS -lwsock32"
 fi
 if test x"$NETLIBS" != x; then
-  LIBASSUAN_CONFIG_LIBS="$LIBASSUAN_CONFIG_LIBS $NETLIBS"
+  LIBASSUAN_CONFIG_EXTRA_LIBS="$LIBASSUAN_CONFIG_EXTRA_LIBS $NETLIBS"
 fi
-AC_SUBST(LIBASSUAN_CONFIG_LIBS)
+AC_SUBST(LIBASSUAN_CONFIG_LIB)
 AC_SUBST(LIBASSUAN_CONFIG_CFLAGS)
-
+AC_SUBST(LIBASSUAN_CONFIG_API_VERSION)
+AC_SUBST(LIBASSUAN_CONFIG_THREAD_MODULES)
+AC_SUBST(LIBASSUAN_CONFIG_EXTRA_LIBS)
 
 # Checks for header files.
 AC_HEADER_STDC

@@ -507,6 +507,11 @@ specifying both options to @command{libassuan-config}:
 gcc -o foo foo.c $(libassuan-config --cflags --libs)
 @end example
 
+If your application uses Pth or pthread, you need to pass the option
+@option{--thread=pth} respective @option{--thread=pthread} to the
+invocation of @command{libassuan-config}.
+
+
 @node Automake
 @section Building sources using Automake
 
@@ -533,6 +538,23 @@ You can use the defined Autoconf variables like this in your
 AM_CPPFLAGS = $(LIBASSUAN_CFLAGS)
 LDADD = $(LIBASSUAN_LIBS)
 @end example
+
+@defmac AM_PATH_LIBASSUAN_PTH (@ovar{minimum-version}, @ovar{action-if-found}, @ovar{action-if-not-found})
+Same as @code{AM_PATH_LIBASSUAN} but checks for the GNU Pth enabled
+version of the library and defines @code{LIBASSUAN_PTH_CFLAGS}
+@code{LIBASSUAN_PTH_LIBS} instead.  Use this is you are using GNU Pth.
+Note that you also need to pass the appropriate options for Pth to the
+compiler and linker.
+@end defmac
+
+@defmac AM_PATH_LIBASSUAN_PTHREAD (@ovar{minimum-version}, @ovar{action-if-found}, @ovar{action-if-not-found})
+Same as @code{AM_PATH_LIBASSUAN} but checks for the pthreads enabled
+version of the library and defines @code{LIBASSUAN_PTHREAD_CFLAGS}
+@code{LIBASSUAN_PTHREAD_LIBS} instead.  Use this is you are using GNU Pth.
+Note that you also need to pass the appropriate options for Pth to the
+compiler and linker.
+@end defmac
+
 
 
 @node Multi Threading

@@ -1,3 +1,12 @@
+2006-10-09  Werner Koch  <wk@g10code.com>
+
+	* assuan-io.c: Removed Pth support.
+	* assuan-io-pth.c: New. Based on assuan-io.c
+
+2006-10-06  Werner Koch  <wk@g10code.com>
+
+	* libassuan-config.in: New options --api-version and --thread.
+
 2006-10-04  Werner Koch  <wk@g10code.com>
 
 	* assuan-client.c (assuan_transact): Need to map old assuan status

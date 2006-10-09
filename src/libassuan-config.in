@@ -10,8 +10,12 @@
 # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 PGM=libassuan-config
-libs="@LIBASSUAN_CONFIG_LIBS@"
+lib="@LIBASSUAN_CONFIG_LIB@"
+extralibs="@LIBASSUAN_CONFIG_EXTRA_LIBS@"
 cflags="@LIBASSUAN_CONFIG_CFLAGS@"
+api_version="@LIBASSUAN_CONFIG_API_VERSION@"
+all_thread_modules="@LIBASSUAN_CONFIG_THREAD_MODULES@"
+thread_module=
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 includes=""
@@ -22,12 +26,18 @@ echo_cflags=no
 echo_prefix=no
 echo_exec_prefix=no
 
+if test x"$all_thread_modules" = x; then
+  all_thread_modules="none pthread"
+else
+  all_thread_modules="none pthread $all_thread_modules"
+fi
 
 usage()
 {
 	cat <<EOF
 Usage: $PGM [OPTIONS]
 Options:
+	[--thread={`echo "${all_thread_modules}" | sed 's/ /|/g'`}]
 	[--prefix[=DIR]]
 	[--exec-prefix[=DIR]]
 	[--version]
@@ -38,7 +48,7 @@ EOF
 }
 
 if test $# -eq 0; then
-	usage 1 1>&2
+  usage 1 1>&2
 fi
 
 while test $# -gt 0; do
@@ -64,6 +74,25 @@ while test $# -gt 0; do
       echo "@VERSION@"
       exit 0
       ;;
+    --api-version)
+      echo_api_version=yes
+      ;;
+    --thread=*)
+      for mod in $all_thread_modules; do
+	if test "$mod" = "$optarg"; then
+           thread_module="-$mod"
+	fi
+      done
+      if test "x$thread_module" = "x"; then
+	usage 1 1>&2
+      fi
+      if test "$thread_module" = "-none"; then
+        thread_module=""
+      fi
+      if test "$thread_module" = "-pthread"; then
+        thread_module=""
+      fi
+      ;;
     --cflags)
       echo_cflags=yes
       ;;
@@ -85,6 +114,11 @@ if test "$echo_exec_prefix" = "yes"; then
     echo $exec_prefix
 fi
 
+if test "$echo_api_version" = "yes"; then
+    echo $api_version
+fi
+
+
 if test "$echo_cflags" = "yes"; then
     if test "@includedir@" != "/usr/include" ; then
       includes="-I@includedir@"
@@ -100,11 +134,11 @@ fi
 if test "$echo_libs" = "yes"; then
     if test "@libdir@" != "/usr/lib" ; then
       libdirs="-L@libdir@"
-      for i in $libs ; do
+      for i in $lib $extralibs ; do
 	if test "$i" = "-L@libdir@" ; then
 	  libdirs=""
 	fi
       done
     fi
-    echo $libdirs $libs
+    echo $libdirs $lib${thread_module} $extralibs
 fi

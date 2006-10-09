@@ -24,15 +24,20 @@ INCLUDES = -I.. -I$(top_srcdir)/include
 BUILT_SOURCES = assuan-errors.c
 MOSTLYCLEANFILES = assuan-errors.c
 
+if HAVE_PTH
+libassuan_pth = libassuan-pth.a
+else
+libassuan_pth = 
+endif
+
 bin_SCRIPTS = libassuan-config
 m4datadir = $(datadir)/aclocal
 m4data_DATA = libassuan.m4
-lib_LIBRARIES = libassuan.a
+lib_LIBRARIES = libassuan.a $(libassuan_pth)
 include_HEADERS = assuan.h
 
 
-#libassuan_a_LDFLAGS =
-libassuan_a_SOURCES = \
+common_sources = \
 	assuan-defs.h \
 	assuan-util.c \
 	assuan-errors.c \
@@ -47,11 +52,16 @@ libassuan_a_SOURCES = \
 	assuan-pipe-connect.c \
 	assuan-socket-connect.c \
 	assuan-uds.c \
-	assuan-io.c \
 	assuan-logging.c \
 	assuan-socket.c
 
+libassuan_a_SOURCES = $(common_sources) assuan-io.c
 libassuan_a_LIBADD = @LIBOBJS@
+
+if HAVE_PTH
+libassuan_pth_a_SOURCES = $(common_sources) assuan-io-pth.c
+libassuan_pth_a_LIBADD = @LIBOBJS@
+endif
 
 assuan-errors.c : assuan.h mkerrors
 	$(srcdir)/mkerrors < $(srcdir)/assuan.h > assuan-errors.c
