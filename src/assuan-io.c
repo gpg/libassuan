@@ -26,10 +26,6 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <sys/wait.h>
-#if HAVE_SYS_UIO_H
-# include <sys/uio.h>
-#endif
 #include <unistd.h>
 #include <errno.h>
 #ifdef HAVE_W32_SYSTEM

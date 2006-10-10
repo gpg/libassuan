@@ -1,4 +1,16 @@
+2006-10-10  Werner Koch  <wk@g10code.com>
+
+	* assuan-buffer.c (assuan_sendfd): Implement a runtime detection
+	of implemented descripotr passing.
+
+	* assuan-uds.c: Take care of USE_DESCRIPTOR_PASSING.
+
+	* assuan-defs.h: Add missing semicolon.
+
 2006-10-09  Werner Koch  <wk@g10code.com>
+
+	* assuan-handler.c (process_request): Use weak pragma for the sake
+	of old gcc's.  Reported by Alain Guibert.
 
 	* assuan-io.c: Removed Pth support.
 	* assuan-io-pth.c: New. Based on assuan-io.c

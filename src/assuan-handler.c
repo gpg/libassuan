@@ -506,14 +506,20 @@ process_request (assuan_context_t ctx)
              problem if they are not available.  We need to make sure
              that we are using ELF because only this guarantees that
              weak symbol support is available in case GNU ld is not
-             used. */
+             used.  It seems that old gcc versions don't implement the
+             weak attribute properly but it works with the weak
+             pragma. */
+
           unsigned int source, code;
 
           int gpg_strerror_r (unsigned int err, char *buf, size_t buflen)
             __attribute__ ((weak));
-
           const char *gpg_strsource (unsigned int err)
             __attribute__ ((weak));
+#if !defined(HAVE_W32_SYSTEM) && __GNUC__ < 3
+#pragma weak gpg_strerror_r
+#pragma weak gpg_strsource
+#endif
 
           source = ((rc >> 24) & 0xff);
           code = (rc & 0x00ffffff);

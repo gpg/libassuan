@@ -25,7 +25,7 @@ min_automake_version="1.9.3"
 
 # Version number: Remember to change it immediately *after* a release.
 #                 Add a "-cvs" prefix for non-released code.
-AC_INIT(libassuan, 0.9.3-cvs, gnupg-devel@gnupg.org)
+AC_INIT(libassuan, 0.9.3, gnupg-devel@gnupg.org)
 # Note, that this is not yet available as a shared library.
 
 PACKAGE=$PACKAGE_NAME
@@ -113,10 +113,10 @@ GNUPG_PATH_PTH
 AM_CONDITIONAL(HAVE_PTH, test "$have_pth" = "yes")
 
 
-# Check for network libraries.
-NETLIBS=
+# Check for network libraries.  They are needed for tests.
 AC_CHECK_FUNC(setsockopt, , AC_CHECK_LIB(socket, setsockopt,
-	[NETLIBS="-lsocket"]))
+	[NETLIBS="-lsocket $NETLIBS"]))
+AC_SUBST(NETLIBS)
 
 # For src/libassuan-config.in
 LIBASSUAN_CONFIG_LIB="-lassuan"
@@ -151,6 +151,31 @@ AC_TYPE_SIGNAL
 AC_DECL_SYS_SIGLIST
 
 gl_TYPE_SOCKLEN_T
+
+AC_CHECK_MEMBER(struct cmsghdr.cmsg_len,
+                [use_descriptor_passing=yes],
+                [use_descriptor_passing=no
+                 AC_MSG_WARN([
+***
+*** Data structure for sending ancillary data missing.
+*** Descriptor passing won't work.
+***])],[
+#include <stdlib.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#if HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif
+#include <unistd.h>
+       ])
+if test "$use_descriptor_passing" = "yes"; then
+ AC_DEFINE(USE_DESCRIPTOR_PASSING, 1,
+            [Defined if descriptor passing is supported])
+fi
+AM_CONDITIONAL(USE_DESCRIPTOR_PASSING, test "$use_descriptor_passing" = "yes")
 
 
 # Checks for library functions.

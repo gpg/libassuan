@@ -490,6 +490,15 @@ assuan_send_data (assuan_context_t ctx, const void *buffer, size_t length)
 assuan_error_t
 assuan_sendfd (assuan_context_t ctx, int fd)
 {
+  /* It is explicitly allowed to use (NULL, -1) as a runtime test to
+     check whether descriptor passing is available. */
+  if (!ctx && fd == -1)
+#ifdef USE_DESCRIPTOR_PASSING
+    return 0;
+#else
+    return _assuan_error (ASSUAN_Not_Implemented);
+#endif
+
   if (! ctx->io->sendfd)
     return set_error (ctx, Not_Implemented,
 		      "server does not support sending and receiving "

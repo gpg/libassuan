@@ -769,6 +769,12 @@ assuan_transact (assuan_context_t ctx,
    trigger is sent (normally via assuan_write_line ("INPUT FD")).  */
 @anchor{fun-assuan_sendfd}
 assuan_error_t assuan_sendfd (assuan_context_t ctx, int fd);
+
+Note, that calling this with a @var{ctx} of @code{NULL} and @var{fd} of
+@code{-1} is a valid runtime test to check whether descripor passing is
+available.
+
+@anchor{fun-assuan_receivedfd}
 assuan_error_t assuan_receivefd (assuan_context_t ctx, int *fd);
 
 

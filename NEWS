@@ -1,6 +1,15 @@
-Noteworthy changes in version 0.9.3
+Noteworthy changes in version 0.9.3 (2006-10-10)
 ------------------------------------------------
 
+ * Portability fixes.
+
+ * Pth is not anymore linked by means of weak symbol tricks.  It is
+   now required to link to the pth version of libassuan.  New aufoconf
+   macros are provided to to check for this.  The pth version is only
+   build if Pth is available.
+
+ * configure does now check that descripotor passing is available.  A
+   way to check at runtime for this is also provided
 
 
 Noteworthy changes in version 0.9.2 (2006-10-04)
