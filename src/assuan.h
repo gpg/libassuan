@@ -249,9 +249,11 @@ extern "C"
 #define  ASSUAN_Unexpected_Data 125
 #define  ASSUAN_Invalid_Status 126
 #define  ASSUAN_Locale_Problem 127
+#endif
 #define  ASSUAN_Not_Confirmed 128
 
   /* Warning: Don't use the Error codes, below they are deprecated. */
+#ifndef _ASSUAN_IN_LIBASSUAN
 #define  ASSUAN_Bad_Certificate 201
 #define  ASSUAN_Bad_Certificate_Chain 202
 #define  ASSUAN_Missing_Certificate 203

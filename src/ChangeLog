@@ -1,4 +1,11 @@
+2006-10-16  Werner Koch  <wk@g10code.com>
+
+	* mkerrors: Map ASSUAN_Not_Confirmed.
+
 2006-10-10  Werner Koch  <wk@g10code.com>
+
+	* libassuan.m4 (AM_PATH_LIBASSUAN_PTH)
+	(AM_PATH_LIBASSUAN_PTHREAD): Fixed.
 
 	* assuan-buffer.c (assuan_sendfd): Implement a runtime detection
 	of implemented descripotr passing.
