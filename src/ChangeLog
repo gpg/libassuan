@@ -1,3 +1,8 @@
+2006-10-18  Werner Koch  <wk@g10code.com>
+
+	* libassuan.m4: Pass "pthread" to the common macro.  Reported by
+	Rex Dieter.
+
 2006-10-16  Werner Koch  <wk@g10code.com>
 
 	* mkerrors: Map ASSUAN_Not_Confirmed.

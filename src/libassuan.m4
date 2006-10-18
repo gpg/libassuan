@@ -120,7 +120,7 @@ AC_DEFUN([AM_PATH_LIBASSUAN],
 
 dnl AM_PATH_LIBASSUAN_PTH([MINIMUM-VERSION,
 dnl                      [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND ]]])
-dnl Test for libassuan and define LIBASSUAN_PTH_CFLAGSand LIBASSUAN_PTH_LIBS
+dnl Test for libassuan and define LIBASSUAN_PTH_CFLAGS and LIBASSUAN_PTH_LIBS
 dnl
 AC_DEFUN([AM_PATH_LIBASSUAN_PTH],
 [ _AM_PATH_LIBASSUAN_COMMON($1,pth)
@@ -144,7 +144,7 @@ dnl Test for libassuan and define LIBASSUAN_PTHREAD_CFLAGS
 dnl                           and LIBASSUAN_PTHREAD_LIBS
 dnl
 AC_DEFUN([AM_PATH_LIBASSUAN_PTHREAD],
-[ _AM_PATH_LIBASSUAN_COMMON($1,pth)
+[ _AM_PATH_LIBASSUAN_COMMON($1,pthread)
   if test $ok = yes; then
     LIBASSUAN_PTHREAD_CFLAGS=`$LIBASSUAN_CONFIG $libassuan_config_args --thread=pthread --cflags`
     LIBASSUAN_PTHREAD_LIBS=`$LIBASSUAN_CONFIG $libassuan_config_args --thread=pthread --libs`
