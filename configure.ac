@@ -25,7 +25,7 @@ min_automake_version="1.9.3"
 
 # Version number: Remember to change it immediately *after* a release.
 #                 Add a "-cvs" prefix for non-released code.
-AC_INIT(libassuan, 0.9.4-cvs, gnupg-devel@gnupg.org)
+AC_INIT(libassuan, 1.0.1-cvs, bug-libassuan@gnupg.org)
 # Note, that this is not yet available as a shared library.
 
 PACKAGE=$PACKAGE_NAME
