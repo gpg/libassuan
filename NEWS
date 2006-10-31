@@ -1,5 +1,7 @@
-Noteworthy changes in version 0.9.4
+Noteworthy changes in version 1.0.0 (2006-10-31)
 ------------------------------------------------
+
+ * Finished the manual.
 
 
 Noteworthy changes in version 0.9.3 (2006-10-10)
@@ -8,7 +10,7 @@ Noteworthy changes in version 0.9.3 (2006-10-10)
  * Portability fixes.
 
  * Pth is not anymore linked by means of weak symbol tricks.  It is
-   now required to link to the pth version of libassuan.  New aufoconf
+   now required to link to the pth version of libassuan.  New autoconf
    macros are provided to to check for this.  The pth version is only
    build if Pth is available.
 
@@ -141,7 +143,7 @@ Noteworthy changes in version 0.6.0 (2003-08-06)
  * Initial release as a standalone library.
 
 
- Copyright 2003, 2004 Free Software Foundation, Inc.
+ Copyright 2003, 2004, 2006 Free Software Foundation, Inc.
 
  This file is free software; as a special exception the author gives
  unlimited permission to copy and/or distribute it, with or without

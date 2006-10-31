@@ -1,3 +1,7 @@
+2006-10-31  Werner Koch  <wk@g10code.com>
+
+	* assuan.texi: Finished.
+
 2003-12-18  Werner Koch  <wk@gnupg.org>
 
 	* assuan.texi: Changed copyright to GPL because this is not a book

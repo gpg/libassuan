@@ -10,3 +10,6 @@ SUBDIRS = m4 src doc tests
 dist-hook:
 	echo "$(VERSION)" > $(distdir)/VERSION
 
+
+stowinstall: 
+	$(MAKE) $(AM_MAKEFLAGS) install prefix=/usr/local/stow/libassuan

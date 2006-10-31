@@ -3,14 +3,19 @@
 
 This is the IPC library used by GnuPG 1.9, GPGME and a few other
 packages.  It used to be included with the latter packages but we
-decided to make your life not too easy and separated it out to a
-stand alone library.
+decided to make your life not too easy and separated it out to a stand
+alone library.
 
 It is currently not intended to be used as a shared library.
 
-See COPYING.LESSER on how to share, modify and distribute the
-software itself and COPYING for the documentation.
+See COPYING.LESSER on how to share, modify and distribute the software
+itself and COPYING for the documentation.
 
+Please send bug report to the gnupg-devel mailing list or enter them
+into the gnupg bug tracker at http://bugs.g10code.com using the
+category "libassuan".
+
+The primary FTP site is ftp://ftp.gnupg.org/gcrypt/libassuan.
 
 
 
