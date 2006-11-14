@@ -943,6 +943,14 @@ application.  Instead special functions should be used to get hold of
 these commands.
 @end deftypefun
 
+@deftypefun assuan_error_t assuan_register_post_cmd_notify (@w{assuan_context_t @var{ctx}}, @w{void (*@var{fnc})(assuan_context_t)}, @w{int @var{err}})
+
+Register a function to be called right after a command has been
+processed. @var{err} is the result code from the last internal assuan
+operation and not the one returned by the handler. It may be used to
+command related cleanup.
+@end deftypefun
+
 @deftypefun assuan_error_t assuan_register_bye_notify (@w{assuan_context_t @var{ctx}}, @w{void (*@var{fnc})(assuan_context_t)})
 
 Register function @var{fnc} with context @var{ctx} to be called right
@@ -1320,6 +1328,16 @@ thus an entire assuan line may be read without triggering any actual
 I/O.
 @end deftypefun
 
+@deftypefun void assuan_set_io_monitor (@w{assuan_context_t @var{ctx}}, @w{unsigned int} (*@var{monitor})(@w{assuan_context_t @var{ctx}}, @w{int @var{direction}}, @w{const char *@var{line}}, @w{size_t @var{linelen}}))
+
+This function registers an I/O monitor for the context @var{ctx}.  Such
+a monitor function is called right after a line has been received or
+just before it is send.  With @var{direction} set to 1 the monitor has
+been called for an output operation; 0 obviosuly means it has been
+called for an input operation.  If the monitor sets bit 0 in the return
+value, any active logging of the line will be suppressed.  With bit 1
+set, the entire line will be ignored.
+@end deftypefun
 
 @deftypefun void assuan_begin_confidential (@w{assuan_context_t @var{ctx}})
 

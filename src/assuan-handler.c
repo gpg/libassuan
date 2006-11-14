@@ -292,6 +292,16 @@ assuan_register_command (assuan_context_t ctx,
 }
 
 int
+assuan_register_post_cmd_notify (assuan_context_t ctx,
+                                 void (*fnc)(assuan_context_t, int))
+{
+  if (!ctx)
+    return _assuan_error (ASSUAN_Invalid_Value);
+  ctx->post_cmd_notify_fnc = fnc;
+  return 0;
+}
+
+int
 assuan_register_bye_notify (assuan_context_t ctx,
                             void (*fnc)(assuan_context_t))
 {
@@ -542,6 +552,9 @@ process_request (assuan_context_t ctx)
         }
       rc = assuan_write_line (ctx, errline);
     }
+
+  if (ctx->post_cmd_notify_fnc)
+    ctx->post_cmd_notify_fnc (ctx, rc);
 
   ctx->confidential = 0;
   if (ctx->okay_line)

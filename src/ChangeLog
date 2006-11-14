@@ -1,3 +1,15 @@
+2006-11-14  Werner Koch  <wk@g10code.com>
+
+	* libassuan.m4 (AM_CHECK_LIBASSUAN): New.
+
+	* assuan-handler.c (assuan_register_post_cmd_notify) 
+	(assuan_register_post_cmd_notify): New.
+	* assuan-util.c (assuan_set_io_monitor): New.
+	* assuan-buffer.c (_assuan_read_line): Use it.
+	(_assuan_write_line): Ditto.
+	(_assuan_cookie_write_data): Ditto.
+	(_assuan_cookie_write_flush): Ditto.
+
 2006-10-18  Werner Koch  <wk@g10code.com>
 
 	* libassuan.m4: Pass "pthread" to the common macro.  Reported by

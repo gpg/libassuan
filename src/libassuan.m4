@@ -96,6 +96,21 @@ AC_DEFUN([_AM_PATH_LIBASSUAN_COMMON],
 
 ])
 
+dnl AM_CHECK_LIBASSUAN([MINIMUM-VERSION,
+dnl                    [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND ]]])
+dnl Test whether libassuan has at least MINIMUM-VERSION. This is
+dnl used to test for features only available in newer versions.
+dnl
+AC_DEFUN([AM_CHECK_LIBASSUAN],
+[ _AM_PATH_LIBASSUAN_COMMON($1)
+  if test $ok = yes; then
+    ifelse([$2], , :, [$2])
+  else
+    ifelse([$3], , :, [$3])
+  fi
+])
+
+
 
 
 dnl AM_PATH_LIBASSUAN([MINIMUM-VERSION,

@@ -1,6 +1,10 @@
 Noteworthy changes in version 1.0.1
 ------------------------------------------------
 
+ * New function: assuan_set_io_monitor.
+
+ * New function: assuan_register_post_cmd_notify.
+
 
 Noteworthy changes in version 1.0.0 (2006-10-31)
 ------------------------------------------------
