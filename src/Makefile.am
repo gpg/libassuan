@@ -60,6 +60,7 @@ libassuan_a_LIBADD = @LIBOBJS@
 
 if HAVE_PTH
 libassuan_pth_a_SOURCES = $(common_sources) assuan-io-pth.c
+libassuan_pth_a_CFLAGS = $(AM_CFLAGS) $(PTH_CFLAGS)
 libassuan_pth_a_LIBADD = @LIBOBJS@
 endif
 

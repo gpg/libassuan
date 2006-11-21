@@ -30,7 +30,7 @@ m4_define([my_version], [1.0.1])
 m4_define([my_issvn], [yes])
 
 m4_define([svn_revision], m4_esyscmd([echo -n $( (svn info 2>/dev/null \
-          || echo 'Revision: 0')|sed -n '/^Revision:/ s/[^0-9]//gp'|head -1)]))
+            || echo 'Revision: 0')|sed -n '/^Revision:/ {s/[^0-9]//gp;q;}')]))
 AC_INIT([libassuan], my_version[]m4_if(my_issvn,[yes],[-svn[]svn_revision]),
         [bug-libassuan@gnupg.org])
 # Note, that this is not yet available as a shared library.
