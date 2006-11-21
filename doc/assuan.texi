@@ -886,7 +886,7 @@ client to connect to such a server, automagically sets this variable.
 @end deftypefun
 
 @noindent
-If a file descriptor has been passed a the assuan context gets initialized
+If a file descriptor has been passed, the assuan context gets initialized
 by
 
 @deftypefun assuan_error_t assuan_init_socket_server_ext (@w{assuan_context_t *@var{r_ctx}}, @w{int @var{fd}}, @w{unsigned int @var{flags}})

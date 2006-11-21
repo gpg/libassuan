@@ -23,9 +23,16 @@
 AC_PREREQ(2.59)
 min_automake_version="1.9.3"
 
-# Version number: Remember to change it immediately *after* a release.
-#                 Add a "-cvs" prefix for non-released code.
-AC_INIT(libassuan, 1.0.1-cvs, bug-libassuan@gnupg.org)
+# Remember to change the version number immediately *after* a release.
+# Set my_issvn to "yes" for non-released code.  Remember to run an
+# "svn up" and "autogen.sh" right before creating a distribution.
+m4_define([my_version], [1.0.1])
+m4_define([my_issvn], [yes])
+
+m4_define([svn_revision], m4_esyscmd([echo -n $( (svn info 2>/dev/null \
+          || echo 'Revision: 0')|sed -n '/^Revision:/ s/[^0-9]//gp'|head -1)]))
+AC_INIT([libassuan], my_version[]m4_if(my_issvn,[yes],[-svn[]svn_revision]),
+        [bug-libassuan@gnupg.org])
 # Note, that this is not yet available as a shared library.
 
 PACKAGE=$PACKAGE_NAME
@@ -73,6 +80,11 @@ fi
 
 AH_BOTTOM([
 #define _ASSUAN_IN_LIBASSUAN 1
+
+/* We explicitly need to disable PTH's soft mapping as Debian
+   currently enables it by default for no reason. */
+#define PTH_SYSCALL_SOFT 0
+
 ])
 
 

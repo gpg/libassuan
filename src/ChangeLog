@@ -1,3 +1,7 @@
+2006-11-21  Werner Koch  <wk@g10code.com>
+
+	* assuan-pipe-server.c (_assuan_release_context): Free CMDTBL.
+
 2006-11-14  Werner Koch  <wk@g10code.com>
 
 	* libassuan.m4 (AM_CHECK_LIBASSUAN): New.
