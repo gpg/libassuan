@@ -678,14 +678,14 @@ assuan_get_data_fp (assuan_context_t ctx)
   if (ctx->outbound.data.fp)
     return ctx->outbound.data.fp;
   
-
-  ctx->outbound.data.fp = funopen (ctx, 0,
 #ifdef HAVE_FUNOPEN
-				   fun_cookie_write,
-#else
-				   _assuan_cookie_write_data,
-#endif                                   
+  ctx->outbound.data.fp = funopen (ctx, 0, fun_cookie_write,
 				   0, _assuan_cookie_write_flush);
+#else
+  ctx->outbound.data.fp = funopen (ctx, 0, _assuan_cookie_write_data,
+				   0, _assuan_cookie_write_flush);
+#endif                                   
+
   ctx->outbound.data.error = 0;
   return ctx->outbound.data.fp;
 #else
