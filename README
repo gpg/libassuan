@@ -1,7 +1,7 @@
                               Libassuan
                              ===========
 
-This is the IPC library used by GnuPG 1.9, GPGME and a few other
+This is the IPC library used by GnuPG 2, GPGME and a few other
 packages.  It used to be included with the latter packages but we
 decided to make your life not too easy and separated it out to a stand
 alone library.

@@ -652,6 +652,17 @@ assuan_get_active_fds (assuan_context_t ctx, int what,
   return n;
 }
 
+
+/* funopen uses a different prototype for the write fucntions.  We use
+   this wrapper here to fix it. */
+#ifdef HAVE_FUNOPEN
+static int
+fun_cookie_write (void *cookie, const char *buffer, int orig_size)
+{
+  return _assuan_cookie_write_data (cookie, buffer, orig_size);
+}
+#endif /*HAVE_FUNOPEN*/
+
 /* Return a FP to be used for data output.  The FILE pointer is valid
    until the end of a handler.  So a close is not needed.  Assuan does
    all the buffering needed to insert the status line as well as the
@@ -669,7 +680,11 @@ assuan_get_data_fp (assuan_context_t ctx)
   
 
   ctx->outbound.data.fp = funopen (ctx, 0,
+#ifdef HAVE_FUNOPEN
+				   fun_cookie_write,
+#else
 				   _assuan_cookie_write_data,
+#endif                                   
 				   0, _assuan_cookie_write_flush);
   ctx->outbound.data.error = 0;
   return ctx->outbound.data.fp;

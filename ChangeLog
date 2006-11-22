@@ -1,3 +1,7 @@
+2006-11-22  Werner Koch  <wk@g10code.com>
+
+	Released 1.0.1.
+
 2006-11-21  Werner Koch  <wk@g10code.com>
 
 	* configure.ac (AH_BOTTOM): Define PTH_SYSCALL_SOFT to 0.
