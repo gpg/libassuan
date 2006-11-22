@@ -1,6 +1,6 @@
 2006-11-22  Werner Koch  <wk@g10code.com>
 
-	* assuan-handler.c (fun_cookie_write): New.
+	* assuan-handler.c (fun1_cookie_write, fun2_cookie_write): New.
 	(assuan_get_data_fp) [HAVE_FUNOPEN]: Use it.
 
 2006-11-21  Werner Koch  <wk@g10code.com>

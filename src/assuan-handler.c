@@ -653,15 +653,21 @@ assuan_get_active_fds (assuan_context_t ctx, int what,
 }
 
 
-/* funopen uses a different prototype for the write fucntions.  We use
-   this wrapper here to fix it. */
+/* Two simple wrappers to make the expected function types match. */
 #ifdef HAVE_FUNOPEN
 static int
-fun_cookie_write (void *cookie, const char *buffer, int orig_size)
+fun1_cookie_write (void *cookie, const char *buffer, int orig_size)
 {
   return _assuan_cookie_write_data (cookie, buffer, orig_size);
 }
 #endif /*HAVE_FUNOPEN*/
+#ifdef HAVE_FOPENCOOKIE
+static ssize_t
+fun2_cookie_write (void *cookie, const char *buffer, size_t orig_size)
+{
+  return _assuan_cookie_write_data (cookie, buffer, orig_size);
+}
+#endif /*HAVE_FOPENCOOKIE*/
 
 /* Return a FP to be used for data output.  The FILE pointer is valid
    until the end of a handler.  So a close is not needed.  Assuan does
@@ -679,10 +685,10 @@ assuan_get_data_fp (assuan_context_t ctx)
     return ctx->outbound.data.fp;
   
 #ifdef HAVE_FUNOPEN
-  ctx->outbound.data.fp = funopen (ctx, 0, fun_cookie_write,
+  ctx->outbound.data.fp = funopen (ctx, 0, fun1_cookie_write,
 				   0, _assuan_cookie_write_flush);
 #else
-  ctx->outbound.data.fp = funopen (ctx, 0, _assuan_cookie_write_data,
+  ctx->outbound.data.fp = funopen (ctx, 0, fun2_cookie_write,
 				   0, _assuan_cookie_write_flush);
 #endif                                   
 
