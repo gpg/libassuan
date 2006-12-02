@@ -111,6 +111,8 @@ uds_reader (assuan_context_t ctx, void *buf, size_t buflen)
       len = _assuan_simple_recvmsg (ctx, &msg);
       if (len < 0)
         return -1;
+      if (len == 0)
+	return 0;
 
       ctx->uds.buffersize = len;
       ctx->uds.bufferoffset = 0;
