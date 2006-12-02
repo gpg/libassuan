@@ -142,8 +142,8 @@ assuan_command_parse_fd (assuan_context_t ctx, char *line, int *rfd)
 {
   char *endp;
 
-  if ( (strncmp (line, "FD", 2) && strncmp (line, "fd", 2))
-       || (line[2] != '=' && line[2] != '\0'))
+  if ((strncmp (line, "FD", 2) && strncmp (line, "fd", 2))
+      || (line[2] != '=' && line[2] != '\0' && !spacep(&line[2])))
     return set_error (ctx, Syntax_Error, "FD[=<n>] expected");
   line += 2;
   if (*line == '=')
