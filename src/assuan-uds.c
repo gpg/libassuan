@@ -152,7 +152,7 @@ uds_reader (assuan_context_t ctx, void *buf, size_t buflen)
   if (len > buflen) /* We have more than the user requested.  */
     len = buflen;
 
-  memcpy (buf, ctx->uds.buffer + ctx->uds.bufferoffset, len);
+  memcpy (buf, (char*)ctx->uds.buffer + ctx->uds.bufferoffset, len);
   ctx->uds.buffersize -= len;
   assert (ctx->uds.buffersize >= 0);
   ctx->uds.bufferoffset += len;
