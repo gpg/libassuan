@@ -8,3 +8,6 @@
   for unknown inquiries, albeit dirmngr itself would handle the
   returns for assuan_inquire gracefully.  We need to check all
   applications whether it is safe to change this.
+
+* XOPEN_SOURCE and snprintf
+  See Peter O'Gorman's mail.
