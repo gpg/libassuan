@@ -136,22 +136,22 @@ Indices
 @node Introduction
 @chapter Introduction to Assuan
 
-In an ideal world, Assuan is irrelevant.  Assuan's primary use is to
-allow a client to interact with a non-persistent server.  Using
-Assuan, this is accomplished by forking a subprocess and communicating
-with it via, for example, a pipe or Unix domain socket.  This method
-is neither elegant nor efficient especially when there is a lot of
-data spread across several transactions: not only is there a penalty
-for an increased number of context switches, but also a significant
-amount of data is @var{memcpy}ed from the client to a file descriptor
-and from the file descriptor to the server.  Despite these and other
-disadvantages, this type of client/server communication can be useful:
-the client is completely separate from the server; they are in
-different address spaces.  This is especially important in situations
-where the server must have a known degree of reliability and data must
-be protected: as the Assuan protocol is well defined and clients
-cannot corrupt the servers' address space, auditing become much
-easier.
+In an ideal world, Assuan would not be necessary.  Assuan's primary
+use is to allow a client to interact with a non-persistent server.
+Using Assuan, this is accomplished by forking a subprocess and
+communicating with it via, for example, a pipe or Unix domain socket.
+This method is neither elegant nor efficient, especially when there is
+a lot of data spread across several transactions: not only is there a
+penalty for an increased number of context switches, but also a
+significant amount of data is @var{memcpy}ed from the client to a file
+descriptor and from the file descriptor to the server.  Despite these
+and other disadvantages, this type of client/server communication can
+be useful: the client is completely separate from the server; they are
+in different address spaces.  This is especially important in
+situations where the server must have a known degree of reliability
+and data must be protected: as the Assuan protocol is well defined and
+clients cannot corrupt the servers' address space, auditing becomes
+much easier.
 
 Assuan was developed for use by the GNU Privacy Guard, GnuPG, to
 prevent potentially buggy clients from unwittingly corrupting
@@ -162,13 +162,12 @@ independently of the user interfaces, e.g. mail clients and other
 encryption front ends.  Like a shared library, the interface is well
 defined and any number of front ends can use it; however, unlike a
 shared library, the client cannot see or touch the server's data.  As
-with any modular system, Assuan helps keep the servers small and
-understandable help to make code more understandable and less error
-prone.
+with any modular system, Assuan helps keep the components small,
+understandable and less error prone.
 
 Assuan is not, however, limited to use with GnuPG servers and clients:
-it was design to be flexible enough to meet the demands of almost any
-transaction based environment with non-persistent servers.
+it was designed to be flexible enough to meet the demands of many
+transaction based environments with non-persistent servers.
 
 @node Assuan
 @chapter Description of the Assuan protocol.
@@ -210,13 +209,13 @@ Design criteria:
 The implementation is line based with a maximum line size of 1000
 octets.  The default IPC mechanism are Unix Domain Sockets.
 
-On a connect request the server responds either with an okay or an error
-status.  For authentication check the server may send an Inquiry
-Response prior to the first Okay, it may also issue Status messages.
-The server must check that the client is allowed to connect, this is
-done by requesting the credentials for the peer and comparing them to
-those of the server.  This avoids attacks based on wrong socket
-permissions.
+On a connect request the server responds either with an okay or an
+error status.  For authentication check the server may send an Inquiry
+Response prior to the first Okay, and it may also issue Status
+messages.  The server must check that the client is allowed to
+connect, this is done by requesting the credentials for the peer and
+comparing them to those of the server.  This avoids attacks based on
+wrong socket permissions.
 
 It may choose to delay the first response in case of an error.  The
 server never closes the connection - however the lower protocol may do
@@ -325,16 +324,8 @@ Although the commands are application specific, some of them are used by
 all protocols and partly directly supported by the Assuan library:
 
 @table @code
-@item CANCEL
-This command is used for future extensions.  
-
 @item BYE
 Close the connect, the server will reply with an @code{OK}.
-
-@item AUTH
-Not yet specified as we don't implement it in the first phase.  See my
-mail to gpa-dev on 2001-10-25 about the rationale for measurements
-against local attacks.
 
 @item RESET
 Reset the connection but not any existing authentication.  The server
@@ -359,6 +350,14 @@ Leading and trailing spaces around @var{name} and @var{value} are
 allowed but should be ignored.  For compatibility reasons, @var{name}
 may be prefixed with two dashes.  The use of the equal sign is optional
 but suggested if @var{value} is given.
+
+@item CANCEL
+This command is reserved for future extensions.  
+
+@item AUTH
+This command is reserved for future extensions.  Not yet specified as
+we don't implement it in the first phase.  See my mail to gpa-dev on
+2001-10-25 about the rationale for measurements against local attacks.
 @end table
 
 
@@ -615,9 +614,10 @@ assuan_set_assuan_err_source (GPG_ERR_SOURCE_DEFAULT);
 @node Reading and Writing
 @section How to communicate with the peer
 
-What would be a IPC library without the ability to read and write data?
-Not very useful.  Libassuan has high level functions to take care of of
-the more boring stuff but eventfully actually data needs to be written.
+What would be an IPC library without the ability to read and write
+data?  Not very useful.  Libassuan has high level functions to take
+care of of the more boring stuff but eventually data needs to be
+written and read.
 
 @noindent
 The basic read and write functions are:
@@ -655,7 +655,7 @@ may get buffered until a line is full.  To force sending the data out
 
 When used by a client this flush operation does also send the
 terminating @code{END} command to terminate the response on an
-``INQUIRE'' response.  Note, that the function @code{assuan_transact}
+``INQUIRE'' response.  Note that the function @code{assuan_transact}
 takes care of sending this @code{END} itself.
 
 @noindent
@@ -706,15 +706,15 @@ the child returns with a @var{ctx} set to @code{NULL}.
 If @var{atfork} is not NULL, this function is called in the child right
 after the fork and the value @var{atforkvalue} is passed as the first
 argument.  That function should only act if the second argument it
-received is @code{0}.  Such a fork callback is useful to releases
+received is @code{0}.  Such a fork callback is useful to release
 additional resources not to be used by the child.
 
-@var{flags} controls how the function acts: With a value of @code{0} it
-expects a simple pipe based server and is in that identical to
+@var{flags} controls how the function acts: With a value of @code{0}
+it expects a simple pipe based server and behaves similar to
 @code{assuan_pipe_connect}.  With a value of @code{1} a sever based on
-full-duplex pipes is expected.  Such pipes are usually created using the
-@code{socketpair} function.  It also enables features only available
-with such servers.
+full-duplex pipes is expected.  Such pipes are usually created using
+the @code{socketpair} function.  It also enables features only
+available with such servers.
 
 @end deftypefun
 
@@ -723,15 +723,15 @@ Unix domain socket, the following function is used to connect to the server:
 
 @deftypefun assuan_error_t assuan_socket_connect_ext (@w{assuan_context_t *@var{ctx}}, @w{const char *@var{name}}, @w{pid_t @var{server_pid}}, @w{unsigned int @var{flags}})
 
-Make a connection to the Unix domain socket @var{name} and return a new
-Assuan context at @var{ctx}.  @var{server_pid} is currently not used but
-may become handy in the future; if you don't know the server's pid, pass
-@code{-1}.  With @var{flags} set to @code{1} the @code{sendmsg} and
-@code{recvmesg} are used for input and output and thereby enabling the
-the use of descriptor passing.
+Make a connection to the Unix domain socket @var{name} and return a
+new Assuan context at @var{ctx}.  @var{server_pid} is currently not
+used but may become handy in the future; if you don't know the
+server's pid, pass @code{-1}.  With @var{flags} set to @code{1},
+@code{sendmsg} and @code{recvmesg} are used for input and output and
+thereby enabling the the use of descriptor passing.
 
-Connecting a TCP server is not yet implemented.  Standard URL schemes
-are reserved for @var{name} specifying a TCP server.
+Connecting to a TCP server is not yet implemented.  Standard URL
+schemes are reserved for @var{name} specifying a TCP server.
 
 @end deftypefun
 
@@ -751,25 +751,27 @@ to the server but won't fail on error. It is explicitly allowed to pass
 @code{NULL} for @var{ctx}, in which case the function does nothing.
 @end deftypefun
 
-Now that we have a connection to the server all work may be conveniently
-done using a couple of callbacks and the transact function:
+Now that we have a connection to the server, all work may be
+conveniently done using a couple of callbacks and the transact
+function:
 
 @deftypefun assuan_error_t assuan_transact (@w{assuan_context_t @var{ctx}}, @w{const char *@var{command}}, @w{int (*@var{data_cb})(void *, const void *, size_t)}, @w{void *@var{data_cb_arg}}, @w{int (*@var{inquire_cb})(void*, const char *)}, @w{void *@var{inquire_cb_arg}}, @w{int (*@var{status_cb})(void*, const char *)}, @w{void *@var{status_cb_arg}})
 
-Here @var{ctx} is the Assuan context opened by one of the connect call.
-@var{command} is the actual one liner Assuan command.  It shall not end
-with a line feed and its length is limited to @code{ASSUAN_LINELENGTH}
-(~1000 bytes)
+Here @var{ctx} is the Assuan context opened by one of the connect
+calls.  @var{command} is the actual one liner Assuan command.  It
+shall not end with a line feed and its length is limited to
+@code{ASSUAN_LINELENGTH} (~1000 bytes)
 
 @var{data_cb} is called by Libassuan for data lines; @var{data_cb_arg}
-is passed to it along with the data and the length.  [fixme: needs more
-documentation].
+is passed to it along with the data and the length.  [FIXME: needs
+more documentation].
 
 @var{inquire_cb} is called by Libassuan when the server requests
-additional information from the client during the processing of a
-request.  This callback shall check the provided inquriy name and send
-the data as requested back using the @code{assuan_write_data}.  The server
-passed @var{inquriy_cb_arg} along with the inquiry name to the callback.
+additional information from the client while processing the command.
+This callback shall check the provided inquiry name and send the data
+as requested back using the @code{assuan_write_data}.  The server
+passed @var{inquiry_cb_arg} along with the inquiry name to the
+callback.
 
 @var{status_cb} is called by Libassuan for each status line it receives
 from the server. @var{status_cb_arg} is passed along with the status
@@ -790,7 +792,8 @@ functions are used with this feature:
 Send the descriptor @var{fd} to the peer using the context @var{ctx}.
 Note, that calling this function with a @var{ctx} of @code{NULL} and
 @var{fd} of @code{-1} is a valid runtime test to check whether
-descriptor passing is available on the platform.
+descriptor passing is available on the platform.  The descriptor must
+be sent before the command is issued that makes use of the descriptor.
 
 @end deftypefun
 
@@ -798,8 +801,8 @@ descriptor passing is available on the platform.
 @deftypefun assuan_error_t assuan_receivefd (@w{assuan_context_t @var{ctx}}, @w{int *@var{fd}})
 
 Receive a descriptor pending for the context @var{ctx} from the peer.
-This descriptor must be pending before this function is called.  To
-accomplish this the peer needs to use @code{assuan_sendfd} before the
+The descriptor must be pending before this function is called.  To
+accomplish this, the peer needs to use @code{assuan_sendfd} before the
 trigger is sent (e.g. using @code{assuan_write_line ("INPUT FD")}.
 @end deftypefun
 
@@ -830,7 +833,7 @@ The list of the implemented server commands is defined by a table like:
 @end smallexample
 
 For convenience this table is usually put after the actual command
-handlers (cmd_foo, cmd_bar) or even put inside the the command_handler.
+handlers (cmd_foo, cmd_bar) or even put inside the command_handler.
 Note that commands with the name ``INPUT'' and ``OUTPUT'' do not require
 a handler because Libassuan provides a default handler for them.  It is
 however possible to assign a custom handler. 
@@ -838,7 +841,7 @@ however possible to assign a custom handler.
 A prerequisite for this example code is that a client has already
 connected to the server.  Often there are two modes combined in one
 program: A pipe based server, where a client has forked the server
-process or a Unix domain socket based server that is listening on the
+process, or a Unix domain socket based server that is listening on the
 socket.
 
 @example
@@ -866,28 +869,31 @@ command_handler (int fd)
 @end example
 
 @noindent
-This is the first part of the command hander.  In case this is called as
-a pipe based server @var{fd} will be based as @code{fd} and the code
-assumes that the server's stdin and stdout are connected to a pipe.  The
-initialization is thus done using
+This is the first part of the command handler.  In case this is called
+as a pipe based server, @var{fd} will be based as @code{fd} and the
+code assumes that the server's @code{stdin} and @code{stdout} file
+handles are connected to a pipe.  The initialization is thus done
+using the function:
 
 @deftypefun assuan_error_t assuan_init_pipe_server (@w{assuan_context_t *@var{r_ctx}}, @w{int @var{filedes}[2]})
 
 The function takes the two file descriptors from @var{filedes} and
-returns a new Assuan context at @var{r_ctx}.  As usual a return value of
-@code{0} indicates success and a failure is indicated by a returning an
-error code.  In case of error @code{NULL} will be stored at @var{r_ctx}.
+returns a new Assuan context at @var{r_ctx}.  As usual, a return value
+of @code{0} indicates success and a failure is indicated by a
+returning an error code.  In case of error, @code{NULL} will be stored
+at @var{r_ctx}.
 
-In case that the server has been called using a bi-directional pipe
-(socketpair), @var{filedes} is ignored and the file descriptor is taken
-from the environment variable @env{_assuan_connection_fd}.  You won't
-need to know that because @code{assuan_pipe_connect_ext}, used by the
-client to connect to such a server, automagically sets this variable.
+In case the server has been called using a bi-directional pipe
+(socketpair), @var{filedes} is ignored and the file descriptor is
+taken from the environment variable @env{_assuan_connection_fd}.  You
+won't need to know that because @code{assuan_pipe_connect_ext}, used
+by the client to connect to such a server, automagically sets this
+variable.
 @end deftypefun
 
 @noindent
-If a file descriptor has been passed, the assuan context gets initialized
-by
+If a file descriptor has been passed, the assuan context gets
+initialized by the function:
 
 @deftypefun assuan_error_t assuan_init_socket_server_ext (@w{assuan_context_t *@var{r_ctx}}, @w{int @var{fd}}, @w{unsigned int @var{flags}})
 
@@ -897,17 +903,17 @@ associated with a socket and returns a new Assuan context at
 
 @table @code
 @item Bit 0
-When set @code{sendmsg} and @code{recvmesg} are used for input and
+If set, @code{sendmsg} and @code{recvmesg} are used for input and
 output and thus enabling the use of descriptor passing.
 @item Bit 1
-When set @var{fd} refers to an already accepted socket.  That is,
+If set, @var{fd} refers to an already accepted socket.  That is,
 Libassuan won't call @var{accept} for it.  It is suggested to set this
 bit as it allows better control of the connection state.
 @end table
 
-As usual a return value of @code{0} indicates success and a failure is
-indicated by a returning an error code.  In case of error @code{NULL}
-will be stored at @var{r_ctx}.
+As usual, a return value of @code{0} indicates success and a failure
+is indicated by a returning an error code.  In case of error,
+@code{NULL} will be stored at @var{r_ctx}.
 @end deftypefun
 
 @noindent
@@ -915,14 +921,14 @@ After error checking, the implemented assuan commands are registered with
 the server.  
 
 @example
-  for (i=0; command_table[i].name; i++)
+  for (i = 0; command_table[i].name; i++)
     @{
       rc = assuan_register_command (ctx,
                                     command_table[i].name,
                                     command_table[i].handler);
       if (rc)
         @{
-          fprintf (stderr, "register failed: %s\n", gpg_strerror(rc));
+          fprintf (stderr, "register failed: %s\n", gpg_strerror (rc));
           assuan_deinit_server (ctx);
           return;
         @}
@@ -932,23 +938,21 @@ the server.
 @deftypefun assuan_error_t assuan_register_command (@w{assuan_context_t @var{ctx}}, @w{const char *@var{cmd_string}}, @w{int (*@var{handler}) (assuan_context_t, char *)})
 
 This registers the command named @var{cmd_string} with the Assuan
-context @var{ctx}.  @var{handler} is the function called by Libassuan if
-this command is received from the client.  @var{NULL} may be used
-@var{handler} to use a default handler (this only works with a few
-pre-defined commands).  Note, that several default handlers have already
-been registered when the context has been created: ``NOP'', ``CANCEL'',
-``OPTION'', ``BYE'', ``AUTH'', ``RESET'' and ``END''.  Although
-possible, these commands should better not be overridden by the
-application.  Instead special functions should be used to get hold of
-these commands.
+context @var{ctx}.  @var{handler} is the function called by Libassuan
+if this command is received from the client.  @var{NULL} may be used
+for @var{handler} to use a default handler (this only works with a few
+pre-defined commands).  Note that several default handlers have
+already been registered when the context has been created: ``NOP'',
+``CANCEL'', ``OPTION'', ``BYE'', ``AUTH'', ``RESET'' and ``END''.  It
+is possible, but not recommended, to override these commands.
 @end deftypefun
 
 @deftypefun assuan_error_t assuan_register_post_cmd_notify (@w{assuan_context_t @var{ctx}}, @w{void (*@var{fnc})(assuan_context_t)}, @w{int @var{err}})
 
 Register a function to be called right after a command has been
-processed. @var{err} is the result code from the last internal assuan
-operation and not the one returned by the handler. It may be used to
-command related cleanup.
+processed.  @var{err} is the result code from the last internal assuan
+operation and not the one returned by the handler.  It may be used for
+command-related cleanup.
 @end deftypefun
 
 @deftypefun assuan_error_t assuan_register_bye_notify (@w{assuan_context_t @var{ctx}}, @w{void (*@var{fnc})(assuan_context_t)})
@@ -971,12 +975,13 @@ before the standard handler for the ``RESET'' command is being called.
 
 @deftypefun assuan_error_t assuan_register_option_handler (@w{assuan_context_t @var{ctx}}, @w{int (*@var{fnc})(assuan_context_t, const char*, const char*)})
 
-Register function @var{fnc} with context @var{ctx} for processing of
+Register function @var{fnc} with context @var{ctx} for processing
 options.  That function is being called with the context, the name and
 the value of the option.  Leading and trailing spaces are removed from
-the name and the value.  The optional leading two dashes of the name are
-removed as well.  If no value has been given, an empty string is passed.
-The function needs to return @code{0} on success or an error code.
+the name and the value.  The optional leading two dashes of the name
+are removed as well.  If no value has been given, an empty string is
+passed.  The function needs to return @code{0} on success or an error
+code.
 
 @end deftypefun
 
@@ -1005,18 +1010,18 @@ descriptor is available by calling @code{assuan_get_output_fd}.
 @deftypefun assuan_error_t assuan_set_hello_line (@w{assuan_context_t @var{ctx}}, @w{const char *@var{line}})
 
 This is not actually a register function but may be called also after
-registering commands. It changes the ``Hello'' line, send by the server
-to the client as a first response, from a default string to the string
-@var{line}.  For logging purposes, it is often useful to use such a
-custom hello line which may tell version numbers and such.  Linefeeds
-are allowed in this string, however, each line needs to be shorter than
-the Assuan line length limit.
+registering commands. It changes the ``Hello'' line, sent by the
+server to the client as a first response, from a default string to the
+string @var{line}.  For logging purposes, it is often useful to use
+such a custom hello line which may tell version numbers and such.
+Linefeeds are allowed in this string, however, each line needs to be
+shorter than the Assuan line length limit.
 
 @end deftypefun
 
 @noindent
-As a last initialization step debugging may be enabled for the current
-connection.  This is done using
+As a last initialization step, debugging may be enabled for the
+current connection.  This is done using
 
 @deftypefun void assuan_set_log_stream (@w{assuan_context_t @var{ctx}}, @w{FILE *@var{fp}})
 
@@ -1197,22 +1202,24 @@ current handler.
 
 This is the core of the default ``INPUT'' and ``OUTPUT'' handler.  It
 may be used in custom commands as well to negotiate a file descriptor.
-If @var{line} contains @code{FD=@var{n}}, it returns @var{n} assuming a
-local file descriptor.  If @var{line} contains just @code{FD} it returns
-a file descriptor at @var{rdf}; this file descriptor needs to have been
-sent by the client right before using @code{assuan_sendfd}.
+If @var{line} contains @code{FD=@var{n}}, it returns @var{n} in
+@var{rfd} assuming a local file descriptor.  If @var{line} contains
+just @code{FD} it returns a file descriptor at @var{rfd}; this file
+descriptor needs to have been sent by the client right before using
+@code{assuan_sendfd}.
 @end deftypefun
 
 @deftypefun int assuan_get_input_fd (@w{assuan_context_t @var{ctx}})
 
-Return the file descriptor send by the client using the last ``INPUT''
+Return the file descriptor sent by the client using the last ``INPUT''
 command.  Returns @code{-1} if no file descriptor is available.
 @end deftypefun
 
 @deftypefun int assuan_get_output_fd (@w{assuan_context_t @var{ctx}})
 
-Return the file descriptor send by the client using the last ``OUTPUT''
-command.  Returns @code{-1} if no file descriptor is available.
+Return the file descriptor sent by the client using the last
+``OUTPUT'' command.  Returns @code{-1} if no file descriptor is
+available.
 @end deftypefun
 
 @deftypefun assuan_error_t assuan_close_input_fd (@w{assuan_context_t @var{ctx}})
@@ -1234,14 +1241,15 @@ some sanity checks and make sure that a following
 @deftypefun int assuan_set_error (@w{assuan_context_t @var{ctx}}, @w{int @var{err}}, @w{const char *@var{text}})
 
 This is a helper to provide a more descriptive error text with ``ERR''
-lines.  For this to work the text needs to be stored in the context
+lines.  For this to work, the text needs to be stored in the context
 @var{ctx} while still being in the command handler.  This function is
 commonly called this way
 @smallexample
   return assuan_set_error (ctx, err, "commands needs 5 arguments");
 @end smallexample
-@var{err} is passed through and thus the return value of the command
-handler.  The provided text further explains that error code to humans.
+The value @var{err} is passed through and thus the return value of the
+command handler in the example.  The provided text further explains
+that error code to humans.
 @end deftypefun
 
 
