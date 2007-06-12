@@ -1,3 +1,17 @@
+2007-05-30  Werner Koch  <wk@g10code.com>
+
+	* autogen.sh <--build-w32>: Modernize. 
+
+2007-05-29  Werner Koch  <wk@g10code.com>
+
+	* configure.ac: Require automake 1.10 and autoconf 2.61.
+	(AM_PROG_CC_C_O): New.  Error out if no C-89 cc is installed.
+	(gl_HEADER_SYS_SOCKET): Explicitly add this for documentation. 
+
+2007-05-24  Werner Koch  <wk@g10code.com>
+
+	* configure.ac: Use -Wpointer-arith is possible.
+
 2006-11-22  Werner Koch  <wk@g10code.com>
 
 	Released 1.0.1.

@@ -1,3 +1,37 @@
+2007-06-12  Werner Koch  <wk@g10code.com>
+
+	* assuan-io.c (_assuan_simple_read): Hack to allow reading from a
+	socket.
+	(_assuan_simple_write): Likewise.
+
+2007-06-11  Werner Koch  <wk@g10code.com>
+
+	* assuan-io-pth.c (_assuan_simple_read, _assuan_simple_write): Use
+	pth versions also for W32.
+
+2007-05-29  Werner Koch  <wk@g10code.com>
+
+	* assuan-io-pth.c: Include sys/socket.h only if available.  Remove
+	double inclusion of sys/wait.h
+	
+	* assuan-pipe-connect.c (build_w32_commandline): Make ARGV const.
+
+	* assuan-pipe-server.c (is_valid_socket) [W32]: Do not define.
+
+	* assuan-socket-server.c [W32]: Include ws2tcpip.h to define
+	socklen_t.
+	* assuan-defs.h (struct assuan_context_s): Define most peercred
+	members only if we can really set them.
+	(_assuan_simple_sendmsg, _assuan_simple_recvmsg) [W32]: Use a
+	different prototype.
+	* assuan.h (assuan_get_peercred) [W32]: Do not define.
+	* assuan-io.c (_assuan_simple_sendmsg, _assuan_simple_recvmsg)
+	[w32]: Use another prototype.
+
+2007-05-09  Werner Koch  <wk@g10code.com>
+
+	* libassuan.m4: Print found version on success.
+
 2007-05-01  Werner Koch  <wk@g10code.com>
 
 	* assuan-uds.c (uds_reader): Cast void ptr for arithmetics.

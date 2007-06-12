@@ -142,9 +142,11 @@ struct assuan_context_s
 
   struct {
     int   valid;   /* Whether this structure has valid information. */
+#ifdef HAVE_SO_PEERCRED
     pid_t pid;     /* The pid of the peer. */
     uid_t uid;     /* The uid of the peer. */
     gid_t gid;     /* The gid of the peer. */
+#endif /*HAVE_SO_PEERCRED*/
   } peercred;
 
   /* Used for Unix domain sockets.  */
@@ -280,8 +282,13 @@ pid_t _assuan_waitpid (pid_t pid, int *status, int options);
 ssize_t _assuan_simple_read (assuan_context_t ctx, void *buffer, size_t size);
 ssize_t _assuan_simple_write (assuan_context_t ctx, const void *buffer,
 			      size_t size);
+#ifdef _WIN32
+int _assuan_simple_sendmsg (assuan_context_t ctx, void *msg);
+int _assuan_simple_recvmsg (assuan_context_t ctx, void *msg);
+#else
 ssize_t _assuan_simple_sendmsg (assuan_context_t ctx, struct msghdr *msg);
 ssize_t _assuan_simple_recvmsg (assuan_context_t ctx, struct msghdr *msg);
+#endif
 
 /*-- assuan-socket.c --*/
 int _assuan_close (int fd);

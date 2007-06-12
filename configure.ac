@@ -20,8 +20,8 @@
 
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.59)
-min_automake_version="1.9.3"
+AC_PREREQ(2.61)
+min_automake_version="1.10"
 
 # Remember to change the version number immediately *after* a release.
 # Set my_issvn to "yes" for non-released code.  Remember to run an
@@ -67,6 +67,10 @@ AM_MISSING_PROG(MAKEINFO, makeinfo, $missing_dir)
 AC_PROG_AWK
 AC_PROG_CC
 AC_PROG_CPP
+AM_PROG_CC_C_O
+if test "x$ac_cv_prog_cc_c89" = "xno" ; then
+  AC_MSG_ERROR([[No C-89 compiler found]])
+fi
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
@@ -75,6 +79,16 @@ AC_PROG_RANLIB
 
 if test "$GCC" = yes; then
     CFLAGS="$CFLAGS -Wall -Wcast-align -Wshadow -Wstrict-prototypes"
+
+    AC_MSG_CHECKING([if gcc supports -Wpointer-arith])
+    _gcc_cflags_save=$CFLAGS
+    CFLAGS="-Wpointer-arith"
+    AC_COMPILE_IFELSE(AC_LANG_PROGRAM([]),_gcc_wopt=yes,_gcc_wopt=no)
+    AC_MSG_RESULT($_gcc_wopt)
+    CFLAGS=$_gcc_cflags_save;
+    if test x"$_gcc_wopt" = xyes ; then
+       CFLAGS="$CFLAGS -Wpointer-arith"
+    fi
 fi
 
 
@@ -162,6 +176,7 @@ AC_TYPE_SIZE_T
 AC_TYPE_SIGNAL
 AC_DECL_SYS_SIGLIST
 
+gl_HEADER_SYS_SOCKET
 gl_TYPE_SOCKLEN_T
 
 AC_CHECK_MEMBER(struct cmsghdr.cmsg_len,
