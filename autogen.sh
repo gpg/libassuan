@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 # Run this to generate all the initial makefiles, etc. 
 #
 # Copyright (C) 2003 g10 Code GmbH
