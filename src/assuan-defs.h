@@ -140,14 +140,14 @@ struct assuan_context_s
   int listen_fd;  /* The fd we are listening on (used by socket servers) */
   int connected_fd; /* helper */
 
+#ifndef HAVE_W32_SYSTEM
   struct {
-    int   valid;   /* Whether this structure has valid information. */
-#ifdef HAVE_SO_PEERCRED
+    int valid;   /* Whether this structure has valid information. */
     pid_t pid;     /* The pid of the peer. */
     uid_t uid;     /* The uid of the peer. */
     gid_t gid;     /* The gid of the peer. */
-#endif /*HAVE_SO_PEERCRED*/
   } peercred;
+#endif /* HAVE_W32_SYSTEM */
 
   /* Used for Unix domain sockets.  */
   struct sockaddr_un myaddr;
@@ -284,7 +284,7 @@ pid_t _assuan_waitpid (pid_t pid, int *status, int options);
 ssize_t _assuan_simple_read (assuan_context_t ctx, void *buffer, size_t size);
 ssize_t _assuan_simple_write (assuan_context_t ctx, const void *buffer,
 			      size_t size);
-#ifdef _WIN32
+#ifdef HAVE_W32_SYSTEM
 int _assuan_simple_sendmsg (assuan_context_t ctx, void *msg);
 int _assuan_simple_recvmsg (assuan_context_t ctx, void *msg);
 #else

@@ -65,7 +65,7 @@ _assuan_simple_write (assuan_context_t ctx, const void *buffer, size_t size)
   return pth_write (ctx->outbound.fd, buffer, size);
 }
 
-#ifdef _WIN32
+#ifdef HAVE_W32_SYSTEM
 int
 _assuan_simple_sendmsg (assuan_context_t ctx, void *msg)
 #else
@@ -106,7 +106,7 @@ _assuan_simple_sendmsg (assuan_context_t ctx, struct msghdr *msg)
 #endif
 }
 
-#ifdef _WIN32
+#ifdef HAVE_W32_SYSTEM
 int
 _assuan_simple_recvmsg (assuan_context_t ctx, void *msg)
 #else
