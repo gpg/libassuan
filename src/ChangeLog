@@ -1,3 +1,10 @@
+2007-06-18  Werner Koch  <wk@g10code.com>
+
+	* assuan-logging.c (load_libgpg_error, _assuan_gpg_strerror_r) 
+	(_assuan_gpg_strsource): New.
+	* assuan-handler.c (process_request) [W32]: Use these new
+	functions for human understable error codes.
+
 2007-06-12  Werner Koch  <wk@g10code.com>
 
 	* assuan-io.c (_assuan_simple_read): Hack to allow reading from a

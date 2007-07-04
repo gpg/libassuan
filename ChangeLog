@@ -1,3 +1,12 @@
+2007-07-03  Werner Koch  <wk@g10code.com>
+
+	* configure.ac (NETLIBS): Use ws2_32 instead of wsock32.
+
+2007-06-15  Werner Koch  <wk@g10code.com>
+
+	* autogen.sh: Use = and not == in test to be POSIXly correct.
+	Change shell back to /bin/sh.
+
 2007-06-15  Marcus Brinkmann  <marcus@g10code.de>
 
 	* autogen.sh: Require bash.

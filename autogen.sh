@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /bin/sh
 # Run this to generate all the initial makefiles, etc. 
 #
 # Copyright (C) 2003 g10 Code GmbH
@@ -31,7 +31,7 @@ check_version () {
 
 DIE=no
 FORCE=
-if test "$1" == "--force"; then
+if test x"$1" = x"--force"; then
   FORCE=" --force"
   shift
 fi

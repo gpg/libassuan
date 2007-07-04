@@ -261,6 +261,8 @@ void  _assuan_free (void *p);
 #ifdef HAVE_W32_SYSTEM
 const char *_assuan_w32_strerror (int ec);
 #define w32_strerror(e) _assuan_w32_strerror ((e))
+int _assuan_gpg_strerror_r (unsigned int err, char *buf, size_t buflen);
+const char *_assuan_gpg_strsource (unsigned int err);
 #endif /*HAVE_W32_SYSTEM*/
 
 
