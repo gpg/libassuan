@@ -1,3 +1,15 @@
+2007-07-05  Werner Koch  <wk@g10code.com>
+
+	Released 1.0.2.
+	
+	Relicensed to LGPLv3.
+
+	* COPYING: Replaced by GPLv3.
+	* COPYING.LESSER: Removed.
+	* COPYING.LIB: New.
+
+	* Makefile.am (ACLOCAL_AMFLAGS): Do not create gzipped tarball.
+
 2007-07-03  Werner Koch  <wk@g10code.com>
 
 	* configure.ac (NETLIBS): Use ws2_32 instead of wsock32.

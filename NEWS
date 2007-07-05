@@ -1,5 +1,14 @@
-Noteworthy changes in version 1.0.2
+Noteworthy changes in version 1.0.2 (2007-07-05)
 ------------------------------------------------
+
+ * Changed license to LGPLv3.
+
+ * New flag ASSUAN_CONFIDENTIAL to return the state of
+   confidential logging.
+
+ * Better support for W32.
+
+ * Assorted bug fixed and code cleanups.
 
 
 Noteworthy changes in version 1.0.1 (2006-11-22)

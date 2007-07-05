@@ -1,8 +1,8 @@
 
 ACLOCAL_AMFLAGS = -I m4
-AUTOMAKE_OPTIONS = dist-bzip2
+AUTOMAKE_OPTIONS = dist-bzip2 no-dist-gzip
 
-EXTRA_DIST = config.rpath  config.rpath autogen.sh README.SVN
+EXTRA_DIST = config.rpath autogen.sh README.SVN
 
 SUBDIRS = m4 src doc tests
 

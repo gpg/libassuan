@@ -5,7 +5,7 @@
  *
  * Assuan is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
+ * published by the Free Software Foundation; either version 3 of
  * the License, or (at your option) any later version.
  *
  * Assuan is distributed in the hope that it will be useful, but
@@ -14,9 +14,7 @@
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
- * USA. 
+ * License along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef ASSUAN_H
@@ -323,7 +321,11 @@ typedef enum
        this is not desirable.  By setting this flag, the waitpid will
        be skipped and the caller is responsible to cleanup a forked
        process. */
-    ASSUAN_NO_WAITPID = 1
+    ASSUAN_NO_WAITPID = 1,
+    /* This flag indicates whether Assuan logging is in confidential
+       mode. Use assuan_{begin,end}_condidential tochange the
+       mode.  */
+    ASSUAN_CONFIDENTIAL = 2
   } 
 assuan_flag_t;
 

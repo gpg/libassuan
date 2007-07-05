@@ -8,7 +8,7 @@ Copyright @copyright{} 2002, 2003, 2006 Free Software Foundation, Inc.
 @macro permissionnotice
 Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU General Public License as published by the
-Free Software Foundation; either version 2 of the License, or (at your
+Free Software Foundation; either version 3 of the License, or (at your
 option) any later version. The text of the license can be found in the
 section entitled ``Copying''.
 @end macro
@@ -1268,6 +1268,10 @@ When using a pipe server, by default Libassuan will wait for the forked
 process to die in @code{assuan_disconnect}.  In certain cases this is
 not desirable.  By setting this flag, a call to @code{waitpid} will be
 suppressed and the caller is responsible to cleanup the child process.
+@item ASSUAN_CONFIDENTIAL
+Uses to return the state of the confidential logging mode.  For changing
+this mode the functions @code{assuan_begin_confidential} and
+@code{assuan_end_confidential} should be used.
 @end table
 @end deftp
 

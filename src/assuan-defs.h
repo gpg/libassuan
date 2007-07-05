@@ -5,7 +5,7 @@
  *
  * Assuan is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
+ * published by the Free Software Foundation; either version 3 of
  * the License, or (at your option) any later version.
  *
  * Assuan is distributed in the hope that it will be useful, but
@@ -14,9 +14,7 @@
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
- * USA.
+ * License along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef ASSUAN_DEFS_H
@@ -140,14 +138,14 @@ struct assuan_context_s
   int listen_fd;  /* The fd we are listening on (used by socket servers) */
   int connected_fd; /* helper */
 
-#ifndef HAVE_W32_SYSTEM
   struct {
     int valid;   /* Whether this structure has valid information. */
+#ifndef HAVE_W32_SYSTEM
     pid_t pid;     /* The pid of the peer. */
     uid_t uid;     /* The uid of the peer. */
     gid_t gid;     /* The gid of the peer. */
-  } peercred;
 #endif /* HAVE_W32_SYSTEM */
+  } peercred;
 
   /* Used for Unix domain sockets.  */
   struct sockaddr_un myaddr;

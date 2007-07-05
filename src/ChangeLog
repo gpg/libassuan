@@ -1,3 +1,11 @@
+2007-07-05  Werner Koch  <wk@g10code.com>
+
+	* assuan-defs.h (struct assuan_context_s): Have peercred.valid
+	even for Windows.  This makes some other code cleaner.
+
+	* assuan.h (ASSUAN_CONFIDENTIAL): New flag.
+	* assuan-util.c (assuan_set_flag, assuan_get_flag): Support flag.
+
 2007-07-04  Marcus Brinkmann  <marcus@g10code.de>
 
 	Change _WIN32 to HAVE_W32_SYSTEM for consistency.
