@@ -1,3 +1,10 @@
+2007-07-08  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan-defs.h (struct assuan_context_s): Have full peercred
+	structure for HAVE_SO_PEERCRED.
+	* assuan-connect.c (assuan_get_peercred) [!HAVE_SO_PEERCRED]: Do
+	not try to set PID, UID and GID.
+
 2007-07-05  Werner Koch  <wk@g10code.com>
 
 	* assuan-defs.h (struct assuan_context_s): Have peercred.valid
