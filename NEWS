@@ -1,4 +1,12 @@
-Noteworthy changes in version 1.0.2 (2007-07-05)
+Noteworthy changes in version 1.0.3
+------------------------------------------------
+
+ * New type assuan_fd_t and constant ASSUAN_INVALID_FD for better W32
+   support.  it does not change teh semantics under Unix.  Under W32
+   all file descriptors are now guaranteed to be system handles.
+
+
+Noteworthy changes in version 1.0.2 (2007-07-05
 ------------------------------------------------
 
  * Changed license to LGPLv3.

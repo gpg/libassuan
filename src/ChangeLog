@@ -1,3 +1,19 @@
+2007-07-12  Werner Koch  <wk@g10code.com>
+
+	* assuan.h (assuan_fd_t): New.
+	(ASSUAN_INVALID_FD): New.  Use it everywhere.
+	* assuan-defs.h (SOCKET2HANDLE, HANDLE2SOCKET) [W32]: New.  Use
+	them to cast descriptors for socket fucntions.
+	* assuan-pipe-connect.c (fd_to_handle, handle_to_fd): Remove
+	definition and all uses.
+	(pid_to_handle, handle_to_pid): Remove as they are ununsed.
+	* assuan-io.c (_assuan_simple_write, _assuan_simple_read) [W32]:
+	Make use of HANDLE2SOCKET.
+	* assuan-socket.c (_assuan_close) [W32]: Use CloseHandle and not
+	close.
+	* assuan-handler.c (assuan_get_active_fds) [W32]: Use
+	_get_osfhandle for the data fp.
+
 2007-07-08  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan-defs.h (struct assuan_context_s): Have full peercred

@@ -135,8 +135,9 @@ std_handler_end (assuan_context_t ctx, char *line)
   return set_error (ctx, Not_Implemented, NULL); 
 }
 
+
 assuan_error_t
-assuan_command_parse_fd (assuan_context_t ctx, char *line, int *rfd)
+assuan_command_parse_fd (assuan_context_t ctx, char *line, assuan_fd_t *rfd)
 {
   char *endp;
 
@@ -149,7 +150,13 @@ assuan_command_parse_fd (assuan_context_t ctx, char *line, int *rfd)
       line ++;
       if (!digitp (*line))
 	return set_error (ctx, Syntax_Error, "number required");
+#ifdef HAVE_W32_SYSTEM
+      /* Fixme: For a W32/64bit system we will need to change the cast
+         and the conversion fucntion.  */
+      *rfd = (void*)strtoul (line, &endp, 10);
+#else
       *rfd = strtoul (line, &endp, 10);
+#endif
       /* Remove that argument so that a notify handler won't see it. */
       memset (line, ' ', endp? (endp-line):strlen(line));
 
@@ -164,11 +171,13 @@ assuan_command_parse_fd (assuan_context_t ctx, char *line, int *rfd)
     return assuan_receivefd (ctx, rfd);
 }
 
+
 /* Format is INPUT FD=<n> */
 static int
 std_handler_input (assuan_context_t ctx, char *line)
 {
-  int rc, fd;
+  int rc;
+  assuan_fd_t fd;
 
   rc = assuan_command_parse_fd (ctx, line, &fd);
   if (rc)
@@ -183,7 +192,8 @@ std_handler_input (assuan_context_t ctx, char *line)
 static int
 std_handler_output (assuan_context_t ctx, char *line)
 {
-  int rc, fd;
+  int rc;
+  assuan_fd_t fd;
 
   rc = assuan_command_parse_fd (ctx, line, &fd);
   if (rc)
@@ -644,7 +654,7 @@ assuan_process_next (assuan_context_t ctx)
  **/
 int 
 assuan_get_active_fds (assuan_context_t ctx, int what,
-                       int *fdarray, int fdarraysize)
+                       assuan_fd_t *fdarray, int fdarraysize)
 {
   int n = 0;
 
@@ -653,15 +663,19 @@ assuan_get_active_fds (assuan_context_t ctx, int what,
 
   if (!what)
     {
-      if (ctx->inbound.fd != -1)
+      if (ctx->inbound.fd != ASSUAN_INVALID_FD)
         fdarray[n++] = ctx->inbound.fd;
     }
   else
     {
-      if (ctx->outbound.fd != -1)
+      if (ctx->outbound.fd != ASSUAN_INVALID_FD)
         fdarray[n++] = ctx->outbound.fd;
       if (ctx->outbound.data.fp)
+#ifdef HAVE_W32_SYSTEM
+        fdarray[n++] = (void*)_get_osfhandle (fileno (ctx->outbound.data.fp));
+#else
         fdarray[n++] = fileno (ctx->outbound.data.fp);
+#endif
     }
 
   return n;

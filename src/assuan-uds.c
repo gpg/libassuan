@@ -141,7 +141,7 @@ uds_reader (assuan_context_t ctx, void *buf, size_t buflen)
 
 #else /*HAVE_W32_SYSTEM*/
 
-  len = recvfrom (ctx->inbound.fd, buf, buflen, 0, NULL, NULL);
+  len = recvfrom (HANDLE2SOCKET(ctx->inbound.fd), buf, buflen, 0, NULL, NULL);
 
 #endif /*HAVE_W32_SYSTEM*/
 
@@ -182,7 +182,7 @@ uds_writer (assuan_context_t ctx, const void *buf, size_t buflen)
 #else /*HAVE_W32_SYSTEM*/
   int len;
   
-  len = sendto (ctx->outbound.fd, buf, buflen, 0,
+  len = sendto (HANDLE2SOCKET(ctx->outbound.fd), buf, buflen, 0,
                 (struct sockaddr *)&ctx->serveraddr,
                 sizeof (struct sockaddr_in));
 #endif /*HAVE_W32_SYSTEM*/
@@ -191,7 +191,7 @@ uds_writer (assuan_context_t ctx, const void *buf, size_t buflen)
 
 
 static assuan_error_t
-uds_sendfd (assuan_context_t ctx, int fd)
+uds_sendfd (assuan_context_t ctx, assuan_fd_t fd)
 {
 #ifdef USE_DESCRIPTOR_PASSING
   struct msghdr msg;
@@ -241,7 +241,7 @@ uds_sendfd (assuan_context_t ctx, int fd)
 
 
 static assuan_error_t
-uds_receivefd (assuan_context_t ctx, int *fd)
+uds_receivefd (assuan_context_t ctx, assuan_fd_t *fd)
 {
 #ifdef USE_DESCRIPTOR_PASSING
   int i;

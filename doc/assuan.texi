@@ -1207,6 +1207,12 @@ If @var{line} contains @code{FD=@var{n}}, it returns @var{n} in
 just @code{FD} it returns a file descriptor at @var{rfd}; this file
 descriptor needs to have been sent by the client right before using
 @code{assuan_sendfd}.
+
+On W32 systems the returned file descriptor is a system handle and not a
+libc low level I/O file descriptor.  Thus applications need to use
+@code{_open_osfhandle} before they can pass this descriptor to standard
+functions like @code{fdopen} or @code{dup}.
+
 @end deftypefun
 
 @deftypefun int assuan_get_input_fd (@w{assuan_context_t @var{ctx}})
@@ -1331,6 +1337,9 @@ writing.  @var{fdarray} is an array of integers provided by the caller;
 On success the number of active descriptors are returned.  These active
 descriptors are then stored in @var{fdarray}.  On error @code{-1} is
 returned; the most likely reason for this is a too small @var{fdarray}.
+
+Note that on W32 systems the returned file descriptor is a system handle
+and not a libc low level I/O file descriptor.
 @end deftypefun
 
 

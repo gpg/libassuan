@@ -11,3 +11,6 @@
 
 * XOPEN_SOURCE and snprintf
   See Peter O'Gorman's mail.
+
+* W32
+** Check what kind of fd we use with inbound.fd etc.

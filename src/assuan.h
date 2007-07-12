@@ -337,6 +337,18 @@ typedef struct assuan_context_s *assuan_context_t;
 typedef struct assuan_context_s *ASSUAN_CONTEXT _ASSUAN_DEPRECATED;
 #endif /*_ASSUAN_ONLY_GPG_ERRORS*/
 
+/* Because we use system handles and not libc low level file
+   descriptors on W32, we need to declare them as HANDLE (which
+   actually is a plain pointer).  This is required to eventually
+   support 64 bits Windows systems.  */
+#ifdef _WIN32
+typedef void * assuan_fd_t;
+#define ASSUAN_INVALID_FD ((void*)(-1))
+#else
+typedef int assuan_fd_t;
+#define ASSUAN_INVALID_FD (-1)
+#endif
+
 /*-- assuan-handler.c --*/
 int assuan_register_command (assuan_context_t ctx,
                              const char *cmd_string,
@@ -361,7 +373,7 @@ int assuan_register_option_handler (assuan_context_t ctx,
 int assuan_process (assuan_context_t ctx);
 int assuan_process_next (assuan_context_t ctx);
 int assuan_get_active_fds (assuan_context_t ctx, int what,
-                           int *fdarray, int fdarraysize);
+                           assuan_fd_t *fdarray, int fdarraysize);
 
 
 FILE *assuan_get_data_fp (assuan_context_t ctx);
@@ -372,15 +384,17 @@ assuan_error_t assuan_write_status (assuan_context_t ctx,
 /* Negotiate a file descriptor.  If LINE contains "FD=N", returns N
    assuming a local file descriptor.  If LINE contains "FD" reads a
    file descriptor via CTX and stores it in *RDF (the CTX must be
-   capable of passing file descriptors).  */
+   capable of passing file descriptors).  Under W32 the returned FD is
+   a libc-type one.  */
 assuan_error_t assuan_command_parse_fd (assuan_context_t ctx, char *line,
-                                        int *rfd);
+                                        assuan_fd_t *rfd);
+
 
 /*-- assuan-listen.c --*/
 assuan_error_t assuan_set_hello_line (assuan_context_t ctx, const char *line);
 assuan_error_t assuan_accept (assuan_context_t ctx);
-int assuan_get_input_fd (assuan_context_t ctx);
-int assuan_get_output_fd (assuan_context_t ctx);
+assuan_fd_t assuan_get_input_fd (assuan_context_t ctx);
+assuan_fd_t assuan_get_output_fd (assuan_context_t ctx);
 assuan_error_t assuan_close_input_fd (assuan_context_t ctx);
 assuan_error_t assuan_close_output_fd (assuan_context_t ctx);
 
@@ -390,10 +404,10 @@ int assuan_init_pipe_server (assuan_context_t *r_ctx, int filedes[2]);
 void assuan_deinit_server (assuan_context_t ctx);
 
 /*-- assuan-socket-server.c --*/
-int assuan_init_socket_server (assuan_context_t *r_ctx, int listen_fd);
+int assuan_init_socket_server (assuan_context_t *r_ctx, assuan_fd_t listen_fd);
 int assuan_init_connected_socket_server (assuan_context_t *r_ctx, 
-                                         int fd) _ASSUAN_DEPRECATED;
-int assuan_init_socket_server_ext (assuan_context_t *r_ctx, int fd,
+                                         assuan_fd_t fd) _ASSUAN_DEPRECATED;
+int assuan_init_socket_server_ext (assuan_context_t *r_ctx, assuan_fd_t fd,
                                    unsigned int flags);
 
 /*-- assuan-pipe-connect.c --*/
@@ -460,8 +474,8 @@ assuan_error_t assuan_send_data (assuan_context_t ctx,
 /* The file descriptor must be pending before assuan_receivefd is
    called.  This means that assuan_sendfd should be called *before* the
    trigger is sent (normally via assuan_write_line ("INPUT FD")).  */
-assuan_error_t assuan_sendfd (assuan_context_t ctx, int fd);
-assuan_error_t assuan_receivefd (assuan_context_t ctx, int *fd);
+assuan_error_t assuan_sendfd (assuan_context_t ctx, assuan_fd_t fd);
+assuan_error_t assuan_receivefd (assuan_context_t ctx, assuan_fd_t *fd);
 
 /*-- assuan-util.c --*/
 void assuan_set_malloc_hooks ( void *(*new_alloc_func)(size_t n),

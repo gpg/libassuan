@@ -41,20 +41,23 @@
 #endif
 
 int
-_assuan_close (int fd)
+_assuan_close (assuan_fd_t fd)
 {
 #ifndef HAVE_W32_SYSTEM
   return close (fd);
 #else
-  int rc = closesocket (fd);
+  int rc = closesocket (HANDLE2SOCKET(fd));
   if (rc && WSAGetLastError () == WSAENOTSOCK)
-      rc = close (fd);
+    rc = CloseHandle (fd);
   return rc;
 #endif
 }
 
 
-int
+/* Return a new socket.  Note that under W32 we consider a socket the
+   same as an System Handle; all functions using such a handle know
+   about this dual use and act accordingly.  */ 
+assuan_fd_t
 _assuan_sock_new (int domain, int type, int proto)
 {
 #ifndef HAVE_W32_SYSTEM
@@ -62,13 +65,13 @@ _assuan_sock_new (int domain, int type, int proto)
 #else
   if (domain == AF_UNIX || domain == AF_LOCAL)
     domain = AF_INET;
-  return socket (domain, type, proto);
+  return SOCKET2HANDLE(socket (domain, type, proto));
 #endif
 }
 
 
 int
-_assuan_sock_connect (int sockfd, struct sockaddr * addr, int addrlen)
+_assuan_sock_connect (assuan_fd_t sockfd, struct sockaddr *addr, int addrlen)
 {
 #ifndef HAVE_W32_SYSTEM
   return connect (sockfd, addr, addrlen);
@@ -86,7 +89,7 @@ _assuan_sock_connect (int sockfd, struct sockaddr * addr, int addrlen)
   fclose (fp);
   /* XXX: set errno in this case */
   if (port < 0 || port > 65535)
-      return -1;
+    return -1;
   
   myaddr.sin_family = AF_INET;
   myaddr.sin_port = port; 
@@ -97,13 +100,13 @@ _assuan_sock_connect (int sockfd, struct sockaddr * addr, int addrlen)
   unaddr->sun_port = myaddr.sin_port;
   unaddr->sun_addr.s_addr = myaddr.sin_addr.s_addr;
   
-  return connect (sockfd, (struct sockaddr *)&myaddr, sizeof myaddr);
+  return connect (HANDLE2SOCKET(sockfd), (struct sockaddr *)&myaddr, sizeof myaddr);
 #endif
 }
 
 
 int
-_assuan_sock_bind (int sockfd, struct sockaddr * addr, int addrlen)
+_assuan_sock_bind (assuan_fd_t sockfd, struct sockaddr * addr, int addrlen)
 {
 #ifndef HAVE_W32_SYSTEM
   return bind (sockfd, addr, addrlen);
@@ -120,10 +123,11 @@ _assuan_sock_bind (int sockfd, struct sockaddr * addr, int addrlen)
       myaddr.sin_family = AF_INET;
       myaddr.sin_addr.s_addr = htonl (INADDR_LOOPBACK);
 
-      rc = bind (sockfd, (struct sockaddr *)&myaddr, len);
+      rc = bind (HANDLE2SOCKET(sockfd), (struct sockaddr *)&myaddr, len);
       if (rc)
         return rc;
-      rc = getsockname (sockfd, (struct sockaddr *)&myaddr, &len);
+      rc = getsockname (HANDLE2SOCKET(sockfd),
+                        (struct sockaddr *)&myaddr, &len);
       if (rc)
         return rc;
       unaddr = (struct sockaddr_un *)addr;
@@ -140,7 +144,7 @@ _assuan_sock_bind (int sockfd, struct sockaddr * addr, int addrlen)
       
       return 0;
     }
-  return bind (sockfd, addr, addrlen);
+  return bind (HANDLE2SOCKET(sockfd), addr, addrlen);
 #endif
 }
 

@@ -114,17 +114,17 @@ assuan_accept (assuan_context_t ctx)
 
 
 
-int
+assuan_fd_t
 assuan_get_input_fd (assuan_context_t ctx)
 {
-  return ctx? ctx->input_fd : -1;
+  return ctx? ctx->input_fd : ASSUAN_INVALID_FD;
 }
 
 
-int
+assuan_fd_t
 assuan_get_output_fd (assuan_context_t ctx)
 {
-  return ctx? ctx->output_fd : -1;
+  return ctx? ctx->output_fd : ASSUAN_INVALID_FD;
 }
 
 
@@ -133,10 +133,10 @@ assuan_get_output_fd (assuan_context_t ctx)
 assuan_error_t
 assuan_close_input_fd (assuan_context_t ctx)
 {
-  if (!ctx || ctx->input_fd == -1)
+  if (!ctx || ctx->input_fd == ASSUAN_INVALID_FD)
     return _assuan_error (ASSUAN_Invalid_Value);
   _assuan_close (ctx->input_fd);
-  ctx->input_fd = -1;
+  ctx->input_fd = ASSUAN_INVALID_FD;
   return 0;
 }
 
@@ -145,11 +145,11 @@ assuan_close_input_fd (assuan_context_t ctx)
 assuan_error_t
 assuan_close_output_fd (assuan_context_t ctx)
 {
-  if (!ctx || ctx->output_fd == -1)
+  if (!ctx || ctx->output_fd == ASSUAN_INVALID_FD)
     return _assuan_error (ASSUAN_Invalid_Value);
 
   _assuan_close (ctx->output_fd);
-  ctx->output_fd = -1;
+  ctx->output_fd = ASSUAN_INVALID_FD;
   return 0;
 }
 

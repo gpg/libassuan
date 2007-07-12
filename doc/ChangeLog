@@ -1,3 +1,8 @@
+2007-07-12  Werner Koch  <wk@g10code.com>
+
+	* assuan.texi (Utilities): Document that under W32 we return a
+	system handle.
+
 2007-07-05  Werner Koch  <wk@g10code.com>
 
 	* lgpl.texi: New.  Taken from COPYING.LIB and reformatted. 
@@ -36,7 +41,7 @@
 	* assuan.texi: Imported from newpg.
 
 
- Copyright 2003 Free Software Foundation, Inc.
+ Copyright 2003, 2007 Free Software Foundation, Inc.
 
  This file is free software; as a special exception the author gives
  unlimited permission to copy and/or distribute it, with or without

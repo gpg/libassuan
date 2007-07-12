@@ -56,17 +56,6 @@
 #define MAX_OPEN_FDS 20
 #endif
 
-#ifdef HAVE_W32_SYSTEM
-/* We assume that a HANDLE can be represented by an int which should
-   be true for all i386 systems (HANDLE is defined as void *) and
-   these are the only systems for which Windows is available.  Further
-   we assume that -1 denotes an invalid handle.  */
-#define fd_to_handle(a)  ((HANDLE)(a))
-#define handle_to_fd(a)  ((int)(a))
-#define pid_to_handle(a) ((HANDLE)(a))
-#define handle_to_pid(a) ((int)(a))
-#endif /*HAVE_W32_SYSTEM*/
-
 
 /* This should be called to make sure that SIGPIPE gets ignored.  */
 static void
@@ -120,25 +109,25 @@ writen (int fd, const char *buffer, size_t length)
 static int
 do_finish (assuan_context_t ctx)
 {
-  if (ctx->inbound.fd != -1)
+  if (ctx->inbound.fd != ASSUAN_INVALID_FD)
     {
       _assuan_close (ctx->inbound.fd);
       if (ctx->inbound.fd == ctx->outbound.fd)
-        ctx->outbound.fd = -1;
-      ctx->inbound.fd = -1;
+        ctx->outbound.fd = ASSUAN_INVALID_FD;
+      ctx->inbound.fd = ASSUAN_INVALID_FD;
     }
-  if (ctx->outbound.fd != -1)
+  if (ctx->outbound.fd != ASSUAN_INVALID_FD)
     {
       _assuan_close (ctx->outbound.fd);
-      ctx->outbound.fd = -1;
+      ctx->outbound.fd = ASSUAN_INVALID_FD;
     }
-  if (ctx->pid != -1 && ctx->pid)
+  if (ctx->pid != (pid_t)(-1) && ctx->pid)
     {
 #ifndef HAVE_W32_SYSTEM
 #ifndef _ASSUAN_USE_DOUBLE_FORK
       if (!ctx->flags.no_waitpid)
         _assuan_waitpid (ctx->pid, NULL, 0); 
-      ctx->pid = -1;
+      ctx->pid =(pid_t)(-1);
 #endif
 #endif /*!HAVE_W32_SYSTEM*/
     }
@@ -604,7 +593,7 @@ build_w32_commandline (const char * const *argv, char **cmdline)
 #ifdef HAVE_W32_SYSTEM
 /* Create pipe where one end end is inheritable.  */
 static int
-create_inheritable_pipe (int filedes[2], int for_write)
+create_inheritable_pipe (assuan_fd_t filedes[2], int for_write)
 {
   HANDLE r, w, h;
   SECURITY_ATTRIBUTES sec_attr;
@@ -639,8 +628,8 @@ create_inheritable_pipe (int filedes[2], int for_write)
       w = h;
     }
 
-  filedes[0] = handle_to_fd (r);
-  filedes[1] = handle_to_fd (w);
+  filedes[0] = r;
+  filedes[1] = w;
   return 0;
 }
 #endif /*HAVE_W32_SYSTEM*/
@@ -657,8 +646,8 @@ pipe_connect_w32 (assuan_context_t *ctx,
                   void *atforkvalue)
 {
   assuan_error_t err;
-  int rp[2];
-  int wp[2];
+  assuan_fd_t rp[2];
+  assuan_fd_t wp[2];
   char mypidstr[50];
   char *cmdline;
   SECURITY_ATTRIBUTES sec_attr;
@@ -693,8 +682,8 @@ pipe_connect_w32 (assuan_context_t *ctx,
   
   if (create_inheritable_pipe (wp, 1))
     {
-      CloseHandle (fd_to_handle (rp[0]));
-      CloseHandle (fd_to_handle (rp[1]));
+      CloseHandle (rp[0]);
+      CloseHandle (rp[1]);
       xfree (cmdline);
       return _assuan_error (ASSUAN_General_Error);
     }
@@ -703,10 +692,10 @@ pipe_connect_w32 (assuan_context_t *ctx,
   err = _assuan_new_context (ctx);
   if (err)
     {
-      CloseHandle (fd_to_handle (rp[0]));
-      CloseHandle (fd_to_handle (rp[1]));
-      CloseHandle (fd_to_handle (wp[0]));
-      CloseHandle (fd_to_handle (wp[1]));
+      CloseHandle (rp[0]);
+      CloseHandle (rp[1]);
+      CloseHandle (wp[0]);
+      CloseHandle (wp[1]);
       xfree (cmdline);
       return _assuan_error (ASSUAN_General_Error);
     }
@@ -733,8 +722,8 @@ pipe_connect_w32 (assuan_context_t *ctx,
   memset (&si, 0, sizeof si);
   si.cb = sizeof (si);
   si.dwFlags = STARTF_USESTDHANDLES;
-  si.hStdInput  = fd_to_handle (wp[0]);
-  si.hStdOutput = fd_to_handle (rp[1]);
+  si.hStdInput  = wp[0];
+  si.hStdOutput = rp[1];
 
   /* Dup stderr to /dev/null unless it is in the list of FDs to be
      passed to the child. */
@@ -753,10 +742,10 @@ pipe_connect_w32 (assuan_context_t *ctx,
       if (nullfd == INVALID_HANDLE_VALUE)
         {
           _assuan_log_printf ("can't open `nul': %s\n", w32_strerror (-1));
-          CloseHandle (fd_to_handle (rp[0]));
-          CloseHandle (fd_to_handle (rp[1]));
-          CloseHandle (fd_to_handle (wp[0]));
-          CloseHandle (fd_to_handle (wp[1]));
+          CloseHandle (rp[0]);
+          CloseHandle (rp[1]);
+          CloseHandle (wp[0]);
+          CloseHandle (wp[1]);
           xfree (cmdline);
           _assuan_release_context (*ctx); 
           return -1;
@@ -764,7 +753,7 @@ pipe_connect_w32 (assuan_context_t *ctx,
       si.hStdError = nullfd;
     }
   else
-    si.hStdError = fd_to_handle (_get_osfhandle (fd));
+    si.hStdError = (void*)_get_osfhandle (fd);
 
 
   /* Note: We inherit all handles flagged as inheritable.  This seems
@@ -787,10 +776,10 @@ pipe_connect_w32 (assuan_context_t *ctx,
                       ))
     {
       _assuan_log_printf ("CreateProcess failed: %s\n", w32_strerror (-1));
-      CloseHandle (fd_to_handle (rp[0]));
-      CloseHandle (fd_to_handle (rp[1]));
-      CloseHandle (fd_to_handle (wp[0]));
-      CloseHandle (fd_to_handle (wp[1]));
+      CloseHandle (rp[0]);
+      CloseHandle (rp[1]);
+      CloseHandle (wp[0]);
+      CloseHandle (wp[1]);
       if (nullfd != INVALID_HANDLE_VALUE)
         CloseHandle (nullfd);
       xfree (cmdline);
@@ -805,8 +794,8 @@ pipe_connect_w32 (assuan_context_t *ctx,
       nullfd = INVALID_HANDLE_VALUE;
     }
 
-  CloseHandle (fd_to_handle (rp[1]));
-  CloseHandle (fd_to_handle (wp[0]));
+  CloseHandle (rp[1]);
+  CloseHandle (wp[0]);
 
   /*   _assuan_log_printf ("CreateProcess ready: hProcess=%p hThread=%p" */
   /*                       " dwProcessID=%d dwThreadId=%d\n", */

@@ -67,14 +67,14 @@ _assuan_new_context (assuan_context_t *r_ctx)
   ctx = xtrycalloc (1, sizeof *ctx);
   if (!ctx)
     return _assuan_error (ASSUAN_Out_Of_Core);
-  ctx->input_fd = -1;
-  ctx->output_fd = -1;
+  ctx->input_fd = ASSUAN_INVALID_FD;
+  ctx->output_fd = ASSUAN_INVALID_FD;
 
-  ctx->inbound.fd = -1;
-  ctx->outbound.fd = -1;
+  ctx->inbound.fd = ASSUAN_INVALID_FD;
+  ctx->outbound.fd = ASSUAN_INVALID_FD;
   ctx->io = &io;
 
-  ctx->listen_fd = -1;
+  ctx->listen_fd = ASSUAN_INVALID_FD;
   /* Use the pipe server handler as a default.  */
   ctx->deinit_handler = deinit_pipe_server;
   ctx->accept_handler = accept_connection;
@@ -119,11 +119,11 @@ assuan_init_pipe_server (assuan_context_t *r_ctx, int filedes[2])
 #ifdef HAVE_W32_SYSTEM
       /* MS Windows has so many different types of handle that one
          needs to tranlsate them at many place forth and back.  Also
-         make sure that the fiel descriptos are in binary mode.  */
+         make sure that the file descriptors are in binary mode.  */
       setmode (filedes[0], O_BINARY);
       setmode (filedes[1], O_BINARY);
-      ctx->inbound.fd  = _get_osfhandle (filedes[0]);
-      ctx->outbound.fd = _get_osfhandle (filedes[1]);
+      ctx->inbound.fd  = (void*)_get_osfhandle (filedes[0]);
+      ctx->outbound.fd = (void*)_get_osfhandle (filedes[1]);
 #else
       s = getenv ("_assuan_connection_fd");
       if (s && *s && is_valid_socket (s) )
@@ -135,7 +135,8 @@ assuan_init_pipe_server (assuan_context_t *r_ctx, int filedes[2])
           _assuan_init_uds_io (ctx);
           ctx->deinit_handler = _assuan_uds_deinit;
         }
-      else if (filedes && filedes[0] != -1 && filedes[1] != -1 )
+      else if (filedes && filedes[0] != ASSUAN_INVALID_FD 
+               && filedes[1] != ASSUAN_INVALID_FD )
         {
           /* Standard pipe server. */
           ctx->inbound.fd  = filedes[0];
