@@ -54,7 +54,7 @@ _assuan_waitpid (pid_t pid, int *status, int options)
 ssize_t
 _assuan_simple_read (assuan_context_t ctx, void *buffer, size_t size)
 {
-  /* Fixme: For W32 we ehsould better not cast the HANDLE type to int.
+  /* Fixme: For W32 we should better not cast the HANDLE type to int.
      However, this requires changes in w32pth too.  */
   return pth_read ((int)ctx->inbound.fd, buffer, size);
 }

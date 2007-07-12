@@ -63,7 +63,11 @@ _assuan_simple_read (assuan_context_t ctx, void *buffer, size_t size)
       n = ReadFile (ctx->inbound.fd, buffer, size, &nread, NULL);
       if (!n)
         {
-          errno = EIO; /* FIXME:  We should have a proper mapping.  */
+          switch (GetLastError())
+            {
+            case ERROR_BROKEN_PIPE: errno = EPIPE; break;
+            default: errno = EIO; 
+            }
           n = -1;
         }
       else
@@ -92,7 +96,12 @@ _assuan_simple_write (assuan_context_t ctx, const void *buffer, size_t size)
       n = WriteFile (ctx->outbound.fd, buffer, size, &nwrite, NULL);
       if (!n)
         {
-          errno = EIO; /* FIXME:  We should have a proper mapping.  */
+          switch (GetLastError ())
+            {
+            case ERROR_BROKEN_PIPE: 
+            case ERROR_NO_DATA: errno = EPIPE; break;
+            default:            errno = EIO;   break;
+            }
           n = -1;
         }
       else

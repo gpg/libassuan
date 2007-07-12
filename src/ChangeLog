@@ -14,6 +14,9 @@
 	* assuan-handler.c (assuan_get_active_fds) [W32]: Use
 	_get_osfhandle for the data fp.
 
+	* assuan-io.c (_assuan_simple_write): Return EPIPE on a closed pipe.
+	(_assuan_simple_read): Likewise
+	
 2007-07-08  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan-defs.h (struct assuan_context_s): Have full peercred
