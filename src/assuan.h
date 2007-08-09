@@ -75,6 +75,7 @@
   _ASSUAN_PREFIX(assuan_register_option_handler)
 #define assuan_process _ASSUAN_PREFIX(assuan_process)
 #define assuan_process_next _ASSUAN_PREFIX(assuan_process_next)
+#define assuan_process_done _ASSUAN_PREFIX(assuan_process_done)
 #define assuan_get_active_fds _ASSUAN_PREFIX(assuan_get_active_fds)
 #define assuan_get_data_fp _ASSUAN_PREFIX(assuan_get_data_fp)
 #define assuan_set_okay_line _ASSUAN_PREFIX(assuan_set_okay_line)
@@ -102,6 +103,7 @@
 #define assuan_get_peercred _ASSUAN_PREFIX(assuan_get_peercred)
 #define assuan_transact _ASSUAN_PREFIX(assuan_transact)
 #define assuan_inquire _ASSUAN_PREFIX(assuan_inquire)
+#define assuan_inquire_ext _ASSUAN_PREFIX(assuan_inquire_ext)
 #define assuan_read_line _ASSUAN_PREFIX(assuan_read_line)
 #define assuan_pending_line _ASSUAN_PREFIX(assuan_pending_line)
 #define assuan_write_line _ASSUAN_PREFIX(assuan_write_line)
@@ -372,6 +374,7 @@ int assuan_register_option_handler (assuan_context_t ctx,
 
 int assuan_process (assuan_context_t ctx);
 int assuan_process_next (assuan_context_t ctx);
+int assuan_process_done (assuan_context_t ctx, int rc);
 int assuan_get_active_fds (assuan_context_t ctx, int what,
                            assuan_fd_t *fdarray, int fdarraysize);
 
@@ -462,7 +465,11 @@ assuan_transact (assuan_context_t ctx,
 assuan_error_t assuan_inquire (assuan_context_t ctx, const char *keyword,
                                unsigned char **r_buffer, size_t *r_length,
                                size_t maxlen);
-
+assuan_error_t assuan_inquire_ext (assuan_context_t ctx, const char *keyword,
+				   unsigned char **r_buffer, size_t *r_length,
+				   size_t maxlen,
+				   int (*cb) (void *cb_data, int rc),
+				   void *cb_data);
 /*-- assuan-buffer.c --*/
 assuan_error_t assuan_read_line (assuan_context_t ctx,
                               char **line, size_t *linelen);

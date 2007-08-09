@@ -103,6 +103,16 @@ struct assuan_context_s
   int confidential;
   int is_server;      /* Set if this is context belongs to a server */
   int in_inquire;
+  int in_process_next;
+  int in_command;
+
+  /* The following members are used by assuan_inquire_ext.  */
+  int (*inquire_cb) (void *cb_data, int rc);
+  void *inquire_cb_data;
+  unsigned char **inquire_r_buffer;
+  size_t *inquire_r_buffer_len;
+  void *inquire_membuf;
+
   char *hello_line;
   char *okay_line;    /* See assuan_set_okay_line() */
 
@@ -229,17 +239,20 @@ assuan_error_t _assuan_read_from_server (assuan_context_t ctx,
 
 /*-- assuan-error.c --*/
 
+/*-- assuan-inquire.c --*/
+int _assuan_inquire_ext_cb (assuan_context_t ctx);
+void _assuan_inquire_release (assuan_context_t ctx);
 
-/* Map error codes as used in this implementaion to the libgpg-error
+/* Map error codes as used in this implementation to the libgpg-error
    codes. */
 assuan_error_t _assuan_error (int oldcode);
 
-/* Extrac the erro code from A.  This works for both the old and the
-   new style error codes. This needs to be whenever an error code is
-   compared. */
+/* Extract the error code from A.  This works for both the old and the
+   new style error codes.  This needs to be used whenever an error
+   code is compared. */
 #define err_code(a) ((a) & 0x00ffffff)
 
-/* Check whether A is the erro code for EOF.  We allow forold and new
+/* Check whether A is the erro code for EOF.  We allow for old and new
    style EOF error codes here.  */
 #define err_is_eof(a) ((a) == (-1) || err_code (a) == 16383)
 

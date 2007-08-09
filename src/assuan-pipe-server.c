@@ -167,6 +167,7 @@ _assuan_release_context (assuan_context_t ctx)
 {
   if (ctx)
     {
+      _assuan_inquire_release (ctx);
       xfree (ctx->hello_line);
       xfree (ctx->okay_line);
       xfree (ctx->cmdtbl);

@@ -115,6 +115,7 @@ interprocess communcation library.
 * Generalities::        Initialization code and data types used.
 * Client code::         How to develop an Assuan client.
 * Server code::         How to develop an Assuan server.
+* External I/O Loop::   How to use external I/O event loops.
 * Utilities::           Utility functions.
 
 Miscellaneous
@@ -1085,13 +1086,6 @@ individual command handlers, i.e. operational error, are not seen here.
 @end deftypefun
 
 
-@deftypefun assuan_error_t assuan_process_next (@w{assuan_context_t @var{ctx}})
-
-This is the same as @code{assuan_process} but the caller has to provide
-the outer loop.  He should loop as long as the return code is zero and
-stop otherwise; @code{-1} or @code{GPG_ERR_EOF} indicate a regular end.
-@end deftypefun
-
 @noindent
 After the loop has terminated, the Assuan context needs to be released:
 
@@ -1108,6 +1102,205 @@ the code for the individual command handlers.  Take care that the line
 passed to the command handlers is allocated statically within the
 context and calls to Assuan functions may modify that line.  You are
 also allowed to modify that line which makes parsing much easier.
+
+
+@c
+@c    E x t e r n a l  I / O  L o o p s
+@c
+@node External I/O Loop
+@chapter How to use external I/O event loops
+
+The above implementations of an Assuan client and server are
+synchronous, insofar the main routines block until a request or client
+connection is completely processed.  In some programs, for example GUI
+applications, this is undesirable.  Instead, Assuan operations should
+be non-blocking, and the caller should be able to poll all involved
+file descriptors to determine when the next Assuan function can be
+invoked without blocking.
+
+To make this possible, client and server have to adhere to some rules:
+@itemize @bullet
+@item
+Either partner should always write full lines.  If partial lines are
+written, the remainder of the line should b sent without delay.
+@item
+Either partner should eagerly receive status messages.  While
+receiving and sending bulk data may be delayed, the status
+communication channel is different: Both partners may send status
+messages in blocking mode at any time the protocol allows them to send
+such status messages.  To ensure that these send operations do not
+actually block the sender, the recipient must be ready to receive
+without undue delay.
+@item
+If descriptor passing is used over a socket, the descriptor must be
+sent after the corresponding command without undue delay.
+@end itemize
+
+Together, these restrictions allow to limit the need for asynchronous
+I/O operations to bulk data and the inbound status file descriptor.
+
+In addition to the above rules, client and server should adhere to the
+following implementation guidelines.
+
+@menu
+* External I/O Loop Client::    External I/O event loops in the client.
+* External I/O Loop Server::    External I/O event loops in the server.
+@end menu
+
+@node External I/O Loop Client
+@section External I/O event loops in the client.
+
+The reference implementation for using external I/O event loops in the
+client is the GPGME library, which exports its own external I/O event
+loop mechanism and utilizes the Assuan library transparently for the
+user.  The following steps document how GPGME achieves this.
+
+@enumerate
+@item
+Before connecting, set up pipes for bulk data transfer (using the
+INPUT/OUTPUT commands, for example).  These are passed to the server
+either by inheritance (using a pipe server) or by FD passing (using a
+socket server).
+
+@item
+Then you need to connect to the server.  GPGME uses a pipe server, so
+it just spawns a server process, which is a non-blocking operation.
+FIXME: Currently, using a client with external event loop over a
+socket connection is not supported.  It is easy to support (we just
+need a variation of @code{assuan_socket_connect} which takes an
+already connected socket FD and turns it into an Assuan context), so
+if you need this let us know.
+
+@item
+After connecting, get the inbound status FD with
+@code{assuan_get_active_fds} (the first one returned is the status
+FD).  This FD can be duplicated if it is convenient (GPGME does this
+to be able to close this FD and associated callback handlers without
+disrupting Assuan's internals).
+
+@item
+Then register the Assuan inbound status FD and all bulk data FDs with
+the I/O event mechanism.  In general, this requires setting up
+callback handlers for these FDs and registering them with the main
+event loop.
+
+@item
+When bulk data FDs become ready, you can simply perform the
+corresponding read or write operations.  When the inbound status FD
+becomes ready, you can receive the next server line with
+assuan_read_line().  
+
+@item
+You should close and unregister the bulk data FDs when you wrote all
+data (for outbound FDs) or receive an EOF (for inbound FDs).  When you
+receive an ERR from the server, or an OK for the final operation, you
+can unregister the inbound status FD and call @code{assuan_disconnect}
+to close it.
+
+@item
+As noted above, all send operations on the outbound status FD are done
+immediate with blocking.  In GPGME, this has never caused any problems.
+
+@item
+The @code{INQUIRE} function can be handled in two ways: If the
+requested data is immediately available, the client can just send the
+data blockingly.  If the requested data needs to be fetched from a
+blocking source, a callback handler can be registered for the FD with
+the main event loop.  GPGME does not support the @code{INQUIRE}
+function, so we do not have any practical experience with this.
+@end enumerate
+
+Currently, the client can not cancel a pending operation gracefully.
+It can, however, disconnect from the server at any time.  It is the
+responsibility of the server to periodically send status messages to
+the client to probe if the connection remains alive.
+
+
+@node External I/O Loop Server
+@section External I/O event loops in the server.
+
+Currently, no Assuan server exists which uses external I/O event
+loops.  However, the following guidelines should lead to a usable
+implementation:
+
+@enumerate
+@item
+For socket servers: You can not use @code{assuan_accept}, so you
+should just implement the bind/connect/listen/accept stage yourself.
+You can register the listen FD with your main event loop, accept the
+connection when it becomes ready, and finally call
+@code{assuan_init_socket_server_ext} with the final argument being 2
+to create an Assuan context for this connection.  This way you can
+also handle multiple connections in parallel.  The reference
+implementation for this approach is DirMngr.
+
+For pipe servers: @code{assuan_init_pipe_server} creates an Assuan
+context valid for the pipe FDs.
+
+@item
+Once you have a context for a single connection, you can get the
+inbound status FD with @code{assuan_get_active_fds} (the first one
+returned is the status FD).  This FD can be duplicated if it is
+convenient.  Every time the inbound status FD is readable, you should
+invoke the function @code{assuan_process_next} (see below) to process
+the next incoming message.  @code{assuan_process_next} processes as
+many status lines as can be received by a single @code{read}
+operation.  When it returns, the inbound status FD may still be
+readable, but Assuan does not check this.
+
+The function @code{assuan_process_next} returns 0 if it can not make
+progress reliably, and it returns an end of file error code if the
+client closed the connection.  See below for more information on this
+function.
+
+@item
+The command will be dispatched by @code{assuan_process_next} just as
+with @code{assuan_process}, however, you will want to implement the
+command handlers in such a way that they do not block.  For example,
+the command handler may just register the bulk data FDs with the main
+event loop and return.
+
+When the command is finished, irregardless if this happens directly in
+the command handler or later, you must call @code{assuan_process_done}
+with an appropriate error code (or 0 for success) to return an
+appropriate status line to the client.  You can do this at the end of
+the command handler, for example by ending it with @code{return
+assuan_process_done (error_code);}.  Another possibility is to invoke
+@code{assuan_process_done} from the place in the code which closes the
+last active bulk FD registered with the main event loop for this
+operation.
+@end enumerate
+
+It is not possible to use @code{assuan_inquire} in a command handler,
+as this function blocks on receiving the inquired data from the
+client.  Instead, the asynchronous version @code{assuan_inquire_ext}
+needs to be used (see below), which invokes a callback when the client
+provided the inquired data.  A typical usage would be for the command
+handler to register a continuation with @code{assuan_inquire_ext} and
+return 0.  Eventually, the continuation would be invoked by
+@code{assuan_process_next} when the client data arrived.  The
+continuation could complete the command and eventually call
+@code{assuan_process_done}.
+
+Cancellation is supported by returning an appropriate error code to
+the client with @code{assuan_process_done}.  For long running
+operations, the server should send progress status messages to the
+client in regular intervals to notice when the client disconnects.
+
+@deftypefun assuan_error_t assuan_process_next (@w{assuan_context_t @var{ctx}})
+This is the same as @code{assuan_process} but the caller has to
+provide the outer loop.  He should loop as long as the return code is
+zero and stop otherwise; @code{-1} or @code{GPG_ERR_EOF} indicate a
+regular end.
+@end deftypefun
+
+@deftypefun assuan_error_t assuan_inquire_ext (@w{assuan_context_t @var{ctx}}, @w{const char *@var{keyword}}, @w{unsigned char **@var{r_buffer}}, @w{size_t *@var{r_length}}, @w{size_t @var{maxlen}}, @w{int (*@var{cb}) (void *cb_data, int rc)}, @w{void *@var{cb_data}})
+
+This is the same as @code{assuan_inquire} but the caller has to
+provide the outer loop (using @code{assuan_process_next}).  The caller
+should specify a continuation with @var{cb}, which receives
+@var{cb_data} as its first argument.
+@end deftypefun
 
 
 

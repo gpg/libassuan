@@ -33,18 +33,21 @@
 static int my_strcasecmp (const char *a, const char *b);
 
 
+#define PROCESS_DONE(ctx, rc) \
+  ((ctx)->in_process_next ? assuan_process_done ((ctx), (rc)) : (rc))
 
 static int
 dummy_handler (assuan_context_t ctx, char *line)
 {
-  return set_error (ctx, Server_Fault, "no handler registered");
+  return
+    PROCESS_DONE (ctx, set_error (ctx, Server_Fault, "no handler registered"));
 }
 
 
 static int
 std_handler_nop (assuan_context_t ctx, char *line)
 {
-  return 0; /* okay */
+  return PROCESS_DONE (ctx, 0); /* okay */
 }
   
 static int
@@ -52,7 +55,7 @@ std_handler_cancel (assuan_context_t ctx, char *line)
 {
   if (ctx->cancel_notify_fnc)
     ctx->cancel_notify_fnc (ctx);
-  return set_error (ctx, Not_Implemented, NULL); 
+  return PROCESS_DONE (ctx, set_error (ctx, Not_Implemented, NULL));
 }
 
 static int
@@ -63,9 +66,12 @@ std_handler_option (assuan_context_t ctx, char *line)
   for (key=line; spacep (key); key++)
     ;
   if (!*key)
-    return set_error (ctx, Syntax_Error, "argument required");
+    return
+      PROCESS_DONE (ctx, set_error (ctx, Syntax_Error, "argument required"));
   if (*key == '=')
-    return set_error (ctx, Syntax_Error, "no option name given");
+    return
+      PROCESS_DONE (ctx, set_error (ctx, Syntax_Error,
+				    "no option name given"));
   for (value=key; *value && !spacep (value) && *value != '='; value++)
     ;
   if (*value)
@@ -80,7 +86,9 @@ std_handler_option (assuan_context_t ctx, char *line)
           for (; spacep (value); value++)
             ;
           if (!*value)
-            return set_error (ctx, Syntax_Error, "option argument expected");
+            return
+	      PROCESS_DONE (ctx, set_error (ctx, Syntax_Error,
+					    "option argument expected"));
         }
       if (*value)
         {
@@ -94,12 +102,13 @@ std_handler_option (assuan_context_t ctx, char *line)
   if (*key == '-' && key[1] == '-' && key[2])
     key += 2; /* the double dashes are optional */
   if (*key == '-')
-    return set_error (ctx, Syntax_Error,
-                      "option should not begin with one dash");
+    return PROCESS_DONE (ctx,
+			 set_error (ctx, Syntax_Error,
+				    "option should not begin with one dash"));
 
   if (ctx->option_handler_fnc)
-    return ctx->option_handler_fnc (ctx, key, value);
-  return 0;
+    return PROCESS_DONE (ctx, ctx->option_handler_fnc (ctx, key, value));
+  return PROCESS_DONE (ctx, 0);
 }
   
 static int
@@ -109,13 +118,13 @@ std_handler_bye (assuan_context_t ctx, char *line)
     ctx->bye_notify_fnc (ctx);
   assuan_close_input_fd (ctx);
   assuan_close_output_fd (ctx);
-  return -1; /* pretty simple :-) */
+  return PROCESS_DONE (ctx, _assuan_error (-1)); /* pretty simple :-) */
 }
   
 static int
 std_handler_auth (assuan_context_t ctx, char *line)
 {
-  return set_error (ctx, Not_Implemented, NULL); 
+  return PROCESS_DONE (ctx, set_error (ctx, Not_Implemented, NULL));
 }
   
 static int
@@ -126,13 +135,13 @@ std_handler_reset (assuan_context_t ctx, char *line)
   assuan_close_input_fd (ctx);
   assuan_close_output_fd (ctx);
   _assuan_uds_close_fds (ctx);
-  return 0;
+  return PROCESS_DONE (ctx, 0);
 }
   
 static int
 std_handler_end (assuan_context_t ctx, char *line)
 {
-  return set_error (ctx, Not_Implemented, NULL); 
+  return PROCESS_DONE (ctx, set_error (ctx, Not_Implemented, NULL));
 }
 
 
@@ -181,11 +190,11 @@ std_handler_input (assuan_context_t ctx, char *line)
 
   rc = assuan_command_parse_fd (ctx, line, &fd);
   if (rc)
-    return rc;
+    return PROCESS_DONE (ctx, rc);
   ctx->input_fd = fd;
   if (ctx->input_notify_fnc)
     ctx->input_notify_fnc (ctx, line);
-  return 0;
+  return PROCESS_DONE (ctx, 0);
 }
 
 /* Format is OUTPUT FD=<n> */
@@ -197,11 +206,11 @@ std_handler_output (assuan_context_t ctx, char *line)
 
   rc = assuan_command_parse_fd (ctx, line, &fd);
   if (rc)
-    return rc;
+    return PROCESS_DONE (ctx, rc);
   ctx->output_fd = fd;
   if (ctx->output_notify_fnc)
     ctx->output_notify_fnc (ctx, line);
-  return 0;
+  return PROCESS_DONE (ctx, 0);
 }
 
 
@@ -414,9 +423,10 @@ my_strcasecmp (const char *a, const char *b)
     return *a == *b? 0 : (((*a >= 'a' && *a <= 'z')? (*a&~0x20):*a) - *b);
 }
 
+
 /* Parse the line, break out the command, find it in the command
    table, remove leading and white spaces from the arguments, call the
-   handler with the argument line and return the error */
+   handler with the argument line and return the error.  */
 static int 
 dispatch_command (assuan_context_t ctx, char *line, int linelen)
 {
@@ -461,42 +471,34 @@ dispatch_command (assuan_context_t ctx, char *line, int linelen)
   return ctx->cmdtbl[i].handler (ctx, line);
 }
 
-
-
 
-static int
-process_request (assuan_context_t ctx)
+/* Call this to acknowledge the current command.  */
+int
+assuan_process_done (assuan_context_t ctx, int rc)
 {
-  int rc;
+  if (!ctx->in_command)
+    return _assuan_error (ASSUAN_General_Error);
 
-  if (ctx->in_inquire)
-    return _assuan_error (ASSUAN_Nested_Commands);
+  ctx->in_command = 0;
 
-  rc = _assuan_read_line (ctx);
-  if (rc)
-    return rc;
-  if (*ctx->inbound.line == '#' || !ctx->inbound.linelen)
-    return 0; /* comment line - ignore */
-
-  ctx->outbound.data.error = 0;
-  ctx->outbound.data.linelen = 0;
-  /* dispatch command and return reply */
-  rc = dispatch_command (ctx, ctx->inbound.line, ctx->inbound.linelen);
-  /* check from data write errors */
+  /* Check for data write errors.  */
   if (ctx->outbound.data.fp)
-    { /* Flush the data lines */
+    {
+      /* Flush the data lines.  */
       fclose (ctx->outbound.data.fp);
       ctx->outbound.data.fp = NULL;
       if (!rc && ctx->outbound.data.error)
-        rc = ctx->outbound.data.error;
+	rc = ctx->outbound.data.error;
     }
-  else /* flush any data send w/o using the data fp */
+  else
     {
+      /* Flush any data send without using the data FP.  */
       assuan_send_data (ctx, NULL, 0);
       if (!rc && ctx->outbound.data.error)
-        rc = ctx->outbound.data.error;
+	rc = ctx->outbound.data.error;
     }
-  /* Error handling */
+  
+  /* Error handling.  */
   if (!rc)
     {
       rc = assuan_write_line (ctx, ctx->okay_line? ctx->okay_line : "OK");
@@ -509,26 +511,26 @@ process_request (assuan_context_t ctx)
   else 
     {
       char errline[300];
-
+      
       if (rc < 100)
         sprintf (errline, "ERR %d server fault (%.50s)",
                  _assuan_error (ASSUAN_Server_Fault), assuan_strerror (rc));
       else
         {
           const char *text = ctx->err_no == rc? ctx->err_str:NULL;
-
+	  
 #if defined(HAVE_W32_SYSTEM)
           unsigned int source, code;
           char ebuf[50];
           const char *esrc;
-
+	  
           source = ((rc >> 24) & 0xff);
           code = (rc & 0x00ffffff);
           if (source
               && !_assuan_gpg_strerror_r (rc, ebuf, sizeof ebuf)
               && (esrc=_assuan_gpg_strsource (rc)))
             {
-              /* Assume this is an libgpg-error. */
+              /* Assume this is an libgpg-error.  */
               sprintf (errline, "ERR %d %.50s <%.30s>%s%.100s",
                        rc, ebuf, esrc,
                        text? " - ":"", text?text:"");
@@ -562,7 +564,7 @@ process_request (assuan_context_t ctx)
             {
               /* Assume this is an libgpg-error. */
               char ebuf[50];
-
+	      
               gpg_strerror_r (rc, ebuf, sizeof ebuf );
               sprintf (errline, "ERR %d %.50s <%.30s>%s%.100s",
                        rc,
@@ -577,17 +579,115 @@ process_request (assuan_context_t ctx)
         }
       rc = assuan_write_line (ctx, errline);
     }
-
+  
   if (ctx->post_cmd_notify_fnc)
     ctx->post_cmd_notify_fnc (ctx, rc);
-
+  
   ctx->confidential = 0;
   if (ctx->okay_line)
     {
       xfree (ctx->okay_line);
       ctx->okay_line = NULL;
     }
+
   return rc;
+}
+
+
+static int 
+process_next (assuan_context_t ctx)
+{
+  int rc;
+
+  /* What the next thing to do is depends on the current state.
+     However, we will always first read the next line.  The client is
+     required to write full lines without blocking long after starting
+     a partial line.  */
+  rc = _assuan_read_line (ctx);
+  if (rc)
+    return rc;
+  if (*ctx->inbound.line == '#' || !ctx->inbound.linelen)
+     /* Comment lines are ignored.  */
+    return 0;
+
+  /* Now we have a line that really means something.  It could be one
+     of the following things: First, if we are not in a command
+     already, it is the next command to dispatch.  Second, if we are
+     in a command, it can only be the response to an INQUIRE
+     reply.  */
+
+  if (!ctx->in_command)
+    {
+      ctx->in_command = 1;
+
+      ctx->outbound.data.error = 0;
+      ctx->outbound.data.linelen = 0;
+      /* Dispatch command and return reply.  */
+      ctx->in_process_next = 1;
+      rc = dispatch_command (ctx, ctx->inbound.line, ctx->inbound.linelen);
+      ctx->in_process_next = 0;
+    }
+  else if (ctx->in_inquire)
+    {
+      /* FIXME: Pick up the continuation.  */
+      rc = _assuan_inquire_ext_cb (ctx);
+    }
+  else
+    {
+      /* Should not happen.  The client is sending data while we are
+	 in a command and not waiting for an inquire.  We log an error
+	 and discard it.  */
+      _assuan_log_printf ("unexpected client data\n");
+      rc = 0;
+    }
+
+  return rc;
+}
+
+
+/* This function should be invoked when the assuan connected FD is
+   ready for reading.  If the equivalent to EWOULDBLOCK is returned
+   (this should be done by the command handler), assuan_process_next
+   should be invoked the next time the connected FD is readable.
+   Eventually, the caller will finish by invoking
+   assuan_process_done.  */
+int 
+assuan_process_next (assuan_context_t ctx)
+{
+  int rc;
+
+  do
+    {
+      rc = process_next (ctx);
+    }
+  while (!rc && assuan_pending_line (ctx));
+
+  return rc;
+}
+
+
+
+static int
+process_request (assuan_context_t ctx)
+{
+  int rc;
+
+  if (ctx->in_inquire)
+    return _assuan_error (ASSUAN_Nested_Commands);
+
+  rc = _assuan_read_line (ctx);
+  if (rc)
+    return rc;
+  if (*ctx->inbound.line == '#' || !ctx->inbound.linelen)
+    return 0; /* comment line - ignore */
+
+  ctx->in_command = 1;
+  ctx->outbound.data.error = 0;
+  ctx->outbound.data.linelen = 0;
+  /* dispatch command and return reply */
+  rc = dispatch_command (ctx, ctx->inbound.line, ctx->inbound.linelen);
+
+  return assuan_process_done (ctx, rc);
 }
 
 /**
@@ -614,24 +714,6 @@ assuan_process (assuan_context_t ctx)
     rc = 0;
 
   return rc;
-}
-
-
-/**
- * assuan_process_next:
- * @ctx: Assuan context
- * 
- * Same as assuan_process() but the user has to provide the outer
- * loop.  He should loop as long as the return code is zero and stop
- * otherwise; -1 is regular end.
- * 
- * See also: assuan_get_active_fds()
- * Return value: -1 for end of server, 0 on success or an error code
- **/
-int 
-assuan_process_next (assuan_context_t ctx)
-{
-  return process_request (ctx);
 }
 
 

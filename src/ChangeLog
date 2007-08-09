@@ -1,3 +1,26 @@
+2007-08-09  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan.h (assuan_process_done, assuan_inquire_ext): New
+	prototypes.
+	* assuan-defs.h (struct assuan_context_s): New members
+	in_process_next, in_command, inquire_cb, inquire_cb_data,
+	inquire_r_buffer, inquire_r_buffer_len, inquire_membuf.
+	(_assuan_inquire_ext_cb, _assuan_inquire_release): New prototypes.
+	* assuan-handler.c (PROCESS_DONE): New macro.
+	(dummy_handler, std_handler_nop, std_handler_cancel)
+	(std_handler_option, std_handler_bye, std_handler_auth)
+	(std_handler_reset, std_handler_end): Use PROCESS_DONE to
+	optionally call assuan_process_done if CTX->in_process_next is
+	true.
+	(assuan_process_done, process_next): New functions.
+	(assuan_process_next): Rewritten to support external event
+	handling.
+	* mkerrors: Do not clear high bits of -1 for old style EOF.
+	* assuan-inquire.c (_assuan_inquire_release)
+	(_assuan_inquire_ext_cb, assuan_inquire_ext): New functions.
+	* assuan-pipe-server.c (_assuan_release_context): Call
+	_assuan_inquire_release.
+	
 2007-07-12  Werner Koch  <wk@g10code.com>
 
 	* assuan.h (assuan_fd_t): New.

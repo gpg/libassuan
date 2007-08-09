@@ -42,7 +42,7 @@ struct membuf
 
 
 
-/* A simple implemnation of a dynamic buffer.  Use init_membuf() to
+/* A simple implementation of a dynamic buffer.  Use init_membuf() to
    create a buffer, put_membuf to append bytes and get_membuf to
    release and return the buffer.  Allocation errors are detected but
    only returned at the final get_membuf(), this helps not to clutter
@@ -232,8 +232,157 @@ assuan_inquire (assuan_context_t ctx, const char *keyword,
   return rc;
 }
 
+
+void
+_assuan_inquire_release (assuan_context_t ctx)
+{
+  if (ctx->in_inquire)
+    {
+      if (ctx->inquire_membuf)
+	{
+	  free_membuf (ctx->inquire_membuf);
+	  free (ctx->inquire_membuf);
+	}
+      ctx->in_inquire = 0;
+    }
+}
 
 
+int
+_assuan_inquire_ext_cb (assuan_context_t ctx)
+{
+  int rc;
+  unsigned char *line;
+  int linelen;
+  struct membuf *mb;
+  unsigned char *p;
 
+  line = (unsigned char *) ctx->inbound.line;
+  linelen = ctx->inbound.linelen;
+  mb = ctx->inquire_membuf;
 
+  if (line[0] == 'C' && line[1] == 'A' && line[2] == 'N')
+    {
+      rc = _assuan_error (ASSUAN_Canceled);
+      goto leave;
+    }
+  if (line[0] == 'E' && line[1] == 'N' && line[2] == 'D'
+      && (!line[3] || line[3] == ' '))
+    {
+      rc = 0;
+      goto leave;
+    }
 
+  if (line[0] != 'D' || line[1] != ' ' || mb == NULL)
+    {
+      rc = _assuan_error (ASSUAN_Unexpected_Command);
+      goto leave;
+    }
+  
+  if (linelen < 3)
+    return 0;
+  line += 2;
+  linelen -= 2;
+  
+  p = line;
+  while (linelen)
+    {
+      for (;linelen && *p != '%'; linelen--, p++)
+	;
+      put_membuf (mb, line, p-line);
+      if (linelen > 2)
+	{ /* handle escaping */
+	  unsigned char tmp[1];
+	  p++;
+	  *tmp = xtoi_2 (p);
+	  p += 2;
+	  linelen -= 3;
+	  put_membuf (mb, tmp, 1);
+	}
+      line = p;
+    }
+  if (mb->too_large)
+    {
+      rc = _assuan_error (ASSUAN_Too_Much_Data);
+      goto leave;
+    }
+
+  return 0;
+
+ leave:
+  if (mb)
+    {
+      *(ctx->inquire_r_buffer) = get_membuf (mb, ctx->inquire_r_buffer_len);
+      if (!*(ctx->inquire_r_buffer))
+        rc = _assuan_error (ASSUAN_Out_Of_Core);
+      free_membuf (mb);
+      free (mb);
+    }
+  (ctx->inquire_cb) (ctx->inquire_cb_data, rc);
+  return rc;
+}
+
+/**
+ * assuan_inquire_ext:
+ * @ctx: An assuan context
+ * @keyword: The keyword used for the inquire
+ * @r_buffer: Returns an allocated buffer
+ * @r_length: Returns the length of this buffer
+ * @maxlen: If not 0, the size limit of the inquired data.
+ * @cb: A callback handler which is invoked after the operation completed.
+ * @cb_data: A user-provided value passed to the callback handler.
+ * 
+ * A Server may use this to Send an inquire.  r_buffer, r_length and
+ * maxlen may all be NULL/0 to indicate that no real data is expected.
+ * When this function returns, 
+ *
+ * Return value: 0 on success or an ASSUAN error code
+ **/
+assuan_error_t
+assuan_inquire_ext (assuan_context_t ctx, const char *keyword,
+		    unsigned char **r_buffer, size_t *r_length, size_t maxlen,
+		    int (*cb) (void *cb_data, int rc), void *cb_data)
+{
+  assuan_error_t rc;
+  struct membuf *mb = NULL;
+  char cmdbuf[LINELENGTH-10]; /* (10 = strlen ("INQUIRE ")+CR,LF) */
+  int nodataexpected;
+
+  if (!ctx || !keyword || (10 + strlen (keyword) >= sizeof (cmdbuf)))
+    return _assuan_error (ASSUAN_Invalid_Value);
+  nodataexpected = !r_buffer && !r_length && !maxlen;
+  if (!nodataexpected && (!r_buffer || !r_length))
+    return _assuan_error (ASSUAN_Invalid_Value);
+  if (!ctx->is_server)
+    return _assuan_error (ASSUAN_Not_A_Server);
+  if (ctx->in_inquire)
+    return _assuan_error (ASSUAN_Nested_Commands);
+
+  if (!nodataexpected)
+    {
+      mb = malloc (sizeof (struct membuf));
+      if (!mb)
+	return _assuan_error (ASSUAN_Out_Of_Core);
+      init_membuf (mb, maxlen ? maxlen : 1024, maxlen);
+    }
+
+  strcpy (stpcpy (cmdbuf, "INQUIRE "), keyword);
+  rc = assuan_write_line (ctx, cmdbuf);
+  if (rc)
+    {
+      free_membuf (mb); 
+      free (mb);
+      return rc;
+    }
+
+  ctx->in_inquire = 1;
+
+  /* Set up the continuation.  */
+  ctx->inquire_cb = cb;
+  ctx->inquire_cb_data = cb_data;
+  ctx->inquire_membuf = mb;
+  ctx->inquire_r_buffer = r_buffer;
+  ctx->inquire_r_buffer_len = r_length;
+
+  return 0;
+}

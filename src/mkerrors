@@ -56,8 +56,13 @@ _assuan_error (int oldcode)
   unsigned int n;
 
   if (!err_source)
-    return (oldcode & 0x00ffffff); /* Make sure that the gpg-error
-                                      source part is cleared. */
+    {
+      if (oldcode == -1)
+        return -1;
+      else
+        return (oldcode & 0x00ffffff); /* Make sure that the gpg-error
+                                          source part is cleared. */
+    }
 
   switch (oldcode)
     {
