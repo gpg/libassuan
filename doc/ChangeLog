@@ -1,3 +1,7 @@
+2007-08-24  Werner Koch  <wk@g10code.com>
+
+	* lgpl.texi: Replace by LGPLv2.1 version.
+
 2007-08-09  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan.texi (External I/O Loop): New chapter.
@@ -45,7 +49,7 @@
 	* assuan.texi: Imported from newpg.
 
 
- Copyright 2003, 2007 Free Software Foundation, Inc.
+ Copyright 2003, 2006, 2007 Free Software Foundation, Inc.
 
  This file is free software; as a special exception the author gives
  unlimited permission to copy and/or distribute it, with or without

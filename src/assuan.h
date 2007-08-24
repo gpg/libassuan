@@ -1,11 +1,11 @@
 /* assuan.c - Definitions for the Assuan IPC library
- * Copyright (C) 2001, 2002, 2003, 2005 Free Software Foundation, Inc.
+ * Copyright (C) 2001, 2002, 2003, 2005, 2007 Free Software Foundation, Inc.
  *
  * This file is part of Assuan.
  *
  * Assuan is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 3 of
+ * published by the Free Software Foundation; either version 2.1 of
  * the License, or (at your option) any later version.
  *
  * Assuan is distributed in the hope that it will be useful, but
@@ -325,7 +325,7 @@ typedef enum
        process. */
     ASSUAN_NO_WAITPID = 1,
     /* This flag indicates whether Assuan logging is in confidential
-       mode. Use assuan_{begin,end}_condidential tochange the
+       mode. Use assuan_{begin,end}_condidential to change the
        mode.  */
     ASSUAN_CONFIDENTIAL = 2
   } 
@@ -342,7 +342,7 @@ typedef struct assuan_context_s *ASSUAN_CONTEXT _ASSUAN_DEPRECATED;
 /* Because we use system handles and not libc low level file
    descriptors on W32, we need to declare them as HANDLE (which
    actually is a plain pointer).  This is required to eventually
-   support 64 bits Windows systems.  */
+   support 64 bit Windows systems.  */
 #ifdef _WIN32
 typedef void * assuan_fd_t;
 #define ASSUAN_INVALID_FD ((void*)(-1))

@@ -3,7 +3,7 @@
 @setfilename assuan.info
 
 @macro copyrightnotice
-Copyright @copyright{} 2002, 2003, 2006 Free Software Foundation, Inc.
+Copyright @copyright{} 2002, 2003, 2006, 2007 Free Software Foundation, Inc.
 @end macro
 @macro permissionnotice
 Permission is granted to copy, distribute and/or modify this document
@@ -85,7 +85,8 @@ Boston, MA 02110-1301 USA
 @title Developing with Assuan
 @subtitle Version @value{VERSION}
 @subtitle @value{UPDATED}
-@author Werner Koch @code{(wk@@gnupg.org)}
+@author by Werner Koch and Marcus Brinkmann
+@author @code{@{wk,mb@}@@g10code.com}
 
 @page
 @vskip 0pt plus 1filll
