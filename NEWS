@@ -1,4 +1,4 @@
-Noteworthy changes in version 1.0.3
+Noteworthy changes in version 1.0.3 (2007-08-24)
 ------------------------------------------------
 
  * New type assuan_fd_t and constant ASSUAN_INVALID_FD for better W32
