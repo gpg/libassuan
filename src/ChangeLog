@@ -1,7 +1,22 @@
+<<<<<<< .mine
+2007-09-03  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan.h (assuan_inquire_ext): Move buffer and buffer_length
+	arguments callback in prototype.
+	* assuan-defs.h (struct assuan_context_s): Remove members
+	inquire_r_buffer and inquire_r_buffer_len.  Add buffer and buffer
+	length arguments to inquire_cb.
+	* assuan-inquire.c (_assuan_inquire_ext_cb): Return buffer and
+	buffer length via callback.
+	(assuan_inquire_ext): Move buffer and buffer length arguments to
+	callback.
+
+=======
 2007-08-24  Werner Koch  <wk@g10code.com>
 
 	Switched license to back to LGPLv2.1.
 
+>>>>>>> .r250
 2007-08-09  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan.h (assuan_process_done, assuan_inquire_ext): New

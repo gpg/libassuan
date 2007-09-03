@@ -466,9 +466,10 @@ assuan_error_t assuan_inquire (assuan_context_t ctx, const char *keyword,
                                unsigned char **r_buffer, size_t *r_length,
                                size_t maxlen);
 assuan_error_t assuan_inquire_ext (assuan_context_t ctx, const char *keyword,
-				   unsigned char **r_buffer, size_t *r_length,
 				   size_t maxlen,
-				   int (*cb) (void *cb_data, int rc),
+				   int (*cb) (void *cb_data, int rc,
+					      unsigned char *buf,
+					      size_t buf_len),
 				   void *cb_data);
 /*-- assuan-buffer.c --*/
 assuan_error_t assuan_read_line (assuan_context_t ctx,

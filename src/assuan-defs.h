@@ -1,5 +1,5 @@
 /* assuan-defs.c - Internal definitions to Assuan
- *	Copyright (C) 2001, 2002, 2004, 2005 Free Software Foundation, Inc.
+ * Copyright (C) 2001, 2002, 2004, 2005, 2007 Free Software Foundation, Inc.
  *
  * This file is part of Assuan.
  *
@@ -107,10 +107,8 @@ struct assuan_context_s
   int in_command;
 
   /* The following members are used by assuan_inquire_ext.  */
-  int (*inquire_cb) (void *cb_data, int rc);
+  int (*inquire_cb) (void *cb_data, int rc, unsigned char *buf, size_t len);
   void *inquire_cb_data;
-  unsigned char **inquire_r_buffer;
-  size_t *inquire_r_buffer_len;
   void *inquire_membuf;
 
   char *hello_line;

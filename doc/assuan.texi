@@ -1295,12 +1295,13 @@ zero and stop otherwise; @code{-1} or @code{GPG_ERR_EOF} indicate a
 regular end.
 @end deftypefun
 
-@deftypefun assuan_error_t assuan_inquire_ext (@w{assuan_context_t @var{ctx}}, @w{const char *@var{keyword}}, @w{unsigned char **@var{r_buffer}}, @w{size_t *@var{r_length}}, @w{size_t @var{maxlen}}, @w{int (*@var{cb}) (void *cb_data, int rc)}, @w{void *@var{cb_data}})
+@deftypefun assuan_error_t assuan_inquire_ext (@w{assuan_context_t @var{ctx}}, @w{const char *@var{keyword}}, @w{size_t @var{maxlen}}, @w{int (*@var{cb}) (void *cb_data, int rc, unsigned char *buffer, size_t buffer_len)}, @w{void *@var{cb_data}})
 
-This is the same as @code{assuan_inquire} but the caller has to
-provide the outer loop (using @code{assuan_process_next}).  The caller
-should specify a continuation with @var{cb}, which receives
-@var{cb_data} as its first argument.
+This is similar to @code{assuan_inquire} but the caller has to provide
+the outer loop (using @code{assuan_process_next}).  The caller should
+specify a continuation with @var{cb}, which receives @var{cb_data} as
+its first argument, and the error code as well as the inquired data as
+its remaining arguments.
 @end deftypefun
 
 
