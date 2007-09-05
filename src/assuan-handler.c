@@ -434,13 +434,21 @@ dispatch_command (assuan_context_t ctx, char *line, int linelen)
   const char *s;
   int shift, i;
 
+  /* Note that as this function is invoked by assuan_process_next as
+     well, we need to hide non-critical errors with PROCESS_DONE.  */
+
   if (*line == 'D' && line[1] == ' ') /* divert to special handler */
-    return handle_data_line (ctx, line+2, linelen-2);
+    /* FIXME: Depending on the final implementation of
+       handle_data_line, this may be wrong here.  For example, if a
+       user callback is invoked, and that callback is responsible for
+       calling assuan_process_done, then this is wrong.  */
+    return PROCESS_DONE (handle_data_line (ctx, line+2, linelen-2));
 
   for (p=line; *p && *p != ' ' && *p != '\t'; p++)
     ;
   if (p==line)
-    return set_error (ctx, Syntax_Error, "leading white-space"); 
+    return PROCESS_DONE
+      (ctx, set_error (ctx, Syntax_Error, "leading white-space")); 
   if (*p) 
     { /* Skip over leading WS after the keyword */
       *p++ = 0;
@@ -463,7 +471,7 @@ dispatch_command (assuan_context_t ctx, char *line, int linelen)
         }
     }
   if (!s)
-    return set_error (ctx, Unknown_Command, NULL);
+    return PROCESS_DONE (ctx, set_error (ctx, Unknown_Command, NULL));
   line += shift;
   linelen -= shift;
 
