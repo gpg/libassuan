@@ -771,7 +771,7 @@ more documentation].
 @var{inquire_cb} is called by Libassuan when the server requests
 additional information from the client while processing the command.
 This callback shall check the provided inquiry name and send the data
-as requested back using the @code{assuan_write_data}.  The server
+as requested back using the @code{assuan_send_data}.  The server
 passed @var{inquiry_cb_arg} along with the inquiry name to the
 callback.
 
