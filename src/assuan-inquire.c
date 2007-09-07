@@ -351,23 +351,18 @@ assuan_inquire_ext (assuan_context_t ctx, const char *keyword, size_t maxlen,
   assuan_error_t rc;
   struct membuf *mb = NULL;
   char cmdbuf[LINELENGTH-10]; /* (10 = strlen ("INQUIRE ")+CR,LF) */
-  int nodataexpected;
 
   if (!ctx || !keyword || (10 + strlen (keyword) >= sizeof (cmdbuf)))
     return _assuan_error (ASSUAN_Invalid_Value);
-  nodataexpected = !maxlen;
   if (!ctx->is_server)
     return _assuan_error (ASSUAN_Not_A_Server);
   if (ctx->in_inquire)
     return _assuan_error (ASSUAN_Nested_Commands);
 
-  if (!nodataexpected)
-    {
-      mb = malloc (sizeof (struct membuf));
-      if (!mb)
-	return _assuan_error (ASSUAN_Out_Of_Core);
-      init_membuf (mb, maxlen ? maxlen : 1024, maxlen);
-    }
+  mb = malloc (sizeof (struct membuf));
+  if (!mb)
+    return _assuan_error (ASSUAN_Out_Of_Core);
+  init_membuf (mb, maxlen ? maxlen : 1024, maxlen);
 
   strcpy (stpcpy (cmdbuf, "INQUIRE "), keyword);
   rc = assuan_write_line (ctx, cmdbuf);
