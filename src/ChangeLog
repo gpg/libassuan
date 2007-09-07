@@ -1,5 +1,8 @@
 2007-09-07  Marcus Brinkmann  <marcus@g10code.de>
 
+	* assuan-inquire.c (assuan_inquire_ext): If MAXLEN is 0, still
+	initialize MEMBUF.
+	
 	* assuan-inquire.c (_assuan_inquire_ext_cb): Clear CTX->in_inquire
 	before invoking callback and returning.
 
