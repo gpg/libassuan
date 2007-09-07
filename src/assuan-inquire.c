@@ -322,6 +322,7 @@ _assuan_inquire_ext_cb (assuan_context_t ctx)
 	free_membuf (mb);
 	free (mb);
       }
+    ctx->in_inquire = 0;
     (ctx->inquire_cb) (ctx->inquire_cb_data, rc, buf, buf_len);
   }
   return rc;
