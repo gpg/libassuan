@@ -442,7 +442,7 @@ dispatch_command (assuan_context_t ctx, char *line, int linelen)
        handle_data_line, this may be wrong here.  For example, if a
        user callback is invoked, and that callback is responsible for
        calling assuan_process_done, then this is wrong.  */
-    return PROCESS_DONE (handle_data_line (ctx, line+2, linelen-2));
+    return PROCESS_DONE (ctx, handle_data_line (ctx, line+2, linelen-2));
 
   for (p=line; *p && *p != ' ' && *p != '\t'; p++)
     ;
