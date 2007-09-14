@@ -129,10 +129,14 @@ do_finish (assuan_context_t ctx)
         _assuan_waitpid (ctx->pid, NULL, 0); 
       ctx->pid =(pid_t)(-1);
 #endif
-#endif /*!HAVE_W32_SYSTEM*/
+#else /*!HAVE_W32_SYSTEM*/
+      CloseHandle ((HANDLE) ctx->pid);
+      ctx->pid = (pid_t) INVALID_HANDLE_VALUE;
+#endif /*HAVE_W32_SYSTEM*/
     }
   return 0;
 }
+
 
 static void
 do_deinit (assuan_context_t ctx)
@@ -804,8 +808,7 @@ pipe_connect_w32 (assuan_context_t *ctx,
 
   ResumeThread (pi.hThread);
   CloseHandle (pi.hThread); 
-  (*ctx)->pid = 0;  /* We don't use the PID. */
-  CloseHandle (pi.hProcess); /* We don't need to wait for the process. */
+  (*ctx)->pid = (pid_t) pi.hProcess;
 
   return initial_handshake (ctx);
 }
