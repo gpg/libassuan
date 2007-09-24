@@ -1,3 +1,9 @@
+2007-09-24  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan-uds.c (uds_reader) [HAVE_W32_SYSTEM]: Do not touch the
+	UDS structure in the context.  Reported by Frank Osterfeld.
+	(uds_writer): Clarify code.
+
 2007-09-14  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan-pipe-connect.c (do_finish) [HAVE_W32_SYSTEM]: Close

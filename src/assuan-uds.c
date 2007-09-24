@@ -70,9 +70,9 @@
 static ssize_t
 uds_reader (assuan_context_t ctx, void *buf, size_t buflen)
 {
+#ifndef HAVE_W32_SYSTEM
   int len = ctx->uds.buffersize;
 
-#ifndef HAVE_W32_SYSTEM
   if (!ctx->uds.bufferallocated)
     {
       ctx->uds.buffer = xtrymalloc (2048);
@@ -139,12 +139,6 @@ uds_reader (assuan_context_t ctx, void *buf, size_t buflen)
 #endif /*USE_DESCRIPTOR_PASSING*/
     }
 
-#else /*HAVE_W32_SYSTEM*/
-
-  len = recvfrom (HANDLE2SOCKET(ctx->inbound.fd), buf, buflen, 0, NULL, NULL);
-
-#endif /*HAVE_W32_SYSTEM*/
-
   /* Return some data to the user.  */
 
   if (len > buflen) /* We have more than the user requested.  */
@@ -157,6 +151,9 @@ uds_reader (assuan_context_t ctx, void *buf, size_t buflen)
   assert (ctx->uds.bufferoffset <= ctx->uds.bufferallocated);
 
   return len;
+#else /*HAVE_W32_SYSTEM*/
+  return recvfrom (HANDLE2SOCKET(ctx->inbound.fd), buf, buflen, 0, NULL, NULL);
+#endif /*HAVE_W32_SYSTEM*/
 }
 
 
@@ -179,14 +176,13 @@ uds_writer (assuan_context_t ctx, const void *buf, size_t buflen)
   iovec.iov_len = buflen;
 
   len = _assuan_simple_sendmsg (ctx, &msg);
-#else /*HAVE_W32_SYSTEM*/
-  int len;
-  
-  len = sendto (HANDLE2SOCKET(ctx->outbound.fd), buf, buflen, 0,
-                (struct sockaddr *)&ctx->serveraddr,
-                sizeof (struct sockaddr_in));
-#endif /*HAVE_W32_SYSTEM*/
+
   return len;
+#else /*HAVE_W32_SYSTEM*/
+  return sendto (HANDLE2SOCKET(ctx->outbound.fd), buf, buflen, 0,
+		 (struct sockaddr *)&ctx->serveraddr,
+		 sizeof (struct sockaddr_in));
+#endif /*HAVE_W32_SYSTEM*/
 }
 
 
