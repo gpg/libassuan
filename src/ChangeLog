@@ -1,3 +1,8 @@
+2007-09-25  Werner Koch  <wk@g10code.com>
+
+	* assuan.h (_assuan_gpg_strerror_r, _assuan_gpg_strsource): Add
+	wrappers for these new internal functions.
+
 2007-09-24  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan-uds.c (uds_reader) [HAVE_W32_SYSTEM]: Do not touch the
@@ -9,6 +14,10 @@
 	* assuan-pipe-connect.c (do_finish) [HAVE_W32_SYSTEM]: Close
 	ctx->pid as handle.
 	(pipe_connect_w32): Save the spawned processes handle.
+
+2007-09-13  Werner Koch  <wk@g10code.com>
+
+	* assuan-socket.c (_assuan_close): Add inactive debug outputs.
 
 2007-09-11  Marcus Brinkmann  <marcus@g10code.de>
 

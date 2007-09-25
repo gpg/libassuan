@@ -1518,7 +1518,7 @@ better suited.
 @end deftypefun
 
 
-@deftypefun int assuan_get_active_fds (@w{assuan_context_t @var{ctx}}, @w{int @var{what}}, @w{int *@var{fdarray}}, @w{int @var{fdarraysize}})
+@deftypefun int assuan_get_active_fds (@w{assuan_context_t @var{ctx}}, @w{int @var{what}}, @w{assuan_fd_t *@var{fdarray}}, @w{int @var{fdarraysize}})
 
 Return all active file descriptors for the context @var{ctx}.  This
 function can be used to select on the file descriptors and to call

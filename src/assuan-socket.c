@@ -43,13 +43,21 @@
 int
 _assuan_close (assuan_fd_t fd)
 {
-#ifndef HAVE_W32_SYSTEM
-  return close (fd);
-#else
+#ifdef HAVE_W32_SYSTEM
   int rc = closesocket (HANDLE2SOCKET(fd));
+/*   if (rc) */
+/*     _assuan_log_printf ("_assuan_close(%p): closesocket failed: %d/%ld\n", */
+/*                         fd, rc, WSAGetLastError ()); */
   if (rc && WSAGetLastError () == WSAENOTSOCK)
-    rc = CloseHandle (fd);
+    {
+      rc = CloseHandle (fd);
+/*       if (rc) */
+/*         _assuan_log_printf ("_assuan_close(%p): CloseHandle failed: %d\n", */
+/*                             fd, rc ); */
+    }
   return rc;
+#else
+  return close (fd);
 #endif
 }
 
