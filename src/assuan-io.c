@@ -47,7 +47,7 @@ _assuan_waitpid (pid_t pid, int *status, int options)
 
 
 ssize_t
-_assuan_simple_read (assuan_context_t ctx, void *buffer, size_t size)
+_assuan_io_read (assuan_fd_t fd, void *buffer, size_t size)
 {
 #ifdef HAVE_W32_SYSTEM
   /* Due to the peculiarities of the W32 API we can't use read for a
@@ -55,12 +55,12 @@ _assuan_simple_read (assuan_context_t ctx, void *buffer, size_t size)
      read if recv detects that it is not a network socket.  */
   int n;
 
-  n = recv (HANDLE2SOCKET(ctx->inbound.fd), buffer, size, 0);
+  n = recv (HANDLE2SOCKET(fd), buffer, size, 0);
   if (n == -1 && WSAGetLastError () == WSAENOTSOCK)
     {
       DWORD nread = 0;
 
-      n = ReadFile (ctx->inbound.fd, buffer, size, &nread, NULL);
+      n = ReadFile (fd, buffer, size, &nread, NULL);
       if (!n)
         {
           switch (GetLastError())
@@ -75,12 +75,20 @@ _assuan_simple_read (assuan_context_t ctx, void *buffer, size_t size)
     }
   return n;
 #else /*!HAVE_W32_SYSTEM*/
-  return read (ctx->inbound.fd, buffer, size);
+  return read (fd, buffer, size);
 #endif /*!HAVE_W32_SYSTEM*/
 }
 
+
 ssize_t
-_assuan_simple_write (assuan_context_t ctx, const void *buffer, size_t size)
+_assuan_simple_read (assuan_context_t ctx, void *buffer, size_t size)
+{
+  return _assuan_io_read (ctx->inbound.fd, buffer, size);
+}
+
+
+ssize_t
+_assuan_io_write (assuan_fd_t fd, const void *buffer, size_t size)
 {
 #ifdef HAVE_W32_SYSTEM
   /* Due to the peculiarities of the W32 API we can't use write for a
@@ -88,12 +96,12 @@ _assuan_simple_write (assuan_context_t ctx, const void *buffer, size_t size)
      write if send detects that it is not a network socket.  */
   int n;
 
-  n = send (HANDLE2SOCKET(ctx->outbound.fd), buffer, size, 0);
+  n = send (HANDLE2SOCKET(fd), buffer, size, 0);
   if (n == -1 && WSAGetLastError () == WSAENOTSOCK)
     {
       DWORD nwrite;
 
-      n = WriteFile (ctx->outbound.fd, buffer, size, &nwrite, NULL);
+      n = WriteFile (fd, buffer, size, &nwrite, NULL);
       if (!n)
         {
           switch (GetLastError ())
@@ -109,8 +117,15 @@ _assuan_simple_write (assuan_context_t ctx, const void *buffer, size_t size)
     }
   return n;
 #else /*!HAVE_W32_SYSTEM*/
-  return write (ctx->outbound.fd, buffer, size);
+  return write (fd, buffer, size);
 #endif /*!HAVE_W32_SYSTEM*/
+}
+
+
+ssize_t
+_assuan_simple_write (assuan_context_t ctx, const void *buffer, size_t size)
+{
+  return _assuan_io_write (ctx->outbound.fd, buffer, size);
 }
 
 

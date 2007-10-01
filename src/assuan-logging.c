@@ -118,8 +118,8 @@ _assuan_log_printf (const char *format, ...)
 
 /* Dump a possibly binary string (used for debugging).  Distinguish
    ascii text from binary and print it accordingly.  This function
-   takes FILE pointer arg becuase logging may be enabled on a per
-   context basis. */
+   takes FILE pointer arg because logging may be enabled on a per
+   context basis.  */
 void
 _assuan_log_print_buffer (FILE *fp, const void *buffer, size_t length)
 {

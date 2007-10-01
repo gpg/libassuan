@@ -137,7 +137,6 @@ assuan_socket_connect_ext (assuan_context_t *r_ctx,
   srvr_addr.sun_path[sizeof (srvr_addr.sun_path) - 1] = 0;
   len = SUN_LEN (&srvr_addr);
 
-
   if ( _assuan_sock_connect (fd, (struct sockaddr *) &srvr_addr, len) == -1 )
     {
       _assuan_log_printf ("can't connect to `%s': %s\n",

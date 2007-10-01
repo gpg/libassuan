@@ -1,3 +1,14 @@
+2007-10-01  Werner Koch  <wk@g10code.com>
+
+	* assuan-socket.c: Rewritten.
+	(assuan_sock_new, assuan_sock_connect, assuan_sock_bind) 
+	(assuan_sock_get_nonce, assuan_sock_check_nonce): New APIs.
+
+	* assuan-io.c (_assuan_simple_read, _assuan_simple_write):
+	Factored code out to ...
+	(_assuan_io_read, _assuan_io_write): .. new.
+	* assuan-io-pth.c (_assuan_io_read, _assuan_io_write): New.
+
 2007-09-25  Werner Koch  <wk@g10code.com>
 
 	* assuan.h (_assuan_gpg_strerror_r, _assuan_gpg_strsource): Add

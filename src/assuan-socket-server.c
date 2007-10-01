@@ -131,7 +131,7 @@ assuan_init_socket_server (assuan_context_t *r_ctx, assuan_fd_t listen_fd)
 }
 
 /* Initialize a server using the already accepted socket FD.  This
-   fucntion is deprecated. */
+   function is deprecated. */
 int
 assuan_init_connected_socket_server (assuan_context_t *r_ctx, assuan_fd_t fd)
 {

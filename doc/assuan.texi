@@ -118,6 +118,7 @@ interprocess communcation library.
 * Server code::         How to develop an Assuan server.
 * External I/O Loop::   How to use external I/O event loops.
 * Utilities::           Utility functions.
+* Socket wrappers::     Socket wrapper functions.
 
 Miscellaneous
 
@@ -1578,6 +1579,72 @@ Return the prefix to be used at the start of a line emitted by assuan
 on the log stream.  The default implementation returns the empty
 string.
 @end deftypefun
+
+
+@c
+@c     S O C K E T   W R A P P E R S
+@c
+@node Socket wrappers
+@chapter Socket wrapper functions
+
+@noindent
+It is sometimes useful to support Unix domain sockets on Windows.  To do
+this in a portable way, Assuan provides a set of wrapper functions which
+may be used on any system but will enhance Windows to support these
+socket types.  The actual implementation is based on local TCP sockets
+and fully transparent for the client.  Server code needs to utilize two
+extra functions to check the permissions.
+
+
+@deftypefun int assuan_sock_close (@w{assuan_fd_t @var{fd}})
+
+Wrapper for close which does a closesocket on Windows if needed.
+@end deftypefun
+
+@deftypefun assuan_fd_t assuan_sock_new (@w{int @var{domain}}, @w{int @var{type}}, @w{int @var{proto}});
+
+Wrapper around socket.
+@end deftypefun
+
+@deftypefun int assuan_sock_connect (@w{assuan_fd_t @var{sockfd}}, @
+         @w{struct sockaddr *@var{addr}},  @
+         @w{int @var{addrlen}})
+
+Wrapper around connect.  For Unix domain sockets under Windows this
+function also does a write immediatley after the the connect to send the
+nonce as read from the socket's file.
+@end deftypefun
+
+
+@deftypefun int assuan_sock_bind ( @
+        @w{assuan_fd_t @var{sockfd}}, @
+        @w{struct sockaddr *@var{addr}}, @
+        @w{int @var{addrlen}})
+
+Wrapper around bind.  Under Windows this creates a file and writes the
+port number and a random nonce to this file.
+@end deftypefun
+
+@deftypefun int assuan_sock_get_nonce ( @
+        @w{struct sockaddr *@var{addr}}, @
+        @w{int @var{addrlen}}, @
+        @w{assuan_sock_nonce_t *@var{nonce}})
+
+This is used by the server after a bind to return the random nonce.  To
+keep the code readable this may also be used on POSIX system. 
+@end deftypefun
+
+@deftypefun int assuan_sock_check_nonce ( @
+        @w{assuan_fd_t @var{fd}}, @
+        @w{assuan_sock_nonce_t *@var{nonce}})
+
+On Windows this is used by the server after an accept to read the nonce
+from the client and compare it with the saved @var{nonce}.  If this
+function fails the server should immediatly drop the connection.  To
+keep the code readable this may also be used on POSIX system; it is a
+dummy function then.
+@end deftypefun
+
 
 
 @c ---------------------------------------------------------------------

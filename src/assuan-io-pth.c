@@ -56,14 +56,27 @@ _assuan_simple_read (assuan_context_t ctx, void *buffer, size_t size)
 {
   /* Fixme: For W32 we should better not cast the HANDLE type to int.
      However, this requires changes in w32pth too.  */
-  return pth_read ((int)ctx->inbound.fd, buffer, size);
+  return _assuan_io_read (ctx->inbound.fd, buffer, size);
 }
 
 ssize_t
 _assuan_simple_write (assuan_context_t ctx, const void *buffer, size_t size)
 {
-  return pth_write ((int)ctx->outbound.fd, buffer, size);
+  return _assuan_io_write (ctx->outbound.fd, buffer, size);
 }
+
+ssize_t
+_assuan_io_read (assuan_fd_t fd, void *buffer, size_t size)
+{
+  return pth_read ((int)fd, buffer, size);
+}
+
+ssize_t
+_assuan_io_write (assuan_fd_t fd, const void *buffer, size_t size)
+{
+  return pth_write ((int)fd, buffer, size);
+}
+
 
 #ifdef HAVE_W32_SYSTEM
 int
