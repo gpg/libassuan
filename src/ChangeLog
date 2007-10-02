@@ -1,4 +1,15 @@
+2007-10-02  Werner Koch  <wk@g10code.com>
+
+	* assuan-io.c (_assuan_io_read) [W32]: Map WSAEWOULDBLOCK to EAGAIN.
+	* assuan-socket.c (_assuan_sock_check_nonce): N needs to be signed.
+
+	* assuan-defs.h (struct assuan_context_s): Add LISTEN_NONCE.
+	* assuan-socket-server.c (assuan_set_sock_nonce): New.
+	(accept_connection): Check the nonce.
+
 2007-10-01  Werner Koch  <wk@g10code.com>
+
+	* assuan.h (ASSUAN_INT2FD, ASSUAN_FD2INT): New.
 
 	* assuan-socket.c: Rewritten.
 	(assuan_sock_new, assuan_sock_connect, assuan_sock_bind) 

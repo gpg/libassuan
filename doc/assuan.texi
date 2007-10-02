@@ -920,6 +920,21 @@ is indicated by a returning an error code.  In case of error,
 @end deftypefun
 
 @noindent
+On the Windows platform the following function needs to be called after
+assuan_init_socket_server_ext:
+
+@deftypefun void assuan_set_sock_nonce ( @
+        @w{assuan_context_t @var{ctx}}, @
+        @w{assuan_sock_nonce_t *@var{nonce}})
+
+Save a copy of @var{nonce} in context @var{ctx}.  This should be used to
+register the server's nonce with a context established by
+assuan_init_socket_server.  It is actually only needed for Windows but
+it does not harm to use it on other systems as well.
+@end deftypefun
+
+
+@noindent
 After error checking, the implemented assuan commands are registered with
 the server.  
 
@@ -937,6 +952,7 @@ the server.
         @}
     @} 
 @end example
+
 
 @deftypefun assuan_error_t assuan_register_command (@w{assuan_context_t @var{ctx}}, @w{const char *@var{cmd_string}}, @w{int (*@var{handler}) (assuan_context_t, char *)})
 
@@ -1642,7 +1658,7 @@ On Windows this is used by the server after an accept to read the nonce
 from the client and compare it with the saved @var{nonce}.  If this
 function fails the server should immediatly drop the connection.  To
 keep the code readable this may also be used on POSIX system; it is a
-dummy function then.
+dummy function then.  See also @code{assuan_set_sock_nonce}.
 @end deftypefun
 
 

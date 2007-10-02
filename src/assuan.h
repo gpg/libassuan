@@ -377,9 +377,13 @@ typedef struct assuan_context_s *ASSUAN_CONTEXT _ASSUAN_DEPRECATED;
 #ifdef _WIN32
 typedef void *assuan_fd_t;
 #define ASSUAN_INVALID_FD ((void*)(-1))
+#define ASSUAN_INT2FD(s)  ((void *)(s))
+#define ASSUAN_FD2INT(h)  ((unsigned int)(h))
 #else
 typedef int assuan_fd_t;
 #define ASSUAN_INVALID_FD (-1)
+#define ASSUAN_INT2FD(s)  ((s))
+#define ASSUAN_FD2INT(h)  ((h))
 #endif
 
 
@@ -475,6 +479,7 @@ int assuan_init_connected_socket_server (assuan_context_t *r_ctx,
                                          assuan_fd_t fd) _ASSUAN_DEPRECATED;
 int assuan_init_socket_server_ext (assuan_context_t *r_ctx, assuan_fd_t fd,
                                    unsigned int flags);
+void assuan_set_sock_nonce (assuan_context_t ctx, assuan_sock_nonce_t *nonce);
 
 /*-- assuan-pipe-connect.c --*/
 assuan_error_t assuan_pipe_connect (assuan_context_t *ctx,

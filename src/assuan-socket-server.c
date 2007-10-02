@@ -1,5 +1,5 @@
 /* assuan-socket-server.c - Assuan socket based server
- *	Copyright (C) 2002 Free Software Foundation, Inc.
+ *	Copyright (C) 2002, 2007 Free Software Foundation, Inc.
  *
  * This file is part of Assuan.
  *
@@ -98,6 +98,12 @@ accept_connection (assuan_context_t ctx)
       ctx->os_errno = errno;
       return _assuan_error (ASSUAN_Accept_Failed);
     }
+  if (_assuan_sock_check_nonce (fd, &ctx->listen_nonce))
+    {
+      _assuan_close (fd);
+      ctx->os_errno = EACCES;
+      return _assuan_error (ASSUAN_Accept_Failed);
+    }
 
   ctx->connected_fd = fd;
   return accept_connection_bottom (ctx);
@@ -189,4 +195,15 @@ assuan_init_socket_server_ext (assuan_context_t *r_ctx, assuan_fd_t fd,
   else
     *r_ctx = ctx;
   return rc;
+}
+
+
+/* Save a copy of NONCE in context CTX.  This should be used to
+   register the server's nonce with an context established by
+   assuan_init_socket_server.  */
+void
+assuan_set_sock_nonce (assuan_context_t ctx, assuan_sock_nonce_t *nonce)
+{
+  if (ctx && nonce)
+    ctx->listen_nonce = *nonce;
 }

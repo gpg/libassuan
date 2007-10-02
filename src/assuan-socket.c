@@ -32,6 +32,8 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <assert.h>
+
 #include "assuan-defs.h"
 
 /* Hacks for Slowaris.  */
@@ -306,7 +308,8 @@ _assuan_sock_check_nonce (assuan_fd_t fd, assuan_sock_nonce_t *nonce)
 {
 #ifdef HAVE_W32_SYSTEM
   char buffer[16], *p;
-  size_t nleft, n;
+  size_t nleft;
+  int n;
 
   if (sizeof nonce->nonce != 16)
     {

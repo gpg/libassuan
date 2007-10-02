@@ -136,6 +136,7 @@ struct assuan_context_s
   pid_t pid;	  /* The pid of the peer. */
   assuan_fd_t listen_fd;  /* The fd we are listening on (used by
                              socket servers) */
+  assuan_sock_nonce_t listen_nonce; /* Used with LISTEN_FD.  */
   assuan_fd_t connected_fd; /* helper */
 
   struct {
@@ -186,8 +187,8 @@ struct assuan_context_s
   /* If set, this is called right before logging an I/O line.  With
      DIRECTION set to 1 it is called for an output oeration; 0 means
      an input operation. If bit 0 is set in the return value, the
-     logging of the will be suppressed.  With bit 1 set, the entire
-     line will be ignored. */
+     logging of the line will be suppressed.  With bit 1 set, the
+     entire line will be ignored. */
   unsigned int (*io_monitor)(assuan_context_t ctx,
                              int direction,
                              const char *line,

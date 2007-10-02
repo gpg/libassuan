@@ -56,22 +56,33 @@ _assuan_io_read (assuan_fd_t fd, void *buffer, size_t size)
   int n;
 
   n = recv (HANDLE2SOCKET(fd), buffer, size, 0);
-  if (n == -1 && WSAGetLastError () == WSAENOTSOCK)
+  if (n == -1)
     {
-      DWORD nread = 0;
-
-      n = ReadFile (fd, buffer, size, &nread, NULL);
-      if (!n)
+      switch (WSAGetLastError ())
         {
-          switch (GetLastError())
-            {
-            case ERROR_BROKEN_PIPE: errno = EPIPE; break;
-            default: errno = EIO; 
-            }
-          n = -1;
+        case WSAENOTSOCK:
+          {
+            DWORD nread = 0;
+            
+            n = ReadFile (fd, buffer, size, &nread, NULL);
+            if (!n)
+              {
+                switch (GetLastError())
+                  {
+                  case ERROR_BROKEN_PIPE: errno = EPIPE; break;
+                  default: errno = EIO; 
+                  }
+                n = -1;
+              }
+            else
+              n = (int)nread;
+          }
+          break;
+          
+        case WSAEWOULDBLOCK: errno = EAGAIN; break;
+        case ERROR_BROKEN_PIPE: errno = EPIPE; break;
+        default: errno = EIO; break;
         }
-      else
-        n = (int)nread;
     }
   return n;
 #else /*!HAVE_W32_SYSTEM*/
