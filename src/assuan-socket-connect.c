@@ -85,7 +85,7 @@ assuan_socket_connect (assuan_context_t *r_ctx,
 /* Make a connection to the Unix domain socket NAME and return a new
    Assuan context in CTX.  SERVER_PID is currently not used but may
    become handy in the future.  With flags set to 1 sendmsg and
-   recvmesg are used. */
+   recvmsg are used. */
 assuan_error_t
 assuan_socket_connect_ext (assuan_context_t *r_ctx,
                            const char *name, pid_t server_pid,

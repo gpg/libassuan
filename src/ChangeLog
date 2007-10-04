@@ -1,3 +1,8 @@
+2007-10-04  Werner Koch  <wk@g10code.com>
+
+	* mkerrors: Map EAGAIN to GPG_ERR_EAGAIN for read and write
+	errors. 
+
 2007-10-02  Werner Koch  <wk@g10code.com>
 
 	* assuan-io.c (_assuan_io_read) [W32]: Map WSAEWOULDBLOCK to EAGAIN.

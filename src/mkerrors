@@ -93,6 +93,9 @@ _assuan_error (int oldcode)
       switch (errno)
         {
         case 0: n = 16381; /*GPG_ERR_MISSING_ERRNO*/  break;
+        case EAGAIN:
+          n = (6 | (1 << 15));
+          break;
         default: n = 270;  /*GPG_ERR_ASS_READ_ERROR*/ break;
         }
       break;
@@ -101,6 +104,9 @@ _assuan_error (int oldcode)
       switch (errno)
         {
         case 0: n = 16381; /*GPG_ERR_MISSING_ERRNO*/  break;
+        case EAGAIN:
+          n = (6 | (1 << 15));
+          break;
         default: n = 271;  /*GPG_ERR_ASS_WRITE_ERROR*/ break;
         }
       break;
@@ -114,7 +120,9 @@ _assuan_error (int oldcode)
                     an error is indeed returned. */
           n = 16381; /*GPG_ERR_MISSING_ERRNO*/
           break;
-        case ENOMEM: n = (1 << 15) | 86; break;
+        case ENOMEM:
+          n = (86 | (1 << 15));
+          break;
         default:  
           n = 16382; /*GPG_ERR_UNKNOWN_ERRNO*/
           break;

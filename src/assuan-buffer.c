@@ -133,10 +133,11 @@ _assuan_read_line (assuan_context_t ctx)
   if (rc)
     {
       if (ctx->log_fp)
-	fprintf (ctx->log_fp, "%s[%u.%d] DBG: <- [Error: %s]\n",
-		 assuan_get_assuan_log_prefix (),
+        fprintf (ctx->log_fp, "%s[%u.%d] DBG: <- [Error: %s]\n",
+                 assuan_get_assuan_log_prefix (),
                  (unsigned int)getpid (), (int)ctx->inbound.fd,
                  strerror (errno));
+          
       return _assuan_error (ASSUAN_Read_Error);
     }
   if (!nread)
