@@ -57,8 +57,25 @@
 
 
 #ifdef HAVE_W32_SYSTEM
+int
+_assuan_sock_wsa2errno (int err)
+{
+  switch (err)
+    {
+    case WSAENOTSOCK:
+      return EINVAL;
+    case WSAEWOULDBLOCK:
+      return EAGAIN;
+    case ERROR_BROKEN_PIPE:
+      return EPIPE;
+    default:
+      return EIO;
+    }
+}
+
+
 /* W32: Fill BUFFER with LENGTH bytes of random.  Returns -1 on
-   failure, 0 on success.  */
+   failure, 0 on success.  Sets errno on failure.  */
 static int
 get_nonce (char *buffer, size_t nbytes) 
 {
@@ -81,7 +98,7 @@ get_nonce (char *buffer, size_t nbytes)
 
 
 /* W32: The buffer for NONCE needs to be at least 16 bytes.  Returns 0 on
-   success. */
+   success and sets errno on failure. */
 static int
 read_port_and_nonce (const char *fname, unsigned short *port, char *nonce)
 {
@@ -128,9 +145,14 @@ _assuan_close (assuan_fd_t fd)
 {
 #ifdef HAVE_W32_SYSTEM
   int rc = closesocket (HANDLE2SOCKET(fd));
+  if (rc)
+    errno = _assuan_sock_wsa2errno (WSAGetLastError ());
   if (rc && WSAGetLastError () == WSAENOTSOCK)
     {
       rc = CloseHandle (fd);
+      if (rc)
+	/* FIXME. */
+	errno = EIO;
     }
   return rc;
 #else
@@ -146,9 +168,13 @@ assuan_fd_t
 _assuan_sock_new (int domain, int type, int proto)
 {
 #ifdef HAVE_W32_SYSTEM
+  int res;
   if (domain == AF_UNIX || domain == AF_LOCAL)
     domain = AF_INET;
-  return SOCKET2HANDLE(socket (domain, type, proto));
+  res = SOCKET2HANDLE(socket (domain, type, proto));
+  if (res < 0)
+    errno = _assuan_sock_wsa2errno (WSAGetLastError ());
+  return res;
 #else
   return socket (domain, type, proto);
 #endif
@@ -195,7 +221,13 @@ _assuan_sock_connect (assuan_fd_t sockfd, struct sockaddr *addr, int addrlen)
       return ret;
     }
   else
-    return connect (HANDLE2SOCKET (sockfd), addr, addrlen);
+    {
+      int res;
+      res = connect (HANDLE2SOCKET (sockfd), addr, addrlen);
+      if (res < 0)
+	errno = _assuan_sock_wsa2errno (WSAGetLastError ());
+      return res;
+    }      
 #else
   return connect (sockfd, addr, addrlen);
 #endif
@@ -262,7 +294,12 @@ _assuan_sock_bind (assuan_fd_t sockfd, struct sockaddr *addr, int addrlen)
       return 0;
     }
   else
-    return bind (HANDLE2SOCKET(sockfd), addr, addrlen);
+    {
+      int res = bind (HANDLE2SOCKET(sockfd), addr, addrlen);
+      if (res < 0)
+	errno = _assuan_sock_wsa2errno (WSAGetLastError ());
+      return res;
+    }
 #else
   return bind (sockfd, addr, addrlen);
 #endif

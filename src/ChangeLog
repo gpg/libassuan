@@ -1,5 +1,11 @@
 2007-10-05  Marcus Brinkmann  <marcus@g10code.de>
 
+	* assuan-defs.h (_assuan_sock_wsa2errno) [HAVE_W32_SYSTEM]: Add prototype.
+	* assuan-uds.c (wsa2errno) [HAVE_W32_SYSTEM]: Move and rename to ...
+	* assuan-socket.c (_assuan_sock_wsa2errno) [HAVE_W32_SYSTEM]: ... this.
+	(_assuan_close, _assuan_sock_new, _assuan_sock_connect, _assuan_sock_bind):
+	Always set errno on error.
+
 	* assuan-uds.c (wsa2errno) [HAVE_W32_SYSTEM]: New function.
 	(uds_reader, uds_writer) [HAVE_W32_SYSTEM]: Set errno.
 

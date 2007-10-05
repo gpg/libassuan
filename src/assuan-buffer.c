@@ -51,9 +51,10 @@ writen (assuan_context_t ctx, const char *buffer, size_t length)
   return 0;  /* okay */
 }
 
-/* Read an entire line. Returns 0 on success or -1 and ERRNo on
+/* Read an entire line. Returns 0 on success or -1 and ERRNO on
    failure.  EOF is indictated by setting the integer at address
-   R_EOF.  */
+   R_EOF.  Note: BUF, R_NREAD and R_EOF contain a valid result even if
+   an error is returned.  */
 static int
 readline (assuan_context_t ctx, char *buf, size_t buflen,
 	  int *r_nread, int *r_eof)
@@ -132,12 +133,23 @@ _assuan_read_line (assuan_context_t ctx)
                    &nread, &ctx->inbound.eof);
   if (rc)
     {
+      int saved_errno = errno;
+
       if (ctx->log_fp)
-        fprintf (ctx->log_fp, "%s[%u.%d] DBG: <- [Error: %s]\n",
+	fprintf (ctx->log_fp, "%s[%u.%d] DBG: <- [Error: %s]\n",
                  assuan_get_assuan_log_prefix (),
                  (unsigned int)getpid (), (int)ctx->inbound.fd,
                  strerror (errno));
-          
+
+      if (saved_errno == EAGAIN)
+        {
+          /* We have to save a partial line.  */
+          memcpy (ctx->inbound.attic.line, line, atticlen + nread);
+          ctx->inbound.attic.pending = 0;
+          ctx->inbound.attic.linelen = atticlen + nread;
+        }
+
+      errno = saved_errno;
       return _assuan_error (ASSUAN_Read_Error);
     }
   if (!nread)

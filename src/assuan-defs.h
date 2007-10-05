@@ -305,7 +305,9 @@ int _assuan_sock_bind (assuan_fd_t sockfd, struct sockaddr *addr, int addrlen);
 int _assuan_sock_get_nonce (struct sockaddr *addr, int addrlen, 
                             assuan_sock_nonce_t *nonce);
 int _assuan_sock_check_nonce (assuan_fd_t fd, assuan_sock_nonce_t *nonce);
-
+#ifdef HAVE_W32_SYSTEM
+int _assuan_sock_wsa2errno (int err);
+#endif
 
 #ifdef HAVE_FOPENCOOKIE
 /* We have to implement funopen in terms of glibc's fopencookie. */
