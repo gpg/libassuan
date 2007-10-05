@@ -1,3 +1,9 @@
+2007-10-05  Werner Koch  <wk@g10code.com>
+
+	* assuan-socket.c (_assuan_sock_wsa2errno): Map WSANOTINITIALISED.
+	(_assuan_sock_new): Use assuan_fd_t.
+	* assuan.h (_assuan_sock_wsa2errno): Add prefix macro.
+
 2007-10-05  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan-defs.h (_assuan_sock_wsa2errno) [HAVE_W32_SYSTEM]: Add prototype.

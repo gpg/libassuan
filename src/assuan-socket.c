@@ -68,6 +68,8 @@ _assuan_sock_wsa2errno (int err)
       return EAGAIN;
     case ERROR_BROKEN_PIPE:
       return EPIPE;
+    case WSANOTINITIALISED:
+      return ENOSYS;
     default:
       return EIO;
     }
@@ -168,11 +170,11 @@ assuan_fd_t
 _assuan_sock_new (int domain, int type, int proto)
 {
 #ifdef HAVE_W32_SYSTEM
-  int res;
+  assuan_fd_t res;
   if (domain == AF_UNIX || domain == AF_LOCAL)
     domain = AF_INET;
   res = SOCKET2HANDLE(socket (domain, type, proto));
-  if (res < 0)
+  if (res == ASSUAN_INVALID_FD)
     errno = _assuan_sock_wsa2errno (WSAGetLastError ());
   return res;
 #else
