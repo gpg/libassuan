@@ -63,6 +63,25 @@
 #endif /*USE_DESCRIPTOR_PASSING*/
 
 
+#ifdef HAVE_W32_SYSTEM
+int
+wsa2errno (int err)
+{
+  switch (err)
+    {
+    case WSAENOTSOCK:
+      return EINVAL;
+    case WSAEWOULDBLOCK:
+      return EAGAIN;
+    case ERROR_BROKEN_PIPE:
+      return EPIPE;
+    default:
+      return EIO;
+    }
+}
+#endif
+
+
 /* Read from a unix domain socket using sendmsg. 
 
    FIXME: We don't need the buffering. It is a leftover from the time
@@ -152,7 +171,10 @@ uds_reader (assuan_context_t ctx, void *buf, size_t buflen)
 
   return len;
 #else /*HAVE_W32_SYSTEM*/
-  return recvfrom (HANDLE2SOCKET(ctx->inbound.fd), buf, buflen, 0, NULL, NULL);
+  int res = recvfrom (HANDLE2SOCKET(ctx->inbound.fd), buf, buflen, 0, NULL, NULL);
+  if (res < 0)
+    errno = wsa2errno (WSAGetLastError ());
+  return res;
 #endif /*HAVE_W32_SYSTEM*/
 }
 
@@ -179,9 +201,12 @@ uds_writer (assuan_context_t ctx, const void *buf, size_t buflen)
 
   return len;
 #else /*HAVE_W32_SYSTEM*/
-  return sendto (HANDLE2SOCKET(ctx->outbound.fd), buf, buflen, 0,
-		 (struct sockaddr *)&ctx->serveraddr,
-		 sizeof (struct sockaddr_in));
+  int res = sendto (HANDLE2SOCKET(ctx->outbound.fd), buf, buflen, 0,
+		    (struct sockaddr *)&ctx->serveraddr,
+		    sizeof (struct sockaddr_in));
+  if (res < 0)
+    errno = wsa2errno (WSAGetLastError ());
+  return res;
 #endif /*HAVE_W32_SYSTEM*/
 }
 
