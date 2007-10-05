@@ -42,7 +42,11 @@ _assuan_read_from_server (assuan_context_t ctx, int *okay, int *off)
   *off = 0;
   do 
     {
-      rc = _assuan_read_line (ctx);
+      do
+	{
+	  rc = _assuan_read_line (ctx);
+	}
+      while (_assuan_error_is_eagain (rc));
       if (rc)
         return rc;
       line = ctx->inbound.line;

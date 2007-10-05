@@ -1,3 +1,12 @@
+2007-10-05  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan-defs.h (_assuan_error_is_eagain): New prototype.
+	* mkerrors (_assuan_error_is_eagain): New function.
+	* assuan-handler.c (process_next): Leave on EAGAIN.
+	* assuan-handler.c (process_request),
+	assuan-client.c (_assuan_read_from_server),
+	assuan-buffer.c (assuan_read_line): Busy loop over EAGAIN.
+
 2007-10-05  Werner Koch  <wk@g10code.com>
 
 	* assuan-socket.c (_assuan_sock_wsa2errno): Map WSANOTINITIALISED.

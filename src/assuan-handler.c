@@ -612,6 +612,8 @@ process_next (assuan_context_t ctx)
      required to write full lines without blocking long after starting
      a partial line.  */
   rc = _assuan_read_line (ctx);
+  if (_assuan_error_is_eagain (rc))
+    return 0;
   if (rc)
     return rc;
   if (*ctx->inbound.line == '#' || !ctx->inbound.linelen)
@@ -683,7 +685,11 @@ process_request (assuan_context_t ctx)
   if (ctx->in_inquire)
     return _assuan_error (ASSUAN_Nested_Commands);
 
-  rc = _assuan_read_line (ctx);
+  do
+    {
+      rc = _assuan_read_line (ctx);
+    }
+  while (_assuan_error_is_eagain (rc));
   if (rc)
     return rc;
   if (*ctx->inbound.line == '#' || !ctx->inbound.linelen)

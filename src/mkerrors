@@ -141,6 +141,19 @@ _assuan_error (int oldcode)
 }
 
 
+/* A small helper function to treat EAGAIN transparently to the
+   caller.  */
+int
+_assuan_error_is_eagain (assuan_error_t err)
+{
+  if ((!err_source && err == ASSUAN_Read_Error && errno == EAGAIN)
+      || (err_source && (err & ((1 << 24) - 1)) == (6 | (1 << 15))))
+    return 1;
+  else
+    return 0;
+}
+   
+
 /**
  * assuan_strerror:
  * @err:  Error code 

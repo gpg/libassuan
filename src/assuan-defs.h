@@ -234,6 +234,8 @@ void _assuan_inquire_release (assuan_context_t ctx);
 /* Map error codes as used in this implementation to the libgpg-error
    codes. */
 assuan_error_t _assuan_error (int oldcode);
+/* Check if ERR means EAGAIN.  */
+int _assuan_error_is_eagain (assuan_error_t err);
 
 /* Extract the error code from A.  This works for both the old and the
    new style error codes.  This needs to be used whenever an error

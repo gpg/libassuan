@@ -93,7 +93,7 @@ readline (assuan_context_t ctx, char *buf, size_t buflen,
 }
 
 
-/* Function returns an Assuan error. */
+/* Function returns an Assuan error.  */
 assuan_error_t
 _assuan_read_line (assuan_context_t ctx)
 {
@@ -245,7 +245,12 @@ assuan_read_line (assuan_context_t ctx, char **line, size_t *linelen)
   if (!ctx)
     return _assuan_error (ASSUAN_Invalid_Value);
 
-  err = _assuan_read_line (ctx);
+  do
+    {
+      err = _assuan_read_line (ctx);
+    }
+  while (_assuan_error_is_eagain (err));
+
   *line = ctx->inbound.line;
   *linelen = ctx->inbound.linelen;
   return err;
