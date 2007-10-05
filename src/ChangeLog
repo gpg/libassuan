@@ -1,5 +1,7 @@
 2007-10-05  Marcus Brinkmann  <marcus@g10code.de>
 
+	* assuan.h (_assuan_error_is_eagain): Add prefix macro.
+
 	* assuan-defs.h (_assuan_error_is_eagain): New prototype.
 	* mkerrors (_assuan_error_is_eagain): New function.
 	* assuan-handler.c (process_next): Leave on EAGAIN.
