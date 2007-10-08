@@ -1,3 +1,16 @@
+2007-10-08  Werner Koch  <wk@g10code.com>
+
+	* assuan-util.c (assuan_set_io_hooks): New.
+	* assuan.h (struct assuan_io_hooks): New.
+	(assuan_set_io_hooks, _assuan_io_hooks): Add prefix macros.
+	* assuan-defs.h (_assuan_io_hooks): New.
+	* assuan-io.c (do_io_read): Take all code from _assuan_io_read.
+	(_assuan_io_read, _assuan_simple_read): Add hook feature.
+	(do_io_write): Take all code from _assuan_io_write.
+	(_assuan_io_write, _assuan_simple_write): Add hook feature.
+	* assuan-io-pth.c (_assuan_simple_read, _assuan_simple_write) 
+	(_assuan_io_read, _assuan_io_write): Add hook feature.
+	
 2007-10-05  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan.h (_assuan_error_is_eagain): Add prefix macro.

@@ -1,8 +1,10 @@
 Noteworthy changes in version 1.0.4
 ------------------------------------------------
 
- * New socket wrapper fucntions to support Unix domain sockets under
+ * New socket wrapper functions to support Unix domain sockets under
    Windows.
+
+ * New hook feature to enhance the internal I/O functions.
 
 
 Noteworthy changes in version 1.0.3 (2007-08-24)

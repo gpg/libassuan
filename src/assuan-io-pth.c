@@ -1,5 +1,5 @@
 /* assuan-io-pth.c - Pth version of assua-io.c.
- *	Copyright (C) 2002, 2004, 2006 Free Software Foundation, Inc.
+ * Copyright (C) 2002, 2004, 2006, 2007 Free Software Foundation, Inc.
  *
  * This file is part of Assuan.
  *
@@ -56,24 +56,47 @@ _assuan_simple_read (assuan_context_t ctx, void *buffer, size_t size)
 {
   /* Fixme: For W32 we should better not cast the HANDLE type to int.
      However, this requires changes in w32pth too.  */
+  ssize_t retval;
+  
+  if (_assuan_io_hooks.read_hook
+      && _assuan_io_hooks.read_hook (ctx, ctx->inbound.fd, 
+                                     buffer, size, &retval) == 1)
+    return retval;
+
   return _assuan_io_read (ctx->inbound.fd, buffer, size);
 }
 
 ssize_t
 _assuan_simple_write (assuan_context_t ctx, const void *buffer, size_t size)
 {
+  ssize_t retval;
+  
+  if (_assuan_io_hooks.write_hook
+      && _assuan_io_hooks.write_hook (ctx, ctx->outbound.fd, 
+                                      buffer, size, &retval) == 1)
+    return retval;
   return _assuan_io_write (ctx->outbound.fd, buffer, size);
 }
 
 ssize_t
 _assuan_io_read (assuan_fd_t fd, void *buffer, size_t size)
 {
+  ssize_t retval;
+  
+  if (_assuan_io_hooks.read_hook
+      && _assuan_io_hooks.read_hook (NULL, fd, buffer, size, &retval) == 1)
+    return retval;
   return pth_read ((int)fd, buffer, size);
 }
 
 ssize_t
 _assuan_io_write (assuan_fd_t fd, const void *buffer, size_t size)
 {
+  ssize_t retval;
+  
+  if (_assuan_io_hooks.write_hook
+      && _assuan_io_hooks.write_hook (NULL, fd, buffer, size, &retval) == 1)
+    return retval;
   return pth_write ((int)fd, buffer, size);
 }
 

@@ -75,6 +75,10 @@ struct assuan_io
 };
 
 
+/* The global variable with the optional hook fucntions.  */
+extern struct assuan_io_hooks _assuan_io_hooks;
+
+
 /* The context we use with most functions. */
 struct assuan_context_s
 {

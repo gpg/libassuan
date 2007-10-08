@@ -30,6 +30,10 @@ static void *(*alloc_func)(size_t n) = malloc;
 static void *(*realloc_func)(void *p, size_t n) = realloc;
 static void (*free_func)(void*) = free;
 
+struct assuan_io_hooks _assuan_io_hooks;
+
+
+
 void
 assuan_set_malloc_hooks ( void *(*new_alloc_func)(size_t n),
                           void *(*new_realloc_func)(void *p, size_t n),
@@ -39,6 +43,20 @@ assuan_set_malloc_hooks ( void *(*new_alloc_func)(size_t n),
   realloc_func      = new_realloc_func;
   free_func	    = new_free_func;
 }
+
+
+void
+assuan_set_io_hooks (assuan_io_hooks_t io_hooks)
+{
+  _assuan_io_hooks.read_hook = NULL;
+  _assuan_io_hooks.write_hook = NULL;
+  if (io_hooks)
+    {
+      _assuan_io_hooks.read_hook = io_hooks->read_hook;
+      _assuan_io_hooks.write_hook = io_hooks->write_hook;
+    }
+}
+
 
 void *
 _assuan_malloc (size_t n)
@@ -167,5 +185,4 @@ assuan_get_flag (assuan_context_t ctx, assuan_flag_t flag)
     }
   return 0;
 }
-
 

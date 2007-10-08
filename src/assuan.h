@@ -121,6 +121,7 @@
 #define assuan_sendfd _ASSUAN_PREFIX(assuan_sendfd)
 #define assuan_receivefd _ASSUAN_PREFIX(assuan_receivefd)
 #define assuan_set_malloc_hooks _ASSUAN_PREFIX(assuan_set_malloc_hooks)
+#define assuan_set_io_hooks _ASSUAN_PREFIX(assuan_set_io_hooks)
 #define assuan_set_log_stream _ASSUAN_PREFIX(assuan_set_log_stream)
 #define assuan_set_error _ASSUAN_PREFIX(assuan_set_error)
 #define assuan_set_pointer _ASSUAN_PREFIX(assuan_set_pointer)
@@ -162,6 +163,7 @@
 #define _assuan_simple_write _ASSUAN_PREFIX(_assuan_simple_write)
 #define _assuan_io_read _ASSUAN_PREFIX(_assuan_io_read)
 #define _assuan_io_write _ASSUAN_PREFIX(_assuan_io_write)
+#define _assuan_io_hooks _ASSUAN_PREFIX(_assuan_io_hooks)
 #define _assuan_new_context _ASSUAN_PREFIX(_assuan_new_context)
 #define _assuan_release_context _ASSUAN_PREFIX(_assuan_release_context)
 #define _assuan_malloc _ASSUAN_PREFIX(_assuan_malloc)
@@ -420,6 +422,18 @@ struct sockaddr_un
 #endif
 
 
+/* Definition of hook functions used to conditionally replace the
+   default I/O functions. */
+struct assuan_io_hooks
+{
+  int (*read_hook)(assuan_context_t, assuan_fd_t, void *, size_t, ssize_t *);
+  int (*write_hook)(assuan_context_t, assuan_fd_t fd,
+                    const void *, size_t, ssize_t *);
+};
+typedef struct assuan_io_hooks *assuan_io_hooks_t;
+
+
+
 /*-- assuan-handler.c --*/
 int assuan_register_command (assuan_context_t ctx,
                              const char *cmd_string,
@@ -560,6 +574,7 @@ assuan_error_t assuan_receivefd (assuan_context_t ctx, assuan_fd_t *fd);
 void assuan_set_malloc_hooks ( void *(*new_alloc_func)(size_t n),
                                void *(*new_realloc_func)(void *p, size_t n),
                                void (*new_free_func)(void*) );
+void assuan_set_io_hooks (assuan_io_hooks_t io_hooks);
 void assuan_set_log_stream (assuan_context_t ctx, FILE *fp);
 int assuan_set_error (assuan_context_t ctx, int err, const char *text);
 void assuan_set_pointer (assuan_context_t ctx, void *pointer);

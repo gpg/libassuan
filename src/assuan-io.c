@@ -1,5 +1,5 @@
 /* assuan-io.c - Wraps the read and write functions.
- *	Copyright (C) 2002, 2004, 2006 Free Software Foundation, Inc.
+ * Copyright (C) 2002, 2004, 2006, 2007 Free Software Foundation, Inc.
  *
  * This file is part of Assuan.
  *
@@ -46,8 +46,8 @@ _assuan_waitpid (pid_t pid, int *status, int options)
 #endif
 
 
-ssize_t
-_assuan_io_read (assuan_fd_t fd, void *buffer, size_t size)
+static ssize_t
+do_io_read (assuan_fd_t fd, void *buffer, size_t size)
 {
 #ifdef HAVE_W32_SYSTEM
   /* Due to the peculiarities of the W32 API we can't use read for a
@@ -92,14 +92,34 @@ _assuan_io_read (assuan_fd_t fd, void *buffer, size_t size)
 
 
 ssize_t
+_assuan_io_read (assuan_fd_t fd, void *buffer, size_t size)
+{
+  ssize_t retval;
+  
+  if (_assuan_io_hooks.read_hook
+      && _assuan_io_hooks.read_hook (NULL, fd, buffer, size, &retval) == 1)
+    return retval;
+
+  return do_io_read (fd, buffer, size);
+}
+
+ssize_t
 _assuan_simple_read (assuan_context_t ctx, void *buffer, size_t size)
 {
-  return _assuan_io_read (ctx->inbound.fd, buffer, size);
+  ssize_t retval;
+  
+  if (_assuan_io_hooks.read_hook
+      && _assuan_io_hooks.read_hook (ctx, ctx->inbound.fd, 
+                                     buffer, size, &retval) == 1)
+    return retval;
+
+  return do_io_read (ctx->inbound.fd, buffer, size);
 }
 
 
-ssize_t
-_assuan_io_write (assuan_fd_t fd, const void *buffer, size_t size)
+
+static ssize_t
+do_io_write (assuan_fd_t fd, const void *buffer, size_t size)
 {
 #ifdef HAVE_W32_SYSTEM
   /* Due to the peculiarities of the W32 API we can't use write for a
@@ -132,11 +152,28 @@ _assuan_io_write (assuan_fd_t fd, const void *buffer, size_t size)
 #endif /*!HAVE_W32_SYSTEM*/
 }
 
+ssize_t
+_assuan_io_write (assuan_fd_t fd, const void *buffer, size_t size)
+{
+  ssize_t retval;
+  
+  if (_assuan_io_hooks.write_hook
+      && _assuan_io_hooks.write_hook (NULL, fd, buffer, size, &retval) == 1)
+    return retval;
+  return do_io_write (fd, buffer, size);
+}
 
 ssize_t
 _assuan_simple_write (assuan_context_t ctx, const void *buffer, size_t size)
 {
-  return _assuan_io_write (ctx->outbound.fd, buffer, size);
+  ssize_t retval;
+  
+  if (_assuan_io_hooks.write_hook
+      && _assuan_io_hooks.write_hook (ctx, ctx->outbound.fd, 
+                                      buffer, size, &retval) == 1)
+    return retval;
+
+  return do_io_write (ctx->outbound.fd, buffer, size);
 }
 
 
