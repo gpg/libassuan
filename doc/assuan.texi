@@ -339,7 +339,8 @@ Used by a client to mark the end of raw data.  The server may send END
 to indicate a partial end of data.
 
 @item HELP
-Reserved for future extensions.
+Lists all commands that the server understands as comment lines on the
+status channel.
 
 @item QUIT
 Reserved for future extensions.

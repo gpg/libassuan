@@ -139,6 +139,23 @@ std_handler_reset (assuan_context_t ctx, char *line)
 }
   
 static int
+std_handler_help (assuan_context_t ctx, char *line)
+{
+  int i;
+  char buf[ASSUAN_LINELENGTH];
+
+  for (i = 0; i < ctx->cmdtbl_used; i++)
+    {
+      snprintf (buf, sizeof (buf), "# %s", ctx->cmdtbl[i].name);
+      buf[ASSUAN_LINELENGTH - 1] = '\0';
+      assuan_write_line (ctx, buf);
+    }
+
+  return PROCESS_DONE (ctx, 0);
+}
+
+
+static int
 std_handler_end (assuan_context_t ctx, char *line)
 {
   return PROCESS_DONE (ctx, set_error (ctx, Not_Implemented, NULL));
@@ -232,6 +249,7 @@ static struct {
   { "AUTH",   std_handler_auth, 1 },
   { "RESET",  std_handler_reset, 1 },
   { "END",    std_handler_end, 1 },
+  { "HELP",   std_handler_help, 1 },
               
   { "INPUT",  std_handler_input },
   { "OUTPUT", std_handler_output },
