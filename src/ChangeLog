@@ -1,3 +1,8 @@
+2007-11-12  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan-inquire.c (_assuan_inquire_ext_cb): Clear
+	CTX->inquire_membuf after deallocating it.
+
 2007-10-18  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan-handler.c (std_handler_help): New function.

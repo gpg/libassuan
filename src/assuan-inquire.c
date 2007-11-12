@@ -321,6 +321,7 @@ _assuan_inquire_ext_cb (assuan_context_t ctx)
 	  rc = _assuan_error (ASSUAN_Out_Of_Core);
 	free_membuf (mb);
 	free (mb);
+	ctx->inquire_membuf = NULL;
       }
     ctx->in_inquire = 0;
     (ctx->inquire_cb) (ctx->inquire_cb_data, rc, buf, buf_len);
