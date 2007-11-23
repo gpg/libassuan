@@ -1,3 +1,9 @@
+2007-11-23  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan-inquire.c (_assuan_inquire_ext_cb): Pass through return
+	value from callback function.
+	Suggested by Ben Kibbey <bjk@luxsci.net>.
+
 2007-11-12  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan-inquire.c (_assuan_inquire_ext_cb): Clear
