@@ -2,7 +2,7 @@ Package: libassuan
 Maintainer: Werner Koch <wk@gnupg.org>
 Bug reports: gnupg-devel@gnupg.org
 Security related bug reports: security@gnupg.org
-License: LGPLv3+
+License: LGPLv2.1+
 
 
 Werner Koch  <wk@gnupg.org>

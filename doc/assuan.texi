@@ -713,12 +713,25 @@ argument.  That function should only act if the second argument it
 received is @code{0}.  Such a fork callback is useful to release
 additional resources not to be used by the child.
 
-@var{flags} controls how the function acts: With a value of @code{0}
-it expects a simple pipe based server and behaves similar to
-@code{assuan_pipe_connect}.  With a value of @code{1} a sever based on
-full-duplex pipes is expected.  Such pipes are usually created using
-the @code{socketpair} function.  It also enables features only
-available with such servers.
+@noindent
+@var{flags} is a bit vector and controls how the function acts:
+
+@table @code
+
+@item bit 0 (value 1)
+If cleared a simple pipe based server is expected and the function
+behaves similar to @code{assuan_pipe_connect}.  
+
+If set a server based on full-duplex pipes is expected. Such pipes are
+usually created using the @code{socketpair} function.  It also enables
+features only available with such servers.
+
+@item bit 7 (value 128)
+If set and there is a need to start ther server it will be started as a
+background process.  This flag is useful under W32 systems, so that no
+new console is created and pops up a console window when starting the server
+
+@end table
 
 @end deftypefun
 

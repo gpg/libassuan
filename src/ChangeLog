@@ -4,6 +4,13 @@
 	value from callback function.
 	Suggested by Ben Kibbey <bjk@luxsci.net>.
 
+2007-11-14  Werner Koch  <wk@g10code.com>
+
+	* assuan-pipe-connect.c (pipe_connect_unix): Add dummy arg FLAGS.
+	(pipe_connect_w32): Add arg FLAGS and start process detached if
+	requested.  Changed callers to pass 0.
+	(assuan_pipe_connect_ext): Pass FLAG.
+
 2007-11-12  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan-inquire.c (_assuan_inquire_ext_cb): Clear
