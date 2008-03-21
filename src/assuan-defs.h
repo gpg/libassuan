@@ -1,5 +1,5 @@
 /* assuan-defs.c - Internal definitions to Assuan
- * Copyright (C) 2001, 2002, 2004, 2005, 2007 Free Software Foundation, Inc.
+ * Copyright (C) 2001, 2002, 2004, 2005, 2007, 2008 Free Software Foundation, Inc.
  *
  * This file is part of Assuan.
  *
@@ -301,6 +301,9 @@ int _assuan_simple_recvmsg (assuan_context_t ctx, void *msg);
 ssize_t _assuan_simple_sendmsg (assuan_context_t ctx, struct msghdr *msg);
 ssize_t _assuan_simple_recvmsg (assuan_context_t ctx, struct msghdr *msg);
 #endif
+
+void _assuan_usleep (unsigned int usec);
+
 
 /*-- assuan-socket.c --*/
 int _assuan_close (assuan_fd_t fd);

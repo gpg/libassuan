@@ -1,5 +1,5 @@
 /* assuan-io.c - Wraps the read and write functions.
- * Copyright (C) 2002, 2004, 2006, 2007 Free Software Foundation, Inc.
+ * Copyright (C) 2002, 2004, 2006, 2007, 2008 Free Software Foundation, Inc.
  *
  * This file is part of Assuan.
  *
@@ -211,5 +211,27 @@ _assuan_simple_recvmsg (assuan_context_t ctx, struct msghdr *msg)
   while ( (ret = recvmsg (ctx->inbound.fd, msg, 0)) == -1 && errno == EINTR)
     ;
   return ret;
+#endif
+}
+
+
+void
+_assuan_usleep (unsigned int usec)
+{
+#ifdef HAVE_W32_SYSTEM
+  /* FIXME.  */
+  Sleep (usec / 1000);
+#else
+  struct timespec req;
+  struct timespec rem;
+
+  if (usec == 0)
+    return;
+
+  req.tv_sec = 0;
+  req.tv_nsec = usec * 1000;
+  
+  while (nanosleep (&req, &rem) < 0 && errno == EINTR)
+    req = rem;
 #endif
 }

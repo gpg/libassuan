@@ -1,5 +1,11 @@
 2008-03-21  Marcus Brinkmann  <marcus@g10code.de>
 
+	* assuan-defs.h (_assuan_usleep): New prototype.
+	* assuan-io.c (_assuan_usleep): New function.
+	* assuan-io-pth.c (_assuan_usleep): New function.
+	* mkerrors: Do not incude <windows.h>, but assuan-defs.h.
+	(_assuan_error_is_eagain): Call _assuan_usleep.
+
 	* mkerrors [HAVE_W32_SYSTEM]: Include <windows.h>
 	(_assuan_error_is_eagain) [HAVE_W32_SYSTEM]: Wait the tenth of a
 	second.

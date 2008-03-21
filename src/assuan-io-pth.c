@@ -1,5 +1,5 @@
 /* assuan-io-pth.c - Pth version of assua-io.c.
- * Copyright (C) 2002, 2004, 2006, 2007 Free Software Foundation, Inc.
+ * Copyright (C) 2002, 2004, 2006, 2007, 2008 Free Software Foundation, Inc.
  *
  * This file is part of Assuan.
  *
@@ -181,4 +181,11 @@ _assuan_simple_recvmsg (assuan_context_t ctx, struct msghdr *msg)
     ;
   return ret;
 #endif
+}
+
+
+void
+_assuan_usleep (unsigned int usec)
+{
+  pth_usleep (usec);
 }
