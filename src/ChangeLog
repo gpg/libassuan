@@ -1,3 +1,9 @@
+2008-03-21  Marcus Brinkmann  <marcus@g10code.de>
+
+	* mkerrors [HAVE_W32_SYSTEM]: Include <windows.h>
+	(_assuan_error_is_eagain) [HAVE_W32_SYSTEM]: Wait the tenth of a
+	second.
+
 2007-11-23  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan-inquire.c (_assuan_inquire_ext_cb): Pass through return
