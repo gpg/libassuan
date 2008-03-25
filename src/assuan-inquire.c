@@ -169,7 +169,9 @@ assuan_inquire (assuan_context_t ctx, const char *keyword,
     {
       do 
         {
-          rc = _assuan_read_line (ctx);
+	  do
+	    rc = _assuan_read_line (ctx);
+	  while (_assuan_error_is_eagain (rc));
           if (rc)
             goto leave;
           line = (unsigned char *) ctx->inbound.line;
