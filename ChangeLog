@@ -1,3 +1,11 @@
+2008-05-25  Werner Koch  <wk@g10code.com>
+
+	Released 1.0.5.
+
+2008-05-23  Werner Koch  <wk@g10code.com>
+
+	* configure.ac: Use -fPIC with GCC under Linux.
+
 2007-12-12  Werner Koch  <wk@g10code.com>
 
 	Released 1.0.4.

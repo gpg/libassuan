@@ -1,6 +1,7 @@
 2008-03-25  Marcus Brinkmann  <marcus@g10code.de>
 
-	* assuan-inquire.c (assuan_inquire): Loop over _assuan_read_line for EAGAIN.
+	* assuan-inquire.c (assuan_inquire): Loop over _assuan_read_line
+	for EAGAIN.
 
 2008-03-21  Marcus Brinkmann  <marcus@g10code.de>
 

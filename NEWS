@@ -1,5 +1,9 @@
-Noteworthy changes in version 1.0.5
+Noteworthy changes in version 1.0.5 (2008-05-25)
 ------------------------------------------------
+
+ * Minor fixes.
+
+ * Build library for GNU/LInux as PIC.
 
 
 Noteworthy changes in version 1.0.4 (2007-12-12)
