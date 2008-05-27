@@ -1,3 +1,11 @@
+Noteworthy changes in version 1.1.0
+------------------------------------------------
+
+ * API change:  See doc/README.apichanges. 
+
+ * Now using libtool and builds a DSO. 
+
+
 Noteworthy changes in version 1.0.5 (2008-05-25)
 ------------------------------------------------
 

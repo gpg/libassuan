@@ -1,0 +1,11 @@
+README.apichanges                                          -*- text -*-
+
+API changes between 1.0.5 and 1.1.0:
+====================================
+
+While allowing to build libassuan as a DSO we decided to clean up the
+API.  The changes are straightforward and it should obnly take a few
+minutes to fix your code.
+
+  TODO.
+

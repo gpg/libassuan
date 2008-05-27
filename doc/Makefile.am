@@ -18,6 +18,8 @@
 
 ## Process this file with automake to produce Makefile.in
 
+EXTRA_DIST = README.apichanges
+
 info_TEXINFOS = assuan.texi
 
 assuan_TEXINFOS = lgpl.texi gpl.texi
