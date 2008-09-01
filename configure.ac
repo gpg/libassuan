@@ -210,7 +210,7 @@ AM_CONDITIONAL(USE_DESCRIPTOR_PASSING, test "$use_descriptor_passing" = "yes")
 
 # Checks for library functions.
 
-AC_CHECK_FUNCS(flockfile funlockfile)
+AC_CHECK_FUNCS([flockfile funlockfile nanosleep])
 
 # Check for funopen
 AC_CHECK_FUNCS(funopen)
