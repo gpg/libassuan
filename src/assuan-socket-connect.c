@@ -107,7 +107,7 @@ assuan_socket_connect_ext (assuan_context_t *r_ctx,
 
   /* We require that the name starts with a slash, so that we
      eventually can reuse this function for other socket types.  To
-     make things easier we allow an optional dirver prefix.  */
+     make things easier we allow an optional driver prefix.  */
   s = name;
   if (*s && s[1] == ':')
     s += 2;

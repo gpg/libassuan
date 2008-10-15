@@ -112,6 +112,11 @@ _assuan_log_printf (const char *format, ...)
   va_start (arg_ptr, format);
   vfprintf (fp, format, arg_ptr );
   va_end (arg_ptr);
+  /* If the log stream is a file, the output would be buffered.  This
+     is bad for debugging, thus we flush the stream if FORMAT ends
+     with a LF.  */ 
+  if (format && *format && format[strlen(format)-1] == '\n')
+    fflush (fp);
   errno = save_errno;
 }
 
