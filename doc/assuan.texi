@@ -772,7 +772,7 @@ Now that we have a connection to the server, all work may be
 conveniently done using a couple of callbacks and the transact
 function:
 
-@deftypefun assuan_error_t assuan_transact (@w{assuan_context_t @var{ctx}}, @w{const char *@var{command}}, @w{int (*@var{data_cb})(void *, const void *, size_t)}, @w{void *@var{data_cb_arg}}, @w{int (*@var{inquire_cb})(void*, const char *)}, @w{void *@var{inquire_cb_arg}}, @w{int (*@var{status_cb})(void*, const char *)}, @w{void *@var{status_cb_arg}})
+@deftypefun assuan_error_t assuan_transact (@w{assuan_context_t @var{ctx}}, @w{const char *@var{command}}, @w{assuan_error_t (*@var{data_cb})(void *, const void *, size_t)}, @w{void *@var{data_cb_arg}}, @w{assuan_error_t (*@var{inquire_cb})(void*, const char *)}, @w{void *@var{inquire_cb_arg}}, @w{assuan_error_t (*@var{status_cb})(void*, const char *)}, @w{void *@var{status_cb_arg}})
 
 Here @var{ctx} is the Assuan context opened by one of the connect
 calls.  @var{command} is the actual one liner Assuan command.  It

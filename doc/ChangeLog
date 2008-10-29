@@ -1,3 +1,8 @@
+2008-10-29  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan.texi: Change return type of callback handlers in
+	assuan_transact.
+
 2007-11-14  Werner Koch  <wk@g10code.com>
 
 	* assuan.texi (Client code): Describe the new flag bit 7 of the

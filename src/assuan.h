@@ -346,7 +346,8 @@ typedef enum
 
 #else  /*!_ASSUAN_ONLY_GPG_ERRORS*/
 
-typedef int assuan_error_t;
+/* Choose a type compatible with gpg_error_t.  */
+typedef unsigned int assuan_error_t;
 
 #endif /*!_ASSUAN_ONLY_GPG_ERRORS*/
 
@@ -538,11 +539,11 @@ assuan_error_t assuan_get_peercred (assuan_context_t ctx,
 assuan_error_t 
 assuan_transact (assuan_context_t ctx,
                  const char *command,
-                 int (*data_cb)(void *, const void *, size_t),
+                 assuan_error_t (*data_cb)(void *, const void *, size_t),
                  void *data_cb_arg,
-                 int (*inquire_cb)(void*, const char *),
+                 assuan_error_t (*inquire_cb)(void*, const char *),
                  void *inquire_cb_arg,
-                 int (*status_cb)(void*, const char *),
+                 assuan_error_t (*status_cb)(void*, const char *),
                  void *status_cb_arg);
 
 
