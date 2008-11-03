@@ -91,9 +91,8 @@ assuan_socket_connect_ext (assuan_context_t *r_ctx,
                            const char *name, pid_t server_pid,
                            unsigned int flags)
 {
-  static struct assuan_io io = { _assuan_simple_read,
-				 _assuan_simple_write };
-
+  static struct assuan_io io = { _assuan_simple_read, _assuan_simple_write,
+				 NULL, NULL };
   assuan_error_t err;
   assuan_context_t ctx;
   assuan_fd_t fd;

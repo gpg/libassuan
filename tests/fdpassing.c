@@ -72,15 +72,17 @@ cmd_echo (assuan_context_t ctx, char *line)
 static assuan_error_t
 register_commands (assuan_context_t ctx)
 {
-  static struct {
+  static struct
+  {
     const char *name;
-    int (*handler)(assuan_context_t, char *line);
-  } table[] = {
-    { "ECHO",       cmd_echo },
-    { "INPUT",      NULL },
-    { "OUTPUT",     NULL },
-    { NULL }
-  };
+    int (*handler) (assuan_context_t, char *line);
+  } table[] =
+      {
+	{ "ECHO", cmd_echo },
+	{ "INPUT", NULL },
+	{ "OUTPUT", NULL },
+	{ NULL, NULL }
+      };
   int i;
   assuan_error_t rc;
 

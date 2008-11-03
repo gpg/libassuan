@@ -129,14 +129,14 @@ void
 _assuan_log_print_buffer (FILE *fp, const void *buffer, size_t length)
 {
   const unsigned char *s;
-  int n;
+  unsigned int n;
 
-  for (n=length,s=buffer; n; n--, s++)
-    if  ((!isascii (*s) || iscntrl (*s) || !isprint (*s)) && !(*s >= 0x80))
+  for (n = length, s = buffer; n; n--, s++)
+    if  ((! isascii (*s) || iscntrl (*s) || ! isprint (*s)) && !(*s >= 0x80))
       break;
 
   s = buffer;
-  if (!n && *s != '[')
+  if (! n && *s != '[')
     fwrite (buffer, length, 1, fp);
   else
     {
@@ -144,15 +144,15 @@ _assuan_log_print_buffer (FILE *fp, const void *buffer, size_t length)
       flockfile (fp);
 #endif
       putc_unlocked ('[', fp);
-      if ( length > 16 && !full_logging)
+      if (length > 16 && ! full_logging)
         {
-          for (n=0; n < 12; n++, s++)
+          for (n = 0; n < 12; n++, s++)
             fprintf (fp, " %02x", *s);
-          fprintf (fp, " ...(%d bytes skipped)", (int)length - 12);
+          fprintf (fp, " ...(%d bytes skipped)", (int) length - 12);
         }
       else
         {
-          for (n=0; n < length; n++, s++)
+          for (n = 0; n < length; n++, s++)
             fprintf (fp, " %02x", *s);
         }
       putc_unlocked (' ', fp);
