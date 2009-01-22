@@ -208,9 +208,20 @@ fi
 AM_CONDITIONAL(USE_DESCRIPTOR_PASSING, test "$use_descriptor_passing" = "yes")
 
 
+#
 # Checks for library functions.
+#
+AC_CHECK_FUNCS([flockfile funlockfile])
 
-AC_CHECK_FUNCS([flockfile funlockfile nanosleep])
+# On some systems (e.g. Solaris) nanosleep requires linking to librl.
+# Given that we use nanosleep only as an optimization over a select
+# based wait function we want it only if it is available in libc.
+_save_libs="$LIBS"
+AC_SEARCH_LIBS([nanosleep], [],
+               [AC_DEFINE(HAVE_NANOSLEEP,1,
+                [Define to 1 if you have the `nanosleep' function in libc.])])
+LIBS="$_save_libs"
+
 
 # Check for funopen
 AC_CHECK_FUNCS(funopen)
