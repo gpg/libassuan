@@ -247,7 +247,9 @@ Request could not be fulfilled.  The error codes are mostly application
 specific except for a few common ones.
 
 @item S @var{keyword} <status information depending on keyword>
-Informational output by the server, still processing the request.
+Informational output by the server, still processing the request.  A
+client may not send such lines to the server while processing an Inquiry
+command.
 
 @item # <string>
 Comment line issued only for debugging purposes.  Totally ignored.
