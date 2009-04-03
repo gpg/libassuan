@@ -364,6 +364,9 @@ This command is reserved for future extensions.
 This command is reserved for future extensions.  Not yet specified as
 we don't implement it in the first phase.  See my mail to gpa-dev on
 2001-10-25 about the rationale for measurements against local attacks.
+
+@item NOP
+No operation.  Returns OK without any action.
 @end table
 
 

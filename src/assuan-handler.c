@@ -253,7 +253,6 @@ static struct {
               
   { "INPUT",  std_handler_input, 0 },
   { "OUTPUT", std_handler_output, 0 },
-  { "OPTION", std_handler_option, 1 },
   { NULL, NULL, 0 }
 };
 
