@@ -1,20 +1,20 @@
 /* fdpassing - Check the fiel descriptor passing.
- * Copyright (C) 2006 Free Software Foundation, Inc.
- *
- * This file is part of Assuan.
- *
- * Assuan is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 3 of
- * the License, or (at your option) any later version.
- *
- * Assuan is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, see <http://www.gnu.org/licenses/>.
+   Copyright (C) 2006, 2009 Free Software Foundation, Inc.
+
+   This file is part of Assuan.
+
+   Assuan is free software; you can redistribute it and/or modify it
+   under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation; either version 3 of
+   the License, or (at your option) any later version.
+
+   Assuan is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <stdio.h>
@@ -37,7 +37,7 @@
 
 */
 
-static int
+static gpg_error_t
 cmd_echo (assuan_context_t ctx, char *line)
 {
   int fd;
@@ -49,12 +49,12 @@ cmd_echo (assuan_context_t ctx, char *line)
 
   fd = assuan_get_input_fd (ctx);
   if (fd == -1)
-    return ASSUAN_No_Input;
+    return gpg_error (GPG_ERR_ASS_NO_INPUT);
   fp = fdopen (fd, "r");
   if (!fp)
     {
       log_error ("fdopen failed on input fd: %s\n", strerror (errno));
-      return ASSUAN_General_Error;
+      return gpg_error (GPG_ERR_ASS_GENERAL);
     }
   nbytes = 0;
   while ( (c=getc (fp)) != -1)
@@ -69,7 +69,7 @@ cmd_echo (assuan_context_t ctx, char *line)
   return 0;
 }
 
-static assuan_error_t
+static gpg_error_t
 register_commands (assuan_context_t ctx)
 {
   static struct
@@ -84,7 +84,7 @@ register_commands (assuan_context_t ctx)
 	{ NULL, NULL }
       };
   int i;
-  assuan_error_t rc;
+  gpg_error_t rc;
 
   for (i=0; table[i].name; i++)
     {
@@ -106,11 +106,11 @@ server (void)
 
   rc = assuan_init_pipe_server (&ctx, NULL);
   if (rc)
-    log_fatal ("assuan_init_pipe_server failed: %s\n", assuan_strerror (rc));
+    log_fatal ("assuan_init_pipe_server failed: %s\n", gpg_strerror (rc));
 
   rc = register_commands (ctx);
   if (rc)
-    log_fatal ("register_commands failed: %s\n", assuan_strerror(rc));
+    log_fatal ("register_commands failed: %s\n", gpg_strerror(rc));
 
   assuan_set_log_stream (ctx, stderr);
 
@@ -120,7 +120,7 @@ server (void)
       if (rc)
         {
           if (rc != -1)
-            log_error ("assuan_accept failed: %s\n", assuan_strerror (rc));
+            log_error ("assuan_accept failed: %s\n", gpg_strerror (rc));
           break;
         }
       
@@ -129,7 +129,7 @@ server (void)
 
       rc = assuan_process (ctx);
       if (rc)
-        log_error ("assuan_process failed: %s\n", assuan_strerror (rc));
+        log_error ("assuan_process failed: %s\n", gpg_strerror (rc));
     }
   
   assuan_deinit_server (ctx);
@@ -169,7 +169,7 @@ client (assuan_context_t ctx, const char *fname)
       rc = assuan_sendfd (ctx, fileno (fp));
       if (rc)
         {
-          log_error ("assuan_sendfd failed: %s\n", assuan_strerror (rc));
+          log_error ("assuan_sendfd failed: %s\n", gpg_strerror (rc));
           return -1;
         }
       fclose (fp);
@@ -178,14 +178,14 @@ client (assuan_context_t ctx, const char *fname)
                             NULL, NULL);
       if (rc)
         {
-          log_error ("sending INPUT FD failed: %s\n", assuan_strerror (rc));
+          log_error ("sending INPUT FD failed: %s\n", gpg_strerror (rc));
           return -1;
         }
 
       rc = assuan_transact (ctx, "ECHO", NULL, NULL, NULL, NULL, NULL, NULL);
       if (rc)
         {
-          log_error ("sending ECHO failed: %s\n", assuan_strerror (rc));
+          log_error ("sending ECHO failed: %s\n", gpg_strerror (rc));
           return -1;
         }
     }
@@ -283,7 +283,7 @@ main (int argc, char **argv)
                                      no_close_fds, NULL, NULL, 1);
       if (err)
         {
-          log_error ("assuan_pipe_connect failed: %s\n",assuan_strerror (err));
+          log_error ("assuan_pipe_connect failed: %s\n", gpg_strerror (err));
           return 1;
         }
       

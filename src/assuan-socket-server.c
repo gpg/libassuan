@@ -1,23 +1,26 @@
 /* assuan-socket-server.c - Assuan socket based server
- *	Copyright (C) 2002, 2007 Free Software Foundation, Inc.
- *
- * This file is part of Assuan.
- *
- * Assuan is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
- *
- * Assuan is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, see <http://www.gnu.org/licenses/>.
+   Copyright (C) 2002, 2007, 2009 Free Software Foundation, Inc.
+
+   This file is part of Assuan.
+
+   Assuan is free software; you can redistribute it and/or modify it
+   under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation; either version 2.1 of
+   the License, or (at your option) any later version.
+
+   Assuan is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
@@ -94,14 +97,12 @@ accept_connection (assuan_context_t ctx)
                              (struct sockaddr*)&clnt_addr, &len ));
   if (fd == ASSUAN_INVALID_FD)
     {
-      ctx->os_errno = errno;
-      return _assuan_error (ASSUAN_Accept_Failed);
+      return _assuan_error (gpg_err_code_from_syserror ());
     }
   if (_assuan_sock_check_nonce (fd, &ctx->listen_nonce))
     {
       _assuan_close (fd);
-      ctx->os_errno = EACCES;
-      return _assuan_error (ASSUAN_Accept_Failed);
+      return _assuan_error (GPG_ERR_ASS_ACCEPT_FAILED);
     }
 
   ctx->connected_fd = fd;
@@ -156,9 +157,9 @@ assuan_init_socket_server_ext (assuan_context_t *r_ctx, assuan_fd_t fd,
   int rc;
 
   *r_ctx = NULL;
-  ctx = xtrycalloc (1, sizeof *ctx);
+  ctx = _assuan_calloc (1, sizeof *ctx);
   if (!ctx)
-    return _assuan_error (ASSUAN_Out_Of_Core);
+    return _assuan_error (gpg_err_code_from_syserror ());
   ctx->is_server = 1;
   if ((flags & 2))
     ctx->pipe_mode = 1; /* We want a second accept to indicate EOF. */

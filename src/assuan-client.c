@@ -1,23 +1,26 @@
 /* assuan-client.c - client functions
- *	Copyright (C) 2001, 2002, 2005 Free Software Foundation, Inc.
- *
- * This file is part of Assuan.
- *
- * Assuan is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
- *
- * Assuan is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, see <http://www.gnu.org/licenses/>.
+   Copyright (C) 2001, 2002, 2005, 2009 Free Software Foundation, Inc.
+
+   This file is part of Assuan.
+
+   Assuan is free software; you can redistribute it and/or modify it
+   under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation; either version 2.1 of
+   the License, or (at your option) any later version.
+
+   Assuan is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
@@ -31,12 +34,12 @@
 #define xtoi_2(p)   ((xtoi_1(p) * 16) + xtoi_1((p)+1))
 
 
-assuan_error_t
+gpg_error_t
 _assuan_read_from_server (assuan_context_t ctx, int *okay, int *off)
 {
   char *line;
   int linelen;
-  assuan_error_t rc;
+  gpg_error_t rc;
 
   *okay = 0;
   *off = 0;
@@ -106,7 +109,7 @@ _assuan_read_from_server (assuan_context_t ctx, int *okay, int *off)
       *off = 3;
     }
   else
-    rc = _assuan_error (ASSUAN_Invalid_Response);
+    rc = _assuan_error (GPG_ERR_ASS_INV_RESPONSE);
   return rc;
 }
 
@@ -131,17 +134,17 @@ _assuan_read_from_server (assuan_context_t ctx, int *okay, int *off)
  * this function returns immediately with an error and thus the caller
  * will altter return an Assuan error (write erro in most cases).
  **/
-assuan_error_t
+gpg_error_t
 assuan_transact (assuan_context_t ctx,
                  const char *command,
-                 int (*data_cb)(void *, const void *, size_t),
+                 gpg_error_t (*data_cb)(void *, const void *, size_t),
                  void *data_cb_arg,
-                 int (*inquire_cb)(void*, const char *),
+                 gpg_error_t (*inquire_cb)(void*, const char *),
                  void *inquire_cb_arg,
-                 int (*status_cb)(void*, const char *),
+                 gpg_error_t (*status_cb)(void*, const char *),
                  void *status_cb_arg)
 {
-  assuan_error_t rc;
+  gpg_error_t rc;
   int okay, off;
   char *line;
   int linelen;
@@ -162,17 +165,11 @@ assuan_transact (assuan_context_t ctx,
   linelen = ctx->inbound.linelen - off;
 
   if (!okay)
-    {
-      rc = atoi (line);
-      if (rc > 0 && rc < 100)
-        rc = _assuan_error (ASSUAN_Server_Fault);
-      else if (rc > 0 && rc <= 405)
-        rc = _assuan_error (rc);
-    }
+    rc = atoi (line);
   else if (okay == 2)
     {
       if (!data_cb)
-        rc = _assuan_error (ASSUAN_No_Data_Callback);
+        rc = _assuan_error (GPG_ERR_ASS_NO_DATA_CB);
       else 
         {
           char *s, *d;
@@ -201,7 +198,7 @@ assuan_transact (assuan_context_t ctx,
         {
           assuan_write_line (ctx, "END"); /* get out of inquire mode */
           _assuan_read_from_server (ctx, &okay, &off); /* dummy read */
-          rc = _assuan_error (ASSUAN_No_Inquire_Callback);
+          rc = _assuan_error (GPG_ERR_ASS_NO_INQUIRE_CB);
         }
       else
         {
@@ -222,7 +219,7 @@ assuan_transact (assuan_context_t ctx,
   else if (okay == 5)
     {
       if (!data_cb)
-        rc = _assuan_error (ASSUAN_No_Data_Callback);
+        rc = _assuan_error (GPG_ERR_ASS_NO_DATA_CB);
       else 
         {
           rc = data_cb (data_cb_arg, NULL, 0);

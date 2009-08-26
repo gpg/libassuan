@@ -1,20 +1,20 @@
 /* assuan-connect.c - Establish a connection (client) 
- *	Copyright (C) 2001, 2002 Free Software Foundation, Inc.
- *
- * This file is part of Assuan.
- *
- * Assuan is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
- *
- * Assuan is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, see <http://www.gnu.org/licenses/>.
+   Copyright (C) 2001, 2002, 2009 Free Software Foundation, Inc.
+
+   This file is part of Assuan.
+
+   Assuan is free software; you can redistribute it and/or modify it
+   under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation; either version 2.1 of
+   the License, or (at your option) any later version.
+
+   Assuan is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -53,7 +53,7 @@ assuan_disconnect (assuan_context_t ctx)
 pid_t
 assuan_get_pid (assuan_context_t ctx)
 {
-  return (ctx && ctx->pid)? ctx->pid : -1;
+  return (ctx && ctx->pid) ? ctx->pid : -1;
 }
 
 
@@ -61,13 +61,13 @@ assuan_get_pid (assuan_context_t ctx)
 /* Return user credentials. PID, UID and GID may be given as NULL if
    you are not interested in a value.  For getting the pid of the
    peer the assuan_get_pid is usually better suited. */
-assuan_error_t
+gpg_error_t
 assuan_get_peercred (assuan_context_t ctx, pid_t *pid, uid_t *uid, gid_t *gid)
 {
   if (!ctx)
-    return _assuan_error (ASSUAN_Invalid_Value);
+    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
   if (!ctx->peercred.valid)
-    return _assuan_error (ASSUAN_General_Error);
+    return _assuan_error (GPG_ERR_ASS_GENERAL);
 
 #ifdef HAVE_SO_PEERCRED
   if (pid)

@@ -31,9 +31,9 @@ if USE_DESCRIPTOR_PASSING
 TESTS += fdpassing
 endif
 
-AM_CFLAGS = # $(GPG_ERROR_CFLAGS)
+AM_CFLAGS = $(GPG_ERROR_CFLAGS)
 
 noinst_HEADERS = common.h
 noinst_PROGRAMS = $(TESTS)
-LDADD =  ../src/libassuan.a  $(NETLIBS) # $(GPG_ERROR_LIBS)
+LDADD =  ../src/libassuan.la  $(NETLIBS) $(GPG_ERROR_LIBS)
 

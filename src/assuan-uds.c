@@ -1,20 +1,20 @@
 /* assuan-uds.c - Assuan unix domain socket utilities
- * Copyright (C) 2006 Free Software Foundation, Inc.
- *
- * This file is part of Assuan.
- *
- * Assuan is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
- *
- * Assuan is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, see <http://www.gnu.org/licenses/>.
+   Copyright (C) 2006, 2009 Free Software Foundation, Inc.
+
+   This file is part of Assuan.
+
+   Assuan is free software; you can redistribute it and/or modify it
+   under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation; either version 2.1 of
+   the License, or (at your option) any later version.
+
+   Assuan is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -75,9 +75,9 @@ uds_reader (assuan_context_t ctx, void *buf, size_t buflen)
 
   if (!ctx->uds.bufferallocated)
     {
-      ctx->uds.buffer = xtrymalloc (2048);
+      ctx->uds.buffer = _assuan_malloc (2048);
       if (!ctx->uds.buffer)
-        return _assuan_error (ASSUAN_Out_Of_Core);
+        return gpg_error_from_syserror ();
       ctx->uds.bufferallocated = 2048;
     }
 
@@ -192,7 +192,7 @@ uds_writer (assuan_context_t ctx, const void *buf, size_t buflen)
 }
 
 
-static assuan_error_t
+static gpg_error_t
 uds_sendfd (assuan_context_t ctx, assuan_fd_t fd)
 {
 #ifdef USE_DESCRIPTOR_PASSING
@@ -231,18 +231,20 @@ uds_sendfd (assuan_context_t ctx, assuan_fd_t fd)
   len = _assuan_simple_sendmsg (ctx, &msg);
   if (len < 0)
     {
+      int saved_errno = errno;
       _assuan_log_printf ("uds_sendfd: %s\n", strerror (errno));
-      return _assuan_error (ASSUAN_Write_Error);
+      errno = saved_errno;
+      return _assuan_error (gpg_err_code_from_syserror ());
     }
   else
     return 0;
 #else
-  return _assuan_error (ASSUAN_Not_Implemented);
+  return _assuan_error (GPG_ERR_NOT_IMPLEMENTED);
 #endif
 }
 
 
-static assuan_error_t
+static gpg_error_t
 uds_receivefd (assuan_context_t ctx, assuan_fd_t *fd)
 {
 #ifdef USE_DESCRIPTOR_PASSING
@@ -251,7 +253,7 @@ uds_receivefd (assuan_context_t ctx, assuan_fd_t *fd)
   if (!ctx->uds.pendingfdscount)
     {
       _assuan_log_printf ("no pending file descriptors!\n");
-      return _assuan_error (ASSUAN_General_Error);
+      return _assuan_error (GPG_ERR_ASS_GENERAL);
     }
   assert (ctx->uds.pendingfdscount <= DIM(ctx->uds.pendingfds));
 
@@ -262,7 +264,7 @@ uds_receivefd (assuan_context_t ctx, assuan_fd_t *fd)
 
   return 0;
 #else
-  return _assuan_error (ASSUAN_Not_Implemented);
+  return _assuan_error (GPG_ERR_NOT_IMPLEMENTED);
 #endif
 }
 
@@ -289,14 +291,14 @@ _assuan_uds_deinit (assuan_context_t ctx)
     {
       assert (ctx->uds.bufferallocated);
       ctx->uds.bufferallocated = 0;
-      xfree (ctx->uds.buffer);
+      _assuan_free (ctx->uds.buffer);
     }
 
   _assuan_uds_close_fds (ctx);
 }
 
 
-/* Helper function to initialize a context for domain I/O. */
+/* Helper function to initialize a context for domain I/O.  */
 void
 _assuan_init_uds_io (assuan_context_t ctx)
 {

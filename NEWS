@@ -1,10 +1,24 @@
 Noteworthy changes in version 1.1.0
 ------------------------------------------------
 
- * API change:  See doc/README.apichanges. 
-
  * Now using libtool and builds a DSO. 
 
+ * Lots of interface cleanups.  See below for details of the most
+   important changes.
+
+ * Interface changes relative to the 1.0.5 release:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+_ASSUAN_ONLY_GPG_ERRORS        Removed.
+assuan_init_connected_socket_server Removed.
+assuan_strerror		       Removed.
+assuan_pipe_connect2           Removed.
+ASSUAN_*		       Error values removed.
+assuan_error_t		       Removed.
+AssuanError		       Removed.
+AssuanCommand		       Removed.
+assuan_flag_t		       Changed from enum to unsigned int.
+ASSUAN_CONTENT		       Removed.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Noteworthy changes in version 1.0.5 (2008-05-25)
 ------------------------------------------------

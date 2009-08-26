@@ -1,20 +1,20 @@
 /* assuan-io.c - Wraps the read and write functions.
- * Copyright (C) 2002, 2004, 2006, 2007, 2008 Free Software Foundation, Inc.
- *
- * This file is part of Assuan.
- *
- * Assuan is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
- *
- * Assuan is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, see <http://www.gnu.org/licenses/>.
+   Copyright (C) 2002, 2004, 2006-2009 Free Software Foundation, Inc.
+
+   This file is part of Assuan.
+
+   Assuan is free software; you can redistribute it and/or modify it
+   under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation; either version 2.1 of
+   the License, or (at your option) any later version.
+
+   Assuan is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -187,7 +187,8 @@ _assuan_simple_sendmsg (assuan_context_t ctx, struct msghdr *msg)
 #endif
 {
 #ifdef HAVE_W32_SYSTEM
-  return _assuan_error (ASSUAN_Not_Implemented);
+  errno = ENOSYS;
+  return -1;
 #else
   int ret;
   while ( (ret = sendmsg (ctx->outbound.fd, msg, 0)) == -1 && errno == EINTR)
@@ -206,7 +207,8 @@ _assuan_simple_recvmsg (assuan_context_t ctx, struct msghdr *msg)
 #endif
 {
 #ifdef HAVE_W32_SYSTEM
-  return _assuan_error (ASSUAN_Not_Implemented);
+  errno = ENOSYS;
+  return -1;
 #else
   int ret;
   while ( (ret = recvmsg (ctx->inbound.fd, msg, 0)) == -1 && errno == EINTR)

@@ -1,3 +1,55 @@
+2009-08-26  Marcus Brinkmann  <marcus@g10code.de>
+
+	* libassuan-config.in: Add gpg-error.
+	* assuan-buffer.c, assuan-inquire.c, assuan-handler.c,
+	assuan-util.c, assuan-client.c, assuan-socket-connect.c,
+	assuan-pipe-connect.c, assuan-defs.h, assuan-socket.c,
+	assuan-connect.c, assuan-uds.c, assuan-socket-server.c,
+	assuan-listen.c, assuan-pipe-server.c: Return gpg_error_t instead
+	assuan_error_t everywhere.  Return gpg error codes everywhere.
+	Replace xtrymalloc, xfree, etc with _assuan_malloc, _assuan_free
+	etc.  Protect include <config.h> by HAVE_CONFIG_H where not done
+	so already.
+	* versioninfo.rc.in, libassuan.vers, libassuan.def,
+	assuan-error.c: New files.
+	* Makefile.am: Add libtool handling and gpg-error (also for W32).
+	(EXTRA_DIST): Remove mkerrors, add libassuan.vers,
+	versioninfo.rc.in and libassuan.def.
+	(BUILT_SOURCES, MOSTLYCLEANFILES): Removed.
+	(common_sources): Remove assuan-errors.c, add assuan-error.c.
+	* assuan.h: Include <gpg-error.h>.
+	[_ASSUAN_ONLY_GPG_ERRORS]: Feature removed.
+	(assuan_init_connected_socket_server, assuan_strerror)
+	(assuan_pipe_connect2): Removed obsolete interfaces.
+	(assuan_error_t): Removed type.
+	(assuan_flag_t): Changed from enum to unsigned int.
+	(ASSUAN_NO_WAITPID, ASSUAN_CONFIDENTIAL): Changed from enum to macro.
+	(assuan_process): Return gpg_error_t instead of int.
+	(assuan_set_assuan_err_source): Change argument type from int to
+	gpg_err_source_t.
+	* assuan-defs.h (_assuan_error): Change types to gpg_error_t.
+	(err_code, err_is_eof, xtrymalloc, xtrycalloc, xtryrealloc)
+	(xfree): Removed.
+	(set_error): Adjust for gpg-error codes.
+	(_assuan_gpg_strerror_r, _assuan_gpg_strsource): Removed.
+	(struct assuan_context_s): Remove member os_errno.
+	* assuan-socket-server.c (accept_connection): Don't set CTX->os_errno.
+	* mkerrors: Removed file.
+	* assuan-io-pth.c (_assuan_simple_sendmsg)
+	(_assuan_simple_recvmsg), assuan-io.c (_assuan_simple_sendmsg,
+	_assuan_simple_recvmsg): Set errno instead returning error
+	directly (and return -1).
+	* assuan-handler.c (assuan_process_done): Remove handling for old
+	style error values.
+	(process_request, assuan_process): Change return type from int to
+	gpg_error_t.
+	* assuan-client.c (assuan_transact): Remove support for old style
+	error values.
+	* assuan-pipe-connect.c (assuan_pipe_connect2): Removed.
+	* assuan-logging.c (my_strerror_r, my_strsource)
+	(load_libgpg_error, _assuan_gpg_strerror_r)
+	(_assuan_gpg_strsource): Removed.
+
 2009-04-03  Werner Koch  <wk@g10code.com>
 
 	* assuan-handler.c (std_cmd_table): Remove second OPTION entry.

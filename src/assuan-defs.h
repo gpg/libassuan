@@ -1,22 +1,20 @@
-/* assuan-defs.c - Internal definitions to Assuan
- * Copyright (C) 2001, 2002, 2004, 2005, 2007, 2008 Free Software Foundation, Inc.
- *
- * This file is part of Assuan.
- *
- * Assuan is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
- *
- * Assuan is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
- * USA.
+/* assuan-defs.h - Internal definitions to Assuan
+   Copyright (C) 2001, 2002, 2004, 2005, 2007-2009 Free Software Foundation, Inc.
+
+   This file is part of Assuan.
+
+   Assuan is free software; you can redistribute it and/or modify it
+   under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation; either version 2.1 of
+   the License, or (at your option) any later version.
+
+   Assuan is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef ASSUAN_DEFS_H
@@ -69,9 +67,9 @@ struct assuan_io
   /* Routine to write to output_fd.  */
   ssize_t (*writefnc) (assuan_context_t, const void *, size_t);
   /* Send a file descriptor.  */
-  assuan_error_t (*sendfd) (assuan_context_t, assuan_fd_t);
+  gpg_error_t (*sendfd) (assuan_context_t, assuan_fd_t);
   /* Receive a file descriptor.  */
-  assuan_error_t (*receivefd) (assuan_context_t, assuan_fd_t *);
+  gpg_error_t (*receivefd) (assuan_context_t, assuan_fd_t *);
 };
 
 
@@ -82,10 +80,8 @@ extern struct assuan_io_hooks _assuan_io_hooks;
 /* The context we use with most functions. */
 struct assuan_context_s
 {
-  assuan_error_t err_no;
+  gpg_error_t err_no;
   const char *err_str;
-  int os_errno;       /* Last system error number used with certain
-                         error codes. */
 
   /* Context specific flags (cf. assuan_flag_t). */
   struct
@@ -219,14 +215,14 @@ void _assuan_init_uds_io (assuan_context_t ctx);
 int _assuan_register_std_commands (assuan_context_t ctx);
 
 /*-- assuan-buffer.c --*/
-assuan_error_t _assuan_read_line (assuan_context_t ctx);
+gpg_error_t _assuan_read_line (assuan_context_t ctx);
 int _assuan_cookie_write_data (void *cookie, const char *buffer, size_t size);
 int _assuan_cookie_write_flush (void *cookie);
-assuan_error_t _assuan_write_line (assuan_context_t ctx, const char *prefix,
+gpg_error_t _assuan_write_line (assuan_context_t ctx, const char *prefix,
                                    const char *line, size_t len);
 
 /*-- assuan-client.c --*/
-assuan_error_t _assuan_read_from_server (assuan_context_t ctx,
+gpg_error_t _assuan_read_from_server (assuan_context_t ctx,
                                          int *okay, int *off);
 
 /*-- assuan-error.c --*/
@@ -235,21 +231,8 @@ assuan_error_t _assuan_read_from_server (assuan_context_t ctx,
 int _assuan_inquire_ext_cb (assuan_context_t ctx);
 void _assuan_inquire_release (assuan_context_t ctx);
 
-/* Map error codes as used in this implementation to the libgpg-error
-   codes. */
-assuan_error_t _assuan_error (int oldcode);
 /* Check if ERR means EAGAIN.  */
-int _assuan_error_is_eagain (assuan_error_t err);
-
-/* Extract the error code from A.  This works for both the old and the
-   new style error codes.  This needs to be used whenever an error
-   code is compared. */
-#define err_code(a) ((a) & 0x00ffffff)
-
-/* Check whether A is the erro code for EOF.  We allow for old and new
-   style EOF error codes here.  */
-#define err_is_eof(a) ((a) == (-1) || err_code (a) == 16383)
-
+int _assuan_error_is_eagain (gpg_error_t err);
 
 
 /*-- assuan-util.c --*/
@@ -258,19 +241,14 @@ void *_assuan_calloc (size_t n, size_t m);
 void *_assuan_realloc (void *p, size_t n);
 void  _assuan_free (void *p);
 
-#define xtrymalloc(a)    _assuan_malloc ((a))
-#define xtrycalloc(a,b)  _assuan_calloc ((a),(b))
-#define xtryrealloc(a,b) _assuan_realloc((a),(b))
-#define xfree(a)         _assuan_free ((a))
+gpg_error_t _assuan_error (gpg_err_code_t errcode);
 
-#define set_error(c,e,t) \
-        assuan_set_error ((c), _assuan_error (ASSUAN_ ## e), (t))
+#define set_error(c,e,t)						\
+       assuan_set_error ((c), _assuan_error (e), (t))
 
 #ifdef HAVE_W32_SYSTEM
 const char *_assuan_w32_strerror (int ec);
 #define w32_strerror(e) _assuan_w32_strerror ((e))
-int _assuan_gpg_strerror_r (unsigned int err, char *buf, size_t buflen);
-const char *_assuan_gpg_strsource (unsigned int err);
 #endif /*HAVE_W32_SYSTEM*/
 
 

@@ -1,23 +1,26 @@
 /* assuan-pipe-server.c - Assuan server working over a pipe 
- *	Copyright (C) 2001, 2002 Free Software Foundation, Inc.
- *
- * This file is part of Assuan.
- *
- * Assuan is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
- *
- * Assuan is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, see <http://www.gnu.org/licenses/>.
+   Copyright (C) 2001, 2002, 2009 Free Software Foundation, Inc.
+
+   This file is part of Assuan.
+
+   Assuan is free software; you can redistribute it and/or modify it
+   under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation; either version 2.1 of
+   the License, or (at your option) any later version.
+
+   Assuan is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -64,9 +67,9 @@ _assuan_new_context (assuan_context_t *r_ctx)
   int rc;
 
   *r_ctx = NULL;
-  ctx = xtrycalloc (1, sizeof *ctx);
+  ctx = _assuan_calloc (1, sizeof *ctx);
   if (!ctx)
-    return _assuan_error (ASSUAN_Out_Of_Core);
+    return _assuan_error (gpg_err_code_from_syserror ());
   ctx->input_fd = ASSUAN_INVALID_FD;
   ctx->output_fd = ASSUAN_INVALID_FD;
 
@@ -82,7 +85,7 @@ _assuan_new_context (assuan_context_t *r_ctx)
 
   rc = _assuan_register_std_commands (ctx);
   if (rc)
-    xfree (ctx);
+    _assuan_free (ctx);
   else
     *r_ctx = ctx;
   return rc;
@@ -146,7 +149,7 @@ assuan_init_pipe_server (assuan_context_t *r_ctx, int filedes[2])
         {
           _assuan_release_context (*r_ctx);
           *r_ctx = NULL;
-          return ASSUAN_Problem_Starting_Server;
+          return _assuan_error (GPG_ERR_ASS_SERVER_START);
         }
 #endif
       ctx->pipe_mode = 1;
@@ -168,10 +171,10 @@ _assuan_release_context (assuan_context_t ctx)
   if (ctx)
     {
       _assuan_inquire_release (ctx);
-      xfree (ctx->hello_line);
-      xfree (ctx->okay_line);
-      xfree (ctx->cmdtbl);
-      xfree (ctx);
+      _assuan_free (ctx->hello_line);
+      _assuan_free (ctx->okay_line);
+      _assuan_free (ctx->cmdtbl);
+      _assuan_free (ctx);
     }
 }
 

@@ -1,3 +1,19 @@
+2009-08-26  Marcus Brinkmann  <marcus@g10code.de>
+
+	* configure.ac: Test for versioned symbols support.
+	(LIBASSUAN_LT_CURRENT, LIBASSUAN_LT_AGE)
+	(LIBASSUAN_LT_REVISION): New, set to 0.
+	(LIBASSUAN_CONFIG_API_VERSION): Bump to 2.
+	(AC_CONFIG_MACRO_DIR, AC_DISABLE_STATIC, AC_LIBTOOL_WIN32_DLL)
+	(AC_LIBTOOL_RC, AC_PROG_LIBTOOL, AM_PATH_GPG_ERROR): Invoke.
+	(AC_PROG_RANLIB): Don't invoke.
+	(HAVE_W32_SYSTEM): New AM conditional.
+	(AC_CONFIG_FILES): Add src/versioninfo.rc.
+	* ltmain.sh, m4/libtool.m4, m4/ltoptions.m4, m4/ltsugar.m4,
+	m4/ltversion.m4, m4/lt~obsolete.m4: New files from libtool 2.2.6.
+	* tests/Makefile.am (AM_CFLAGS, LDADD): Add gpg-error.
+	* tests/fdpassing.c: Change error values to gpg-error ones.
+
 2009-01-22  Werner Koch  <wk@g10code.com>
 
 	* configure.ac: Check for nanoleep only in libc.

@@ -1,23 +1,26 @@
 /* assuan-util.c - Utility functions for Assuan 
- * Copyright (C) 2001, 2002, 2003, 2004, 2005 Free Software Foundation, Inc.
- *
- * This file is part of Assuan.
- *
- * Assuan is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
- *
- * Assuan is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, see <http://www.gnu.org/licenses/>.
+   Copyright (C) 2001-2005, 2009 Free Software Foundation, Inc.
+
+   This file is part of Assuan.
+
+   Assuan is free software; you can redistribute it and/or modify it
+   under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation; either version 2.1 of
+   the License, or (at your option) any later version.
+
+   Assuan is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -33,11 +36,10 @@ static void (*free_func)(void*) = free;
 struct assuan_io_hooks _assuan_io_hooks;
 
 
-
 void
-assuan_set_malloc_hooks ( void *(*new_alloc_func)(size_t n),
-                          void *(*new_realloc_func)(void *p, size_t n),
-                          void (*new_free_func)(void*) )
+assuan_set_malloc_hooks (void *(*new_alloc_func)(size_t n),
+                         void *(*new_realloc_func)(void *p, size_t n),
+                         void (*new_free_func)(void*))
 {
   alloc_func	    = new_alloc_func;
   realloc_func      = new_realloc_func;

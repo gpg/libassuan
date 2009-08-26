@@ -1,23 +1,26 @@
 /* assuan-listen.c - Wait for a connection (server) 
- *	Copyright (C) 2001, 2002, 2004 Free Software Foundation, Inc.
- *
- * This file is part of Assuan.
- *
- * Assuan is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
- *
- * Assuan is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, see <http://www.gnu.org/licenses/>.
+   Copyright (C) 2001, 2002, 2004, 2009 Free Software Foundation, Inc.
+
+   This file is part of Assuan.
+
+   Assuan is free software; you can redistribute it and/or modify it
+   under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation; either version 2.1 of
+   the License, or (at your option) any later version.
+
+   Assuan is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -26,21 +29,21 @@
 
 #include "assuan-defs.h"
 
-assuan_error_t
+gpg_error_t
 assuan_set_hello_line (assuan_context_t ctx, const char *line)
 {
   if (!ctx)
-    return _assuan_error (ASSUAN_Invalid_Value);
+    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
   if (!line)
     {
-      xfree (ctx->hello_line);
+      _assuan_free (ctx->hello_line);
       ctx->hello_line = NULL;
     }
   else
     {
-      char *buf = xtrymalloc (3+strlen(line)+1);
+      char *buf = _assuan_malloc (3+strlen(line)+1);
       if (!buf)
-        return _assuan_error (ASSUAN_Out_Of_Core);
+	return _assuan_error (gpg_err_code_from_syserror ());
       if (strchr (line, '\n'))
         strcpy (buf, line);
       else
@@ -48,7 +51,7 @@ assuan_set_hello_line (assuan_context_t ctx, const char *line)
           strcpy (buf, "OK ");
           strcpy (buf+3, line);
         }
-      xfree (ctx->hello_line);
+      _assuan_free (ctx->hello_line);
       ctx->hello_line = buf;
     }
   return 0;
@@ -66,14 +69,14 @@ assuan_set_hello_line (assuan_context_t ctx, const char *line)
  * Return value: 0 on success or an error if the connection could for
  * some reason not be established.
  **/
-assuan_error_t
+gpg_error_t
 assuan_accept (assuan_context_t ctx)
 {
   int rc;
   const char *p, *pend;
 
   if (!ctx)
-    return _assuan_error (ASSUAN_Invalid_Value);
+    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
 
   if (ctx->pipe_mode > 1)
     return -1; /* second invocation for pipemode -> terminate */
@@ -117,24 +120,24 @@ assuan_accept (assuan_context_t ctx)
 assuan_fd_t
 assuan_get_input_fd (assuan_context_t ctx)
 {
-  return ctx? ctx->input_fd : ASSUAN_INVALID_FD;
+  return ctx ? ctx->input_fd : ASSUAN_INVALID_FD;
 }
 
 
 assuan_fd_t
 assuan_get_output_fd (assuan_context_t ctx)
 {
-  return ctx? ctx->output_fd : ASSUAN_INVALID_FD;
+  return ctx ? ctx->output_fd : ASSUAN_INVALID_FD;
 }
 
 
 /* Close the fd descriptor set by the command INPUT FD=n.  We handle
    this fd inside assuan so that we can do some initial checks */
-assuan_error_t
+gpg_error_t
 assuan_close_input_fd (assuan_context_t ctx)
 {
   if (!ctx || ctx->input_fd == ASSUAN_INVALID_FD)
-    return _assuan_error (ASSUAN_Invalid_Value);
+    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
   _assuan_close (ctx->input_fd);
   ctx->input_fd = ASSUAN_INVALID_FD;
   return 0;
@@ -142,11 +145,11 @@ assuan_close_input_fd (assuan_context_t ctx)
 
 /* Close the fd descriptor set by the command OUTPUT FD=n.  We handle
    this fd inside assuan so that we can do some initial checks */
-assuan_error_t
+gpg_error_t
 assuan_close_output_fd (assuan_context_t ctx)
 {
   if (!ctx || ctx->output_fd == ASSUAN_INVALID_FD)
-    return _assuan_error (ASSUAN_Invalid_Value);
+    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
 
   _assuan_close (ctx->output_fd);
   ctx->output_fd = ASSUAN_INVALID_FD;

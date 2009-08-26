@@ -1,20 +1,20 @@
 /* assuan-buffer.c - read and send data
- * Copyright (C) 2001, 2002, 2003, 2004, 2006 Free Software Foundation, Inc.
- *
- * This file is part of Assuan.
- *
- * Assuan is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
- *
- * Assuan is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, see <http://www.gnu.org/licenses/>.
+   Copyright (C) 2001-2004, 2006, 2009 Free Software Foundation, Inc.
+
+   This file is part of Assuan.
+
+   Assuan is free software; you can redistribute it and/or modify it
+   under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation; either version 2.1 of
+   the License, or (at your option) any later version.
+
+   Assuan is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <config.h>
@@ -94,7 +94,7 @@ readline (assuan_context_t ctx, char *buf, size_t buflen,
 
 
 /* Function returns an Assuan error.  */
-assuan_error_t
+gpg_error_t
 _assuan_read_line (assuan_context_t ctx)
 {
   char *line = ctx->inbound.line;
@@ -150,7 +150,7 @@ _assuan_read_line (assuan_context_t ctx)
         }
 
       errno = saved_errno;
-      return _assuan_error (ASSUAN_Read_Error);
+      return _assuan_error (gpg_err_code_from_syserror ());
     }
   if (!nread)
     {
@@ -159,7 +159,8 @@ _assuan_read_line (assuan_context_t ctx)
 	fprintf (ctx->log_fp, "%s[%u.%d] DBG: <- [EOF]\n",
 		 assuan_get_assuan_log_prefix (),
                  (unsigned int)getpid (), (int)ctx->inbound.fd);
-      return _assuan_error (-1);
+
+      return _assuan_error (GPG_ERR_EOF);
     }
 
   ctx->inbound.attic.pending = 0;
@@ -222,8 +223,8 @@ _assuan_read_line (assuan_context_t ctx)
       *line = 0;
       ctx->inbound.linelen = 0;
       return _assuan_error (ctx->inbound.eof 
-                            ? ASSUAN_Line_Not_Terminated
-                            : ASSUAN_Line_Too_Long);
+			? GPG_ERR_ASS_INCOMPLETE_LINE
+			: GPG_ERR_ASS_LINE_TOO_LONG);
     }
 }
 
@@ -237,13 +238,13 @@ _assuan_read_line (assuan_context_t ctx)
    Returns 0 on success or an assuan error code.
    See also: assuan_pending_line().
 */
-assuan_error_t
+gpg_error_t
 assuan_read_line (assuan_context_t ctx, char **line, size_t *linelen)
 {
-  assuan_error_t err;
+  gpg_error_t err;
 
   if (!ctx)
-    return _assuan_error (ASSUAN_Invalid_Value);
+    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
 
   do
     {
@@ -266,11 +267,11 @@ assuan_pending_line (assuan_context_t ctx)
 }
 
 
-assuan_error_t 
+gpg_error_t 
 _assuan_write_line (assuan_context_t ctx, const char *prefix,
                     const char *line, size_t len)
 {
-  assuan_error_t rc = 0;
+  gpg_error_t rc = 0;
   size_t prefixlen = prefix? strlen (prefix):0;
   unsigned int monitor_result;
 
@@ -313,32 +314,32 @@ _assuan_write_line (assuan_context_t ctx, const char *prefix,
     {
       rc = writen (ctx, prefix, prefixlen);
       if (rc)
-        rc = _assuan_error (ASSUAN_Write_Error);
+	rc = _assuan_error (gpg_err_code_from_syserror ());
     }
   if (!rc && !(monitor_result & 2))
     {
       rc = writen (ctx, line, len);
       if (rc)
-        rc = _assuan_error (ASSUAN_Write_Error);
+	rc = _assuan_error (gpg_err_code_from_syserror ());
       if (!rc)
         {
           rc = writen (ctx, "\n", 1);
           if (rc)
-            rc = _assuan_error (ASSUAN_Write_Error);
+	    rc = _assuan_error (gpg_err_code_from_syserror ());
         }
     }
   return rc;
 }
 
 
-assuan_error_t 
+gpg_error_t 
 assuan_write_line (assuan_context_t ctx, const char *line)
 {
   size_t len;
   const char *s;
 
   if (!ctx)
-    return _assuan_error (ASSUAN_Invalid_Value);
+    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
 
   /* Make sure that we never take a LF from the user - this might
      violate the protocol. */
@@ -429,7 +430,7 @@ _assuan_cookie_write_data (void *cookie, const char *buffer, size_t orig_size)
           if ( !(monitor_result & 2)
                && writen (ctx, ctx->outbound.data.line, linelen))
             {
-              ctx->outbound.data.error = _assuan_error (ASSUAN_Write_Error);
+              ctx->outbound.data.error = gpg_err_code_from_syserror ();
               return 0;
             }
           line = ctx->outbound.data.line;
@@ -483,7 +484,7 @@ _assuan_cookie_write_flush (void *cookie)
       if ( !(monitor_result & 2)
            && writen (ctx, ctx->outbound.data.line, linelen))
         {
-          ctx->outbound.data.error = _assuan_error (ASSUAN_Write_Error);
+          ctx->outbound.data.error = gpg_err_code_from_syserror ();
           return 0;
         }
       ctx->outbound.data.linelen = 0;
@@ -513,13 +514,13 @@ _assuan_cookie_write_flush (void *cookie)
  * Return value: 0 on success or an error code
  **/
 
-assuan_error_t
+gpg_error_t
 assuan_send_data (assuan_context_t ctx, const void *buffer, size_t length)
 {
   if (!ctx)
-    return _assuan_error (ASSUAN_Invalid_Value);
+    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
   if (!buffer && length > 1)
-    return _assuan_error (ASSUAN_Invalid_Value);
+    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
 
   if (!buffer)
     { /* flush what we have */
@@ -539,7 +540,7 @@ assuan_send_data (assuan_context_t ctx, const void *buffer, size_t length)
   return 0;
 }
 
-assuan_error_t
+gpg_error_t
 assuan_sendfd (assuan_context_t ctx, assuan_fd_t fd)
 {
   /* It is explicitly allowed to use (NULL, -1) as a runtime test to
@@ -548,21 +549,21 @@ assuan_sendfd (assuan_context_t ctx, assuan_fd_t fd)
 #ifdef USE_DESCRIPTOR_PASSING
     return 0;
 #else
-    return _assuan_error (ASSUAN_Not_Implemented);
+    return _assuan_error (GPG_ERR_NOT_IMPLEMENTED);
 #endif
 
   if (! ctx->io->sendfd)
-    return set_error (ctx, Not_Implemented,
+    return set_error (ctx, GPG_ERR_NOT_IMPLEMENTED,
 		      "server does not support sending and receiving "
 		      "of file descriptors");
   return ctx->io->sendfd (ctx, fd);
 }
 
-assuan_error_t
+gpg_error_t
 assuan_receivefd (assuan_context_t ctx, assuan_fd_t *fd)
 {
   if (! ctx->io->receivefd)
-    return set_error (ctx, Not_Implemented,
+    return set_error (ctx, GPG_ERR_NOT_IMPLEMENTED,
 		      "server does not support sending and receiving "
 		      "of file descriptors");
   return ctx->io->receivefd (ctx, fd);

@@ -31,7 +31,26 @@ m4_define([svn_revision], m4_esyscmd([echo -n $( (svn info 2>/dev/null \
             || echo 'Revision: 0')|sed -n '/^Revision:/ {s/[^0-9]//gp;q;}')]))
 AC_INIT([libassuan], my_version[]m4_if(my_issvn,[yes],[-svn[]svn_revision]),
         [bug-libassuan@gnupg.org])
-# Note, that this is not yet available as a shared library.
+
+# LT Version numbers, remember to change them just *before* a release.
+#   (Code changed:			REVISION++)
+#   (Interfaces added/removed/changed:	CURRENT++, REVISION=0)
+#   (Interfaces added:			AGE++)
+#   (Interfaces removed/changed:	AGE=0)
+#
+LIBASSUAN_LT_CURRENT=0
+# Subtract 2 from this value if you want to make the LFS transition an
+# ABI break.  [Note to self: Remove this comment with the next regular break.]
+LIBASSUAN_LT_AGE=0
+LIBASSUAN_LT_REVISION=0
+
+# If the API is changed in an incompatible way: increment the next counter.
+LIBASSUAN_CONFIG_API_VERSION=2
+##############################################
+
+AC_SUBST(LIBASSUAN_LT_CURRENT)
+AC_SUBST(LIBASSUAN_LT_AGE)
+AC_SUBST(LIBASSUAN_LT_REVISION)
 
 PACKAGE=$PACKAGE_NAME
 VERSION=$PACKAGE_VERSION
@@ -39,6 +58,7 @@ VERSION=$PACKAGE_VERSION
 AM_INIT_AUTOMAKE
 AM_MAINTAINER_MODE
 AC_CONFIG_SRCDIR(src/assuan.h)
+AC_CONFIG_MACRO_DIR(m4)
 AM_CONFIG_HEADER(config.h)
 AC_CANONICAL_HOST
 AB_INIT
@@ -53,6 +73,29 @@ AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Version of this package])
 AC_DEFINE_UNQUOTED(PACKAGE_BUGREPORT, "$PACKAGE_BUGREPORT",
                                         [Bug report address])
 
+
+# Don't default to build static libs.
+AC_DISABLE_STATIC
+AC_LIBTOOL_WIN32_DLL
+AC_LIBTOOL_RC
+AC_PROG_LIBTOOL
+
+# For now we hardcode the use of version scripts.  It would be better
+# to write a test for this or even implement this within libtool.
+have_ld_version_script=no
+case "${host}" in
+    *-*-linux*)
+	have_ld_version_script=yes
+        ;;
+    *-*-gnu*)
+	have_ld_version_script=yes
+        ;;
+    *-apple-darwin*)
+        AC_DEFINE(_XOPEN_SOURCE, 500, Activate POSIX interface on MacOS X)
+        ;;
+esac
+
+AM_CONDITIONAL(HAVE_LD_VERSION_SCRIPT, test "$have_ld_version_script" = "yes")
 
 
 # Checks for programs.
@@ -72,7 +115,6 @@ fi
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
-AC_PROG_RANLIB
 #AC_ARG_PROGRAM
 
 if test "$GCC" = yes; then
@@ -133,7 +175,7 @@ dnl AM_CONDITIONAL(HAVE_DOSISH_SYSTEM, test "$have_dosish_system" = yes)
 if test "$have_w32_system" = yes; then
    AC_DEFINE(HAVE_W32_SYSTEM,1, [Defined if we run on a W32 API based system])
 fi
-dnl AM_CONDITIONAL(HAVE_W32_SYSTEM, test "$have_w32_system" = yes)
+AM_CONDITIONAL(HAVE_W32_SYSTEM, test "$have_w32_system" = yes)
 
 #
 # See whether we can build a Pth enabled version
@@ -150,7 +192,6 @@ AC_SUBST(NETLIBS)
 # For src/libassuan-config.in
 LIBASSUAN_CONFIG_LIB="-lassuan"
 LIBASSUAN_CONFIG_CFLAGS=""
-LIBASSUAN_CONFIG_API_VERSION="1"
 LIBASSUAN_CONFIG_THREAD_MODULES=
 if test "$have_pth" = yes; then
 LIBASSUAN_CONFIG_THREAD_MODULES="pth"
@@ -207,6 +248,9 @@ if test "$use_descriptor_passing" = "yes"; then
 fi
 AM_CONDITIONAL(USE_DESCRIPTOR_PASSING, test "$use_descriptor_passing" = "yes")
 
+
+# Checking for libgpg-error.
+AM_PATH_GPG_ERROR(1.4,, AC_MSG_ERROR([libgpg-error was not found]))
 
 #
 # Checks for library functions.
@@ -277,5 +321,6 @@ AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([doc/Makefile])
 AC_CONFIG_FILES([tests/Makefile])
 AC_CONFIG_FILES([src/libassuan-config], [chmod +x src/libassuan-config])
+AC_CONFIG_FILES([src/versioninfo.rc])
 
 AC_OUTPUT

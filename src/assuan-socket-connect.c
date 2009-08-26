@@ -1,20 +1,20 @@
 /* assuan-socket-connect.c - Assuan socket based client
- *	Copyright (C) 2002, 2003, 2004 Free Software Foundation, Inc.
- *
- * This file is part of Assuan.
- *
- * Assuan is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
- *
- * Assuan is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, see <http://www.gnu.org/licenses/>.
+   Copyright (C) 2002, 2003, 2004, 2009 Free Software Foundation, Inc.
+
+   This file is part of Assuan.
+
+   Assuan is free software; you can redistribute it and/or modify it
+   under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation; either version 2.1 of
+   the License, or (at your option) any later version.
+
+   Assuan is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <config.h>
@@ -74,7 +74,7 @@ do_deinit (assuan_context_t ctx)
 /* Make a connection to the Unix domain socket NAME and return a new
    Assuan context in CTX.  SERVER_PID is currently not used but may
    become handy in the future.  */
-assuan_error_t
+gpg_error_t
 assuan_socket_connect (assuan_context_t *r_ctx,
                        const char *name, pid_t server_pid)
 {
@@ -86,14 +86,14 @@ assuan_socket_connect (assuan_context_t *r_ctx,
    Assuan context in CTX.  SERVER_PID is currently not used but may
    become handy in the future.  With flags set to 1 sendmsg and
    recvmsg are used. */
-assuan_error_t
+gpg_error_t
 assuan_socket_connect_ext (assuan_context_t *r_ctx,
                            const char *name, pid_t server_pid,
                            unsigned int flags)
 {
   static struct assuan_io io = { _assuan_simple_read, _assuan_simple_write,
 				 NULL, NULL };
-  assuan_error_t err;
+  gpg_error_t err;
   assuan_context_t ctx;
   assuan_fd_t fd;
   struct sockaddr_un srvr_addr;
@@ -101,7 +101,7 @@ assuan_socket_connect_ext (assuan_context_t *r_ctx,
   const char *s;
 
   if (!r_ctx || !name)
-    return _assuan_error (ASSUAN_Invalid_Value);
+    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
   *r_ctx = NULL;
 
   /* We require that the name starts with a slash, so that we
@@ -111,10 +111,10 @@ assuan_socket_connect_ext (assuan_context_t *r_ctx,
   if (*s && s[1] == ':')
     s += 2;
   if (*s != DIRSEP_C && *s != '/')
-    return _assuan_error (ASSUAN_Invalid_Value);
+    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
 
   if (strlen (name)+1 >= sizeof srvr_addr.sun_path)
-    return _assuan_error (ASSUAN_Invalid_Value);
+    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
 
   err = _assuan_new_context (&ctx); 
   if (err)
@@ -127,7 +127,7 @@ assuan_socket_connect_ext (assuan_context_t *r_ctx,
     {
       _assuan_log_printf ("can't create socket: %s\n", strerror (errno));
       _assuan_release_context (ctx);
-      return _assuan_error (ASSUAN_General_Error);
+      return _assuan_error (GPG_ERR_ASS_GENERAL);
     }
 
   memset (&srvr_addr, 0, sizeof srvr_addr);
@@ -142,7 +142,7 @@ assuan_socket_connect_ext (assuan_context_t *r_ctx,
                           name, strerror (errno));
       _assuan_release_context (ctx);
       _assuan_close (fd);
-      return _assuan_error (ASSUAN_Connect_Failed);
+      return _assuan_error (GPG_ERR_ASS_CONNECT_FAILED);
     }
 
   ctx->inbound.fd = fd;
@@ -158,13 +158,13 @@ assuan_socket_connect_ext (assuan_context_t *r_ctx,
     err = _assuan_read_from_server (ctx, &okay, &off);
     if (err)
       _assuan_log_printf ("can't connect to server: %s\n",
-                          assuan_strerror (err));
+                          gpg_strerror (err));
     else if (okay != 1)
       {
         /*LOG ("can't connect to server: `");*/
 	_assuan_log_sanitized_string (ctx->inbound.line);
 	fprintf (assuan_get_assuan_log_stream (), "'\n");
-	err = _assuan_error (ASSUAN_Connect_Failed);
+	err = _assuan_error (GPG_ERR_ASS_CONNECT_FAILED);
       }
   }
 

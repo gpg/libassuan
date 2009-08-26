@@ -1,20 +1,20 @@
 /* assuan-logging.c - Default logging function.
- * Copyright (C) 2002, 2003, 2004, 2007 Free Software Foundation, Inc.
- *
- * This file is part of Assuan.
- *
- * Assuan is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
- *
- * Assuan is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, see <http://www.gnu.org/licenses/>.
+   Copyright (C) 2002, 2003, 2004, 2007, 2009 Free Software Foundation, Inc.
+
+   This file is part of Assuan.
+
+   Assuan is free software; you can redistribute it and/or modify it
+   under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation; either version 2.1 of
+   the License, or (at your option) any later version.
+
+   Assuan is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -242,50 +242,4 @@ _assuan_w32_strerror (int ec)
   return strerr;    
 }
 
-static int (*my_strerror_r) (unsigned int err, char *buf, size_t buflen);
-static const char * (*my_strsource) (unsigned int err);
-
-static int
-load_libgpg_error (void)
-{
-  /* This code is not race free but suitable for our purpose.  */
-  static volatile int initialized;
-  void *handle;
-
-  if (initialized)
-    return (my_strerror_r && my_strsource)? 0:-1;
-  handle = LoadLibrary ("libgpg-error-0.dll");
-  if (handle)
-    {
-      void *foo, *bar;
-      foo = GetProcAddress (handle, "gpg_strerror_r");
-      bar = GetProcAddress (handle, "gpg_strsource");
-      if (foo && bar)
-        {
-          my_strerror_r = foo;
-          my_strsource = bar;
-        }
-      else
-        CloseHandle (handle);
-    }
-  initialized = 1;
-  return 0;
-}
-
-int
-_assuan_gpg_strerror_r (unsigned int err, char *buf, size_t buflen)
-{
-  if (load_libgpg_error ())
-    return -1;
-  return my_strerror_r (err, buf, buflen);
-}
-
-
-const char *
-_assuan_gpg_strsource (unsigned int err)
-{
-  if (load_libgpg_error ())
-    return NULL;
-  return my_strsource (err);
-}
 #endif /*HAVE_W32_SYSTEM*/

@@ -9,10 +9,14 @@
 # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
 # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
+# Configure libgpg-error.
+gpg_error_cflags="@GPG_ERROR_CFLAGS@"
+gpg_error_libs="@GPG_ERROR_LIBS@"
+
 PGM=libassuan-config
 lib="@LIBASSUAN_CONFIG_LIB@"
-extralibs="@LIBASSUAN_CONFIG_EXTRA_LIBS@"
-cflags="@LIBASSUAN_CONFIG_CFLAGS@"
+extralibs="@LIBASSUAN_CONFIG_EXTRA_LIBS@ $gpg_error_libs"
+cflags="@LIBASSUAN_CONFIG_CFLAGS@ $gpg_error_cflags"
 api_version="@LIBASSUAN_CONFIG_API_VERSION@"
 all_thread_modules="@LIBASSUAN_CONFIG_THREAD_MODULES@"
 thread_module=
@@ -25,6 +29,7 @@ echo_libs=no
 echo_cflags=no
 echo_prefix=no
 echo_exec_prefix=no
+
 
 if test x"$all_thread_modules" = x; then
   all_thread_modules="none pthread"

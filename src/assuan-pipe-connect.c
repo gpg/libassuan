@@ -1,21 +1,20 @@
 /* assuan-pipe-connect.c - Establish a pipe connection (client) 
- * Copyright (C) 2001, 2002, 2003, 2005, 2006,
- *               2007 Free Software Foundation, Inc.
- *
- * This file is part of Assuan.
- *
- * Assuan is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
- *
- * Assuan is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, see <http://www.gnu.org/licenses/>.
+   Copyright (C) 2001-2003, 2005-2007, 2009 Free Software Foundation, Inc.
+
+   This file is part of Assuan.
+
+   Assuan is free software; you can redistribute it and/or modify it
+   under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation; either version 2.1 of
+   the License, or (at your option) any later version.
+
+   Assuan is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -147,21 +146,21 @@ do_deinit (assuan_context_t ctx)
 
 
 /* Helper for pipe_connect. */
-static assuan_error_t
+static gpg_error_t
 initial_handshake (assuan_context_t *ctx)
 {
   int okay, off;
-  assuan_error_t err;
+  gpg_error_t err;
   
   err = _assuan_read_from_server (*ctx, &okay, &off);
   if (err)
     _assuan_log_printf ("can't connect server: %s\n",
-                        assuan_strerror (err));
+                        gpg_strerror (err));
   else if (okay != 1)
     {
       _assuan_log_printf ("can't connect server: `%s'\n",
                           (*ctx)->inbound.line);
-      err = _assuan_error (ASSUAN_Connect_Failed);
+      err = _assuan_error (GPG_ERR_ASS_CONNECT_FAILED);
     }
 
   if (err)
@@ -177,14 +176,14 @@ initial_handshake (assuan_context_t *ctx)
 #define pipe_connect pipe_connect_unix
 /* Unix version of the pipe connection code.  We use an extra macro to
    make ChangeLog entries easier. */
-static assuan_error_t
+static gpg_error_t
 pipe_connect_unix (assuan_context_t *ctx,
                    const char *name, const char *const argv[],
                    int *fd_child_list,
                    void (*atfork) (void *opaque, int reserved),
                    void *atforkvalue, unsigned int flags)
 {
-  assuan_error_t err;
+  gpg_error_t err;
   int rp[2];
   int wp[2];
   char mypidstr[50];
@@ -192,20 +191,20 @@ pipe_connect_unix (assuan_context_t *ctx,
   (void)flags;
 
   if (!ctx || !name || !argv || !argv[0])
-    return _assuan_error (ASSUAN_Invalid_Value);
+    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
 
   fix_signals ();
 
   sprintf (mypidstr, "%lu", (unsigned long)getpid ());
 
   if (pipe (rp) < 0)
-    return _assuan_error (ASSUAN_General_Error);
+    return _assuan_error (GPG_ERR_ASS_GENERAL);
   
   if (pipe (wp) < 0)
     {
       close (rp[0]);
       close (rp[1]);
-      return _assuan_error (ASSUAN_General_Error);
+      return _assuan_error (GPG_ERR_ASS_GENERAL);
     }
 
   err = _assuan_new_context (ctx);
@@ -233,7 +232,7 @@ pipe_connect_unix (assuan_context_t *ctx,
       close (wp[0]);
       close (wp[1]);
       _assuan_release_context (*ctx); 
-      return _assuan_error (ASSUAN_General_Error);
+      return _assuan_error (GPG_ERR_ASS_GENERAL);
     }
 
   if ((*ctx)->pid == 0)
@@ -334,7 +333,7 @@ pipe_connect_unix (assuan_context_t *ctx,
           /* oops - use the pipe to tell the parent about it */
           snprintf (errbuf, sizeof(errbuf)-1,
                     "ERR %d can't exec `%s': %.50s\n",
-                    _assuan_error (ASSUAN_Problem_Starting_Server),
+                    _assuan_error (GPG_ERR_ASS_SERVER_START),
                     name, strerror (errno));
           errbuf[sizeof(errbuf)-1] = 0;
           writen (1, errbuf, strlen (errbuf));
@@ -364,21 +363,21 @@ pipe_connect_unix (assuan_context_t *ctx,
 #ifndef HAVE_W32_SYSTEM
 /* This function is similar to pipe_connect but uses a socketpair and
    sets the I/O up to use sendmsg/recvmsg. */
-static assuan_error_t
+static gpg_error_t
 socketpair_connect (assuan_context_t *ctx,
                     const char *name, const char *const argv[],
                     int *fd_child_list,
                     void (*atfork) (void *opaque, int reserved),
                     void *atforkvalue)
 {
-  assuan_error_t err;
+  gpg_error_t err;
   int fds[2];
   char mypidstr[50];
 
   if (!ctx
       || (name && (!argv || !argv[0]))
       || (!name && argv))
-    return _assuan_error (ASSUAN_Invalid_Value);
+    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
 
   fix_signals ();
 
@@ -387,7 +386,7 @@ socketpair_connect (assuan_context_t *ctx,
   if ( socketpair (AF_LOCAL, SOCK_STREAM, 0, fds) )
     {
       _assuan_log_printf ("socketpair failed: %s\n", strerror (errno));
-      return _assuan_error (ASSUAN_General_Error);
+      return _assuan_error (GPG_ERR_ASS_GENERAL);
     }
   
   err = _assuan_new_context (ctx);
@@ -411,7 +410,7 @@ socketpair_connect (assuan_context_t *ctx,
       close (fds[1]);
       _assuan_release_context (*ctx); 
       *ctx = NULL;
-      return _assuan_error (ASSUAN_General_Error);
+      return _assuan_error (GPG_ERR_ASS_GENERAL);
     }
 
   if ((*ctx)->pid == 0)
@@ -516,7 +515,7 @@ socketpair_connect (assuan_context_t *ctx,
           /* oops - use the pipe to tell the parent about it */
           snprintf (errbuf, sizeof(errbuf)-1,
                     "ERR %d can't exec `%s': %.50s\n",
-                    _assuan_error (ASSUAN_Problem_Starting_Server),
+                    _assuan_error (GPG_ERR_ASS_SERVER_START),
                     name, strerror (errno));
           errbuf[sizeof(errbuf)-1] = 0;
           writen (fds[1], errbuf, strlen (errbuf));
@@ -565,7 +564,7 @@ build_w32_commandline (const char * const *argv, char **cmdline)
     }
   n++;
 
-  buf = p = xtrymalloc (n);
+  buf = p = _assuan_malloc (n);
   if (!buf)
     return -1;
 
@@ -645,14 +644,14 @@ create_inheritable_pipe (assuan_fd_t filedes[2], int for_write)
 #ifdef HAVE_W32_SYSTEM
 #define pipe_connect pipe_connect_w32
 /* W32 version of the pipe connection code. */
-static assuan_error_t
+static gpg_error_t
 pipe_connect_w32 (assuan_context_t *ctx,
                   const char *name, const char *const argv[],
                   int *fd_child_list,
                   void (*atfork) (void *opaque, int reserved),
                   void *atforkvalue, unsigned int flags)
 {
-  assuan_error_t err;
+  gpg_error_t err;
   assuan_fd_t rp[2];
   assuan_fd_t wp[2];
   char mypidstr[50];
@@ -670,7 +669,7 @@ pipe_connect_w32 (assuan_context_t *ctx,
   HANDLE nullfd = INVALID_HANDLE_VALUE;
 
   if (!ctx || !name || !argv || !argv[0])
-    return _assuan_error (ASSUAN_Invalid_Value);
+    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
 
   fix_signals ();
 
@@ -678,21 +677,21 @@ pipe_connect_w32 (assuan_context_t *ctx,
 
   /* Build the command line.  */
   if (build_w32_commandline (argv, &cmdline))
-    return _assuan_error (ASSUAN_Out_Of_Core);
+    return _assuan_error (gpg_err_code from_syserror ());
 
   /* Create thew two pipes. */
   if (create_inheritable_pipe (rp, 0))
     {
-      xfree (cmdline);
-      return _assuan_error (ASSUAN_General_Error);
+      _assuan_free (cmdline);
+      return _assuan_error (GPG_ERR_ASS_GENERAL);
     }
   
   if (create_inheritable_pipe (wp, 1))
     {
       CloseHandle (rp[0]);
       CloseHandle (rp[1]);
-      xfree (cmdline);
-      return _assuan_error (ASSUAN_General_Error);
+      _assuan_free (cmdline);
+      return _assuan_error (GPG_ERR_ASS_GENERAL);
     }
 
   
@@ -703,8 +702,8 @@ pipe_connect_w32 (assuan_context_t *ctx,
       CloseHandle (rp[1]);
       CloseHandle (wp[0]);
       CloseHandle (wp[1]);
-      xfree (cmdline);
-      return _assuan_error (ASSUAN_General_Error);
+      _assuan_free (cmdline);
+      return _assuan_error (GPG_ERR_ASS_GENERAL);
     }
 
   (*ctx)->pipe_mode = 1;
@@ -753,7 +752,7 @@ pipe_connect_w32 (assuan_context_t *ctx,
           CloseHandle (rp[1]);
           CloseHandle (wp[0]);
           CloseHandle (wp[1]);
-          xfree (cmdline);
+          _assuan_free (cmdline);
           _assuan_release_context (*ctx); 
           return -1;
         }
@@ -790,11 +789,11 @@ pipe_connect_w32 (assuan_context_t *ctx,
       CloseHandle (wp[1]);
       if (nullfd != INVALID_HANDLE_VALUE)
         CloseHandle (nullfd);
-      xfree (cmdline);
+      _assuan_free (cmdline);
       _assuan_release_context (*ctx); 
-      return _assuan_error (ASSUAN_General_Error);
+      return _assuan_error (GPG_ERR_ASS_GENERAL);
     }
-  xfree (cmdline);
+  _assuan_free (cmdline);
   cmdline = NULL;
   if (nullfd != INVALID_HANDLE_VALUE)
     {
@@ -823,23 +822,11 @@ pipe_connect_w32 (assuan_context_t *ctx,
    returning it in CTX.  The server filename is NAME, the argument
    vector in ARGV.  FD_CHILD_LIST is a -1 terminated list of file
    descriptors not to close in the child.  */
-assuan_error_t
+gpg_error_t
 assuan_pipe_connect (assuan_context_t *ctx, const char *name,
 		     const char *const argv[], int *fd_child_list)
 {
   return pipe_connect (ctx, name, argv, fd_child_list, NULL, NULL, 0);
-}
-
-
-
-assuan_error_t
-assuan_pipe_connect2 (assuan_context_t *ctx,
-                      const char *name, const char *const argv[],
-                      int *fd_child_list,
-                      void (*atfork) (void *opaque, int reserved),
-                      void *atforkvalue)
-{
-  return pipe_connect (ctx, name, argv, fd_child_list, atfork, atforkvalue, 0);
 }
 
 
@@ -871,7 +858,7 @@ assuan_pipe_connect2 (assuan_context_t *ctx,
    some special environment variables are set. To let the caller
    detect whether the child or the parent continues, the child returns
    a CTX of NULL. */
-assuan_error_t
+gpg_error_t
 assuan_pipe_connect_ext (assuan_context_t *ctx,
                          const char *name, const char *const argv[],
                          int *fd_child_list,
@@ -881,7 +868,7 @@ assuan_pipe_connect_ext (assuan_context_t *ctx,
   if ((flags & 1))
     {
 #ifdef HAVE_W32_SYSTEM
-      return _assuan_error (ASSUAN_Not_Implemented);
+      return _assuan_error (GPG_ERR_NOT_IMPLEMENTED);
 #else
       return socketpair_connect (ctx, name, argv, fd_child_list,
                                  atfork, atforkvalue);
