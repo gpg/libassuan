@@ -1,3 +1,9 @@
+2009-08-28  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan.texi: Update to API changes.
+	(Data Types): Remove assuan_error_t.
+	(Utilities): Remove assuan_strerror.
+
 2008-10-29  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan.texi: Change return type of callback handlers in

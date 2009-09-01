@@ -186,7 +186,7 @@ Goals:
 @item Common framework for module communication
 @item Easy debugging
 @item Easy module testing
-@item Extendible
+@item Extensible
 @item Optional authentication and encryption facility
 @item Usable to access external hardware
 @end itemize
@@ -195,7 +195,7 @@ Goals:
 Design criteria:
 
 @itemize @bullet
-@item Client server with back channel
+@item Client/Server with back channel
 @item Use a mainly text based protocol
 @item Escape certain control characters
 @item Allow indefinite data length
@@ -206,14 +206,15 @@ Design criteria:
 @item Subliminal channels are not an issue
 @end itemize
 
+
 @node Implementation
 @chapter Implementation
 
 The implementation is line based with a maximum line size of 1000
-octets.  The default IPC mechanism are Unix Domain Sockets.
+octets.  The default IPC mechanism is Unix Domain Sockets.
 
 On a connect request the server responds either with an okay or an
-error status.  For authentication check the server may send an Inquiry
+error status.  For authentication-check the server may send an Inquiry
 Response prior to the first Okay, and it may also issue Status
 messages.  The server must check that the client is allowed to
 connect, this is done by requesting the credentials for the peer and
@@ -243,8 +244,8 @@ All textual messages are assumed to be in UTF-8 unless otherwise noted.
 Request was successful.
 
 @item ERR @var{errorcode} [<human readable error description>]
-Request could not be fulfilled.  The error codes are mostly application
-specific except for a few common ones.
+Request could not be fulfilled.  The possible error codes are defined
+by @code{libgpg-error}.
 
 @item S @var{keyword} <status information depending on keyword>
 Informational output by the server, still processing the request.  A
@@ -310,27 +311,24 @@ D <raw data>
 Raw data to the server. There must be exactly one space after the 'D'.
 The values for '%', CR and LF must be percent escaped; this is encoded
 as %25, %0D and %0A.  Only uppercase letters should be used in the
-hexadecimal representation.  Other characters may be percent escaped for
-easier debugging.  All these Data lines are considered one data stream
-up to the OKAY or ERROR response.  Status and Inquiry Responses may be
-mixed with the Data lines.
+hexadecimal representation.  Other characters may be percent escaped
+for easier debugging.  All these Data lines are considered one data
+stream up to the @code{OK} or @code{ERR} response.  Status and Inquiry
+Responses may be mixed with the Data lines.
 
 @example
 END
 @end example
 
-
-
 Lines beginning with a @code{#} or empty lines are ignored.  This is
 useful to comment test scripts.
-
 
 Although the commands are application specific, some of them are used by
 all protocols and partly directly supported by the Assuan library:
 
 @table @code
 @item BYE
-Close the connect, the server will reply with an @code{OK}.
+Close the connection.  The server will reply with @code{OK}.
 
 @item RESET
 Reset the connection but not any existing authentication.  The server
@@ -358,11 +356,11 @@ may be prefixed with two dashes.  The use of the equal sign is optional
 but suggested if @var{value} is given.
 
 @item CANCEL
-This command is reserved for future extensions.  
+This command is reserved for future extensions.
 
 @item AUTH
 This command is reserved for future extensions.  Not yet specified as
-we don't implement it in the first phase.  See my mail to gpa-dev on
+we don't implement it in the first phase.  See Werner's mail to gpa-dev on
 2001-10-25 about the rationale for measurements against local attacks.
 
 @item NOP
@@ -373,12 +371,10 @@ No operation.  Returns OK without any action.
 @node Error codes
 @section Error codes
 
-In general Libassuan should be used with gpg-error style error codes.
-For compatibility reasons and for applications not wanting to use these
-error codes, the old Assuan error codes may still be used.  In fact they
-are used by default.  To switch to gpg-error style error codes,
-applications should call the @ref{function assuan_set_assuan_err_source}
-right after startup.
+Libassuan is used with gpg-error style error codes.  It is recommended
+to set the error source to a different value than the default
+@code{GPG_ERR_SOURCE_UNKNOWN} by calling @ref{function
+assuan_set_assuan_err_source} early.
 
 
 @c 
@@ -387,7 +383,7 @@ right after startup.
 @node Preparation
 @chapter Preparation
 
-To use `@sc{libassuan}', you have to perform some changes to your
+To use @sc{Assuan}, you have to perform some changes to your
 sources and the build system.  The necessary changes are small and
 explained in the following sections. 
 
@@ -396,13 +392,13 @@ explained in the following sections.
 * Header::                 What header file you need to include.
 * Building sources::       How to build sources using the library.
 * Automake::               How to build sources with the help of Automake.
-* Multi Threading::        How @sc{libassuan} can be used in a MT environment.
+* Multi Threading::        How @code{libassuan} can be used in a MT environment.
 @end menu
 
 @node Header
 @section Header
 
-All interfaces (data types and functions) of @sc{libassuan} are defined
+All interfaces (data types and functions) of @code{libassuan} are defined
 in the header file @file{assuan.h}.  You must include this in all source
 files using the library, either directly or through some other header
 file, like this:
@@ -411,10 +407,16 @@ file, like this:
 #include <assuan.h>
 @end example
 
-The name space of `@sc{assuan}' is @code{assuan_*} for function
+The name space of @code{libassuan} is @code{assuan_*} for function
 and type names and @code{ASSUAN*} for other symbols.  In addition the
 same name prefixes with one prepended underscore are reserved for
 internal use and should never be used by an application. 
+
+Because @code{libassuan} makes use of the GPG Error library, using
+@code{libassuan} will also use the @code{GPG_ERR_*} name space
+directly, and the @code{gpg_err*} and @code{gpg_str*} name space
+indirectly.
+
 
 @node Building sources
 @section Building sources
@@ -447,9 +449,9 @@ work, the path to the library files has to be added to the library
 search path (via the @option{-L} option).  For this, the option
 @option{--libs} to @command{libassuan-config} can be used.  For
 convenience, this option also outputs all other options that are
-required to link the program with the @sc{libassuan} libraries (in
+required to link the program with the @code{libassuan} libraries (in
 particular, the @option{-lassuan} option).  The example shows how to
-link @file{foo.o} with the @sc{libassuan} library to a program
+link @file{foo.o} with the @code{libassuan} library to a program
 @command{foo}.
 
 @example
@@ -473,18 +475,19 @@ invocation of @command{libassuan-config}.
 
 It is much easier if you use GNU Automake instead of writing your own
 Makefiles.  If you do that you do not have to worry about finding and
-invoking the @command{libassuan-config} script at all.  @sc{libassuan}
+invoking the @command{libassuan-config} script at all.  @code{libassuan}
 provides an Automake macro that does all the work for you.
 
 @defmac AM_PATH_LIBASSUAN (@ovar{minimum-version}, @ovar{action-if-found}, @ovar{action-if-not-found})
-Check whether @sc{libassuan} (at least version @var{minimum-version}, if
-given) exists on the host system.  If it is found, execute
-@var{action-if-found}, otherwise do @var{action-if-not-found}, if given.
+Check whether @code{libassuan} (at least version
+@var{minimum-version}, if given) exists on the host system.  If it is
+found, execute @var{action-if-found}, otherwise do
+@var{action-if-not-found}, if given.
 
 Additionally, the function defines @code{LIBASSUAN_CFLAGS} to the
 flags needed for compilation of the program to find the
 @file{assuan.h} header file, and @code{LIBASSUAN_LIBS} to the linker
-flags needed to link the program to the @sc{libassuan} library.
+flags needed to link the program to the @code{libassuan} library.
 @end defmac
 
 You can use the defined Autoconf variables like this in your
@@ -522,7 +525,7 @@ requirements:
 @itemize @bullet
 @item Run the initialization functions before you actually start
 to use threads.
-@item Only one thread at a time may access an @sc{libassuan} context.
+@item Only one thread at a time may access an @code{libassuan} context.
 @item Use @code{assuan_set_assuan_log_stream} to setup a default log stream.
 @end itemize
 
@@ -534,7 +537,7 @@ to use threads.
 @chapter Generalities
 
 @menu
-* Data Types::                  Data types used by @sc{libassuan}.
+* Data Types::                  Data types used by @code{libassuan}.
 * Initializing the library::    How to initialize the library.
 * Reading and Writing::         How to communicate with the peer.
 @end menu
@@ -544,25 +547,22 @@ to use threads.
 @node Data Types
 @section Data Types used by the library
 
-@sc{libassuan} uses a context approach to keep state.  The following
-data type is used all over the place:
+@sc{Assuan} uses a context to keep the state for a connection.  The
+following data type is used ace:
 
 @deftp {Data type} assuan_context_t
 The @code{assuan_context_t} type is a pointer to an object maintained
-internally by the library.  Certain Assuan functions allocate such a
-context and return it to the caller using this data type. Other
+internally by the library.  Certain @sc{Assuan} functions allocate
+such a context and return it to the caller using this data type. Other
 functions take this data type to access the state created by these
 functions.
 @end deftp
 
-@noindent
-For compatibility with older versions of @sc{libassuan} a data
-type for error return values exists:
 
-@deftp {Data type} assuan_error_t
-This has originally been an @code{enum} but applications should either
-view it as an @code{int} or if possible use the @code{gpg_error_t} data
-type as defined by the @sc{libgpg-error} package.
+@deftp {Data type} assuan_fd_t
+The @code{assuan_fd_t} is a file descriptor (in Unix) or a system
+handle (in Windows).  The special value @code{ASSUAN_INVALID_FD} is
+used to specify invalid Assuan file descriptors.
 @end deftp
 
 
@@ -575,13 +575,13 @@ should be called as early as possible and in a multi-threaded
 application before a second thread is created. 
 
 If your application uses its own memory allocation functions or wrappers
-it is good idea to tell @sc{libassuan} about it so it can make use of the
+it is good idea to tell @code{libassuan} about it so it can make use of the
 same functions or wrappers.  You do this with
 
 @deftypefun void assuan_set_malloc_hooks (@w{void *(*@var{malloc_func})(size_t)}, @w{void *(*@var{realloc_func})(void *, size_t)}, @w{void (*@var{free_func})(void*)})
 You need to provide all three functions.  Those functions need to behave
 exactly as their standard counterparts (@code{malloc}, @code{realloc}
-and @code{free}).  If you write your own functions please take care to
+and @code{free}).  If you write your own functions, please take care to
 set @code{errno} whenever an error has occurred.
 @end deftypefun
 
@@ -590,7 +590,7 @@ To integrate assuan logging and diagnostics into your own logging
 system, you may use the following two functions:
 
 @deftypefun void assuan_set_assuan_log_stream (FILE *@var{fp})
-This sets the stream to which @sc{libassuan} should log messages not
+This sets the stream to which @code{libassuan} should log messages not
 associated with a specific context to @var{fp}.  The default is to log
 to @code{stderr}.  This default value is also changed by using
 @code{assuan_set_log_stream} (to set a logging stream for a specific
@@ -604,17 +604,11 @@ Set the prefix to be used at the start of a line emitted by assuan
 on the log stream to @var{text}.  The default is the empty string. 
 @end deftypefun
 
-If you intend to use @sc{libassuan} along with the package
-@sc{libgpg-error} it is recommended to switch @sc{libassuan} into a mode
-which directly makes use of error codes provided by @sc{libgpg-error}.
-Because the Assuan error codes and those of gpg-error overlap, it is
-required to explicitly request this.  You do this by calling the function
-
 @anchor{function assuan_set_assuan_err_source}
 @deftypefun void assuan_set_assuan_err_source (@w{int @var{errsource}})
-Enable gpg-error style error codes.  @var{errsource} is one of the
-gpg-error sources.  Switching back to the old style mode is not
-possible.  The usual way to call this function is
+Set the error source for error values generated by @code{libassuan}.
+@var{errsource} is one of the @code{libgpg-error} sources.  The usual
+way to call this function is
 @smallexample
 assuan_set_assuan_err_source (GPG_ERR_SOURCE_DEFAULT);
 @end smallexample
@@ -625,50 +619,52 @@ assuan_set_assuan_err_source (GPG_ERR_SOURCE_DEFAULT);
 
 What would be an IPC library without the ability to read and write
 data?  Not very useful.  Libassuan has high level functions to take
-care of of the more boring stuff but eventually data needs to be
+care of of the more boring stuff, but eventually data needs to be
 written and read.
 
 @noindent
 The basic read and write functions are:
 
-@deftypefun assuan_error_t assuan_read_line (@w{assuan_context_t @var{ctx}}, @w{char **@var{line}}, @w{size_t *@var{linelen}})
+@deftypefun gpg_error_t assuan_read_line (@w{assuan_context_t @var{ctx}}, @w{char **@var{line}}, @w{size_t *@var{linelen}})
 
-Read the next line from the client or server and store a pointer to the
-buffer holding that line at the address @var{line}.  The valid length of
-the lines is stored at the address of @var{linelen}. This buffer is
-valid until the next read operation on the same context @var{ctx}.  You
-may modify the context of this buffer.  The buffer is invalid (i.e. must
-not be used) if an error is returned.  This function returns @code{0} on
-success or an error code.
+Read the next line written by the peer and store a pointer to the
+buffer holding that line at the address @var{line}.  The valid length
+of the lines is stored at the address of @var{linelen}.  This buffer
+is valid until the next read operation on the same context @var{ctx}.
+You may modify the context of this buffer.  The buffer is invalid
+(i.e. must not be used) if an error is returned.  This function
+returns @code{0} on success or an error value.
 @end deftypefun
 
-@deftypefun assuan_error_t assuan_write_line (@w{assuan_context_t @var{ctx}}, @w{const char *@var{line}})
+@deftypefun gpg_error_t assuan_write_line (@w{assuan_context_t @var{ctx}}, @w{const char *@var{line}})
 
-Write the string @var{line} to the other end.  This string needs to be a
-proper formatted Assuan protocol line and should not include a linefeed.
-Sending linefeed or Nul characters is not possible and not allowed by the
-assuan protocol.  This function shall not be used for sending data (D)
-lines.  This function returns @code{0} on success or an error code.
+Write the string @var{line} to the other end.  This string needs to be
+a proper formatted Assuan protocol line and should not include a
+linefeed.  Sending linefeed or @code{Nul} characters is not possible
+and not allowed by the assuan protocol.  This function shall not be
+used for sending data (@code{D}) lines.  This function returns
+@code{0} on success or an error value.
 @end deftypefun
 
 @noindent 
 To actually send bulk data lines a specialized function is available:
 
-@deftypefun assuan_error_t assuan_send_data (@w{assuan_context_t @var{ctx}}, @w{const void *@var{buffer}}, @w{size_t @var{length}})
+@deftypefun gpg_error_t assuan_send_data (@w{assuan_context_t @var{ctx}}, @w{const void *@var{buffer}}, @w{size_t @var{length}})
 
 This function is used by a server or a client to send
 @var{length} bytes of bulk data in @var{buffer} to the other end.
 The data will be escaped as required by the Assuan protocol and
-may get buffered until a line is full.  To force sending the data out
+may get buffered until a line is full.  To flush any pending data,
 @var{buffer} may be passed as @code{NULL} and @var{length} be @code{0}.
 
-When used by a client this flush operation does also send the
-terminating @code{END} command to terminate the response on an
-``INQUIRE'' response.  Note that the function @code{assuan_transact}
-takes care of sending this @code{END} itself.
+@noindent
+When used by a client, this flush operation does also send the
+@code{END} command to terminate the response on an @command{INQUIRE}
+request.  Note that the function @code{assuan_transact} takes care of
+sending this @code{END} itself.
 
 @noindent
-This function returns @code{0} on success or an error code.
+This function returns @code{0} on success or an error value.
 @end deftypefun
 
 
@@ -683,23 +679,11 @@ This function returns @code{0} on success or an error code.
 Depending on the type of the server you want to connect you need to use
 different functions.
 
-For a pipe based server you fork and exec yourself, you use:
+If the peer is not a simple pipe server but one using full-duplex
+sockets, the full-fledged variant of the above function should be
+used:
 
-@deftypefun assuan_error_t assuan_pipe_connect (@w{assuan_context_t *@var{ctx}},@w{const char *@var{name}}, @w{const char *const @var{argv}[]}, @w{int *@var{fd_child_list}})
-
-A call to this functions forks the current process and executes the
-program @var{name}, passing the arguments given in the NULL-terminated
-list @var{argv}.  A list of file descriptors not to be closed may be
-given using the @code{-1} terminated array @var{fd_child_list}.
-
-On success a new assuan context is returned at @var{ctx}.
-
-@end deftypefun
-
-If it is not a simple pipe server but one using full-duplex sockets, the
-full-fledged variant of the above function should be used:
-
-@deftypefun assuan_error_t assuan_pipe_connect_ext (@w{assuan_context_t *@var{ctx}},@w{const char *@var{name}}, @w{const char *const @var{argv}[]}, @w{int *@var{fd_child_list}}, @w{void (*@var{atfork}) (void *, int)}, @w{void *@var{atforkvalue}}, @w{unsigned int @var{flags}})
+@deftypefun gpg_error_t assuan_pipe_connect_ext (@w{assuan_context_t *@var{ctx}},@w{const char *@var{name}}, @w{const char *const @var{argv}[]}, @w{int *@var{fd_child_list}}, @w{void (*@var{atfork}) (void *, int)}, @w{void *@var{atforkvalue}}, @w{unsigned int @var{flags}})
 
 A call to this functions forks the current process and executes the
 program @var{name}, passing the arguments given in the NULL-terminated
@@ -722,7 +706,6 @@ additional resources not to be used by the child.
 @var{flags} is a bit vector and controls how the function acts:
 
 @table @code
-
 @item bit 0 (value 1)
 If cleared a simple pipe based server is expected and the function
 behaves similar to @code{assuan_pipe_connect}.  
@@ -732,44 +715,54 @@ usually created using the @code{socketpair} function.  It also enables
 features only available with such servers.
 
 @item bit 7 (value 128)
-If set and there is a need to start ther server it will be started as a
+If set and there is a need to start the server it will be started as a
 background process.  This flag is useful under W32 systems, so that no
 new console is created and pops up a console window when starting the server
-
 @end table
+@end deftypefun
 
+
+For a pipe-based server you can also use the following legacy function:
+
+@deftypefun gpg_error_t assuan_pipe_connect (@w{assuan_context_t *@var{ctx}},@w{const char *@var{name}}, @w{const char *const @var{argv}[]}, @w{int *@var{fd_child_list}})
+
+A call to @code{assuan_pipe_connect} is equivalent to a call to
+@code{assuan_pipe_connect_ext} with @code{flags} being 0 and without
+an at-fork handler.
 @end deftypefun
 
 If you are using a long running server listening either on a TCP or a
 Unix domain socket, the following function is used to connect to the server:
 
-@deftypefun assuan_error_t assuan_socket_connect_ext (@w{assuan_context_t *@var{ctx}}, @w{const char *@var{name}}, @w{pid_t @var{server_pid}}, @w{unsigned int @var{flags}})
+@deftypefun gpg_error_t assuan_socket_connect_ext (@w{assuan_context_t *@var{ctx}}, @w{const char *@var{name}}, @w{pid_t @var{server_pid}}, @w{unsigned int @var{flags}})
 
 Make a connection to the Unix domain socket @var{name} and return a
 new Assuan context at @var{ctx}.  @var{server_pid} is currently not
 used but may become handy in the future; if you don't know the
-server's pid, pass @code{-1}.  With @var{flags} set to @code{1},
-@code{sendmsg} and @code{recvmesg} are used for input and output and
-thereby enabling the the use of descriptor passing.
+server's process ID (PID), pass @code{-1}.  With @var{flags} set to
+@code{1}, @code{sendmsg} and @code{recvmesg} are used for input and
+output and thereby enable the use of descriptor passing.
 
 Connecting to a TCP server is not yet implemented.  Standard URL
 schemes are reserved for @var{name} specifying a TCP server.
-
 @end deftypefun
 
-@deftypefun assuan_error_t assuan_socket_connect (@w{assuan_context_t *@var{ctx}}, @w{const char *@var{name}}, @w{pid_t @var{server_pid}})
+@deftypefun gpg_error_t assuan_socket_connect (@w{assuan_context_t *@var{ctx}}, @w{const char *@var{name}}, @w{pid_t @var{server_pid}})
+
+A call to @code{assuan_socket_connect} is equivalent to a call to
+@code{assuan_socket_connect_ext} with @code{flags} being 0.
 
 Same as above but no way to specify flags.
 @end deftypefun
 
-Finally, after using the Assuan connection, the resources should be
+Eventually, after using the Assuan connection, the resources should be
 deallocated:
 
 @deftypefun void assuan_disconnect (@w{assuan_context_t @var{ctx}})
 
 Close the connection described by the Assuan context @var{ctx} and
 release all resources.  This function also tries to send the BYE command
-to the server but won't fail on error. It is explicitly allowed to pass
+to the server but won't fail on error.  It is explicitly allowed to pass
 @code{NULL} for @var{ctx}, in which case the function does nothing.
 @end deftypefun
 
@@ -777,10 +770,10 @@ Now that we have a connection to the server, all work may be
 conveniently done using a couple of callbacks and the transact
 function:
 
-@deftypefun assuan_error_t assuan_transact (@w{assuan_context_t @var{ctx}}, @w{const char *@var{command}}, @w{assuan_error_t (*@var{data_cb})(void *, const void *, size_t)}, @w{void *@var{data_cb_arg}}, @w{assuan_error_t (*@var{inquire_cb})(void*, const char *)}, @w{void *@var{inquire_cb_arg}}, @w{assuan_error_t (*@var{status_cb})(void*, const char *)}, @w{void *@var{status_cb_arg}})
+@deftypefun gpg_error_t assuan_transact (@w{assuan_context_t @var{ctx}}, @w{const char *@var{command}}, @w{gpg_error_t (*@var{data_cb})(void *, const void *, size_t)}, @w{void *@var{data_cb_arg}}, @w{gpg_error_t (*@var{inquire_cb})(void*, const char *)}, @w{void *@var{inquire_cb_arg}}, @w{gpg_error_t (*@var{status_cb})(void*, const char *)}, @w{void *@var{status_cb_arg}})
 
 Here @var{ctx} is the Assuan context opened by one of the connect
-calls.  @var{command} is the actual one liner Assuan command.  It
+calls.  @var{command} is the actual Assuan command string.  It
 shall not end with a line feed and its length is limited to
 @code{ASSUAN_LINELENGTH} (~1000 bytes)
 
@@ -796,31 +789,31 @@ passed @var{inquiry_cb_arg} along with the inquiry name to the
 callback.
 
 @var{status_cb} is called by Libassuan for each status line it receives
-from the server. @var{status_cb_arg} is passed along with the status
+from the server.  @var{status_cb_arg} is passed along with the status
 line to the callback.
 
-The function returns @code{0} success or an error code.  The error code
+The function returns @code{0} success or an error value.  The error value
 may be the one one returned by the server in error lines or one
 generated by the callback functions.
-
 @end deftypefun
 
 Libassuan supports descriptor passing on some platforms.  The next two
 functions are used with this feature:
 
 @anchor{function assuan_sendfd}
-@deftypefun assuan_error_t assuan_sendfd (@w{assuan_context_t @var{ctx}}, @w{int @var{fd}})
+@deftypefun gpg_error_t assuan_sendfd (@w{assuan_context_t @var{ctx}}, @w{int @var{fd}})
 
 Send the descriptor @var{fd} to the peer using the context @var{ctx}.
-Note, that calling this function with a @var{ctx} of @code{NULL} and
-@var{fd} of @code{-1} is a valid runtime test to check whether
-descriptor passing is available on the platform.  The descriptor must
-be sent before the command is issued that makes use of the descriptor.
+The descriptor must be sent before the command is issued that makes
+use of the descriptor.
 
+Note that calling this function with a @var{ctx} of @code{NULL} and
+@var{fd} of @code{-1} can be used as a runtime test to check whether
+descriptor passing is available on the platform.  If it is, 0 is returned, otherwise an error with the error code @code{GPG_ERR_NOT_IMPLEMENTED}.
 @end deftypefun
 
-@anchor{fun-assuan_receivedfd}
-@deftypefun assuan_error_t assuan_receivefd (@w{assuan_context_t @var{ctx}}, @w{int *@var{fd}})
+@anchor{function assuan_receivefd}
+@deftypefun gpg_error_t assuan_receivefd (@w{assuan_context_t @var{ctx}}, @w{int *@var{fd}})
 
 Receive a descriptor pending for the context @var{ctx} from the peer.
 The descriptor must be pending before this function is called.  To
@@ -835,9 +828,9 @@ trigger is sent (e.g. using @code{assuan_write_line ("INPUT FD")}.
 @node Server code
 @chapter How to develop an Assuan server
 
-Implementing a server for Assuan is a bit more complex than a
-client. However it is a straightforward task we are going to explain
-using a commented example.
+Implementing a server for Assuan is a bit more complex than a client.
+However, it is a straightforward task we are going to explain using a
+commented example.
 
 @noindent
 The list of the implemented server commands is defined by a table like:
@@ -845,24 +838,25 @@ The list of the implemented server commands is defined by a table like:
 @smallexample
   static struct @{ 
     const char *name;
-    int (*handler)(assuan_context_t, char *line);
+    int (*handler) (assuan_context_t, char *line);
   @} command_table[] = @{
-    @{ "FOO",          cmd_foo @},
-    @{ "BAR",          cmd_bar @},
-    @{ "INPUT",        NULL    @}, 
-    @{ "OUTPUT",       NULL    @}, 
-    @{ NULL                    @}@};
+    @{ "FOO", cmd_foo @},
+    @{ "BAR", cmd_bar @},
+    @{ "INPUT", NULL @}, 
+    @{ "OUTPUT", NULL @}, 
+    @{ NULL @}@};
 @end smallexample
 
 For convenience this table is usually put after the actual command
-handlers (cmd_foo, cmd_bar) or even put inside the command_handler.
-Note that commands with the name ``INPUT'' and ``OUTPUT'' do not require
-a handler because Libassuan provides a default handler for them.  It is
-however possible to assign a custom handler. 
+handlers (@code{cmd_foo}, @code{cmd_bar}) or even put inside
+@code{command_handler} (see below).  Note that the commands
+@code{INPUT} and @code{OUTPUT} do not require a handler because
+Libassuan provides a default handler for them.  It is however possible
+to assign a custom handler.
 
 A prerequisite for this example code is that a client has already
 connected to the server.  Often there are two modes combined in one
-program: A pipe based server, where a client has forked the server
+program: A pipe-based server, where a client has forked the server
 process, or a Unix domain socket based server that is listening on the
 socket.
 
@@ -885,7 +879,7 @@ command_handler (int fd)
     rc = assuan_init_socket_server_ext (&ctx, fd, 2);
   if (rc)
     @{
-      fprintf (stderr, "server init failed: %s\n", gpg_strerror(rc));
+      fprintf (stderr, "server init failed: %s\n", gpg_strerror (rc));
       return;
     @}
 @end example
@@ -897,12 +891,12 @@ code assumes that the server's @code{stdin} and @code{stdout} file
 handles are connected to a pipe.  The initialization is thus done
 using the function:
 
-@deftypefun assuan_error_t assuan_init_pipe_server (@w{assuan_context_t *@var{r_ctx}}, @w{int @var{filedes}[2]})
+@deftypefun gpg_error_t assuan_init_pipe_server (@w{assuan_context_t *@var{r_ctx}}, @w{int @var{filedes}[2]})
 
 The function takes the two file descriptors from @var{filedes} and
 returns a new Assuan context at @var{r_ctx}.  As usual, a return value
 of @code{0} indicates success and a failure is indicated by a
-returning an error code.  In case of error, @code{NULL} will be stored
+returning an error value.  In case of error, @code{NULL} will be stored
 at @var{r_ctx}.
 
 In case the server has been called using a bi-directional pipe
@@ -917,7 +911,7 @@ variable.
 If a file descriptor has been passed, the assuan context gets
 initialized by the function:
 
-@deftypefun assuan_error_t assuan_init_socket_server_ext (@w{assuan_context_t *@var{r_ctx}}, @w{int @var{fd}}, @w{unsigned int @var{flags}})
+@deftypefun gpg_error_t assuan_init_socket_server_ext (@w{assuan_context_t *@var{r_ctx}}, @w{int @var{fd}}, @w{unsigned int @var{flags}})
 
 The function takes the file descriptor @var{fd} which is expected to be
 associated with a socket and returns a new Assuan context at
@@ -934,7 +928,7 @@ bit as it allows better control of the connection state.
 @end table
 
 As usual, a return value of @code{0} indicates success and a failure
-is indicated by a returning an error code.  In case of error,
+is indicated by a returning an error value.  In case of error,
 @code{NULL} will be stored at @var{r_ctx}.
 @end deftypefun
 
@@ -973,19 +967,20 @@ the server.
 @end example
 
 
-@deftypefun assuan_error_t assuan_register_command (@w{assuan_context_t @var{ctx}}, @w{const char *@var{cmd_string}}, @w{int (*@var{handler}) (assuan_context_t, char *)})
+@deftypefun gpg_error_t assuan_register_command (@w{assuan_context_t @var{ctx}}, @w{const char *@var{cmd_string}}, @w{int (*@var{handler}) (assuan_context_t, char *)})
 
 This registers the command named @var{cmd_string} with the Assuan
 context @var{ctx}.  @var{handler} is the function called by Libassuan
 if this command is received from the client.  @var{NULL} may be used
 for @var{handler} to use a default handler (this only works with a few
 pre-defined commands).  Note that several default handlers have
-already been registered when the context has been created: ``NOP'',
-``CANCEL'', ``OPTION'', ``BYE'', ``AUTH'', ``RESET'' and ``END''.  It
-is possible, but not recommended, to override these commands.
+already been registered when the context has been created: @code{NOP},
+@code{CANCEL}, @code{OPTION}, @code{BYE}, @code{AUTH}, @code{RESET}
+and @code{END}.  It is possible, but not recommended, to override
+these commands.
 @end deftypefun
 
-@deftypefun assuan_error_t assuan_register_post_cmd_notify (@w{assuan_context_t @var{ctx}}, @w{void (*@var{fnc})(assuan_context_t)}, @w{int @var{err}})
+@deftypefun gpg_error_t assuan_register_post_cmd_notify (@w{assuan_context_t @var{ctx}}, @w{void (*@var{fnc})(assuan_context_t)}, @w{int @var{err}})
 
 Register a function to be called right after a command has been
 processed.  @var{err} is the result code from the last internal assuan
@@ -993,25 +988,25 @@ operation and not the one returned by the handler.  It may be used for
 command-related cleanup.
 @end deftypefun
 
-@deftypefun assuan_error_t assuan_register_bye_notify (@w{assuan_context_t @var{ctx}}, @w{void (*@var{fnc})(assuan_context_t)})
+@deftypefun gpg_error_t assuan_register_bye_notify (@w{assuan_context_t @var{ctx}}, @w{void (*@var{fnc})(assuan_context_t)})
 
 Register function @var{fnc} with context @var{ctx} to be called right
-before the standard handler for the ``BYE'' command is being called.
+before the standard handler for the @code{BYE} command is being called.
 @end deftypefun
 
-@deftypefun assuan_error_t assuan_register_reset_notify (@w{assuan_context_t @var{ctx}}, @w{void (*@var{fnc})(assuan_context_t)})
+@deftypefun gpg_error_t assuan_register_reset_notify (@w{assuan_context_t @var{ctx}}, @w{void (*@var{fnc})(assuan_context_t)})
 
 Register function @var{fnc} with context @var{ctx} to be called right
-before the standard handler for the ``RESET'' command is being called.
+before the standard handler for the @code{RESET} command is being called.
 @end deftypefun
 
-@deftypefun assuan_error_t assuan_register_cancel_notify (@w{assuan_context_t @var{ctx}}, @w{void (*@var{fnc})(assuan_context_t)})
+@deftypefun gpg_error_t assuan_register_cancel_notify (@w{assuan_context_t @var{ctx}}, @w{void (*@var{fnc})(assuan_context_t)})
 
 Register function @var{fnc} with context @var{ctx} to be called right
-before the standard handler for the ``RESET'' command is being called.
+before the standard handler for the @code{RESET} command is being called.
 @end deftypefun
 
-@deftypefun assuan_error_t assuan_register_option_handler (@w{assuan_context_t @var{ctx}}, @w{int (*@var{fnc})(assuan_context_t, const char*, const char*)})
+@deftypefun gpg_error_t assuan_register_option_handler (@w{assuan_context_t @var{ctx}}, @w{int (*@var{fnc})(assuan_context_t, const char*, const char*)})
 
 Register function @var{fnc} with context @var{ctx} for processing
 options.  That function is being called with the context, the name and
@@ -1023,29 +1018,29 @@ code.
 
 @end deftypefun
 
-@deftypefun assuan_error_t assuan_register_input_notify (@w{assuan_context_t @var{ctx}}, @w{void (*@var{fnc})(assuan_context_t, const char*)})
+@deftypefun gpg_error_t assuan_register_input_notify (@w{assuan_context_t @var{ctx}}, @w{void (*@var{fnc})(assuan_context_t, const char*)})
 
 Although the input function may be overridden with a custom handler, it
 is often more convenient to use the default handler and to know whether
-an ``INPUT'' command has been seen and successfully parsed.  The second
+an @code{INPUT} command has been seen and successfully parsed.  The second
 argument passed to that function is the entire line.  Because that line
 has already been parsed when the function gets called, a file descriptor
-set with the ``INPUT'' command may already be used.  That file
+set with the @code{INPUT} command may already be used.  That file
 descriptor is available by calling @code{assuan_get_input_fd}.
 @end deftypefun
 
-@deftypefun assuan_error_t assuan_register_output_notify (@w{assuan_context_t @var{ctx}}, @w{void (*@var{fnc})(assuan_context_t, const char*)})
+@deftypefun gpg_error_t assuan_register_output_notify (@w{assuan_context_t @var{ctx}}, @w{void (*@var{fnc})(assuan_context_t, const char*)})
 
 Although the output function may be overridden with a custom handler, it
 is often more convenient to use the default handler and to know whether
-an ``OUTPUT'' command has been seen and successfully parsed.  The second
+an @code{OUTPUT} command has been seen and successfully parsed.  The second
 argument passed to that function is the entire line.  Because that line
 has already been parsed when the function gets called, a file descriptor
-set with the ``OUTPUT'' command may already be used.  That file
+set with the @code{OUTPUT} command may already be used.  That file
 descriptor is available by calling @code{assuan_get_output_fd}.
 @end deftypefun
 
-@deftypefun assuan_error_t assuan_set_hello_line (@w{assuan_context_t @var{ctx}}, @w{const char *@var{line}})
+@deftypefun gpg_error_t assuan_set_hello_line (@w{assuan_context_t @var{ctx}}, @w{const char *@var{line}})
 
 This is not actually a register function but may be called also after
 registering commands. It changes the ``Hello'' line, sent by the
@@ -1101,24 +1096,24 @@ For future extensibility and to properly detect the end of the
 connection the core of the server should loop over the
 accept and process calls.
 
-@deftypefun assuan_error_t assuan_accept (@w{assuan_context_t @var{ctx}})
+@deftypefun gpg_error_t assuan_accept (@w{assuan_context_t @var{ctx}})
 
 A call to this function cancel any existing connection and waits for a
 connection from a client (that might be skipped, depending on the type
 of the server).  The initial handshake is performed which may include an
 initial authentication or encryption negotiation.  On success @code{0}
-is returned.  An error code will be returned if the connection could for
-some reason not be established.  An error code of @code{-1} indicates
+is returned.  An error value will be returned if the connection could for
+some reason not be established.  An error code of @code{GPG_ERR_EOF} indicates
 the end of the connection.
 @end deftypefun
 
-@deftypefun assuan_error_t assuan_process (@w{assuan_context_t @var{ctx}})
+@deftypefun gpg_error_t assuan_process (@w{assuan_context_t @var{ctx}})
 
 This function is used to handle the Assuan protocol after a connection
 has been established using @code{assuan_accept}.  It is the main
 protocol handler responsible for reading the client commands and calling
 the appropriate handlers.  The function returns @code{0} on success or
-an error code if something went seriously wrong.  Error codes from the
+an error value if something went seriously wrong.  Error values from the
 individual command handlers, i.e. operational error, are not seen here.
 @end deftypefun
 
@@ -1286,7 +1281,7 @@ operation.  When it returns, the inbound status FD may still be
 readable, but Assuan does not check this.
 
 The function @code{assuan_process_next} returns 0 if it can not make
-progress reliably, and it returns an end of file error code if the
+progress reliably, and it returns an end of file error value if the
 client closed the connection.  See below for more information on this
 function.
 
@@ -1299,7 +1294,7 @@ event loop and return.
 
 When the command is finished, irregardless if this happens directly in
 the command handler or later, you must call @code{assuan_process_done}
-with an appropriate error code (or 0 for success) to return an
+with an appropriate error value (or 0 for success) to return an
 appropriate status line to the client.  You can do this at the end of
 the command handler, for example by ending it with @code{return
 assuan_process_done (error_code);}.  Another possibility is to invoke
@@ -1319,24 +1314,24 @@ return 0.  Eventually, the continuation would be invoked by
 continuation could complete the command and eventually call
 @code{assuan_process_done}.
 
-Cancellation is supported by returning an appropriate error code to
+Cancellation is supported by returning an appropriate error value to
 the client with @code{assuan_process_done}.  For long running
 operations, the server should send progress status messages to the
 client in regular intervals to notice when the client disconnects.
 
-@deftypefun assuan_error_t assuan_process_next (@w{assuan_context_t @var{ctx}})
+@deftypefun gpg_error_t assuan_process_next (@w{assuan_context_t @var{ctx}})
 This is the same as @code{assuan_process} but the caller has to
 provide the outer loop.  He should loop as long as the return code is
 zero and stop otherwise; @code{-1} or @code{GPG_ERR_EOF} indicate a
 regular end.
 @end deftypefun
 
-@deftypefun assuan_error_t assuan_inquire_ext (@w{assuan_context_t @var{ctx}}, @w{const char *@var{keyword}}, @w{size_t @var{maxlen}}, @w{int (*@var{cb}) (void *cb_data, int rc, unsigned char *buffer, size_t buffer_len)}, @w{void *@var{cb_data}})
+@deftypefun gpg_error_t assuan_inquire_ext (@w{assuan_context_t @var{ctx}}, @w{const char *@var{keyword}}, @w{size_t @var{maxlen}}, @w{int (*@var{cb}) (void *cb_data, int rc, unsigned char *buffer, size_t buffer_len)}, @w{void *@var{cb_data}})
 
 This is similar to @code{assuan_inquire} but the caller has to provide
 the outer loop (using @code{assuan_process_next}).  The caller should
 specify a continuation with @var{cb}, which receives @var{cb_data} as
-its first argument, and the error code as well as the inquired data as
+its first argument, and the error value as well as the inquired data as
 its remaining arguments.
 @end deftypefun
 
@@ -1380,7 +1375,7 @@ cmd_foo (assuan_context_t ctx, char *line)
 
 
 
-@deftypefun assuan_error_t assuan_write_status (@w{assuan_context_t @var{ctx}}, @w{const char *@var{keyword}}, @w{const char *@var{text}})
+@deftypefun gpg_error_t assuan_write_status (@w{assuan_context_t @var{ctx}}, @w{const char *@var{keyword}}, @w{const char *@var{text}})
 
 This is a convenience function for a server to send a status line.  You
 need to pass it the @var{keyword} and the content of the status line in
@@ -1388,21 +1383,21 @@ need to pass it the @var{keyword} and the content of the status line in
 @end deftypefun
 
 
-@deftypefun assuan_error_t assuan_inquire (@w{assuan_context_t @var{ctx}}, @w{const char *@var{keyword}}, @w{unsigned char **@var{r_buffer}}, @w{size_t *@var{r_length}}, @w{size_t @var{maxlen}})
+@deftypefun gpg_error_t assuan_inquire (@w{assuan_context_t @var{ctx}}, @w{const char *@var{keyword}}, @w{unsigned char **@var{r_buffer}}, @w{size_t *@var{r_length}}, @w{size_t @var{maxlen}})
 
 A server may use this function to inquire data from a client.  It sends
-an ``INQUIRE'' command back to the server and returns the response
+an @code{INQUIRE} command back to the server and returns the response
 conveniently in a newly allocated buffer.  You need to pass at least the
 server's context @var{ctx} and the @var{keyword} describing the
 requested data.  All other parameters may be @code{NULL} or @code{0},
 although this is rarely useful.
 
 On success the result is stored in a newly allocated buffer stored at
-@var{r_buffer}. The length of the data is stored at @var{r_length}.  If
-@var{maxlen} has not been given as @code{0}, it describes an upper size
-limited of the expected data.  If the client returns too much data the
-function fails and the error code @code{GPG_ERR_ASS_TOO_MUCH_DATA} will
-be returned.
+@var{r_buffer}. The length of the data is stored at @var{r_length}.
+If @var{maxlen} has not been given as @code{0}, it describes an upper
+size limited of the expected data.  If the client returns too much
+data the function fails and an error with the error code
+@code{GPG_ERR_ASS_TOO_MUCH_DATA} will be returned.
 @end deftypefun
 
 
@@ -1420,24 +1415,24 @@ is returned and @code{errno} is set to @code{ENOSYS}.
 @end deftypefun
 
 
-@deftypefun assuan_error_t assuan_set_okay_line (@w{assuan_context_t @var{ctx}}, @w{const char *@var{line}})
+@deftypefun gpg_error_t assuan_set_okay_line (@w{assuan_context_t @var{ctx}}, @w{const char *@var{line}})
 
-Set the text used for the next ``OK'' response to @var{line}.  This is
+Set the text used for the next @code{OK} response to @var{line}.  This is
 sometimes useful to send additional human readable information along
 with the OK line.  The string is automatically reset at the end of the
 current handler.
 @end deftypefun
 
 
-@deftypefun assuan_error_t assuan_command_parse_fd (@w{assuan_context_t @var{ctx}}, @w{char *@var{line}}, @w{int *@var{rfd}})
+@deftypefun gpg_error_t assuan_command_parse_fd (@w{assuan_context_t @var{ctx}}, @w{char *@var{line}}, @w{int *@var{rfd}})
 
-This is the core of the default ``INPUT'' and ``OUTPUT'' handler.  It
-may be used in custom commands as well to negotiate a file descriptor.
-If @var{line} contains @code{FD=@var{n}}, it returns @var{n} in
-@var{rfd} assuming a local file descriptor.  If @var{line} contains
-just @code{FD} it returns a file descriptor at @var{rfd}; this file
-descriptor needs to have been sent by the client right before using
-@code{assuan_sendfd}.
+This is the core of the default @code{INPUT} and @code{OUTPUT}
+handler.  It may be used in custom commands as well to negotiate a
+file descriptor.  If @var{line} contains @code{FD=@var{n}}, it returns
+@var{n} in @var{rfd} assuming a local file descriptor.  If @var{line}
+contains just @code{FD} it returns a file descriptor at @var{rfd};
+this file descriptor needs to have been sent by the client right
+before using @code{assuan_sendfd}.
 
 On W32 systems the returned file descriptor is a system handle and not a
 libc low level I/O file descriptor.  Thus applications need to use
@@ -1448,28 +1443,28 @@ functions like @code{fdopen} or @code{dup}.
 
 @deftypefun int assuan_get_input_fd (@w{assuan_context_t @var{ctx}})
 
-Return the file descriptor sent by the client using the last ``INPUT''
+Return the file descriptor sent by the client using the last @code{INPUT}
 command.  Returns @code{-1} if no file descriptor is available.
 @end deftypefun
 
 @deftypefun int assuan_get_output_fd (@w{assuan_context_t @var{ctx}})
 
 Return the file descriptor sent by the client using the last
-``OUTPUT'' command.  Returns @code{-1} if no file descriptor is
+@code{OUTPUT} command.  Returns @code{-1} if no file descriptor is
 available.
 @end deftypefun
 
-@deftypefun assuan_error_t assuan_close_input_fd (@w{assuan_context_t @var{ctx}})
+@deftypefun gpg_error_t assuan_close_input_fd (@w{assuan_context_t @var{ctx}})
 
-Close the file descriptor set by the last ``INPUT'' command.  This
+Close the file descriptor set by the last @code{INPUT} command.  This
 function has the advantage over a simple @code{close} that it can do
 some sanity checks and make sure that a following
 @code{assuan_get_input_fd} won't return an already closed descriptor.
 @end deftypefun
 
-@deftypefun assuan_error_t assuan_close_output_fd (@w{assuan_context_t @var{ctx}})
+@deftypefun gpg_error_t assuan_close_output_fd (@w{assuan_context_t @var{ctx}})
 
-Close the file descriptor set by the last ``OUTPUT'' command.  This
+Close the file descriptor set by the last @code{OUTPUT} command.  This
 function has the advantage over a simple @code{close} that it can do
 some sanity checks and make sure that a following
 @code{assuan_get_input_fd} won't return an already closed descriptor.
@@ -1477,7 +1472,7 @@ some sanity checks and make sure that a following
 
 @deftypefun int assuan_set_error (@w{assuan_context_t @var{ctx}}, @w{int @var{err}}, @w{const char *@var{text}})
 
-This is a helper to provide a more descriptive error text with ``ERR''
+This is a helper to provide a more descriptive error text with @code{ERR}
 lines.  For this to work, the text needs to be stored in the context
 @var{ctx} while still being in the command handler.  This function is
 commonly called this way
@@ -1486,7 +1481,7 @@ commonly called this way
 @end smallexample
 The value @var{err} is passed through and thus the return value of the
 command handler in the example.  The provided text further explains
-that error code to humans.
+that error to humans.
 @end deftypefun
 
 
@@ -1518,15 +1513,6 @@ this mode the functions @code{assuan_begin_confidential} and
 Return the value of @var{flag} in context @var{ctx}. 
 @end deftypefun 
 
-@deftypefun @w{const char*} assuan_strerror (@w{assuan_error_t @var{err}})
-
-This function returns a textual representation of the given error code
-@var{err}. If this is an unknown value, a string with the value is
-returned. (Beware: it is hold in a static buffer).  It is suggested that
-gpg-error style error numbers should be used and thus
-@code{gpg_strerror} be called. @xref{function
-assuan_set_assuan_err_source}, on how to enable these error codes.
-@end deftypefun
 
 @deftypefun pid_t assuan_get_pid (@w{assuan_context_t @var{ctx}})
 
@@ -1535,12 +1521,12 @@ pid is not known @code{-1} is returned.  Note that it is not always
 possible to learn the pid of the other process. For a pipe based server
 the client knows it instantly and a mechanism is in place to let the
 server learn it.  For socket based servers the pid is only available on
-systems providing the ``SO_PEERCRED'' socket option @footnote{to our
+systems providing the @code{SO_PEERCRED} socket option @footnote{to our
 knowledge only the Linux kernel has this feature}.
 @end deftypefun
 
 
-@deftypefun assuan_error_t assuan_get_peercred (@w{assuan_context_t @var{ctx}}, @w{pid_t *@var{pid}}, @w{uid_t *@var{uid}}, @w{gid_t *@var{pid}})
+@deftypefun gpg_error_t assuan_get_peercred (@w{assuan_context_t @var{ctx}}, @w{pid_t *@var{pid}}, @w{uid_t *@var{uid}}, @w{gid_t *@var{pid}})
 
 Return user credentials of the peer. This will work only on certain
 systems and only when connected over a socket.  If you are not
