@@ -191,7 +191,7 @@ assuan_init_socket_server_ext (assuan_context_t *r_ctx, assuan_fd_t fd,
 
   rc = _assuan_register_std_commands (ctx);
   if (rc)
-    xfree (ctx);
+    _assuan_free (ctx);
   else
     *r_ctx = ctx;
   return rc;

@@ -20,7 +20,10 @@
 # include <config.h>
 #endif
 
-#include "assuan-defs.h"
+#define setenv _assuan_setenv
+#define unsetenv _assuan_unsetenv
+#define clearenv _assuan_clearenv
+
 
 #define __builtin_expect(cond,val) (cond)
 

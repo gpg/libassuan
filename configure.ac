@@ -52,6 +52,7 @@ AC_SUBST(LIBASSUAN_LT_CURRENT)
 AC_SUBST(LIBASSUAN_LT_AGE)
 AC_SUBST(LIBASSUAN_LT_REVISION)
 
+BUILD_REVISION=svn_revision
 PACKAGE=$PACKAGE_NAME
 VERSION=$PACKAGE_VERSION
 
@@ -75,10 +76,9 @@ AC_DEFINE_UNQUOTED(PACKAGE_BUGREPORT, "$PACKAGE_BUGREPORT",
 
 
 # Don't default to build static libs.
-AC_DISABLE_STATIC
-AC_LIBTOOL_WIN32_DLL
-AC_LIBTOOL_RC
-AC_PROG_LIBTOOL
+LT_PREREQ([2.2.6])
+LT_INIT([win32-dll disable-static])
+LT_LANG([Windows Resource])
 
 # For now we hardcode the use of version scripts.  It would be better
 # to write a test for this or even implement this within libtool.
@@ -173,8 +173,22 @@ fi
 dnl AM_CONDITIONAL(HAVE_DOSISH_SYSTEM, test "$have_dosish_system" = yes)
 
 if test "$have_w32_system" = yes; then
-   AC_DEFINE(HAVE_W32_SYSTEM,1, [Defined if we run on a W32 API based system])
+    AC_DEFINE(HAVE_W32_SYSTEM,1,[Defined if we run on a W32 API based system])
+    BUILD_TIMESTAMP=`date --iso-8601=minutes`
+    AC_SUBST(BUILD_TIMESTAMP)
+    changequote(,)dnl 
+    BUILD_FILEVERSION=`echo "$VERSION" | sed 's/\([0-9.]*\).*/\1./;s/\./,/g'`
+    changequote([,])dnl
+    case "$VERSION" in
+      *-svn*) BUILD_FILEVERSION="${BUILD_FILEVERSION}0" ;;
+      *-cvs)  BUILD_FILEVERSION="${BUILD_FILEVERSION}0" ;;
+      *-rc*)  BUILD_FILEVERSION="${BUILD_FILEVERSION}1" ;;
+      *)      BUILD_FILEVERSION="${BUILD_FILEVERSION}2" ;;
+    esac
 fi
+AC_SUBST(BUILD_REVISION)
+AC_SUBST(BUILD_TIMESTAMP)
+AC_SUBST(BUILD_FILEVERSION)
 AM_CONDITIONAL(HAVE_W32_SYSTEM, test "$have_w32_system" = yes)
 
 #
@@ -189,6 +203,11 @@ AC_CHECK_FUNC(setsockopt, , AC_CHECK_LIB(socket, setsockopt,
 	[NETLIBS="-lsocket $NETLIBS"]))
 AC_SUBST(NETLIBS)
 
+if test "$have_w32_system" = yes; then
+   NETLIBS="-lws2_32 $NETLIBS"
+fi
+
+
 # For src/libassuan-config.in
 LIBASSUAN_CONFIG_LIB="-lassuan"
 LIBASSUAN_CONFIG_CFLAGS=""
@@ -197,9 +216,6 @@ if test "$have_pth" = yes; then
 LIBASSUAN_CONFIG_THREAD_MODULES="pth"
 fi
 LIBASSUAN_CONFIG_EXTRA_LIBS=
-if test "$have_w32_system" = yes; then
-  LIBASSUAN_CONFIG_EXTRA_LIBS="$LIBASSUAN_CONFIG_EXTRA_LIBS -lws2_32"
-fi
 if test x"$NETLIBS" != x; then
   LIBASSUAN_CONFIG_EXTRA_LIBS="$LIBASSUAN_CONFIG_EXTRA_LIBS $NETLIBS"
 fi

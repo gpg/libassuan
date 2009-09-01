@@ -677,7 +677,7 @@ pipe_connect_w32 (assuan_context_t *ctx,
 
   /* Build the command line.  */
   if (build_w32_commandline (argv, &cmdline))
-    return _assuan_error (gpg_err_code from_syserror ());
+    return _assuan_error (gpg_err_code_from_syserror ());
 
   /* Create thew two pipes. */
   if (create_inheritable_pipe (rp, 0))

@@ -1,3 +1,9 @@
+2009-09-01  Marcus Brinkmann  <marcus@g10code.de>
+
+	* configure.ac: Set BUILD_REVISION and update calculation of data
+	for build info.  Update libtool macros.  Set NETLIBS for W32
+	targets.
+
 2009-08-26  Marcus Brinkmann  <marcus@g10code.de>
 
 	* configure.ac: Test for versioned symbols support.

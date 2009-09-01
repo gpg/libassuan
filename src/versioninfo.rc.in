@@ -1,4 +1,4 @@
-/* versioninfo.rc.in - for gpgme
+/* versioninfo.rc.in - for assuan
  *    Copyright (C) 2005 g10 Code GmbH
  * 
  * This file is free software; as a special exception the author gives
@@ -18,7 +18,7 @@
 
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION @LIBGPGME_LT_CURRENT@,@LIBGPGME_LT_AGE@,@LIBGPGME_LT_REVISION@,@BUILD_REVISION@
+ FILEVERSION @BUILD_FILEVERSION@
  PRODUCTVERSION @BUILD_FILEVERSION@
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -36,14 +36,14 @@ BEGIN
         BEGIN
             VALUE "Comments", "Provided under the terms of the GNU Lesser General Public License.\0"
             VALUE "CompanyName", "g10 Code GmbH\0"
-            VALUE "FileDescription", "GPGME - GnuPG Made Easy\0"
-            VALUE "FileVersion", "@LIBGPGME_LT_CURRENT@.@LIBGPGME_LT_AGE@.@LIBGPGME_LT_REVISION@.@BUILD_REVISION@\0"
-            VALUE "InternalName", "gpgme\0"
-            VALUE "LegalCopyright", "Copyright © 2005 g10 Code GmbH\0"
+            VALUE "FileDescription", "Assuan - GnuPG IPC\0"
+            VALUE "FileVersion", "@LIBASSUAN_LT_CURRENT@.@LIBASSUAN_LT_AGE@.@LIBASSUAN_LT_REVISION@.@BUILD_REVISION@\0"
+            VALUE "InternalName", "libassuan\0"
+            VALUE "LegalCopyright", "Copyright © 2003-2009 g10 Code GmbH\0"
             VALUE "LegalTrademarks", "\0"
-            VALUE "OriginalFilename", "gpgme.dll\0"
+            VALUE "OriginalFilename", "libassuan.dll\0"
             VALUE "PrivateBuild", "\0"
-            VALUE "ProductName", "GPGME\0"
+            VALUE "ProductName", "Assuan\0"
             VALUE "ProductVersion", "@VERSION@\0"
             VALUE "SpecialBuild", "@BUILD_TIMESTAMP@\0"
         END

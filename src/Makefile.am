@@ -102,12 +102,12 @@ libassuan_la_LDFLAGS = $(libassuan_res_ldflag) $(no_undefined) \
 	@LIBASSUAN_LT_CURRENT@:@LIBASSUAN_LT_REVISION@:@LIBASSUAN_LT_AGE@
 libassuan_la_DEPENDENCIES = @LTLIBOBJS@ \
 	$(srcdir)/libassuan.vers $(libassuan_deps)
-libassuan_la_LIBADD = @LTLIBOBJS@ @GPG_ERROR_LIBS@
+libassuan_la_LIBADD = @LTLIBOBJS@ @NETLIBS@ @GPG_ERROR_LIBS@
 
 if HAVE_PTH
 libassuan_pth_la_SOURCES = $(common_sources) assuan-io-pth.c
 libassuan_pth_la_CPPFLAGS = $(AM_CPPFLAGS) @GPG_ERROR_CFLAGS@ @PTH_CFLAGS@
 libassuan_pth_la_CFLAGS = $(AM_CFLAGS) @GPG_ERROR_CFLAGS@ $(PTH_CFLAGS)
-libassuan_pth_la_LIBADD = @LTLIBOBJS@ @GPG_ERROR_LIBS@ @PTH_LIBS@
+libassuan_pth_la_LIBADD = @LTLIBOBJS@ @NETLIBS@ @GPG_ERROR_LIBS@ @PTH_LIBS@
 endif
 

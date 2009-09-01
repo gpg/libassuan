@@ -37,17 +37,6 @@
 #define DIRSEP_C '\\'
 #endif
 
-#ifdef HAVE_W32_SYSTEM
-/* Not needed anymore because the current mingw32 defines this in
-   sys/types.h */
-/* typedef int ssize_t; */
-
-/* Missing W32 functions */
-int putc_unlocked (int c, FILE *stream);
-void * memrchr (const void *block, int c, size_t size);
-char * stpcpy (char *dest, const char *src);
-#endif
-
 #define LINELENGTH ASSUAN_LINELENGTH
 
 
