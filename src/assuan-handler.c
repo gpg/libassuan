@@ -39,7 +39,7 @@ static int my_strcasecmp (const char *a, const char *b);
 #define PROCESS_DONE(ctx, rc) \
   ((ctx)->in_process_next ? assuan_process_done ((ctx), (rc)) : (rc))
 
-static int
+static gpg_error_t
 dummy_handler (assuan_context_t ctx, char *line)
 {
   return
@@ -48,13 +48,13 @@ dummy_handler (assuan_context_t ctx, char *line)
 }
 
 
-static int
+static gpg_error_t
 std_handler_nop (assuan_context_t ctx, char *line)
 {
   return PROCESS_DONE (ctx, 0); /* okay */
 }
   
-static int
+static gpg_error_t
 std_handler_cancel (assuan_context_t ctx, char *line)
 {
   if (ctx->cancel_notify_fnc)
@@ -62,7 +62,7 @@ std_handler_cancel (assuan_context_t ctx, char *line)
   return PROCESS_DONE (ctx, set_error (ctx, GPG_ERR_NOT_IMPLEMENTED, NULL));
 }
 
-static int
+static gpg_error_t
 std_handler_option (assuan_context_t ctx, char *line)
 {
   char *key, *value, *p;
@@ -115,7 +115,7 @@ std_handler_option (assuan_context_t ctx, char *line)
   return PROCESS_DONE (ctx, 0);
 }
   
-static int
+static gpg_error_t
 std_handler_bye (assuan_context_t ctx, char *line)
 {
   if (ctx->bye_notify_fnc)
@@ -126,13 +126,13 @@ std_handler_bye (assuan_context_t ctx, char *line)
   return PROCESS_DONE (ctx, _assuan_error (GPG_ERR_EOF));
 }
   
-static int
+static gpg_error_t
 std_handler_auth (assuan_context_t ctx, char *line)
 {
   return PROCESS_DONE (ctx, set_error (ctx, GPG_ERR_NOT_IMPLEMENTED, NULL));
 }
   
-static int
+static gpg_error_t
 std_handler_reset (assuan_context_t ctx, char *line)
 {
   if (ctx->reset_notify_fnc)
@@ -143,7 +143,7 @@ std_handler_reset (assuan_context_t ctx, char *line)
   return PROCESS_DONE (ctx, 0);
 }
   
-static int
+static gpg_error_t
 std_handler_help (assuan_context_t ctx, char *line)
 {
   unsigned int i;
@@ -160,7 +160,7 @@ std_handler_help (assuan_context_t ctx, char *line)
 }
 
 
-static int
+static gpg_error_t
 std_handler_end (assuan_context_t ctx, char *line)
 {
   return PROCESS_DONE (ctx, set_error (ctx, GPG_ERR_NOT_IMPLEMENTED, NULL));
@@ -204,10 +204,10 @@ assuan_command_parse_fd (assuan_context_t ctx, char *line, assuan_fd_t *rfd)
 
 
 /* Format is INPUT FD=<n> */
-static int
+static gpg_error_t
 std_handler_input (assuan_context_t ctx, char *line)
 {
-  int rc;
+  gpg_error_t rc;
   assuan_fd_t fd;
 
   rc = assuan_command_parse_fd (ctx, line, &fd);
@@ -220,10 +220,10 @@ std_handler_input (assuan_context_t ctx, char *line)
 }
 
 /* Format is OUTPUT FD=<n> */
-static int
+static gpg_error_t
 std_handler_output (assuan_context_t ctx, char *line)
 {
-  int rc;
+  gpg_error_t rc;
   assuan_fd_t fd;
 
   rc = assuan_command_parse_fd (ctx, line, &fd);
@@ -244,7 +244,7 @@ std_handler_output (assuan_context_t ctx, char *line)
    with default handlers */
 static struct {
   const char *name;
-  int (*handler)(assuan_context_t, char *line);
+  gpg_error_t (*handler)(assuan_context_t, char *line);
   int always; /* always initialize this command */
 } std_cmd_table[] = {
   { "NOP",    std_handler_nop, 1 },
@@ -275,10 +275,10 @@ static struct {
  * 
  * Return value: 0 on success or an error code
  **/
-int
+gpg_error_t
 assuan_register_command (assuan_context_t ctx,
                          const char *cmd_name,
-                         int (*handler)(assuan_context_t, char *))
+                         gpg_error_t (*handler)(assuan_context_t, char *))
 {
   int i;
   const char *s;
@@ -330,9 +330,9 @@ assuan_register_command (assuan_context_t ctx,
   return 0;
 }
 
-int
+gpg_error_t
 assuan_register_post_cmd_notify (assuan_context_t ctx,
-                                 void (*fnc)(assuan_context_t, int))
+                                 void (*fnc)(assuan_context_t, gpg_error_t))
 {
   if (!ctx)
     return _assuan_error (GPG_ERR_ASS_INV_VALUE);
@@ -340,7 +340,7 @@ assuan_register_post_cmd_notify (assuan_context_t ctx,
   return 0;
 }
 
-int
+gpg_error_t
 assuan_register_bye_notify (assuan_context_t ctx,
                             void (*fnc)(assuan_context_t))
 {
@@ -350,7 +350,7 @@ assuan_register_bye_notify (assuan_context_t ctx,
   return 0;
 }
 
-int
+gpg_error_t
 assuan_register_reset_notify (assuan_context_t ctx,
                               void (*fnc)(assuan_context_t))
 {
@@ -360,7 +360,7 @@ assuan_register_reset_notify (assuan_context_t ctx,
   return 0;
 }
 
-int
+gpg_error_t
 assuan_register_cancel_notify (assuan_context_t ctx,
                                void (*fnc)(assuan_context_t))
 {
@@ -370,10 +370,10 @@ assuan_register_cancel_notify (assuan_context_t ctx,
   return 0;
 }
 
-int
+gpg_error_t
 assuan_register_option_handler (assuan_context_t ctx,
-                               int (*fnc)(assuan_context_t,
-                                          const char*, const char*))
+				gpg_error_t (*fnc)(assuan_context_t,
+						   const char*, const char*))
 {
   if (!ctx)
     return _assuan_error (GPG_ERR_ASS_INV_VALUE);
@@ -381,7 +381,7 @@ assuan_register_option_handler (assuan_context_t ctx,
   return 0;
 }
 
-int
+gpg_error_t
 assuan_register_input_notify (assuan_context_t ctx,
                               void (*fnc)(assuan_context_t, const char *))
 {
@@ -391,7 +391,7 @@ assuan_register_input_notify (assuan_context_t ctx,
   return 0;
 }
 
-int
+gpg_error_t
 assuan_register_output_notify (assuan_context_t ctx,
                               void (*fnc)(assuan_context_t, const char *))
 {
@@ -403,12 +403,13 @@ assuan_register_output_notify (assuan_context_t ctx,
 
 
 /* Helper to register the standards commands */
-int
+gpg_error_t
 _assuan_register_std_commands (assuan_context_t ctx)
 {
-  int i, rc;
+  gpg_error_t rc;
+  int i;
 
-  for (i=0; std_cmd_table[i].name; i++)
+  for (i = 0; std_cmd_table[i].name; i++)
     {
       if (std_cmd_table[i].always)
         {
@@ -424,7 +425,7 @@ _assuan_register_std_commands (assuan_context_t ctx)
 
 /* Process the special data lines.  The "D " has already been removed
    from the line.  As all handlers this function may modify the line.  */
-static int
+static gpg_error_t
 handle_data_line (assuan_context_t ctx, char *line, int linelen)
 {
   return set_error (ctx, GPG_ERR_NOT_IMPLEMENTED, NULL);
@@ -449,7 +450,7 @@ my_strcasecmp (const char *a, const char *b)
 /* Parse the line, break out the command, find it in the command
    table, remove leading and white spaces from the arguments, call the
    handler with the argument line and return the error.  */
-static int 
+static gpg_error_t
 dispatch_command (assuan_context_t ctx, char *line, int linelen)
 {
   char *p;
@@ -503,8 +504,8 @@ dispatch_command (assuan_context_t ctx, char *line, int linelen)
 
 
 /* Call this to acknowledge the current command.  */
-int
-assuan_process_done (assuan_context_t ctx, int rc)
+gpg_error_t
+assuan_process_done (assuan_context_t ctx, gpg_error_t rc)
 {
   if (!ctx->in_command)
     return _assuan_error (GPG_ERR_ASS_GENERAL);
@@ -567,10 +568,10 @@ assuan_process_done (assuan_context_t ctx, int rc)
 }
 
 
-static int 
+static gpg_error_t
 process_next (assuan_context_t ctx)
 {
-  int rc;
+  gpg_error_t rc;
 
   /* What the next thing to do is depends on the current state.
      However, we will always first read the next line.  The client is
@@ -626,10 +627,10 @@ process_next (assuan_context_t ctx)
    should be invoked the next time the connected FD is readable.
    Eventually, the caller will finish by invoking
    assuan_process_done.  */
-int 
+gpg_error_t
 assuan_process_next (assuan_context_t ctx)
 {
-  int rc;
+  gpg_error_t rc;
 
   do
     {
@@ -645,7 +646,7 @@ assuan_process_next (assuan_context_t ctx)
 static gpg_error_t
 process_request (assuan_context_t ctx)
 {
-  int rc;
+  gpg_error_t rc;
 
   if (ctx->in_inquire)
     return _assuan_error (GPG_ERR_ASS_NESTED_COMMANDS);
@@ -683,7 +684,7 @@ process_request (assuan_context_t ctx)
 gpg_error_t
 assuan_process (assuan_context_t ctx)
 {
-  int rc;
+  gpg_error_t rc;
 
   do {
     rc = process_request (ctx);

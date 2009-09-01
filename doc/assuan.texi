@@ -864,7 +864,8 @@ socket.
 void
 command_handler (int fd)
 @{
-  int i, rc;
+  gpg_error_t rc;
+  int i;
   assuan_context_t ctx;
 
   if (fd == -1)
@@ -980,7 +981,7 @@ and @code{END}.  It is possible, but not recommended, to override
 these commands.
 @end deftypefun
 
-@deftypefun gpg_error_t assuan_register_post_cmd_notify (@w{assuan_context_t @var{ctx}}, @w{void (*@var{fnc})(assuan_context_t)}, @w{int @var{err}})
+@deftypefun gpg_error_t assuan_register_post_cmd_notify (@w{assuan_context_t @var{ctx}}, @w{void (*@var{fnc})(assuan_context_t)}, @w{gpg_error_t @var{err}})
 
 Register a function to be called right after a command has been
 processed.  @var{err} is the result code from the last internal assuan
@@ -1006,7 +1007,7 @@ Register function @var{fnc} with context @var{ctx} to be called right
 before the standard handler for the @code{RESET} command is being called.
 @end deftypefun
 
-@deftypefun gpg_error_t assuan_register_option_handler (@w{assuan_context_t @var{ctx}}, @w{int (*@var{fnc})(assuan_context_t, const char*, const char*)})
+@deftypefun gpg_error_t assuan_register_option_handler (@w{assuan_context_t @var{ctx}}, @w{gpg_error_t (*@var{fnc})(assuan_context_t, const char*, const char*)})
 
 Register function @var{fnc} with context @var{ctx} for processing
 options.  That function is being called with the context, the name and
@@ -1326,8 +1327,12 @@ zero and stop otherwise; @code{-1} or @code{GPG_ERR_EOF} indicate a
 regular end.
 @end deftypefun
 
-@deftypefun gpg_error_t assuan_inquire_ext (@w{assuan_context_t @var{ctx}}, @w{const char *@var{keyword}}, @w{size_t @var{maxlen}}, @w{int (*@var{cb}) (void *cb_data, int rc, unsigned char *buffer, size_t buffer_len)}, @w{void *@var{cb_data}})
+@deftypefun gpg_error_t assuan_process_done (@w{assuan_context_t @var{ctx}}, @w{gpg_error_t @var{rc}})
+Finish a pending command and return the error code @var{rc} to the
+client.
+@end deftypefun
 
+@deftypefun gpg_error_t assuan_inquire_ext (@w{assuan_context_t @var{ctx}}, @w{const char *@var{keyword}}, @w{size_t @var{maxlen}}, @w{gpg_error_t (*@var{cb}) (void *cb_data, gpg_error_t rc, unsigned char *buffer, size_t buffer_len)}, @w{void *@var{cb_data}})
 This is similar to @code{assuan_inquire} but the caller has to provide
 the outer loop (using @code{assuan_process_next}).  The caller should
 specify a continuation with @var{cb}, which receives @var{cb_data} as
@@ -1470,8 +1475,7 @@ some sanity checks and make sure that a following
 @code{assuan_get_input_fd} won't return an already closed descriptor.
 @end deftypefun
 
-@deftypefun int assuan_set_error (@w{assuan_context_t @var{ctx}}, @w{int @var{err}}, @w{const char *@var{text}})
-
+@deftypefun gpg_error_t assuan_set_error (@w{assuan_context_t @var{ctx}}, @w{gpg_error_t @var{err}}, @w{const char *@var{text}})
 This is a helper to provide a more descriptive error text with @code{ERR}
 lines.  For this to work, the text needs to be stored in the context
 @var{ctx} while still being in the command handler.  This function is

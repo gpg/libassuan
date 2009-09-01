@@ -72,7 +72,7 @@ assuan_set_hello_line (assuan_context_t ctx, const char *line)
 gpg_error_t
 assuan_accept (assuan_context_t ctx)
 {
-  int rc;
+  gpg_error_t rc;
   const char *p, *pend;
 
   if (!ctx)

@@ -102,8 +102,8 @@ _assuan_free (void *p)
 /* Store the error in the context so that the error sending function
   can take out a descriptive text.  Inside the assuan code, use the
   macro set_error instead of this function. */
-int
-assuan_set_error (assuan_context_t ctx, int err, const char *text)
+gpg_error_t
+assuan_set_error (assuan_context_t ctx, gpg_error_t err, const char *text)
 {
   ctx->err_no = err;
   ctx->err_str = text;

@@ -1,5 +1,23 @@
 2009-09-01  Marcus Brinkmann  <marcus@g10code.de>
 
+	* assuan.h: Change types in all functions from int to gpg_error_t
+	where relevant.
+	* assuan-listen.c (assuan_accept): Change type of RC from int to
+	gpg_error_t.
+	* assuan-pipe-server.c (accept_connection, finish_connection):
+	Change return type to gpg_error_t.
+	* assuan-socket-server.c (accept_connection_bottom)
+	(accept_connection, finish_connection): Likewise.
+	(assuan_init_connected_socket_server): Remove.
+	* assuan-defs.h (struct assuan_context_s): Change return type of
+	accept_handler and finish_handler to gpg_error_t.
+	* assuan-pipe-connect.c (do_finish): Change to void.
+	* assuan-inquire.c (_assuan_inquire_ext_cb): Change type of RC
+	from int to gpg_error_t.
+	* assuan-handler.c: Change return codes and RC variables from int
+	to gpg_error_t where appropriate.
+	* assuan-buffer.c (_assuan_read_line): Fix error code on EOF.
+
 	* assuan.h (ASSUAN_INT2FD, ASSUAN_FD2INT): Remove macros.
 	* assuan-defs.h (DIMof): Remove macro.
 

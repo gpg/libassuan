@@ -44,7 +44,7 @@
 static struct assuan_io io = { _assuan_simple_read, _assuan_simple_write,
 			       NULL, NULL };
 
-static int
+static gpg_error_t
 accept_connection_bottom (assuan_context_t ctx)
 {
   assuan_fd_t fd = ctx->connected_fd;
@@ -86,7 +86,7 @@ accept_connection_bottom (assuan_context_t ctx)
 }
 
 
-static int
+static gpg_error_t
 accept_connection (assuan_context_t ctx)
 {
   assuan_fd_t fd;
@@ -109,7 +109,7 @@ accept_connection (assuan_context_t ctx)
   return accept_connection_bottom (ctx);
 }
 
-static int
+static gpg_error_t
 finish_connection (assuan_context_t ctx)
 {
   if (ctx->inbound.fd != ASSUAN_INVALID_FD)
@@ -130,18 +130,10 @@ deinit_socket_server (assuan_context_t ctx)
 
 /* Initialize a server for the socket LISTEN_FD which has already be
    put into listen mode */
-int
+gpg_error_t
 assuan_init_socket_server (assuan_context_t *r_ctx, assuan_fd_t listen_fd)
 {
   return assuan_init_socket_server_ext (r_ctx, listen_fd, 0);
-}
-
-/* Initialize a server using the already accepted socket FD.  This
-   function is deprecated. */
-int
-assuan_init_connected_socket_server (assuan_context_t *r_ctx, assuan_fd_t fd)
-{
-  return assuan_init_socket_server_ext (r_ctx, fd, 2);
 }
 
 
@@ -149,7 +141,7 @@ assuan_init_connected_socket_server (assuan_context_t *r_ctx, assuan_fd_t fd)
    Flag bits: 0 - use sendmsg/recvmsg to allow descriptor passing
               1 - FD has already been accepted.
 */
-int
+gpg_error_t
 assuan_init_socket_server_ext (assuan_context_t *r_ctx, assuan_fd_t fd,
                                unsigned int flags)
 {

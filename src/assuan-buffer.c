@@ -97,13 +97,13 @@ readline (assuan_context_t ctx, char *buf, size_t buflen,
 gpg_error_t
 _assuan_read_line (assuan_context_t ctx)
 {
+  gpg_error_t rc = 0;
   char *line = ctx->inbound.line;
   int nread, atticlen;
-  int rc;
   char *endp = 0;
 
   if (ctx->inbound.eof)
-    return _assuan_error (-1);
+    return _assuan_error (GPG_ERR_EOF);
 
   atticlen = ctx->inbound.attic.linelen;
   if (atticlen)
@@ -113,15 +113,14 @@ _assuan_read_line (assuan_context_t ctx)
 
       endp = memchr (line, '\n', atticlen);
       if (endp)
-	/* Found another line in the attic.  */
 	{
-	  rc = 0;
+	  /* Found another line in the attic.  */
 	  nread = atticlen;
 	  atticlen = 0;
 	}
       else
-	/* There is pending data but not a full line.  */
         {
+	  /* There is pending data but not a full line.  */
           assert (atticlen < LINELENGTH);
           rc = readline (ctx, line + atticlen,
 			 LINELENGTH - atticlen, &nread, &ctx->inbound.eof);
@@ -336,21 +335,21 @@ gpg_error_t
 assuan_write_line (assuan_context_t ctx, const char *line)
 {
   size_t len;
-  const char *s;
+  const char *str;
 
-  if (!ctx)
+  if (! ctx)
     return _assuan_error (GPG_ERR_ASS_INV_VALUE);
 
   /* Make sure that we never take a LF from the user - this might
      violate the protocol. */
-  s = strchr (line, '\n');
-  len = s? (s-line) : strlen (line);
+  str = strchr (line, '\n');
+  len = str ? (str - line) : strlen (line);
 
-  if (ctx->log_fp && s)
+  if (ctx->log_fp && str)
     fprintf (ctx->log_fp, "%s[%u.%d] DBG: -> "
              "[supplied line contained a LF - truncated]\n",
              assuan_get_assuan_log_prefix (),
-             (unsigned int)getpid (), (int)ctx->inbound.fd);
+             (unsigned int) getpid (), (int) ctx->inbound.fd);
 
   return _assuan_write_line (ctx, NULL, line, len);
 }
@@ -439,7 +438,7 @@ _assuan_cookie_write_data (void *cookie, const char *buffer, size_t orig_size)
     }
 
   ctx->outbound.data.linelen = linelen;
-  return (int)orig_size;
+  return (int) orig_size;
 }
 
 
@@ -481,7 +480,7 @@ _assuan_cookie_write_flush (void *cookie)
 	}
       *line++ = '\n';
       linelen++;
-      if ( !(monitor_result & 2)
+      if (! (monitor_result & 2)
            && writen (ctx, ctx->outbound.data.line, linelen))
         {
           ctx->outbound.data.error = gpg_err_code_from_syserror ();

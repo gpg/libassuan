@@ -1,3 +1,14 @@
+2009-09-01  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan.texi: (External I/O Loop Server): Document
+	assuan_process_done.
+	(assuan_register_post_cmd_notify): Change type of ERR from int to
+	gpg_error_t.
+	(assuan_set_error): Likewise.
+	(assuan_register_option_handler): Change types in callback handler
+	from int to gpg_error_t.
+	(assuan_inquire_ext): Likewise.
+
 2009-08-28  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan.texi: Update to API changes.

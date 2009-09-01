@@ -106,7 +106,7 @@ writen (int fd, const char *buffer, size_t length)
 }
 #endif
 
-static int
+static void
 do_finish (assuan_context_t ctx)
 {
   if (ctx->inbound.fd != ASSUAN_INVALID_FD)
@@ -134,7 +134,6 @@ do_finish (assuan_context_t ctx)
       ctx->pid = (pid_t) INVALID_HANDLE_VALUE;
 #endif /*HAVE_W32_SYSTEM*/
     }
-  return 0;
 }
 
 

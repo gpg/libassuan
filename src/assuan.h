@@ -293,29 +293,29 @@ typedef struct assuan_io_hooks *assuan_io_hooks_t;
 
 
 /*-- assuan-handler.c --*/
-int assuan_register_command (assuan_context_t ctx,
-                             const char *cmd_string,
-                             int (*handler)(assuan_context_t, char *));
-int assuan_register_post_cmd_notify (assuan_context_t ctx,
-                                     void (*fnc)(assuan_context_t, int));
-int assuan_register_bye_notify (assuan_context_t ctx,
-                                void (*fnc)(assuan_context_t));
-int assuan_register_reset_notify (assuan_context_t ctx,
-                                  void (*fnc)(assuan_context_t));
-int assuan_register_cancel_notify (assuan_context_t ctx,
-                                   void (*fnc)(assuan_context_t));
-int assuan_register_input_notify (assuan_context_t ctx,
-                                  void (*fnc)(assuan_context_t, const char *));
-int assuan_register_output_notify (assuan_context_t ctx,
-                                  void (*fnc)(assuan_context_t, const char *));
+gpg_error_t assuan_register_command (assuan_context_t ctx,
+				     const char *cmd_string,
+				     gpg_error_t (*handler)(assuan_context_t, char *));
+gpg_error_t assuan_register_post_cmd_notify (assuan_context_t ctx,
+					     void (*fnc)(assuan_context_t, gpg_error_t));
+gpg_error_t assuan_register_bye_notify (assuan_context_t ctx,
+					void (*fnc)(assuan_context_t));
+gpg_error_t assuan_register_reset_notify (assuan_context_t ctx,
+					  void (*fnc)(assuan_context_t));
+gpg_error_t assuan_register_cancel_notify (assuan_context_t ctx,
+					   void (*fnc)(assuan_context_t));
+gpg_error_t assuan_register_input_notify (assuan_context_t ctx,
+					  void (*fnc)(assuan_context_t, const char *));
+gpg_error_t assuan_register_output_notify (assuan_context_t ctx,
+					   void (*fnc)(assuan_context_t, const char *));
 
-int assuan_register_option_handler (assuan_context_t ctx,
-                                    int (*fnc)(assuan_context_t,
-                                               const char*, const char*));
+gpg_error_t assuan_register_option_handler (assuan_context_t ctx,
+					    gpg_error_t (*fnc)(assuan_context_t,
+							       const char*, const char*));
 
 gpg_error_t assuan_process (assuan_context_t ctx);
-int assuan_process_next (assuan_context_t ctx);
-int assuan_process_done (assuan_context_t ctx, int rc);
+gpg_error_t assuan_process_next (assuan_context_t ctx);
+gpg_error_t assuan_process_done (assuan_context_t ctx, gpg_error_t rc);
 int assuan_get_active_fds (assuan_context_t ctx, int what,
                            assuan_fd_t *fdarray, int fdarraysize);
 
@@ -344,36 +344,38 @@ gpg_error_t assuan_close_output_fd (assuan_context_t ctx);
 
 
 /*-- assuan-pipe-server.c --*/
-int assuan_init_pipe_server (assuan_context_t *r_ctx, int filedes[2]);
+gpg_error_t assuan_init_pipe_server (assuan_context_t *r_ctx, int filedes[2]);
 void assuan_deinit_server (assuan_context_t ctx);
 
 /*-- assuan-socket-server.c --*/
-int assuan_init_socket_server (assuan_context_t *r_ctx, assuan_fd_t listen_fd);
-int assuan_init_socket_server_ext (assuan_context_t *r_ctx, assuan_fd_t fd,
-                                   unsigned int flags);
+gpg_error_t assuan_init_socket_server (assuan_context_t *r_ctx,
+				       assuan_fd_t listen_fd);
+gpg_error_t assuan_init_socket_server_ext (assuan_context_t *r_ctx,
+					   assuan_fd_t fd,
+					   unsigned int flags);
 void assuan_set_sock_nonce (assuan_context_t ctx, assuan_sock_nonce_t *nonce);
 
 /*-- assuan-pipe-connect.c --*/
 gpg_error_t assuan_pipe_connect (assuan_context_t *ctx,
-                                    const char *name,
-				    const char *const argv[],
-				    int *fd_child_list);
+				 const char *name,
+				 const char *const argv[],
+				 int *fd_child_list);
 gpg_error_t assuan_pipe_connect_ext (assuan_context_t *ctx, 
-                                        const char *name,
-                                        const char *const argv[],
-                                        int *fd_child_list,
-                                        void (*atfork) (void *, int),
-                                        void *atforkvalue,
-                                        unsigned int flags);
+				     const char *name,
+				     const char *const argv[],
+				     int *fd_child_list,
+				     void (*atfork) (void *, int),
+				     void *atforkvalue,
+				     unsigned int flags);
 
 /*-- assuan-socket-connect.c --*/
 gpg_error_t assuan_socket_connect (assuan_context_t *ctx, 
-                                      const char *name,
-                                      pid_t server_pid);
+				   const char *name,
+				   pid_t server_pid);
 gpg_error_t assuan_socket_connect_ext (assuan_context_t *ctx,
-                                          const char *name,
-                                          pid_t server_pid,
-                                          unsigned int flags);
+				       const char *name,
+				       pid_t server_pid,
+				       unsigned int flags);
 
 /*-- assuan-connect.c --*/
 void assuan_disconnect (assuan_context_t ctx);
@@ -401,9 +403,10 @@ gpg_error_t assuan_inquire (assuan_context_t ctx, const char *keyword,
                                size_t maxlen);
 gpg_error_t assuan_inquire_ext (assuan_context_t ctx, const char *keyword,
 				   size_t maxlen,
-				   int (*cb) (void *cb_data, int rc,
-					      unsigned char *buf,
-					      size_t buf_len),
+				   gpg_error_t (*cb) (void *cb_data,
+						      gpg_error_t rc,
+						      unsigned char *buf,
+						      size_t buf_len),
 				   void *cb_data);
 /*-- assuan-buffer.c --*/
 gpg_error_t assuan_read_line (assuan_context_t ctx,
@@ -426,7 +429,7 @@ void assuan_set_malloc_hooks ( void *(*new_alloc_func)(size_t n),
                                void (*new_free_func)(void*) );
 void assuan_set_io_hooks (assuan_io_hooks_t io_hooks);
 void assuan_set_log_stream (assuan_context_t ctx, FILE *fp);
-int assuan_set_error (assuan_context_t ctx, int err, const char *text);
+gpg_error_t assuan_set_error (assuan_context_t ctx, gpg_error_t err, const char *text);
 void assuan_set_pointer (assuan_context_t ctx, void *pointer);
 void *assuan_get_pointer (assuan_context_t ctx);
 
@@ -445,7 +448,7 @@ void assuan_set_io_monitor (assuan_context_t ctx,
 void assuan_set_flag (assuan_context_t ctx, assuan_flag_t flag, int value);
 
 /* Return the VALUE of FLAG in context CTX. */ 
-int  assuan_get_flag (assuan_context_t ctx, assuan_flag_t flag);
+int assuan_get_flag (assuan_context_t ctx, assuan_flag_t flag);
 
 
 /*-- assuan-errors.c --*/

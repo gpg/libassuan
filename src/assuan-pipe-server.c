@@ -40,14 +40,14 @@ deinit_pipe_server (assuan_context_t ctx)
   /* nothing to do for this simple server */
 }
 
-static int
+static gpg_error_t
 accept_connection (assuan_context_t ctx)
 {
   /* This is a NOP for a pipe server */
   return 0;
 }
 
-static int
+static gpg_error_t
 finish_connection (assuan_context_t ctx)
 {
   /* This is a NOP for a pipe server */
@@ -56,7 +56,7 @@ finish_connection (assuan_context_t ctx)
 
 /* Create a new context.  Note that the handlers are set up for a pipe
    server/client - this way we don't need extra dummy functions */
-int
+gpg_error_t
 _assuan_new_context (assuan_context_t *r_ctx)
 {
   static struct assuan_io io = { _assuan_simple_read,
@@ -64,7 +64,7 @@ _assuan_new_context (assuan_context_t *r_ctx)
 				 0, 0 };
 
   assuan_context_t ctx;
-  int rc;
+  gpg_error_t rc;
 
   *r_ctx = NULL;
   ctx = _assuan_calloc (1, sizeof *ctx);
@@ -106,7 +106,7 @@ is_valid_socket (const char *s)
 #endif /*!HAVE_W32_SYSTEM*/
 
 
-int
+gpg_error_t
 assuan_init_pipe_server (assuan_context_t *r_ctx, int filedes[2])
 {
   int rc;

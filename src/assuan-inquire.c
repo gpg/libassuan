@@ -253,10 +253,10 @@ _assuan_inquire_release (assuan_context_t ctx)
 }
 
 
-int
+gpg_error_t
 _assuan_inquire_ext_cb (assuan_context_t ctx)
 {
-  int rc;
+  gpg_error_t rc;
   unsigned char *line;
   int linelen;
   struct membuf *mb;
@@ -350,8 +350,8 @@ _assuan_inquire_ext_cb (assuan_context_t ctx)
  **/
 gpg_error_t
 assuan_inquire_ext (assuan_context_t ctx, const char *keyword, size_t maxlen,
-		    int (*cb) (void *cb_data, int rc, unsigned char *buf,
-			       size_t len),
+		    gpg_error_t (*cb) (void *cb_data, gpg_error_t rc,
+				       unsigned char *buf, size_t len),
 		    void *cb_data)
 {
   gpg_error_t rc;

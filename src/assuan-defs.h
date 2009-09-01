@@ -43,7 +43,7 @@
 struct cmdtbl_s
 {
   const char *name;
-  int (*handler)(assuan_context_t, char *line);
+  gpg_error_t (*handler)(assuan_context_t, char *line);
 };
 
 
@@ -154,8 +154,8 @@ struct assuan_context_s
   } uds;
 
   void (*deinit_handler)(assuan_context_t);
-  int (*accept_handler)(assuan_context_t);
-  int (*finish_handler)(assuan_context_t);
+  gpg_error_t (*accept_handler)(assuan_context_t);
+  gpg_error_t (*finish_handler)(assuan_context_t);
 
   struct cmdtbl_s *cmdtbl;
   size_t cmdtbl_used; /* used entries */
@@ -164,7 +164,7 @@ struct assuan_context_s
   void (*bye_notify_fnc)(assuan_context_t);
   void (*reset_notify_fnc)(assuan_context_t);
   void (*cancel_notify_fnc)(assuan_context_t);
-  int  (*option_handler_fnc)(assuan_context_t,const char*, const char*);
+  gpg_error_t  (*option_handler_fnc)(assuan_context_t,const char*, const char*);
   void (*input_notify_fnc)(assuan_context_t, const char *);
   void (*output_notify_fnc)(assuan_context_t, const char *);
 
@@ -190,7 +190,7 @@ struct assuan_context_s
 };
 
 /*-- assuan-pipe-server.c --*/
-int _assuan_new_context (assuan_context_t *r_ctx);
+gpg_error_t _assuan_new_context (assuan_context_t *r_ctx);
 void _assuan_release_context (assuan_context_t ctx);
 
 /*-- assuan-uds.c --*/
@@ -200,7 +200,7 @@ void _assuan_init_uds_io (assuan_context_t ctx);
 
 
 /*-- assuan-handler.c --*/
-int _assuan_register_std_commands (assuan_context_t ctx);
+gpg_error_t _assuan_register_std_commands (assuan_context_t ctx);
 
 /*-- assuan-buffer.c --*/
 gpg_error_t _assuan_read_line (assuan_context_t ctx);
@@ -216,7 +216,7 @@ gpg_error_t _assuan_read_from_server (assuan_context_t ctx,
 /*-- assuan-error.c --*/
 
 /*-- assuan-inquire.c --*/
-int _assuan_inquire_ext_cb (assuan_context_t ctx);
+gpg_error_t _assuan_inquire_ext_cb (assuan_context_t ctx);
 void _assuan_inquire_release (assuan_context_t ctx);
 
 /* Check if ERR means EAGAIN.  */
