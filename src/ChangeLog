@@ -1,3 +1,18 @@
+2009-09-01  Marcus Brinkmann  <marcus@g10code.de>
+
+	* setenv.c: Do not include "assuan-defs.h", instead redefine
+	setenv, unsetenv, clearenv in place.
+	* assuan-socket-server.c: Use _assuan_free instead of xfree.
+	* assuan-pipe-connect.c: Fix syntax error.
+	* assuan-defs.h: Remove some duplicated W32 stuff.
+	* Makefile.am (libassuan_la_LIBADD, libassuan_pth_la_LIBADD): Add
+	@NETLIBS@.
+	* versioninfo.rc.in (FILEVERSION): Set to @BUILD_FILEVERSION@.
+	("FileDescription", "FileVersion", "InternalName")
+	("LegalCopyright", "OriginalFilename", "ProductName"): Replace c&p
+	garbage.
+	* libassuan.def: Remove assuan_get_peercred.
+
 2009-08-26  Marcus Brinkmann  <marcus@g10code.de>
 
 	* libassuan-config.in: Add gpg-error.
