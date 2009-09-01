@@ -1,5 +1,8 @@
 2009-09-01  Marcus Brinkmann  <marcus@g10code.de>
 
+	* assuan.h (ASSUAN_INT2FD, ASSUAN_FD2INT): Remove macros.
+	* assuan-defs.h (DIMof): Remove macro.
+
 	* setenv.c: Do not include "assuan-defs.h", instead redefine
 	setenv, unsetenv, clearenv in place.
 	* assuan-socket-server.c: Use _assuan_free instead of xfree.

@@ -47,13 +47,12 @@ struct cmdtbl_s
 };
 
 
-/* A structure to dispatch I/O functions.  All these functions need to
-   return 0 on success and set ERRNO on failure.  */
+/* A structure to dispatch I/O functions.  */
 struct assuan_io
 {
-  /* Routine to read from input_fd.  */
+  /* Routine to read from input_fd.  Sets errno on failure.  */
   ssize_t (*readfnc) (assuan_context_t, void *, size_t);
-  /* Routine to write to output_fd.  */
+  /* Routine to write to output_fd.  Sets errno on failure.  */
   ssize_t (*writefnc) (assuan_context_t, const void *, size_t);
   /* Send a file descriptor.  */
   gpg_error_t (*sendfd) (assuan_context_t, assuan_fd_t);
@@ -75,7 +74,7 @@ struct assuan_context_s
   /* Context specific flags (cf. assuan_flag_t). */
   struct
   {
-    unsigned int no_waitpid:1; /* See ASSUAN_NO_WAITPID. */
+    unsigned int no_waitpid : 1; /* See ASSUAN_NO_WAITPID. */
   } flags;
 
   int confidential;
@@ -313,8 +312,6 @@ int putc_unlocked (int c, FILE *stream);
 #endif
 
 #define DIM(v)		     (sizeof(v)/sizeof((v)[0]))
-#define DIMof(type,member)   DIM(((type *)0)->member)
-
 
 #if HAVE_W32_SYSTEM
 #define SOCKET2HANDLE(s) ((void *)(s))

@@ -243,13 +243,9 @@ typedef struct assuan_context_s *assuan_context_t;
 #ifdef _WIN32
 typedef void *assuan_fd_t;
 #define ASSUAN_INVALID_FD ((void*)(-1))
-#define ASSUAN_INT2FD(s)  ((void *)(s))
-#define ASSUAN_FD2INT(h)  ((unsigned int)(h))
 #else
 typedef int assuan_fd_t;
 #define ASSUAN_INVALID_FD (-1)
-#define ASSUAN_INT2FD(s)  ((s))
-#define ASSUAN_FD2INT(h)  ((h))
 #endif
 
 
