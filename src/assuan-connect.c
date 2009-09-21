@@ -36,17 +36,23 @@
 
 /* Disconnect and release the context CTX. */
 void
-assuan_disconnect (assuan_context_t ctx)
+_assuan_disconnect (assuan_context_t ctx)
 {
-  if (ctx)
-    {
-      assuan_write_line (ctx, "BYE");
-      ctx->finish_handler (ctx);
-      ctx->deinit_handler (ctx);
-      ctx->deinit_handler = NULL;
-      _assuan_release_context (ctx);
-    }
+  assuan_write_line (ctx, "BYE");
+  ctx->finish_handler (ctx);
+  ctx->finish_handler = NULL;
+  ctx->deinit_handler (ctx);
+  ctx->deinit_handler = NULL;
+
+  _assuan_inquire_release (ctx);
+  _assuan_free (ctx, ctx->hello_line);
+  ctx->hello_line = NULL;
+  _assuan_free (ctx, ctx->okay_line);
+  ctx->okay_line = NULL;
+  _assuan_free (ctx, ctx->cmdtbl);
+  ctx->cmdtbl = NULL;
 }
+
 
 /* Return the PID of the peer or -1 if not known. This function works
    in some situations where assuan_get_ucred fails. */
@@ -65,9 +71,9 @@ gpg_error_t
 assuan_get_peercred (assuan_context_t ctx, pid_t *pid, uid_t *uid, gid_t *gid)
 {
   if (!ctx)
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
   if (!ctx->peercred.valid)
-    return _assuan_error (GPG_ERR_ASS_GENERAL);
+    return _assuan_error (ctx, GPG_ERR_ASS_GENERAL);
 
 #ifdef HAVE_SO_PEERCRED
   if (pid)

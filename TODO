@@ -2,13 +2,14 @@
 * Check that we have Pth-ed all blocking fucntions.
 * When turning libassuan into a shared library, provide a general
   version as well as a Pth-enabled one.
+* Even better, allow replacing all these I/O and spawn functions on
+  a per-context basis at runtime (like the old assuan_set_io_hooks but better).
 * assuan_transact returns immediately on an error in the callback
   function.  It might be better to return the error to the caller. As
   an example see dirmngr-client, where we need to send empty responses
   for unknown inquiries, albeit dirmngr itself would handle the
   returns for assuan_inquire gracefully.  We need to check all
   applications whether it is safe to change this.
-
 * XOPEN_SOURCE and snprintf
   See Peter O'Gorman's mail.
 

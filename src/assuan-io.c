@@ -95,25 +95,12 @@ do_io_read (assuan_fd_t fd, void *buffer, size_t size)
 ssize_t
 _assuan_io_read (assuan_fd_t fd, void *buffer, size_t size)
 {
-  ssize_t retval;
-  
-  if (_assuan_io_hooks.read_hook
-      && _assuan_io_hooks.read_hook (NULL, fd, buffer, size, &retval) == 1)
-    return retval;
-
   return do_io_read (fd, buffer, size);
 }
 
 ssize_t
 _assuan_simple_read (assuan_context_t ctx, void *buffer, size_t size)
 {
-  ssize_t retval;
-  
-  if (_assuan_io_hooks.read_hook
-      && _assuan_io_hooks.read_hook (ctx, ctx->inbound.fd, 
-                                     buffer, size, &retval) == 1)
-    return retval;
-
   return do_io_read (ctx->inbound.fd, buffer, size);
 }
 
@@ -156,24 +143,12 @@ do_io_write (assuan_fd_t fd, const void *buffer, size_t size)
 ssize_t
 _assuan_io_write (assuan_fd_t fd, const void *buffer, size_t size)
 {
-  ssize_t retval;
-  
-  if (_assuan_io_hooks.write_hook
-      && _assuan_io_hooks.write_hook (NULL, fd, buffer, size, &retval) == 1)
-    return retval;
   return do_io_write (fd, buffer, size);
 }
 
 ssize_t
 _assuan_simple_write (assuan_context_t ctx, const void *buffer, size_t size)
 {
-  ssize_t retval;
-  
-  if (_assuan_io_hooks.write_hook
-      && _assuan_io_hooks.write_hook (ctx, ctx->outbound.fd, 
-                                      buffer, size, &retval) == 1)
-    return retval;
-
   return do_io_write (ctx->outbound.fd, buffer, size);
 }
 

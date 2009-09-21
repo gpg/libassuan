@@ -1,3 +1,88 @@
+2009-09-19  Marcus Brinkmann  <marcus@g10code.de>
+
+	* src/libassuan.vers, src/libassuan.def: Update to new API.
+	* assuan.c, context.c, system.c, debug.c: New files.
+	* Makefile.am (common_sources): Add assuan.c, context.c, system.c
+	and debug.c.
+	* assuan.h: Include <stdarg.h>.  Fix inclusion of <gpg-error.h>.
+	(_ASSUAN_EXT_SYM_PREFIX, _ASSUAN_PREFIX1, _ASSUAN_PREFIX2)
+	(_ASSUAN_PREFIX): Remove support for renaming the whole library,
+	now that we have a stable shared library interface that can evolve
+	to cover all needs (particularly those of GPGME).
+	(assuan_malloc_hooks, assuan_malloc_hooks_t, assuan_log_cb_t)
+	(assuan_io_monitor_t): New types.
+	(ASSUAN_LOG_INIT, ASSUAN_LOG_CTX, ASSUAN_LOG_ENGINE)
+	(ASSUAN_LOG_DATA, ASSUAN_LOG_SYSIO, ASSUAN_IO_FROM_PEER)
+	(ASSUAN_IO_TO_PEER, ASSUAN_IO_MONITOR_NOLOG)
+	(ASSUAN_IO_MONITOR_IGNORE): New symbols.
+	(assuan_set_gpg_err_source, assuan_get_gpg_err_source)
+	(assuan_get_malloc_hooks, assuan_set_log_cb, assuan_get_log_cb)
+	(assuan_new, assuan_new_ext, assuan_release): New function
+	prototypes.
+	(assuan_init_pipe_server, assuan_init_socket_server)
+	(assuan_init_socket_server_ext, assuan_pipe_connect)
+	(assuan_pipe_connect_ext, assuan_socket_connect)
+	(assuan_socket_connect_ext): Take a context argument instead of
+	pointer to context.
+	(assuan_deinit_server, assuan_disconnect)
+	(assuan_set_assuan_err_source): Remove function prototypes.
+	* assuan-defs.h (ASSUAN_GCC_A_PURE): Moved here from XXX
+	(_assuan_error): New macro.
+	(struct assuan_context_s): New members err_source, w32_strerror,
+	malloc_hooks, log_cb, log_cb_data: New members.  Move confidential
+	into flags.  New member engine.
+	(_assuan_log_handler, _assuan_error_default, _assuan_disconnect):
+	New prototypes.
+	(_assuan_new_context): Remove prototype.
+	(_assuan_malloc, _assuan_calloc, _assuan_realloc, _assuan_free):
+	Add context argument to prototype.
+	* assuan-util.c (alloc_func, realloc_func, free_func): Remove
+	global variables.
+	(assuan_set_malloc_hooks, _assuan_malloc, _assuan_realloc)
+	(_assuan_calloc, _assuan_free, assuan_set_pointer)
+	(assuan_get_pointer, assuan_begin_confidential)
+	(assuan_end_confidential, assuan_set_io_monitor, assuan_set_flag)
+	(assuan_get_flag): Move functions to ...
+	* assuan-client.c: Add ctx argument to all invocations of
+	_assuan_error.
+	* assuan-socket-server.c, assuan-socket-connect.c,
+	assuan-connect.c: Likewise.
+	* assuan-buffer.c: Likewise.  Also update access to confidential
+	flag.
+	* assuan-uds.c: Add ctx argument to all invocations of
+	_assuan_malloc, _assuan_realloc, _assuan_calloc, _assuan_free and
+	_assuan_error.
+	* assuan_listen.c, assuan-inquire.c, assuan-handler.c: Likewise.
+	* assuan-error.c (err_source): Remove global variable.
+	(assuan_set_assuan_err_source): Removed function.
+	(_assuan_w32_strerror): Moved here from assuan-logging.c and made
+	thread-safe.
+	(_assuan_error): Removed function (is now macro).
+	* assuan-handler.c: Update access to confidential flag.
+	* assuan-socket-server.c (accept_connection_bottom): Update access
+	to confidential flag in context.
+	(assuan_init_socket_server, assuan_init_socket_server_ext): Take
+	ctx argument instead of pointer to ctx.
+	* assuan-inquire.c (init_membuf, put_membuf, get_membuf)
+	(free_membuf): Take context argument and change all callers.
+	* assuan-socket-server.c (assuan_socket_connect)
+	(assuan_socket_connect_ext): Take ctx argument instead of pointer
+	to ctx.
+	* assuan-pipe-connect.c (initial_handshake, pipe_connect_unix)
+	(socketpair_connect, assuan_pipe_connect)
+	(assuan_pipe_connect_ext): Likewise.
+	(socketpair_connect): Now that ctx is not a pointer argument
+	anymore, return if we are server or client in the argv argument.
+	* assuan-logging.c (_assuan_log_handler): New function.
+	(_assuan_w32_strerror): Move to assuan-error.c
+	* assuan-connect.c (assuan_disconnect): Renamed to ...
+	(_assuan_disconnect): ... this.
+	* assuan-pipe-server.c (_assuan_new_context): Removed function.
+	(assuan_init_pipe_server): Take ctx argument instead of pointer to
+	ctx.
+	(_assuan_release_context): Removed function.
+	(_assuan_deinit_server): Reimplement.
+
 2009-09-01  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan.h: Change types in all functions from int to gpg_error_t
@@ -10,7 +95,7 @@
 	(accept_connection, finish_connection): Likewise.
 	(assuan_init_connected_socket_server): Remove.
 	* assuan-defs.h (struct assuan_context_s): Change return type of
-	accept_handler and finish_handler to gpg_error_t.
+	accept_handler and finish_handler to gpg_error_t.  Add io_monitor_data.
 	* assuan-pipe-connect.c (do_finish): Change to void.
 	* assuan-inquire.c (_assuan_inquire_ext_cb): Change type of RC
 	from int to gpg_error_t.

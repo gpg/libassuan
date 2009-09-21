@@ -33,17 +33,17 @@ gpg_error_t
 assuan_set_hello_line (assuan_context_t ctx, const char *line)
 {
   if (!ctx)
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
   if (!line)
     {
-      _assuan_free (ctx->hello_line);
+      _assuan_free (ctx, ctx->hello_line);
       ctx->hello_line = NULL;
     }
   else
     {
-      char *buf = _assuan_malloc (3+strlen(line)+1);
+      char *buf = _assuan_malloc (ctx, 3 + strlen (line) + 1);
       if (!buf)
-	return _assuan_error (gpg_err_code_from_syserror ());
+	return _assuan_error (ctx, gpg_err_code_from_syserror ());
       if (strchr (line, '\n'))
         strcpy (buf, line);
       else
@@ -51,7 +51,7 @@ assuan_set_hello_line (assuan_context_t ctx, const char *line)
           strcpy (buf, "OK ");
           strcpy (buf+3, line);
         }
-      _assuan_free (ctx->hello_line);
+      _assuan_free (ctx, ctx->hello_line);
       ctx->hello_line = buf;
     }
   return 0;
@@ -76,7 +76,7 @@ assuan_accept (assuan_context_t ctx)
   const char *p, *pend;
 
   if (!ctx)
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
 
   if (ctx->pipe_mode > 1)
     return -1; /* second invocation for pipemode -> terminate */
@@ -137,7 +137,7 @@ gpg_error_t
 assuan_close_input_fd (assuan_context_t ctx)
 {
   if (!ctx || ctx->input_fd == ASSUAN_INVALID_FD)
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
   _assuan_close (ctx->input_fd);
   ctx->input_fd = ASSUAN_INVALID_FD;
   return 0;
@@ -149,7 +149,7 @@ gpg_error_t
 assuan_close_output_fd (assuan_context_t ctx)
 {
   if (!ctx || ctx->output_fd == ASSUAN_INVALID_FD)
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
 
   _assuan_close (ctx->output_fd);
   ctx->output_fd = ASSUAN_INVALID_FD;

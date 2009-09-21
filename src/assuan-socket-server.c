@@ -41,9 +41,6 @@
 
 #include "assuan-defs.h"
 
-static struct assuan_io io = { _assuan_simple_read, _assuan_simple_write,
-			       NULL, NULL };
-
 static gpg_error_t
 accept_connection_bottom (assuan_context_t ctx)
 {
@@ -80,7 +77,7 @@ accept_connection_bottom (assuan_context_t ctx)
   ctx->outbound.data.linelen = 0;
   ctx->outbound.data.error = 0;
   
-  ctx->confidential = 0;
+  ctx->flags.confidential = 0;
 
   return 0;
 }
@@ -97,28 +94,32 @@ accept_connection (assuan_context_t ctx)
                              (struct sockaddr*)&clnt_addr, &len ));
   if (fd == ASSUAN_INVALID_FD)
     {
-      return _assuan_error (gpg_err_code_from_syserror ());
+      return _assuan_error (ctx, gpg_err_code_from_syserror ());
     }
   if (_assuan_sock_check_nonce (fd, &ctx->listen_nonce))
     {
       _assuan_close (fd);
-      return _assuan_error (GPG_ERR_ASS_ACCEPT_FAILED);
+      return _assuan_error (ctx, GPG_ERR_ASS_ACCEPT_FAILED);
     }
 
   ctx->connected_fd = fd;
   return accept_connection_bottom (ctx);
 }
 
-static gpg_error_t
+
+static void
 finish_connection (assuan_context_t ctx)
 {
   if (ctx->inbound.fd != ASSUAN_INVALID_FD)
     {
       _assuan_close (ctx->inbound.fd);
+      ctx->inbound.fd = ASSUAN_INVALID_FD;
     }
-  ctx->inbound.fd = ASSUAN_INVALID_FD;
-  ctx->outbound.fd = ASSUAN_INVALID_FD;
-  return 0;
+  if (ctx->outbound.fd != ASSUAN_INVALID_FD)
+    {
+      _assuan_close (ctx->outbound.fd);
+      ctx->outbound.fd = ASSUAN_INVALID_FD;
+    }
 }
 
 
@@ -126,14 +127,22 @@ static void
 deinit_socket_server (assuan_context_t ctx)
 {
   finish_connection (ctx);
+
+  _assuan_inquire_release (ctx);
+  _assuan_free (ctx, ctx->hello_line);
+  ctx->hello_line = NULL;
+  _assuan_free (ctx, ctx->okay_line);
+  ctx->okay_line = NULL;
+  _assuan_free (ctx, ctx->cmdtbl);
+  ctx->cmdtbl = NULL;
 }
 
 /* Initialize a server for the socket LISTEN_FD which has already be
    put into listen mode */
 gpg_error_t
-assuan_init_socket_server (assuan_context_t *r_ctx, assuan_fd_t listen_fd)
+assuan_init_socket_server (assuan_context_t ctx, assuan_fd_t listen_fd)
 {
-  return assuan_init_socket_server_ext (r_ctx, listen_fd, 0);
+  return assuan_init_socket_server_ext (ctx, listen_fd, 0);
 }
 
 
@@ -142,18 +151,21 @@ assuan_init_socket_server (assuan_context_t *r_ctx, assuan_fd_t listen_fd)
               1 - FD has already been accepted.
 */
 gpg_error_t
-assuan_init_socket_server_ext (assuan_context_t *r_ctx, assuan_fd_t fd,
+assuan_init_socket_server_ext (assuan_context_t ctx, assuan_fd_t fd,
                                unsigned int flags)
 {
-  assuan_context_t ctx;
-  int rc;
+  gpg_error_t rc;
+  static struct assuan_io io = { _assuan_simple_read, _assuan_simple_write,
+				 0, 0 };
 
-  *r_ctx = NULL;
-  ctx = _assuan_calloc (1, sizeof *ctx);
-  if (!ctx)
-    return _assuan_error (gpg_err_code_from_syserror ());
+  rc = _assuan_register_std_commands (ctx);
+  if (rc)
+    return rc;
+
+  ctx->io = &io;
+  ctx->engine.release = deinit_socket_server;
   ctx->is_server = 1;
-  if ((flags & 2))
+  if (flags & 2)
     ctx->pipe_mode = 1; /* We want a second accept to indicate EOF. */
   ctx->input_fd = ASSUAN_INVALID_FD;
   ctx->output_fd = ASSUAN_INVALID_FD;
@@ -177,15 +189,12 @@ assuan_init_socket_server_ext (assuan_context_t *r_ctx, assuan_fd_t fd,
                          : accept_connection);
   ctx->finish_handler = finish_connection;
 
-  ctx->io = &io;
   if ((flags & 1))
     _assuan_init_uds_io (ctx);
 
   rc = _assuan_register_std_commands (ctx);
   if (rc)
-    _assuan_free (ctx);
-  else
-    *r_ctx = ctx;
+    _assuan_reset (ctx);
   return rc;
 }
 

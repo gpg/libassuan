@@ -27,8 +27,6 @@ LIBASSUAN_1.0 {
     assuan_close_input_fd;
     assuan_close_output_fd;
     assuan_command_parse_fd;
-    assuan_deinit_server;
-    assuan_disconnect;
     assuan_end_confidential;
     assuan_get_active_fds;
     assuan_get_assuan_log_prefix;
@@ -63,13 +61,11 @@ LIBASSUAN_1.0 {
     assuan_register_reset_notify;
     assuan_send_data;
     assuan_sendfd;
-    assuan_set_assuan_err_source;
     assuan_set_assuan_log_prefix;
     assuan_set_assuan_log_stream;
     assuan_set_error;
     assuan_set_flag;
     assuan_set_hello_line;
-    assuan_set_io_hooks;
     assuan_set_io_monitor;
     assuan_set_log_stream;
     assuan_set_malloc_hooks;
@@ -86,6 +82,16 @@ LIBASSUAN_1.0 {
     assuan_transact;
     assuan_write_line;
     assuan_write_status;
+    assuan_new;
+    assuan_release;
+    assuan_set_gpg_err_source;
+    assuan_get_gpg_err_source;
+    assuan_get_malloc_hooks;
+    assuan_set_log_cb;
+    assuan_get_log_cb;
+    assuan_new_ext;
+    assuan_new;
+    assuan_release;
 
   local:
     *;

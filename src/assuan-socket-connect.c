@@ -33,6 +33,7 @@
 #endif
 
 #include "assuan-defs.h"
+#include "debug.h"
 
 /* Hacks for Slowaris.  */
 #ifndef PF_LOCAL
@@ -52,17 +53,21 @@
 #endif
 
  
-static int
+static void
 do_finish (assuan_context_t ctx)
 {
   if (ctx->inbound.fd != ASSUAN_INVALID_FD)
     {
       _assuan_close (ctx->inbound.fd);
+      ctx->inbound.fd = ASSUAN_INVALID_FD;
     }
-  ctx->inbound.fd = ASSUAN_INVALID_FD;
-  ctx->outbound.fd = ASSUAN_INVALID_FD;
-  return 0;
+  if (ctx->outbound.fd != ASSUAN_INVALID_FD)
+    {
+      _assuan_close (ctx->outbound.fd);
+      ctx->outbound.fd = ASSUAN_INVALID_FD;
+    }
 }
+
 
 static void
 do_deinit (assuan_context_t ctx)
@@ -75,10 +80,10 @@ do_deinit (assuan_context_t ctx)
    Assuan context in CTX.  SERVER_PID is currently not used but may
    become handy in the future.  */
 gpg_error_t
-assuan_socket_connect (assuan_context_t *r_ctx,
+assuan_socket_connect (assuan_context_t ctx,
                        const char *name, pid_t server_pid)
 {
-  return assuan_socket_connect_ext (r_ctx, name, server_pid, 0);
+  return assuan_socket_connect_ext (ctx, name, server_pid, 0);
 }
 
 
@@ -87,22 +92,21 @@ assuan_socket_connect (assuan_context_t *r_ctx,
    become handy in the future.  With flags set to 1 sendmsg and
    recvmsg are used. */
 gpg_error_t
-assuan_socket_connect_ext (assuan_context_t *r_ctx,
+assuan_socket_connect_ext (assuan_context_t ctx,
                            const char *name, pid_t server_pid,
                            unsigned int flags)
 {
   static struct assuan_io io = { _assuan_simple_read, _assuan_simple_write,
 				 NULL, NULL };
   gpg_error_t err;
-  assuan_context_t ctx;
   assuan_fd_t fd;
   struct sockaddr_un srvr_addr;
   size_t len;
   const char *s;
 
-  if (!r_ctx || !name)
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
-  *r_ctx = NULL;
+
+  if (!ctx || !name)
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
 
   /* We require that the name starts with a slash, so that we
      eventually can reuse this function for other socket types.  To
@@ -111,23 +115,18 @@ assuan_socket_connect_ext (assuan_context_t *r_ctx,
   if (*s && s[1] == ':')
     s += 2;
   if (*s != DIRSEP_C && *s != '/')
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
 
   if (strlen (name)+1 >= sizeof srvr_addr.sun_path)
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
-
-  err = _assuan_new_context (&ctx); 
-  if (err)
-      return err;
-  ctx->deinit_handler = ((flags&1))? _assuan_uds_deinit :  do_deinit;
-  ctx->finish_handler = do_finish;
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
 
   fd = _assuan_sock_new (PF_LOCAL, SOCK_STREAM, 0);
   if (fd == ASSUAN_INVALID_FD)
     {
-      _assuan_log_printf ("can't create socket: %s\n", strerror (errno));
-      _assuan_release_context (ctx);
-      return _assuan_error (GPG_ERR_ASS_GENERAL);
+      TRACE1 (ctx, ASSUAN_LOG_SYSIO, "assuan_socket_connect_ext", ctx,
+	      "can't create socket: %s", strerror (errno));
+      /* FIXME: Cleanup  */
+      return _assuan_error (ctx, GPG_ERR_ASS_GENERAL);
     }
 
   memset (&srvr_addr, 0, sizeof srvr_addr);
@@ -138,43 +137,46 @@ assuan_socket_connect_ext (assuan_context_t *r_ctx,
 
   if ( _assuan_sock_connect (fd, (struct sockaddr *) &srvr_addr, len) == -1 )
     {
-      _assuan_log_printf ("can't connect to `%s': %s\n",
-                          name, strerror (errno));
-      _assuan_release_context (ctx);
+      TRACE2 (ctx, ASSUAN_LOG_SYSIO, "assuan_socket_connect_ext", ctx,
+	      "can't connect to `%s': %s\n", name, strerror (errno));
+      /* FIXME: Cleanup */
       _assuan_close (fd);
-      return _assuan_error (GPG_ERR_ASS_CONNECT_FAILED);
+      return _assuan_error (ctx, GPG_ERR_ASS_CONNECT_FAILED);
     }
-
+ 
+  ctx->io = &io;
+  ctx->engine.release = _assuan_disconnect;
+  ctx->deinit_handler = ((flags&1))? _assuan_uds_deinit :  do_deinit;
+  ctx->finish_handler = do_finish;
   ctx->inbound.fd = fd;
   ctx->outbound.fd = fd;
-  ctx->io = &io;
-  if ((flags&1))
+
+  if (flags & 1)
     _assuan_init_uds_io (ctx);
- 
+
   /* initial handshake */
   {
     int okay, off;
 
     err = _assuan_read_from_server (ctx, &okay, &off);
     if (err)
-      _assuan_log_printf ("can't connect to server: %s\n",
-                          gpg_strerror (err));
+      TRACE1 (ctx, ASSUAN_LOG_SYSIO, "assuan_socket_connect_ext", ctx,
+	      "can't connect to server: %s\n", gpg_strerror (err));
     else if (okay != 1)
       {
-        /*LOG ("can't connect to server: `");*/
-	_assuan_log_sanitized_string (ctx->inbound.line);
-	fprintf (assuan_get_assuan_log_stream (), "'\n");
-	err = _assuan_error (GPG_ERR_ASS_CONNECT_FAILED);
+	char *sname = _assuan_encode_c_string (ctx, ctx->inbound.line);
+	if (sname)
+	  {
+	    TRACE1 (ctx, ASSUAN_LOG_SYSIO, "assuan_socket_connect_ext", ctx,
+		    "can't connect to server: %s", sname);
+	    _assuan_free (ctx, sname);
+	  }
+	err = _assuan_error (ctx, GPG_ERR_ASS_CONNECT_FAILED);
       }
   }
-
+  
   if (err)
-    {
-      assuan_disconnect (ctx); 
-    }
-  else
-    *r_ctx = ctx;
-  return 0;
+    _assuan_reset (ctx);
+
+  return err;
 }
-
-

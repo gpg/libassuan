@@ -27,7 +27,7 @@
 #include <errno.h>
 
 #include "assuan-defs.h"
-
+#include "debug.h"
 
 
 #define spacep(p)  (*(p) == ' ' || *(p) == '\t')
@@ -123,7 +123,7 @@ std_handler_bye (assuan_context_t ctx, char *line)
   assuan_close_input_fd (ctx);
   assuan_close_output_fd (ctx);
   /* pretty simple :-) */
-  return PROCESS_DONE (ctx, _assuan_error (GPG_ERR_EOF));
+  return PROCESS_DONE (ctx, _assuan_error (ctx, GPG_ERR_EOF));
 }
   
 static gpg_error_t
@@ -287,7 +287,7 @@ assuan_register_command (assuan_context_t ctx,
     cmd_name = NULL;
 
   if (!cmd_name)
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
 
   if (!handler)
     { /* find a default handler. */
@@ -308,18 +308,18 @@ assuan_register_command (assuan_context_t ctx,
   if (!ctx->cmdtbl)
     {
       ctx->cmdtbl_size = 50;
-      ctx->cmdtbl = _assuan_calloc (ctx->cmdtbl_size, sizeof *ctx->cmdtbl);
+      ctx->cmdtbl = _assuan_calloc (ctx, ctx->cmdtbl_size, sizeof *ctx->cmdtbl);
       if (!ctx->cmdtbl)
-	return _assuan_error (gpg_err_code_from_syserror ());
+	return _assuan_error (ctx, gpg_err_code_from_syserror ());
       ctx->cmdtbl_used = 0;
     }
   else if (ctx->cmdtbl_used >= ctx->cmdtbl_size)
     {
       struct cmdtbl_s *x;
 
-      x = _assuan_realloc ( ctx->cmdtbl, (ctx->cmdtbl_size+10) * sizeof *x);
+      x = _assuan_realloc (ctx, ctx->cmdtbl, (ctx->cmdtbl_size+10) * sizeof *x);
       if (!x)
-	return _assuan_error (gpg_err_code_from_syserror ());
+	return _assuan_error (ctx, gpg_err_code_from_syserror ());
       ctx->cmdtbl = x;
       ctx->cmdtbl_size += 50;
     }
@@ -335,7 +335,7 @@ assuan_register_post_cmd_notify (assuan_context_t ctx,
                                  void (*fnc)(assuan_context_t, gpg_error_t))
 {
   if (!ctx)
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
   ctx->post_cmd_notify_fnc = fnc;
   return 0;
 }
@@ -345,7 +345,7 @@ assuan_register_bye_notify (assuan_context_t ctx,
                             void (*fnc)(assuan_context_t))
 {
   if (!ctx)
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
   ctx->bye_notify_fnc = fnc;
   return 0;
 }
@@ -355,7 +355,7 @@ assuan_register_reset_notify (assuan_context_t ctx,
                               void (*fnc)(assuan_context_t))
 {
   if (!ctx)
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
   ctx->reset_notify_fnc = fnc;
   return 0;
 }
@@ -365,7 +365,7 @@ assuan_register_cancel_notify (assuan_context_t ctx,
                                void (*fnc)(assuan_context_t))
 {
   if (!ctx)
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
   ctx->cancel_notify_fnc = fnc;
   return 0;
 }
@@ -376,7 +376,7 @@ assuan_register_option_handler (assuan_context_t ctx,
 						   const char*, const char*))
 {
   if (!ctx)
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
   ctx->option_handler_fnc = fnc;
   return 0;
 }
@@ -386,7 +386,7 @@ assuan_register_input_notify (assuan_context_t ctx,
                               void (*fnc)(assuan_context_t, const char *))
 {
   if (!ctx)
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
   ctx->input_notify_fnc = fnc;
   return 0;
 }
@@ -396,7 +396,7 @@ assuan_register_output_notify (assuan_context_t ctx,
                               void (*fnc)(assuan_context_t, const char *))
 {
   if (!ctx)
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
   ctx->output_notify_fnc = fnc;
   return 0;
 }
@@ -508,7 +508,7 @@ gpg_error_t
 assuan_process_done (assuan_context_t ctx, gpg_error_t rc)
 {
   if (!ctx->in_command)
-    return _assuan_error (GPG_ERR_ASS_GENERAL);
+    return _assuan_error (ctx, GPG_ERR_ASS_GENERAL);
 
   ctx->in_command = 0;
 
@@ -557,10 +557,10 @@ assuan_process_done (assuan_context_t ctx, gpg_error_t rc)
   if (ctx->post_cmd_notify_fnc)
     ctx->post_cmd_notify_fnc (ctx, rc);
   
-  ctx->confidential = 0;
+  ctx->flags.confidential = 0;
   if (ctx->okay_line)
     {
-      _assuan_free (ctx->okay_line);
+      _assuan_free (ctx, ctx->okay_line);
       ctx->okay_line = NULL;
     }
 
@@ -613,7 +613,8 @@ process_next (assuan_context_t ctx)
       /* Should not happen.  The client is sending data while we are
 	 in a command and not waiting for an inquire.  We log an error
 	 and discard it.  */
-      _assuan_log_printf ("unexpected client data\n");
+      TRACE0 (ctx, ASSUAN_LOG_DATA, "process_next", ctx,
+	      "unexpected client data");
       rc = 0;
     }
 
@@ -649,7 +650,7 @@ process_request (assuan_context_t ctx)
   gpg_error_t rc;
 
   if (ctx->in_inquire)
-    return _assuan_error (GPG_ERR_ASS_NESTED_COMMANDS);
+    return _assuan_error (ctx, GPG_ERR_ASS_NESTED_COMMANDS);
 
   do
     {
@@ -798,22 +799,22 @@ gpg_error_t
 assuan_set_okay_line (assuan_context_t ctx, const char *line)
 {
   if (!ctx)
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
   if (!line)
     {
-      _assuan_free (ctx->okay_line);
+      _assuan_free (ctx, ctx->okay_line);
       ctx->okay_line = NULL;
     }
   else
     {
       /* FIXME: we need to use gcry_is_secure() to test whether
          we should allocate the entire line in secure memory */
-      char *buf = _assuan_malloc (3 + strlen(line) + 1);
+      char *buf = _assuan_malloc (ctx, 3 + strlen(line) + 1);
       if (!buf)
-        return _assuan_error (gpg_err_code_from_syserror ());
+        return _assuan_error (ctx, gpg_err_code_from_syserror ());
       strcpy (buf, "OK ");
       strcpy (buf+3, line);
-      _assuan_free (ctx->okay_line);
+      _assuan_free (ctx, ctx->okay_line);
       ctx->okay_line = buf;
     }
   return 0;
@@ -831,7 +832,7 @@ assuan_write_status (assuan_context_t ctx,
   gpg_error_t ae;
 
   if ( !ctx || !keyword)
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
   if (!text)
     text = "";
 
@@ -847,7 +848,7 @@ assuan_write_status (assuan_context_t ctx,
         }
       ae = assuan_write_line (ctx, buffer);
     }
-  else if ( (helpbuf = _assuan_malloc (n)) )
+  else if ( (helpbuf = _assuan_malloc (ctx, n)) )
     {
       strcpy (helpbuf, "S ");
       strcat (helpbuf, keyword);
@@ -857,7 +858,7 @@ assuan_write_status (assuan_context_t ctx,
           strcat (helpbuf, text);
         }
       ae = assuan_write_line (ctx, helpbuf);
-      _assuan_free (helpbuf);
+      _assuan_free (ctx, helpbuf);
     }
   else
     ae = 0;

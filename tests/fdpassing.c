@@ -75,7 +75,7 @@ register_commands (assuan_context_t ctx)
   static struct
   {
     const char *name;
-    int (*handler) (assuan_context_t, char *line);
+    gpg_error_t (*handler) (assuan_context_t, char *line);
   } table[] =
       {
 	{ "ECHO", cmd_echo },
@@ -104,7 +104,11 @@ server (void)
 
   log_info ("server started\n");
 
-  rc = assuan_init_pipe_server (&ctx, NULL);
+  rc = assuan_new (&ctx);
+  if (rc)
+    log_fatal ("assuan_new failed: %s\n", gpg_strerror (rc));
+
+  rc = assuan_init_pipe_server (ctx, NULL);
   if (rc)
     log_fatal ("assuan_init_pipe_server failed: %s\n", gpg_strerror (rc));
 
@@ -132,7 +136,7 @@ server (void)
         log_error ("assuan_process failed: %s\n", gpg_strerror (rc));
     }
   
-  assuan_deinit_server (ctx);
+  assuan_release (ctx);
 }
 
 
@@ -193,7 +197,7 @@ client (assuan_context_t ctx, const char *fname)
   /* Give us some time to check with lsof that all descriptors are closed. */
 /*   sleep (10); */
 
-  assuan_disconnect (ctx);
+  assuan_release (ctx);
   return 0;
 }
 
@@ -210,7 +214,7 @@ main (int argc, char **argv)
 {
   int last_argc = -1;
   assuan_context_t ctx;
-  int err;
+  gpg_error_t err;
   int no_close_fds[2];
   const char *arglist[10];
   int is_server = 0;
@@ -260,7 +264,6 @@ main (int argc, char **argv)
 
 
   assuan_set_assuan_log_prefix (log_prefix);
-  assuan_set_assuan_log_stream (stderr);
 
   if (is_server)
     {
@@ -269,6 +272,8 @@ main (int argc, char **argv)
     }
   else
     {
+      const char *loc;
+
       no_close_fds[0] = 2;
       no_close_fds[1] = -1;
       if (with_exec)
@@ -278,8 +283,13 @@ main (int argc, char **argv)
           arglist[2] = verbose? "--verbose":NULL;
           arglist[3] = NULL;
         }
-      err = assuan_pipe_connect_ext (&ctx, with_exec? "./fdpassing":NULL,
-                                     with_exec? arglist :NULL,
+
+      err = assuan_new (&ctx);
+      if (err)
+	log_fatal ("assuan_new failed: %s\n", gpg_strerror (err));
+
+      err = assuan_pipe_connect_ext (ctx, with_exec? "./fdpassing":NULL,
+                                     with_exec ? arglist : &loc,
                                      no_close_fds, NULL, NULL, 1);
       if (err)
         {
@@ -287,7 +297,7 @@ main (int argc, char **argv)
           return 1;
         }
       
-      if (!ctx)
+      if (!with_exec && loc[0] == 's')
         {
           server ();
           log_info ("server finished\n");
@@ -297,12 +307,12 @@ main (int argc, char **argv)
           if (client (ctx, fname)) 
             {
               log_info ("waiting for server to terminate...\n");
-              assuan_disconnect (ctx);
+              assuan_release (ctx);
             }
           log_info ("client finished\n");
         }
     }
 
-  return errorcount? 1:0;
+  return errorcount ? 1 : 0;
 }
 

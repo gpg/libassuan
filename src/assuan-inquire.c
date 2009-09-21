@@ -52,7 +52,8 @@ struct membuf
    the code with out of core checks.  */
 
 static void
-init_membuf (struct membuf *mb, int initiallen, size_t maxlen)
+init_membuf (assuan_context_t ctx,
+	     struct membuf *mb, int initiallen, size_t maxlen)
 {
   mb->len = 0;
   mb->size = initiallen;
@@ -60,13 +61,14 @@ init_membuf (struct membuf *mb, int initiallen, size_t maxlen)
   mb->too_large = 0;
   mb->maxlen = maxlen;
   /* we need to allocate one byte more for get_membuf */
-  mb->buf = _assuan_malloc (initiallen+1);
+  mb->buf = _assuan_malloc (ctx, initiallen + 1);
   if (!mb->buf)
       mb->out_of_core = 1;
 }
 
 static void
-put_membuf (struct membuf *mb, const void *buf, size_t len)
+put_membuf (assuan_context_t ctx,
+	    struct membuf *mb, const void *buf, size_t len)
 {
   if (mb->out_of_core || mb->too_large)
     return;
@@ -83,7 +85,7 @@ put_membuf (struct membuf *mb, const void *buf, size_t len)
       
       mb->size += len + 1024;
       /* we need to allocate one byte more for get_membuf */
-      p = _assuan_realloc (mb->buf, mb->size+1);
+      p = _assuan_realloc (ctx, mb->buf, mb->size + 1);
       if (!p)
         {
           mb->out_of_core = 1;
@@ -96,13 +98,13 @@ put_membuf (struct membuf *mb, const void *buf, size_t len)
 }
 
 static void *
-get_membuf (struct membuf *mb, size_t *len)
+get_membuf (assuan_context_t ctx, struct membuf *mb, size_t *len)
 {
   char *p;
 
   if (mb->out_of_core || mb->too_large)
     {
-      _assuan_free (mb->buf);
+      _assuan_free (ctx, mb->buf);
       mb->buf = NULL;
       return NULL;
     }
@@ -116,9 +118,9 @@ get_membuf (struct membuf *mb, size_t *len)
 }
 
 static void
-free_membuf (struct membuf *mb)
+free_membuf (assuan_context_t ctx, struct membuf *mb)
 {
-  _assuan_free (mb->buf);
+  _assuan_free (ctx, mb->buf);
   mb->buf = NULL;
 }
 
@@ -148,20 +150,20 @@ assuan_inquire (assuan_context_t ctx, const char *keyword,
   int nodataexpected;
 
   if (!ctx || !keyword || (10 + strlen (keyword) >= sizeof (cmdbuf)))
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
   nodataexpected = !r_buffer && !r_length && !maxlen;
   if (!nodataexpected && (!r_buffer || !r_length))
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
   if (!ctx->is_server)
-    return _assuan_error (GPG_ERR_ASS_NOT_A_SERVER);
+    return _assuan_error (ctx, GPG_ERR_ASS_NOT_A_SERVER);
   if (ctx->in_inquire)
-    return _assuan_error (GPG_ERR_ASS_NESTED_COMMANDS);
+    return _assuan_error (ctx, GPG_ERR_ASS_NESTED_COMMANDS);
   
   ctx->in_inquire = 1;
   if (nodataexpected)
     memset (&mb, 0, sizeof mb); /* avoid compiler warnings */
   else
-    init_membuf (&mb, maxlen? maxlen:1024, maxlen);
+    init_membuf (ctx, &mb, maxlen? maxlen:1024, maxlen);
 
   strcpy (stpcpy (cmdbuf, "INQUIRE "), keyword);
   rc = assuan_write_line (ctx, cmdbuf);
@@ -186,12 +188,12 @@ assuan_inquire (assuan_context_t ctx, const char *keyword,
         break; /* END command received*/
       if (line[0] == 'C' && line[1] == 'A' && line[2] == 'N')
         {
-          rc = _assuan_error (GPG_ERR_ASS_CANCELED);
+          rc = _assuan_error (ctx, GPG_ERR_ASS_CANCELED);
           goto leave;
         }
       if (line[0] != 'D' || line[1] != ' ' || nodataexpected)
         {
-          rc = _assuan_error (GPG_ERR_ASS_UNEXPECTED_CMD);
+          rc = _assuan_error (ctx, GPG_ERR_ASS_UNEXPECTED_CMD);
           goto leave;
         }
       if (linelen < 3)
@@ -204,7 +206,7 @@ assuan_inquire (assuan_context_t ctx, const char *keyword,
         {
           for (;linelen && *p != '%'; linelen--, p++)
             ;
-          put_membuf (&mb, line, p-line);
+          put_membuf (ctx, &mb, line, p-line);
           if (linelen > 2)
             { /* handle escaping */
               unsigned char tmp[1];
@@ -212,27 +214,27 @@ assuan_inquire (assuan_context_t ctx, const char *keyword,
               *tmp = xtoi_2 (p);
               p += 2;
               linelen -= 3;
-              put_membuf (&mb, tmp, 1);
+              put_membuf (ctx, &mb, tmp, 1);
             }
           line = p;
         }
       if (mb.too_large)
         {
-          rc = _assuan_error (GPG_ERR_ASS_TOO_MUCH_DATA);
+          rc = _assuan_error (ctx, GPG_ERR_ASS_TOO_MUCH_DATA);
           goto leave;
         }
     }
 
   if (!nodataexpected)
     {
-      *r_buffer = get_membuf (&mb, r_length);
+      *r_buffer = get_membuf (ctx, &mb, r_length);
       if (!*r_buffer)
-	rc = _assuan_error (gpg_err_code_from_syserror ());
+	rc = _assuan_error (ctx, gpg_err_code_from_syserror ());
     }
 
  leave:
   if (!nodataexpected)
-    free_membuf (&mb);
+    free_membuf (ctx, &mb);
   ctx->in_inquire = 0;
   return rc;
 }
@@ -245,7 +247,7 @@ _assuan_inquire_release (assuan_context_t ctx)
     {
       if (ctx->inquire_membuf)
 	{
-	  free_membuf (ctx->inquire_membuf);
+	  free_membuf (ctx, ctx->inquire_membuf);
 	  free (ctx->inquire_membuf);
 	}
       ctx->in_inquire = 0;
@@ -268,7 +270,7 @@ _assuan_inquire_ext_cb (assuan_context_t ctx)
 
   if (line[0] == 'C' && line[1] == 'A' && line[2] == 'N')
     {
-      rc = _assuan_error (GPG_ERR_ASS_CANCELED);
+      rc = _assuan_error (ctx, GPG_ERR_ASS_CANCELED);
       goto leave;
     }
   if (line[0] == 'E' && line[1] == 'N' && line[2] == 'D'
@@ -280,7 +282,7 @@ _assuan_inquire_ext_cb (assuan_context_t ctx)
 
   if (line[0] != 'D' || line[1] != ' ' || mb == NULL)
     {
-      rc = _assuan_error (GPG_ERR_ASS_UNEXPECTED_CMD);
+      rc = _assuan_error (ctx, GPG_ERR_ASS_UNEXPECTED_CMD);
       goto leave;
     }
   
@@ -294,7 +296,7 @@ _assuan_inquire_ext_cb (assuan_context_t ctx)
     {
       for (;linelen && *p != '%'; linelen--, p++)
 	;
-      put_membuf (mb, line, p-line);
+      put_membuf (ctx, mb, line, p-line);
       if (linelen > 2)
 	{ /* handle escaping */
 	  unsigned char tmp[1];
@@ -302,13 +304,13 @@ _assuan_inquire_ext_cb (assuan_context_t ctx)
 	  *tmp = xtoi_2 (p);
 	  p += 2;
 	  linelen -= 3;
-	  put_membuf (mb, tmp, 1);
+	  put_membuf (ctx, mb, tmp, 1);
 	}
       line = p;
     }
   if (mb->too_large)
     {
-      rc = _assuan_error (GPG_ERR_ASS_TOO_MUCH_DATA);
+      rc = _assuan_error (ctx, GPG_ERR_ASS_TOO_MUCH_DATA);
       goto leave;
     }
 
@@ -321,10 +323,10 @@ _assuan_inquire_ext_cb (assuan_context_t ctx)
     
     if (mb)
       {
-	buf = get_membuf (mb, &buf_len);
+	buf = get_membuf (ctx, mb, &buf_len);
 	if (!buf)
-	  rc = _assuan_error (gpg_err_code_from_syserror ());
-	free_membuf (mb);
+	  rc = _assuan_error (ctx, gpg_err_code_from_syserror ());
+	free_membuf (ctx, mb);
 	free (mb);
 	ctx->inquire_membuf = NULL;
       }
@@ -359,22 +361,22 @@ assuan_inquire_ext (assuan_context_t ctx, const char *keyword, size_t maxlen,
   char cmdbuf[LINELENGTH-10]; /* (10 = strlen ("INQUIRE ")+CR,LF) */
 
   if (!ctx || !keyword || (10 + strlen (keyword) >= sizeof (cmdbuf)))
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
   if (!ctx->is_server)
-    return _assuan_error (GPG_ERR_ASS_NOT_A_SERVER);
+    return _assuan_error (ctx, GPG_ERR_ASS_NOT_A_SERVER);
   if (ctx->in_inquire)
-    return _assuan_error (GPG_ERR_ASS_NESTED_COMMANDS);
+    return _assuan_error (ctx, GPG_ERR_ASS_NESTED_COMMANDS);
 
   mb = malloc (sizeof (struct membuf));
   if (!mb)
-    return _assuan_error (gpg_err_code_from_syserror ());
-  init_membuf (mb, maxlen ? maxlen : 1024, maxlen);
+    return _assuan_error (ctx, gpg_err_code_from_syserror ());
+  init_membuf (ctx, mb, maxlen ? maxlen : 1024, maxlen);
 
   strcpy (stpcpy (cmdbuf, "INQUIRE "), keyword);
   rc = assuan_write_line (ctx, cmdbuf);
   if (rc)
     {
-      free_membuf (mb); 
+      free_membuf (ctx, mb); 
       free (mb);
       return rc;
     }

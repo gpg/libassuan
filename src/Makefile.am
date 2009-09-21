@@ -42,7 +42,11 @@ endif
 
 common_sources = \
 	assuan-defs.h \
-	assuan-util.c \
+	assuan.c \
+	context.c \
+	system.c \
+	debug.c \
+	conversion.c \
 	assuan-error.c \
 	assuan-buffer.c \
 	assuan-handler.c \

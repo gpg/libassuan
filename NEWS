@@ -1,23 +1,55 @@
-Noteworthy changes in version 1.1.0
+Noteworthy changes in version 1.1.0 (unreleased)
 ------------------------------------------------
 
  * Now using libtool and builds a DSO. 
 
  * Lots of interface cleanups.  See below for details of the most
-   important changes.
+   important changes.  Here is a quick note on how to upgrade:
+
+   For each invocation of the connect or server functions, allocate a
+   context with assuan_new and use that.  Instead of assuan_disconnect
+   or assuan_deinit_server, call assuan_release.  Use
+   assuan_set_gpg_err_source instead of assuan_set_assuan_err_source.
+   If you use assuan_pipe_connect or assuan_pipe_connect_ext with NAME
+   of NULL, you have to provide a non-NULL ARGV argument and check
+   that against "server" or "client" to determine which end you got
+   after fork().
 
  * Interface changes relative to the 1.0.5 release:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-_ASSUAN_ONLY_GPG_ERRORS        Removed.
-assuan_init_connected_socket_server Removed.
-assuan_strerror		       Removed.
-assuan_pipe_connect2           Removed.
+_ASSUAN_ONLY_GPG_ERRORS        REMOVED
+assuan_set_assuan_err_source   REMOVED: Use assuan_set_gpg_err_source.
+assuan_set_gpg_err_source      NEW
+assuan_get_gpg_err_source      NEW
+assuan_strerror		       REMOVED
 ASSUAN_*		       Error values removed.
-assuan_error_t		       Removed.
-AssuanError		       Removed.
-AssuanCommand		       Removed.
-assuan_flag_t		       Changed from enum to unsigned int.
-ASSUAN_CONTENT		       Removed.
+assuan_error_t		       REMOVED
+AssuanError		       REMOVED
+assuan_init_connected_socket_server REMOVED
+assuan_pipe_connect2           REMOVED
+AssuanCommand		       REMOVED
+assuan_flag_t		       CHANGED: From enum to unsigned int.
+ASSUAN_CONTENT		       REMOVED
+assuan_disconnect	       REMOVED: Use assuan_release.
+assuan_deinit_server           REMOVED: Use assuan_release.
+assuan_get_malloc_hooks        NEW
+assuan_set_log_cb              NEW
+assuan_get_log_cb              NEW
+assuan_new_ext                 NEW
+assuan_new                     NEW
+assuan_release                 NEW
+assuan_init_socket_server      CHANGED: Take ctx arg instead of pointer to ctx.
+assuan_init_socket_server_ext  CHANGED: Take ctx arg instead of pointer to ctx.
+assuan_socket_connect          CHANGED: Take ctx arg instead of pointer to ctx.
+assuan_socket_connect_ext      CHANGED: Take ctx arg instead of pointer to ctx.
+assuan_pipe_connect            CHANGED: Take ctx arg instead of pointer to ctx.
+			       If NAME is NULL, ARGV will contain fork result.
+assuan_pipe_connect_ext        CHANGED: Take ctx arg instead of pointer to ctx.
+			       If NAME is NULL, ARGV will contain fork result.
+assuan_init_pipe_server        CHANGED: Take ctx arg instead of pointer to ctx.
+assuan_set_io_hooks	       REMOVED: Will come back in expanded form.
+assuan_io_hooks_t  	       REMOVED: Will come back in expanded form.
+assuan_io_monitor_t	       CHANGED: Add a hook data argument.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Noteworthy changes in version 1.0.5 (2008-05-25)

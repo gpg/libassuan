@@ -32,25 +32,17 @@
 
 #include "assuan-defs.h"
 
+
+/* The default log handler is useful for global logging, but it should
+   only be used by one user of libassuan at a time.  Libraries that
+   use libassuan can register their own log handler.  */
+
+/* A common prefix for all log messages.  */
 static char prefix_buffer[80];
-static FILE *_assuan_log;
+
+/* A global flag read from the environment to check if to enable full
+   logging of buffer data.  */
 static int full_logging;
-
-void
-_assuan_set_default_log_stream (FILE *fp)
-{
-  if (!_assuan_log)
-    {
-      _assuan_log = fp;
-      full_logging = !!getenv ("ASSUAN_FULL_LOGGING");
-    }
-}
-
-void
-assuan_set_assuan_log_stream (FILE *fp)
-{
-  _assuan_log = fp;
-}
 
 
 /* Set the per context log stream.  Also enable the default log stream
@@ -63,20 +55,13 @@ assuan_set_log_stream (assuan_context_t ctx, FILE *fp)
       if (ctx->log_fp)
         fflush (ctx->log_fp);
       ctx->log_fp = fp;
-      _assuan_set_default_log_stream (fp);
+      full_logging = !!getenv ("ASSUAN_FULL_LOGGING");
     }
 }
 
 
-FILE *
-assuan_get_assuan_log_stream (void)
-{
-  return _assuan_log ? _assuan_log : stderr;
-}
-
-
-/* Set the prefix to be used for logging to TEXT or
-   resets it to the default if TEXT is NULL. */
+/* Set the prefix to be used for logging to TEXT or resets it to the
+   default if TEXT is NULL. */
 void
 assuan_set_assuan_log_prefix (const char *text)
 {
@@ -89,38 +74,48 @@ assuan_set_assuan_log_prefix (const char *text)
     *prefix_buffer = 0;
 }
 
+
+/* Get the prefix to be used for logging.  */
 const char *
 assuan_get_assuan_log_prefix (void)
 {
   return prefix_buffer;
 }
 
-
-void
-_assuan_log_printf (const char *format, ...)
+
+/* Default log handler.  */
+int
+_assuan_log_handler (assuan_context_t ctx, void *hook, unsigned int cat,
+		     const char *msg)
 {
-  va_list arg_ptr;
   FILE *fp;
   const char *prf;
-  int save_errno = errno;
-  
-  fp = assuan_get_assuan_log_stream ();
+  int saved_errno = errno;
+
+  /* For now.  */
+  if (msg == NULL)
+    return 1;
+
+  fp = ctx->log_fp;
+  if (!fp)
+    return 0;
+
   prf = assuan_get_assuan_log_prefix ();
   if (*prf)
     fprintf (fp, "%s[%u]: ", prf, (unsigned int)getpid ());
 
-  va_start (arg_ptr, format);
-  vfprintf (fp, format, arg_ptr );
-  va_end (arg_ptr);
+  fprintf (fp, "%s", msg);
   /* If the log stream is a file, the output would be buffered.  This
      is bad for debugging, thus we flush the stream if FORMAT ends
      with a LF.  */ 
-  if (format && *format && format[strlen(format)-1] == '\n')
+  if (msg && *msg && msg[strlen (msg) - 1] == '\n')
     fflush (fp);
-  errno = save_errno;
+  errno = saved_errno;
+
+  return 0;
 }
 
-
+
 /* Dump a possibly binary string (used for debugging).  Distinguish
    ascii text from binary and print it accordingly.  This function
    takes FILE pointer arg because logging may be enabled on a per
@@ -162,84 +157,3 @@ _assuan_log_print_buffer (FILE *fp, const void *buffer, size_t length)
 #endif
     }
 }
-
-/* Log a user supplied string.  Escapes non-printable before
-   printing.  */
-void
-_assuan_log_sanitized_string (const char *string)
-{
-  const unsigned char *s = (const unsigned char *) string;
-  FILE *fp = assuan_get_assuan_log_stream ();
-
-  if (! *s)
-    return;
-
-#ifdef HAVE_FLOCKFILE
-  flockfile (fp);
-#endif
-
-  for (; *s; s++)
-    {
-      int c = 0;
-
-      switch (*s)
-	{
-	case '\r':
-	  c = 'r';
-	  break;
-
-	case '\n':
-	  c = 'n';
-	  break;
-
-	case '\f':
-	  c = 'f';
-	  break;
-
-	case '\v':
-	  c = 'v';
-	  break;
-
-	case '\b':
-	  c = 'b';
-	  break;
-
-	default:
-	  if ((isascii (*s) && isprint (*s)) || (*s >= 0x80))
-	    putc_unlocked (*s, fp);
-	  else
-	    {
-	      putc_unlocked ('\\', fp);
-	      fprintf (fp, "x%02x", *s);
-	    }
-	}
-
-      if (c)
-	{
-	  putc_unlocked ('\\', fp);
-	  putc_unlocked (c, fp);
-	}
-    }
-
-#ifdef HAVE_FUNLOCKFILE
-  funlockfile (fp);
-#endif
-}
-
-
-
-#ifdef HAVE_W32_SYSTEM
-const char *
-_assuan_w32_strerror (int ec)
-{
-  static char strerr[256];
-  
-  if (ec == -1)
-    ec = (int)GetLastError ();
-  FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM, NULL, ec,
-                 MAKELANGID (LANG_NEUTRAL, SUBLANG_DEFAULT),
-                 strerr, sizeof (strerr)-1, NULL);
-  return strerr;    
-}
-
-#endif /*HAVE_W32_SYSTEM*/

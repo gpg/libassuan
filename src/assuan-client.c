@@ -109,7 +109,7 @@ _assuan_read_from_server (assuan_context_t ctx, int *okay, int *off)
       *off = 3;
     }
   else
-    rc = _assuan_error (GPG_ERR_ASS_INV_RESPONSE);
+    rc = _assuan_error (ctx, GPG_ERR_ASS_INV_RESPONSE);
   return rc;
 }
 
@@ -169,7 +169,7 @@ assuan_transact (assuan_context_t ctx,
   else if (okay == 2)
     {
       if (!data_cb)
-        rc = _assuan_error (GPG_ERR_ASS_NO_DATA_CB);
+        rc = _assuan_error (ctx, GPG_ERR_ASS_NO_DATA_CB);
       else 
         {
           char *s, *d;
@@ -198,7 +198,7 @@ assuan_transact (assuan_context_t ctx,
         {
           assuan_write_line (ctx, "END"); /* get out of inquire mode */
           _assuan_read_from_server (ctx, &okay, &off); /* dummy read */
-          rc = _assuan_error (GPG_ERR_ASS_NO_INQUIRE_CB);
+          rc = _assuan_error (ctx, GPG_ERR_ASS_NO_INQUIRE_CB);
         }
       else
         {
@@ -219,7 +219,7 @@ assuan_transact (assuan_context_t ctx,
   else if (okay == 5)
     {
       if (!data_cb)
-        rc = _assuan_error (GPG_ERR_ASS_NO_DATA_CB);
+        rc = _assuan_error (ctx, GPG_ERR_ASS_NO_DATA_CB);
       else 
         {
           rc = data_cb (data_cb_arg, NULL, 0);

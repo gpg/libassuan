@@ -374,7 +374,7 @@ No operation.  Returns OK without any action.
 Libassuan is used with gpg-error style error codes.  It is recommended
 to set the error source to a different value than the default
 @code{GPG_ERR_SOURCE_UNKNOWN} by calling @ref{function
-assuan_set_assuan_err_source} early.
+assuan_set_gpg_err_source} early.
 
 
 @c 
@@ -428,7 +428,7 @@ directory in which the header file is located to the compilers include
 file search path (via the @option{-I} option).
 
 However, the path to the include file is determined at the time the
-source is configured.  To solve this problem, @sc{libgcrypt} ships with
+source is configured.  To solve this problem, @code{libassuan} ships with
 a small helper program @command{libassuan-config} that knows the path to
 the include file and other configuration options.  The options that need
 to be added to the compiler invocation at compile time are output by the
@@ -519,14 +519,15 @@ compiler and linker.
 @node Multi Threading
 @section Multi Threading
 
-The @sc{libgcrypt} library is thread-safe if you adhere to the following
+The @code{libassuan} library is thread-safe if you adhere to the following
 requirements:
 
 @itemize @bullet
 @item Run the initialization functions before you actually start
 to use threads.
 @item Only one thread at a time may access an @code{libassuan} context.
-@item Use @code{assuan_set_assuan_log_stream} to setup a default log stream.
+@item If you use the default log handler, use
+@code{assuan_set_assuan_log_stream} to setup a default log stream.
 @end itemize
 
 
@@ -537,9 +538,11 @@ to use threads.
 @chapter Generalities
 
 @menu
-* Data Types::                  Data types used by @code{libassuan}.
-* Initializing the library::    How to initialize the library.
-* Reading and Writing::         How to communicate with the peer.
+* Data Types:: Data types used by @code{libassuan}.
+* Initializing the library:: How to initialize the library.
+* Default Log Handler:: How to configure the default log handler.
+* Contexts:: How to work with contexts.
+* Reading and Writing:: How to communicate with the peer.
 @end menu
 
 
@@ -548,14 +551,14 @@ to use threads.
 @section Data Types used by the library
 
 @sc{Assuan} uses a context to keep the state for a connection.  The
-following data type is used ace:
+following data type is used for that:
 
 @deftp {Data type} assuan_context_t
 The @code{assuan_context_t} type is a pointer to an object maintained
-internally by the library.  Certain @sc{Assuan} functions allocate
-such a context and return it to the caller using this data type. Other
-functions take this data type to access the state created by these
-functions.
+internally by the library.  Contexts are allocated with
+@code{assuan_new} or @code{assuan_new_ext} and released with
+@code{assuan_release}.  Other functions take this data type to access
+the state created by these functions.
 @end deftp
 
 
@@ -574,23 +577,139 @@ some initialization hooks provided which are often useful.  These
 should be called as early as possible and in a multi-threaded
 application before a second thread is created. 
 
+These functions initialize default values that are used at context
+creation with @code{assuan_new}.  As there can only be one default,
+all values can also be set directly with @code{assuan_new_ext} or with
+context-specific functions after context creation.
+
 If your application uses its own memory allocation functions or wrappers
 it is good idea to tell @code{libassuan} about it so it can make use of the
-same functions or wrappers.  You do this with
+same functions or wrappers:
 
-@deftypefun void assuan_set_malloc_hooks (@w{void *(*@var{malloc_func})(size_t)}, @w{void *(*@var{realloc_func})(void *, size_t)}, @w{void (*@var{free_func})(void*)})
-You need to provide all three functions.  Those functions need to behave
-exactly as their standard counterparts (@code{malloc}, @code{realloc}
-and @code{free}).  If you write your own functions, please take care to
-set @code{errno} whenever an error has occurred.
+@deftp {Data type} {struct assuan_malloc_hooks}
+This structure is used to store the memory allocation callback
+interface functions.  It has the following members, whose semantics
+are identical to the corresponding system functions:
+
+@table @code
+@item void *(*malloc) (size_t cnt)
+This is the function called by @sc{Assuan} to allocate memory for a context.
+
+@item void *(*realloc) (void *ptr, size_t cnt)
+This is the function called by @sc{Assuan} to reallocate memory for a context.
+
+@item void (*free) (void *ptr)
+This is the function called by @sc{Assuan} to release memory for a context.
+@end table
+@end deftp
+
+@deftp {Data type} {assuan_malloc_hooks_t}
+This is a pointer to a @code{struct assuan_malloc_hooks}.
+@end deftp
+
+/* Get the default malloc hooks.  */
+assuan_malloc_hooks_t assuan_get_malloc_hooks (void);
+
+@deftypefun void assuan_set_malloc_hooks (@w{assuan_malloc_hooks_t @var{malloc_hooks}})
+This function sets the default allocation hooks for new contexts
+allocated with @code{assuan_new}.  You need to provide all three
+functions.  Those functions need to behave exactly as their standard
+counterparts @code{malloc}, @code{realloc} and @code{free}.  If you
+write your own functions, please take care to set @code{errno}
+whenever an error has occurred.
+@end deftypefun
+
+@deftypefun assuan_malloc_hooks_t assuan_get_malloc_hooks ()
+This function gets the default allocation hooks for new contexts
+allocated with @code{assuan_new}.  The result structure is statically
+allocated and should not be modified.
+@end deftypefun
+
+The @sc{Assuan} library uses @code{libgpg-error} error values, which
+consist and error code and an error source.  The default source used
+by contexts allocated with @code{assuan_new} can be set with the
+following function.
+
+@anchor{function assuan_set_gpg_err_source}
+@deftypefun void assuan_set_gpg_err_source (@w{gpg_err_source_t @var{err_source}})
+This function sets the default error source for errors generated by
+contexts allocated with @code{assuan_new}.
+
+One way to call this function is
+@smallexample
+assuan_set_assuan_err_source (GPG_ERR_SOURCE_DEFAULT);
+@end smallexample
+@end deftypefun
+
+@deftypefun gpg_err_source_t assuan_get_gpg_err_source (void)
+This function gets the default error source for errors generated by
+contexts allocated with @code{assuan_new}.
 @end deftypefun
 
 @noindent
 To integrate assuan logging and diagnostics into your own logging
 system, you may use the following two functions:
 
+@deftp {Data type} {int (*assuan_log_cb_t) (@w{assuan_context_t @var{ctx}}, @w{void *@var{hook_value}}, @w{unsigned int @var{cat}}, @w{const char *@var{msg}})}
+The user-provided callback function takes a context @var{ctx}, for
+which the message @var{msg} was generated, and a hook value
+@var{hook_value} that was supplied when the log handler was registered
+for the context with @code{assuan_set_log_cb}, and a category
+@var{cat}.  The category is one of:
+
+@table @code
+@item ASSUAN_LOG_INIT
+@item ASSUAN_LOG_CTX
+@item ASSUAN_LOG_ENGINE
+@item ASSUAN_LOG_DATA
+@item ASSUAN_LOG_SYSIO
+@end table
+
+The user may then, depending on the category, write the message to a
+log file or treat it in some other way.
+
+If @var{msg} is a null pointer, then no message should be logged, but
+the function should return 1 if it is interested in log messages with
+the category @var{cat}.  If it is not interested, 0 should be
+returned.  This allows @code{libassuan} to suppress the generation of
+expensive debug output.
+@end deftp
+
+@deftypefun void assuan_set_log_cb (@w{assuan_log_cb_t @var{log_cb}}, @w{void *@var{log_cb_data}})
+This function sets the default logging handler for log messages
+generated by contexts allocated with @code{assuan_new}.
+@end deftypefun
+
+@deftypefun void assuan_get_log_cb (@w{assuan_log_cb_t *@var{log_cb}}, @w{void **@var{log_cb_data}})
+This function gets the default logging handler for log messages
+generated by contexts allocated with @code{assuan_new}.
+@end deftypefun
+
+You do not need to set a log handler, as @sc{Assuan} provides a
+configurable default log handler that should be suitable for most
+purposes.  Logging can be disabled completely by setting the log
+handler to a null pointer.
+
+@node Default Log Handler
+@section Default Log Handler
+
+The default log handler can be configured by the following functions:
+
+@deftypefun void assuan_set_assuan_log_prefix (@w{const char *@var{text}})
+Set the prefix to be used at the start of a line emitted by assuan
+on the log stream to @var{text}.  The default is the empty string. 
+@end deftypefun
+
+
+@deftypefun @w{const char *} assuan_get_assuan_log_prefix (void)
+Return the prefix to be used at the start of a line emitted by assuan
+on the log stream.  The default implementation returns the empty
+string.
+@end deftypefun
+
+
 @deftypefun void assuan_set_assuan_log_stream (FILE *@var{fp})
-This sets the stream to which @code{libassuan} should log messages not
+This sets the default log stream to which @code{libassuan} should log messages not
 associated with a specific context to @var{fp}.  The default is to log
 to @code{stderr}.  This default value is also changed by using
 @code{assuan_set_log_stream} (to set a logging stream for a specific
@@ -599,20 +718,144 @@ thread-safe and thus it is highly recommended to use this function to
 setup a proper default.
 @end deftypefun
 
-@deftypefun void assuan_set_assuan_log_prefix (@w{const char *@var{text}})
-Set the prefix to be used at the start of a line emitted by assuan
-on the log stream to @var{text}.  The default is the empty string. 
+
+@deftypefun @w{FILE *} assuan_get_assuan_log_stream (void)
+Return the stream which is currently being using for global logging.
 @end deftypefun
 
-@anchor{function assuan_set_assuan_err_source}
-@deftypefun void assuan_set_assuan_err_source (@w{int @var{errsource}})
-Set the error source for error values generated by @code{libassuan}.
-@var{errsource} is one of the @code{libgpg-error} sources.  The usual
-way to call this function is
+The log stream used by the default log handler can also be set on a
+per context basis.
+
+@deftypefun void assuan_set_log_stream (@w{assuan_context_t @var{ctx}}, @w{FILE *@var{fp}})
+Enable debugging for the context @var{ctx} and write all debugging
+output to the stdio stream @var{fp}.  If the default log stream (used
+for non-context specific events) has not yet been set, a call to this
+functions implicitly sets this stream also to @var{fp}.
+@end deftypefun
+
+
+@node Contexts
+@section How to work with contexts
+
+Some operations work globally on the library, but most operate in a
+context, which saves state across operations.  To allow the use of
+@code{libassuan} in mixed environments, such as in a library using
+GPGME and an application using GPGME, the context is very extensive
+and covers utilitary information like memory allocation callbacks as
+well as specific information associated with client/server operations.
+
+@deftypefun gpg_error_t assuan_new (@w{assuan_context_t *@var{ctx_p}})
+The function @code{assuan_new} creates a new context, using the global
+default memory allocation, log handler and @code{libgpg-error} source.
+It is equivalent to
+
 @smallexample
-assuan_set_assuan_err_source (GPG_ERR_SOURCE_DEFAULT);
+gpg_error_t err;
+assuan_log_cb_t log_cb;
+void *log_cb_data;
+
+assuan_get_log_cb (&log_cb, &log_cb_data);
+err = assuan_new_ext (ctx_p, assuan_get_gpg_err_source (),
+                      assuan_get_malloc_hooks (), log_cb, log_cb_data);
+@end smallexample
+
+As you can see, this is not thread-safe.  Take care not to modify the
+memory allocation hooks or log callback handler concurrently with
+@code{assuan_new}.
+
+The function returns an error if a memory allocation error occurs, and
+0 with the new context in @var{ctx_p} otherwise.
+@end deftypefun
+
+@deftypefun gpg_error_t assuan_new_ext (@w{assuan_context_t *@var{ctx_p}}, @w{gpg_err_source_t @var{err_source}}, @w{assuan_malloc_hooks_t @var{malloc_hooks}}, @w{assuan_log_cb_t @var{log_cb}}, @w{void *@var{log_cb_data}})
+The function @code{assuan_new_ext} creates a new context using the
+supplied @code{libgpg-error} error source @var{err_source}, the memory
+allocation hooks @var{malloc_hooks} and the log handler @var{log_cb}
+with the user data @var{log_cb_data}.
+@end deftypefun
+
+After the context has been used, it can be destroyed again.
+
+@deftypefun void assuan_release (assuan_context_t ctx)
+The function @code{assuan_release} destroys the context CTX and
+releases all associated resources.
+@end deftypefun
+
+Other properties of the context beside the memory allocation handler,
+the log handler, and the @code{libgpg-error} source can be set after
+context creation.  Here are some of them:
+
+@deftypefun void assuan_set_pointer (@w{assuan_context_t @var{ctx}}, @w{void *@var{pointer}})
+
+Store the arbitrary pointer value @var{pointer} into the context
+@var{ctx}.  This is useful to provide command handlers with additional
+application context.
+@end deftypefun
+
+@deftypefun void* assuan_get_pointer (@w{assuan_context_t @var{ctx}})
+
+This returns the pointer for context @var{ctx} which has been set using
+the above function.  A common way to use it is by setting the pointer
+before starting the processing loop and to retrieve it right at the
+start of a command handler:
+@smallexample
+static int
+cmd_foo (assuan_context_t ctx, char *line)
+@{
+  ctrl_t ctrl = assuan_get_pointer (ctx);
+  ...
+@}
 @end smallexample
 @end deftypefun
+
+
+@deftypefun void assuan_set_flag (@w{assuan_context_t @var{ctx}}, @w{assuan_flag_t @var{flag}}, @w{int @var{value}})
+
+Set the the @var{flag} for context @var{ctx} to @var{value}.  Values for
+flags are usually 1 or 0 but certain flags might need other values.
+
+@deftp {Data type} assuan_flag_t
+The flags are all named and collected in an @code{enum} for better readability.
+Currently only one flag is defined:
+
+@table @code
+@item ASSUAN_NO_WAITPID 
+When using a pipe server, by default Libassuan will wait for the forked
+process to die in @code{assuan_disconnect}.  In certain cases this is
+not desirable.  By setting this flag, a call to @code{waitpid} will be
+suppressed and the caller is responsible to cleanup the child process.
+@item ASSUAN_CONFIDENTIAL
+Uses to return the state of the confidential logging mode.
+@end table
+@end deftp
+@end deftypefun
+
+@deftypefun int assuan_get_flag (@w{assuan_context_t @var{ctx}}, @w{assuan_flag_t @var{flag}})
+Return the value of @var{flag} in context @var{ctx}. 
+@end deftypefun 
+
+
+@deftypefun void assuan_begin_confidential (@w{assuan_context_t @var{ctx}})
+Put the logging feature into confidential mode.  This is to avoid
+logging of sensitive data.
+
+This is identical to:
+@smallexample
+assuan_set_flag (ctx, ASSUAN_CONFIDENTIAL, 1);
+@end smallexample
+@end deftypefun
+
+
+@deftypefun void assuan_end_confidential (@w{assuan_context_t @var{ctx}})
+Get the logging feature out of confidential mode.  All data will be
+logged again (if logging is enabled).
+
+This is identical to:
+@smallexample
+assuan_set_flag (ctx, ASSUAN_CONFIDENTIAL, 0);
+@end smallexample
+@end deftypefun
+
 
 @node Reading and Writing
 @section How to communicate with the peer
@@ -667,7 +910,31 @@ sending this @code{END} itself.
 This function returns @code{0} on success or an error value.
 @end deftypefun
 
+The input and output of data can be controlled at a higher level using
+an I/O monitor.
 
+@deftp {Data type} {unsigned int (*assuan_io_monitor_t) (@w{assuan_context_t @var{ctx}}, @w{void *@var{hook_value}}, @w{int @var{inout}}, @w{const char *@var{line}}, @w{size_t @var{linelen}})}
+The monitor function is called right after a line has been received,
+if @var{inout} is @code{ASSUAN_IO_FROM_PEER}, or just before it is
+send, if @var{inout} is @code{ASSUAN_IO_TO_PEER}.  The
+@var{hook_value} is provided by the user when registering the I/O
+monitor function with a context using @code{assuan_set_io_monitor}.
+The callback function should return the bitwise OR of some (or none) of the
+following flags:
+
+@table @code
+@item ASSUAN_IO_MONITOR_NOLOG
+Active logging of this line is suppressed.  This can reduce debug
+output in the case of a frequent message.
+@item ASSUAN_IO_MONITOR_IGNORE
+The whole output line is discarded.
+@end table
+@end deftp
+
+@deftypefun void assuan_set_io_monitor (@w{assuan_context_t @var{ctx}}, @w{assuan_io_monitor_t @var{io_monitor}}, @w{void *@var{hook_data}})
+This function registers an I/O monitor @var{io_monitor} for the
+context @var{ctx} with the hook value @var{hook_data}.
+@end deftypefun
 
 
 @c 
@@ -683,18 +950,19 @@ If the peer is not a simple pipe server but one using full-duplex
 sockets, the full-fledged variant of the above function should be
 used:
 
-@deftypefun gpg_error_t assuan_pipe_connect_ext (@w{assuan_context_t *@var{ctx}},@w{const char *@var{name}}, @w{const char *const @var{argv}[]}, @w{int *@var{fd_child_list}}, @w{void (*@var{atfork}) (void *, int)}, @w{void *@var{atforkvalue}}, @w{unsigned int @var{flags}})
+@deftypefun gpg_error_t assuan_pipe_connect_ext (@w{assuan_context_t *@var{ctx}},@w{const char *@var{name}}, @w{const char *@var{argv}[]}, @w{int *@var{fd_child_list}}, @w{void (*@var{atfork}) (void *, int)}, @w{void *@var{atforkvalue}}, @w{unsigned int @var{flags}})
 
 A call to this functions forks the current process and executes the
 program @var{name}, passing the arguments given in the NULL-terminated
 list @var{argv}.  A list of file descriptors not to be closed may be
 given using the @code{-1} terminated array @var{fd_child_list}.
 
-If @var{name} as well as @var{argv} are given as @code{NULL}, only a
-fork but no exec is done.  Thus the child continues to run.  However all
-file descriptors are closed and some special environment variables are
-set. To let the caller detect whether the child or the parent continues,
-the child returns with a @var{ctx} set to @code{NULL}.
+If @var{name} is a null pointer, only a fork but no exec is done.
+Thus the child continues to run.  However all file descriptors are
+closed and some special environment variables are set.  To let the
+caller detect whether the child or the parent continues, the parent
+returns with @code{"client"} returned in @var{argv} and the child
+returns with @code{"server"} in @var{argv}.
 
 If @var{atfork} is not NULL, this function is called in the child right
 after the fork and the value @var{atforkvalue} is passed as the first
@@ -724,7 +992,7 @@ new console is created and pops up a console window when starting the server
 
 For a pipe-based server you can also use the following legacy function:
 
-@deftypefun gpg_error_t assuan_pipe_connect (@w{assuan_context_t *@var{ctx}},@w{const char *@var{name}}, @w{const char *const @var{argv}[]}, @w{int *@var{fd_child_list}})
+@deftypefun gpg_error_t assuan_pipe_connect (@w{assuan_context_t *@var{ctx}},@w{const char *@var{name}}, @w{const char *@var{argv}[]}, @w{int *@var{fd_child_list}})
 
 A call to @code{assuan_pipe_connect} is equivalent to a call to
 @code{assuan_pipe_connect_ext} with @code{flags} being 0 and without
@@ -1050,19 +1318,6 @@ string @var{line}.  For logging purposes, it is often useful to use
 such a custom hello line which may tell version numbers and such.
 Linefeeds are allowed in this string, however, each line needs to be
 shorter than the Assuan line length limit.
-
-@end deftypefun
-
-@noindent
-As a last initialization step, debugging may be enabled for the
-current connection.  This is done using
-
-@deftypefun void assuan_set_log_stream (@w{assuan_context_t @var{ctx}}, @w{FILE *@var{fp}})
-
-Enable debugging for the context @var{ctx} and write all debugging
-output to the stdio stream @var{fp}.  If the default log stream (used
-for non-context specific events) has not yet been set, a call to this
-functions implicitly sets this stream also to @var{fp}.
 @end deftypefun
 
 @noindent
@@ -1354,32 +1609,6 @@ Some of these functions provide information not available with the
 general functions.
 
 
-
-@deftypefun void assuan_set_pointer (@w{assuan_context_t @var{ctx}}, @w{void *@var{pointer}})
-
-Store the arbitrary pointer value @var{pointer} into the context
-@var{ctx}.  This is useful to provide command handlers with additional
-application context.
-@end deftypefun
-
-@deftypefun void* assuan_get_pointer (@w{assuan_context_t @var{ctx}})
-
-This returns the pointer for context @var{ctx} which has been set using
-the above function.  A common way to use it is by setting the pointer
-before starting the processing loop and to retrieve it right at the
-start of a command handler:
-@smallexample
-static int
-cmd_foo (assuan_context_t ctx, char *line)
-@{
-  ctrl_t ctrl = assuan_get_pointer (ctx);
-  ...
-@}
-@end smallexample
-@end deftypefun
-
-
-
 @deftypefun gpg_error_t assuan_write_status (@w{assuan_context_t @var{ctx}}, @w{const char *@var{keyword}}, @w{const char *@var{text}})
 
 This is a convenience function for a server to send a status line.  You
@@ -1489,34 +1718,6 @@ that error to humans.
 @end deftypefun
 
 
-@deftypefun void assuan_set_flag (@w{assuan_context_t @var{ctx}}, @w{assuan_flag_t @var{flag}}, @w{int @var{value}})
-
-Set the the @var{flag} for context @var{ctx} to @var{value}.  Values for
-flags are usually 1 or 0 but certain flags might need other values.
-
-@deftp {Data type} assuan_flag_t
-The flags are all named and collected in an @code{enum} for better readability.
-Currently only one flag is defined:
-
-@table @code
-@item ASSUAN_NO_WAITPID 
-When using a pipe server, by default Libassuan will wait for the forked
-process to die in @code{assuan_disconnect}.  In certain cases this is
-not desirable.  By setting this flag, a call to @code{waitpid} will be
-suppressed and the caller is responsible to cleanup the child process.
-@item ASSUAN_CONFIDENTIAL
-Uses to return the state of the confidential logging mode.  For changing
-this mode the functions @code{assuan_begin_confidential} and
-@code{assuan_end_confidential} should be used.
-@end table
-@end deftp
-
-@end deftypefun
-
-@deftypefun int assuan_get_flag (@w{assuan_context_t @var{ctx}}, @w{assuan_flag_t @var{flag}})
-Return the value of @var{flag} in context @var{ctx}. 
-@end deftypefun 
-
 
 @deftypefun pid_t assuan_get_pid (@w{assuan_context_t @var{ctx}})
 
@@ -1570,40 +1771,6 @@ thus an entire assuan line may be read without triggering any actual
 I/O.
 @end deftypefun
 
-@deftypefun void assuan_set_io_monitor (@w{assuan_context_t @var{ctx}}, @w{unsigned int} (*@var{monitor})(@w{assuan_context_t @var{ctx}}, @w{int @var{direction}}, @w{const char *@var{line}}, @w{size_t @var{linelen}}))
-
-This function registers an I/O monitor for the context @var{ctx}.  Such
-a monitor function is called right after a line has been received or
-just before it is send.  With @var{direction} set to 1 the monitor has
-been called for an output operation; 0 obviosuly means it has been
-called for an input operation.  If the monitor sets bit 0 in the return
-value, any active logging of the line will be suppressed.  With bit 1
-set, the entire line will be ignored.
-@end deftypefun
-
-@deftypefun void assuan_begin_confidential (@w{assuan_context_t @var{ctx}})
-
-Put the logging feature into confidential mode.  This is to avoid
-logging of sensitive data.
-@end deftypefun
-
-@deftypefun void assuan_end_confidential (@w{assuan_context_t @var{ctx}})
-
-Get the logging feature out of confidential mode.  All data will be
-logged again (if logging is enabled).
-@end deftypefun
-
-@deftypefun FILE* assuan_get_assuan_log_stream (void)
-
-Return the stream which is currently being using for global logging.
-@end deftypefun
-
-@deftypefun @w{const char*} assuan_get_assuan_log_prefix (void)
-
-Return the prefix to be used at the start of a line emitted by assuan
-on the log stream.  The default implementation returns the empty
-string.
-@end deftypefun
 
 
 @c

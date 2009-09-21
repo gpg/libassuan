@@ -41,6 +41,7 @@
 #include <assert.h>
 
 #include "assuan-defs.h"
+#include "debug.h"
 
 #ifdef USE_DESCRIPTOR_PASSING
 /* Provide replacement for missing CMSG maccros.  We assume that
@@ -75,7 +76,7 @@ uds_reader (assuan_context_t ctx, void *buf, size_t buflen)
 
   if (!ctx->uds.bufferallocated)
     {
-      ctx->uds.buffer = _assuan_malloc (2048);
+      ctx->uds.buffer = _assuan_malloc (ctx, 2048);
       if (!ctx->uds.buffer)
         return gpg_error_from_syserror ();
       ctx->uds.bufferallocated = 2048;
@@ -121,15 +122,17 @@ uds_reader (assuan_context_t ctx, void *buf, size_t buflen)
         {
           if (cmptr->cmsg_level != SOL_SOCKET
               || cmptr->cmsg_type != SCM_RIGHTS)
-            _assuan_log_printf ("unexpected ancillary data received\n");
+            TRACE0 (ctx, ASSUAN_LOG_SYSIO, "uds_reader", ctx,
+		    "unexpected ancillary data received");
           else
             {
               int fd = *((int*)CMSG_DATA (cmptr));
 
               if (ctx->uds.pendingfdscount >= DIM (ctx->uds.pendingfds))
                 {
-                  _assuan_log_printf ("too many descriptors pending - "
-                                      "closing received descriptor %d\n", fd);
+		  TRACE1 (ctx, ASSUAN_LOG_SYSIO, "uds_reader", ctx,
+			  "too many descriptors pending - "
+			  "closing received descriptor %d", fd);
                   _assuan_close (fd);
                 }
               else
@@ -232,14 +235,15 @@ uds_sendfd (assuan_context_t ctx, assuan_fd_t fd)
   if (len < 0)
     {
       int saved_errno = errno;
-      _assuan_log_printf ("uds_sendfd: %s\n", strerror (errno));
+      TRACE1 (ctx, ASSUAN_LOG_SYSIO, "uds_sendfd", ctx,
+	      "uds_sendfd: %s", strerror (errno));
       errno = saved_errno;
-      return _assuan_error (gpg_err_code_from_syserror ());
+      return _assuan_error (ctx, gpg_err_code_from_syserror ());
     }
   else
     return 0;
 #else
-  return _assuan_error (GPG_ERR_NOT_IMPLEMENTED);
+  return _assuan_error (ctx, GPG_ERR_NOT_IMPLEMENTED);
 #endif
 }
 
@@ -252,8 +256,9 @@ uds_receivefd (assuan_context_t ctx, assuan_fd_t *fd)
 
   if (!ctx->uds.pendingfdscount)
     {
-      _assuan_log_printf ("no pending file descriptors!\n");
-      return _assuan_error (GPG_ERR_ASS_GENERAL);
+      TRACE0 (ctx, ASSUAN_LOG_SYSIO, "uds_receivefd", ctx,
+	      "no pending file descriptors");
+      return _assuan_error (ctx, GPG_ERR_ASS_GENERAL);
     }
   assert (ctx->uds.pendingfdscount <= DIM(ctx->uds.pendingfds));
 
@@ -264,7 +269,7 @@ uds_receivefd (assuan_context_t ctx, assuan_fd_t *fd)
 
   return 0;
 #else
-  return _assuan_error (GPG_ERR_NOT_IMPLEMENTED);
+  return _assuan_error (ctx, GPG_ERR_NOT_IMPLEMENTED);
 #endif
 }
 
@@ -291,7 +296,7 @@ _assuan_uds_deinit (assuan_context_t ctx)
     {
       assert (ctx->uds.bufferallocated);
       ctx->uds.bufferallocated = 0;
-      _assuan_free (ctx->uds.buffer);
+      _assuan_free (ctx, ctx->uds.buffer);
     }
 
   _assuan_uds_close_fds (ctx);

@@ -103,7 +103,7 @@ _assuan_read_line (assuan_context_t ctx)
   char *endp = 0;
 
   if (ctx->inbound.eof)
-    return _assuan_error (GPG_ERR_EOF);
+    return _assuan_error (ctx, GPG_ERR_EOF);
 
   atticlen = ctx->inbound.attic.linelen;
   if (atticlen)
@@ -149,7 +149,7 @@ _assuan_read_line (assuan_context_t ctx)
         }
 
       errno = saved_errno;
-      return _assuan_error (gpg_err_code_from_syserror ());
+      return _assuan_error (ctx, gpg_err_code_from_syserror ());
     }
   if (!nread)
     {
@@ -159,7 +159,7 @@ _assuan_read_line (assuan_context_t ctx)
 		 assuan_get_assuan_log_prefix (),
                  (unsigned int)getpid (), (int)ctx->inbound.fd);
 
-      return _assuan_error (GPG_ERR_EOF);
+      return _assuan_error (ctx, GPG_ERR_EOF);
     }
 
   ctx->inbound.attic.pending = 0;
@@ -190,20 +190,20 @@ _assuan_read_line (assuan_context_t ctx)
 
       ctx->inbound.linelen = endp - line;
 
-      monitor_result = (ctx->io_monitor
-                        ? ctx->io_monitor (ctx, 0,
-                                           ctx->inbound.line,
-                                           ctx->inbound.linelen)
-                        : 0);
-      if ( (monitor_result & 2) )
+      monitor_result = 0;
+      if (ctx->io_monitor)
+	monitor_result = ctx->io_monitor (ctx, ctx->io_monitor_data, 0,
+					  ctx->inbound.line,
+					  ctx->inbound.linelen);
+      if (monitor_result & ASSUAN_IO_MONITOR_IGNORE)
         ctx->inbound.linelen = 0;
       
-      if (ctx->log_fp && !(monitor_result & 1))
+      if (ctx->log_fp && !(monitor_result & ASSUAN_IO_MONITOR_NOLOG))
 	{
 	  fprintf (ctx->log_fp, "%s[%u.%d] DBG: <- ",
 		   assuan_get_assuan_log_prefix (),
                    (unsigned int)getpid (), (int)ctx->inbound.fd);
-	  if (ctx->confidential)
+	  if (ctx->flags.confidential)
 	    fputs ("[Confidential data not shown]", ctx->log_fp);
 	  else
 	    _assuan_log_print_buffer (ctx->log_fp,
@@ -221,9 +221,9 @@ _assuan_read_line (assuan_context_t ctx)
                  (unsigned int)getpid (), (int)ctx->inbound.fd);
       *line = 0;
       ctx->inbound.linelen = 0;
-      return _assuan_error (ctx->inbound.eof 
-			? GPG_ERR_ASS_INCOMPLETE_LINE
-			: GPG_ERR_ASS_LINE_TOO_LONG);
+      return _assuan_error (ctx, ctx->inbound.eof 
+			    ? GPG_ERR_ASS_INCOMPLETE_LINE
+			    : GPG_ERR_ASS_LINE_TOO_LONG);
     }
 }
 
@@ -243,7 +243,7 @@ assuan_read_line (assuan_context_t ctx, char **line, size_t *linelen)
   gpg_error_t err;
 
   if (!ctx)
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
 
   do
     {
@@ -288,17 +288,17 @@ _assuan_write_line (assuan_context_t ctx, const char *prefix,
         len = ASSUAN_LINELENGTH - prefixlen - 2 - 1;
     }
 
-  monitor_result = (ctx->io_monitor
-                    ? ctx->io_monitor (ctx, 1, line, len)
-                    : 0);
+  monitor_result = 0;
+  if (ctx->io_monitor)
+    monitor_result = ctx->io_monitor (ctx, ctx->io_monitor_data, 1, line, len);
 
   /* Fixme: we should do some kind of line buffering.  */
-  if (ctx->log_fp && !(monitor_result & 1))
+  if (ctx->log_fp && !(monitor_result & ASSUAN_IO_MONITOR_NOLOG))
     {
       fprintf (ctx->log_fp, "%s[%u.%d] DBG: -> ",
 	       assuan_get_assuan_log_prefix (),
                (unsigned int)getpid (), (int)ctx->inbound.fd);
-      if (ctx->confidential)
+      if (ctx->flags.confidential)
 	fputs ("[Confidential data not shown]", ctx->log_fp);
       else
         {
@@ -309,22 +309,22 @@ _assuan_write_line (assuan_context_t ctx, const char *prefix,
       putc ('\n', ctx->log_fp);
     }
 
-  if (prefixlen && !(monitor_result & 2))
+  if (prefixlen && !(monitor_result & ASSUAN_IO_MONITOR_IGNORE))
     {
       rc = writen (ctx, prefix, prefixlen);
       if (rc)
-	rc = _assuan_error (gpg_err_code_from_syserror ());
+	rc = _assuan_error (ctx, gpg_err_code_from_syserror ());
     }
-  if (!rc && !(monitor_result & 2))
+  if (!rc && !(monitor_result & ASSUAN_IO_MONITOR_IGNORE))
     {
       rc = writen (ctx, line, len);
       if (rc)
-	rc = _assuan_error (gpg_err_code_from_syserror ());
+	rc = _assuan_error (ctx, gpg_err_code_from_syserror ());
       if (!rc)
         {
           rc = writen (ctx, "\n", 1);
           if (rc)
-	    rc = _assuan_error (gpg_err_code_from_syserror ());
+	    rc = _assuan_error (ctx, gpg_err_code_from_syserror ());
         }
     }
   return rc;
@@ -338,7 +338,7 @@ assuan_write_line (assuan_context_t ctx, const char *line)
   const char *str;
 
   if (! ctx)
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
 
   /* Make sure that we never take a LF from the user - this might
      violate the protocol. */
@@ -403,20 +403,20 @@ _assuan_cookie_write_data (void *cookie, const char *buffer, size_t orig_size)
         }
       
       
-      monitor_result = (ctx->io_monitor
-                        ? ctx->io_monitor (ctx, 1,
-                                           ctx->outbound.data.line, linelen)
-                        : 0);
+      monitor_result = 0;
+      if (ctx->io_monitor)
+	monitor_result = ctx->io_monitor (ctx, ctx->io_monitor_data, 1,
+					  ctx->outbound.data.line, linelen);
 
       if (linelen >= LINELENGTH-2-2)
         {
-          if (ctx->log_fp && !(monitor_result & 1))
+          if (ctx->log_fp && !(monitor_result & ASSUAN_IO_MONITOR_NOLOG))
             {
 	      fprintf (ctx->log_fp, "%s[%u.%d] DBG: -> ",
 		       assuan_get_assuan_log_prefix (),
                        (unsigned int)getpid (), (int)ctx->inbound.fd);
 
-              if (ctx->confidential)
+              if (ctx->flags.confidential)
                 fputs ("[Confidential data not shown]", ctx->log_fp);
               else 
                 _assuan_log_print_buffer (ctx->log_fp, 
@@ -426,7 +426,7 @@ _assuan_cookie_write_data (void *cookie, const char *buffer, size_t orig_size)
             }
           *line++ = '\n';
           linelen++;
-          if ( !(monitor_result & 2)
+          if ( !(monitor_result & ASSUAN_IO_MONITOR_IGNORE)
                && writen (ctx, ctx->outbound.data.line, linelen))
             {
               ctx->outbound.data.error = gpg_err_code_from_syserror ();
@@ -459,19 +459,19 @@ _assuan_cookie_write_flush (void *cookie)
   linelen = ctx->outbound.data.linelen;
   line += linelen;
 
-  monitor_result = (ctx->io_monitor
-                    ? ctx->io_monitor (ctx, 1,
-                                       ctx->outbound.data.line, linelen)
-                    : 0);
+  monitor_result = 0;
+  if (ctx->io_monitor)
+    monitor_result = ctx->io_monitor (ctx, ctx->io_monitor_data, 1,
+				      ctx->outbound.data.line, linelen);
   
   if (linelen)
     {
-      if (ctx->log_fp && !(monitor_result & 1))
+      if (ctx->log_fp && !(monitor_result & ASSUAN_IO_MONITOR_NOLOG))
 	{
 	  fprintf (ctx->log_fp, "%s[%u.%d] DBG: -> ",
 		   assuan_get_assuan_log_prefix (),
                    (unsigned int)getpid (), (int)ctx->inbound.fd);
-	  if (ctx->confidential)
+	  if (ctx->flags.confidential)
 	    fputs ("[Confidential data not shown]", ctx->log_fp);
 	  else
 	    _assuan_log_print_buffer (ctx->log_fp,
@@ -480,7 +480,7 @@ _assuan_cookie_write_flush (void *cookie)
 	}
       *line++ = '\n';
       linelen++;
-      if (! (monitor_result & 2)
+      if (! (monitor_result & ASSUAN_IO_MONITOR_IGNORE)
            && writen (ctx, ctx->outbound.data.line, linelen))
         {
           ctx->outbound.data.error = gpg_err_code_from_syserror ();
@@ -517,9 +517,9 @@ gpg_error_t
 assuan_send_data (assuan_context_t ctx, const void *buffer, size_t length)
 {
   if (!ctx)
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
   if (!buffer && length > 1)
-    return _assuan_error (GPG_ERR_ASS_INV_VALUE);
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
 
   if (!buffer)
     { /* flush what we have */
@@ -548,7 +548,7 @@ assuan_sendfd (assuan_context_t ctx, assuan_fd_t fd)
 #ifdef USE_DESCRIPTOR_PASSING
     return 0;
 #else
-    return _assuan_error (GPG_ERR_NOT_IMPLEMENTED);
+  return _assuan_error (ctx, GPG_ERR_NOT_IMPLEMENTED);
 #endif
 
   if (! ctx->io->sendfd)

@@ -31,6 +31,12 @@
 
 #include "assuan.h"
 
+#if __GNUC__ > 2 
+# define ASSUAN_GCC_A_PURE  __attribute__ ((__pure__))
+#else
+# define ASSUAN_GCC_A_PURE
+#endif
+
 #ifndef HAVE_W32_SYSTEM
 #define DIRSEP_C '/'
 #else
@@ -38,6 +44,9 @@
 #endif
 
 #define LINELENGTH ASSUAN_LINELENGTH
+
+/* Generate an error code specific to a context.  */
+#define _assuan_error(ctx, errcode) gpg_err_make ((ctx)->err_source, errcode)
 
 
 struct cmdtbl_s
@@ -60,40 +69,71 @@ struct assuan_io
   gpg_error_t (*receivefd) (assuan_context_t, assuan_fd_t *);
 };
 
-
-/* The global variable with the optional hook fucntions.  */
-extern struct assuan_io_hooks _assuan_io_hooks;
-
-
+
 /* The context we use with most functions. */
 struct assuan_context_s
 {
-  gpg_error_t err_no;
-  const char *err_str;
+  /* Members managed by the generic routines in assuan.c.  */
+
+  /* The error source for errors generated from this context.  */
+  gpg_err_source_t err_source;
+
+#ifdef HAVE_W32_SYSTEM
+  /* The per-context w32 error string.  */
+  char w32_strerror[256];
+#endif
+
+  /* The allocation hooks.  */
+  struct assuan_malloc_hooks malloc_hooks;
+
+  /* Logging callback handler.  */
+  assuan_log_cb_t log_cb;
+  void *log_cb_data;
+
+  void *user_pointer;
 
   /* Context specific flags (cf. assuan_flag_t). */
   struct
   {
-    unsigned int no_waitpid : 1; /* See ASSUAN_NO_WAITPID. */
+    unsigned int no_waitpid : 1;
+    unsigned int confidential : 1;
   } flags;
 
-  int confidential;
+  /* If set, this is called right before logging an I/O line.  */
+  assuan_io_monitor_t io_monitor;
+  void *io_monitor_data;
+
+  /* Now come the members specific to subsystems or engines.  FIXME:
+     This is not developed yet.  See below for the legacy members.  */
+  struct
+  {
+    void (*release) (assuan_context_t ctx);
+  } engine;
+
+
+  /* Engine specific or other subsystem members.  */
+
+  /* assuan-logging.c.  Does not require deallocation from us.  */
+  FILE *log_fp;
+
+  /* assuan-util.c  */
+  gpg_error_t err_no;
+  const char *err_str;
+
   int is_server;      /* Set if this is context belongs to a server */
   int in_inquire;
   int in_process_next;
   int in_command;
 
   /* The following members are used by assuan_inquire_ext.  */
-  int (*inquire_cb) (void *cb_data, int rc, unsigned char *buf, size_t len);
+  gpg_error_t (*inquire_cb) (void *cb_data, gpg_error_t rc,
+			     unsigned char *buf, size_t len);
   void *inquire_cb_data;
   void *inquire_membuf;
 
   char *hello_line;
   char *okay_line;    /* See assuan_set_okay_line() */
 
-  void *user_pointer;  /* For assuan_get_pointer and assuan_set_pointer (). */
-
-  FILE *log_fp;
 
   struct {
     assuan_fd_t fd;
@@ -155,7 +195,7 @@ struct assuan_context_s
 
   void (*deinit_handler)(assuan_context_t);
   gpg_error_t (*accept_handler)(assuan_context_t);
-  gpg_error_t (*finish_handler)(assuan_context_t);
+  void (*finish_handler)(assuan_context_t);
 
   struct cmdtbl_s *cmdtbl;
   size_t cmdtbl_used; /* used entries */
@@ -170,27 +210,35 @@ struct assuan_context_s
 
   /* This function is called right after a command has been processed.
      It may be used to command related cleanup.  */
-  void (*post_cmd_notify_fnc)(assuan_context_t, int);
+  void (*post_cmd_notify_fnc)(assuan_context_t, gpg_error_t);
 
-  /* If set, this is called right before logging an I/O line.  With
-     DIRECTION set to 1 it is called for an output oeration; 0 means
-     an input operation. If bit 0 is set in the return value, the
-     logging of the line will be suppressed.  With bit 1 set, the
-     entire line will be ignored. */
-  unsigned int (*io_monitor)(assuan_context_t ctx,
-                             int direction,
-                             const char *line,
-                             size_t linelen);
 
   assuan_fd_t input_fd;   /* Set by the INPUT command.  */
   assuan_fd_t output_fd;  /* Set by the OUTPUT command.  */
 
   /* io routines.  */
   struct assuan_io *io;
+
+
 };
 
+
+/* Release all resources associated with an engine operation.  */
+void _assuan_reset (assuan_context_t ctx);
+
+/* Default log handler.  */
+int _assuan_log_handler (assuan_context_t ctx, void *hook,
+			  unsigned int cat, const char *msg);
+
+
+/* Manage memory specific to a context.  */
+void *_assuan_malloc (assuan_context_t ctx, size_t cnt);
+void *_assuan_realloc (assuan_context_t ctx, void *ptr, size_t cnt);
+void *_assuan_calloc (assuan_context_t ctx, size_t cnt, size_t elsize);
+void _assuan_free (assuan_context_t ctx, void *ptr);
+
+
 /*-- assuan-pipe-server.c --*/
-gpg_error_t _assuan_new_context (assuan_context_t *r_ctx);
 void _assuan_release_context (assuan_context_t ctx);
 
 /*-- assuan-uds.c --*/
@@ -223,16 +271,9 @@ void _assuan_inquire_release (assuan_context_t ctx);
 int _assuan_error_is_eagain (gpg_error_t err);
 
 
-/*-- assuan-util.c --*/
-void *_assuan_malloc (size_t n);
-void *_assuan_calloc (size_t n, size_t m);
-void *_assuan_realloc (void *p, size_t n);
-void  _assuan_free (void *p);
-
-gpg_error_t _assuan_error (gpg_err_code_t errcode);
 
 #define set_error(c,e,t)						\
-       assuan_set_error ((c), _assuan_error (e), (t))
+  assuan_set_error ((c), _assuan_error (c,e), (t))
 
 #ifdef HAVE_W32_SYSTEM
 const char *_assuan_w32_strerror (int ec);
@@ -241,15 +282,7 @@ const char *_assuan_w32_strerror (int ec);
 
 
 /*-- assuan-logging.c --*/
-void _assuan_set_default_log_stream (FILE *fp);
-
-void _assuan_log_printf (const char *format, ...)
-#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 5 )
- __attribute__ ((format (printf,1,2)))
-#endif
-     ;
-void _assuan_log_print_buffer (FILE *fp, const void *buffer, size_t  length);
-void _assuan_log_sanitized_string (const char *string);
+void _assuan_log_print_buffer (FILE *fp, const void *buffer, size_t length);
 
 
 /*-- assuan-io.c --*/
@@ -320,6 +353,12 @@ int putc_unlocked (int c, FILE *stream);
 #define SOCKET2HANDLE(s) (s)
 #define HANDLE2SOCKET(h) (h)
 #endif
+
+
+void _assuan_disconnect (assuan_context_t ctx);
+
+/* Encode the C formatted string SRC and return the malloc'ed result.  */
+char *_assuan_encode_c_string (assuan_context_t ctx, const char *src);
 
 
 #endif /*ASSUAN_DEFS_H*/

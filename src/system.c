@@ -1,4 +1,4 @@
-/* assuan-error.c
+/* system.c - System support functions.
    Copyright (C) 2009 Free Software Foundation, Inc.
 
    This file is part of Assuan.
@@ -17,47 +17,56 @@
    License along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include <stdio.h>
-#include <assert.h>
+#include <stdlib.h>
 #include <errno.h>
 
-#undef _ASSUAN_IN_LIBASSUAN /* undef to get all error codes. */
-#include "assuan.h"
 #include "assuan-defs.h"
-
-
-/* A small helper function to treat EAGAIN transparently to the
-   caller.  */
-int
-_assuan_error_is_eagain (gpg_error_t err)
-{
-  if (gpg_err_code (err) == GPG_ERR_EAGAIN)
-    {
-      /* Avoid spinning by sleeping for one tenth of a second.  */
-       _assuan_usleep (100000);
-       return 1;
-    }
-  else
-    return 0;
-}
+#include "debug.h"
 
 
+/* Manage memory specific to a context.  */
 
-#ifdef HAVE_W32_SYSTEM
-char *
-_assuan_w32_strerror (assuan_context_t ctx, int ec)
+void *
+_assuan_malloc (assuan_context_t ctx, size_t cnt)
 {
-  if (ec == -1)
-    ec = (int)GetLastError ();
-  FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM, NULL, ec,
-                 MAKELANGID (LANG_NEUTRAL, SUBLANG_DEFAULT),
-                 ctx->w32_strerror, sizeof (ctx->w32_strerror) - 1, NULL);
-
-  return ctx->w32_strerror;
+  return ctx->malloc_hooks.malloc (cnt);
 }
-#endif
 
+void *
+_assuan_realloc (assuan_context_t ctx, void *ptr, size_t cnt)
+{
+  return ctx->malloc_hooks.realloc (ptr, cnt);
+}
+
+void *
+_assuan_calloc (assuan_context_t ctx, size_t cnt, size_t elsize)
+{
+  void *ptr;
+  size_t nbytes;
+    
+  nbytes = cnt * elsize;
+
+  /* Check for overflow.  */
+  if (elsize && nbytes / elsize != cnt) 
+    {
+      errno = ENOMEM;
+      return NULL;
+    }
+
+  ptr = ctx->malloc_hooks.malloc (nbytes);
+  if (ptr)
+    memset (ptr, 0, nbytes);
+  return ptr;
+}
+
+void
+_assuan_free (assuan_context_t ctx, void *ptr)
+{
+  if (ptr)
+    ctx->malloc_hooks.free (ptr);
+}
