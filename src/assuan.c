@@ -168,10 +168,13 @@ _assuan_reset (assuan_context_t ctx)
 void
 assuan_release (assuan_context_t ctx)
 {
-  TRACE (ctx, ASSUAN_LOG_CTX, "assuan_release", ctx);
-
-  _assuan_reset (ctx);
-  /* None of the members that are our responsibility requires
-     deallocation.  */
-  _assuan_free (ctx, ctx);
+  if (ctx)
+    {
+      TRACE (ctx, ASSUAN_LOG_CTX, "assuan_release", ctx);
+      
+      _assuan_reset (ctx);
+      /* None of the members that are our responsibility requires
+         deallocation.  */
+      _assuan_free (ctx, ctx);
+    }
 }
