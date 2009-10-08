@@ -541,7 +541,7 @@ socketpair_connect (assuan_context_t ctx,
 /* Build a command line for use with W32's CreateProcess.  On success
    CMDLINE gets the address of a newly allocated string.  */
 static int
-build_w32_commandline (const char * const *argv, char **cmdline)
+build_w32_commandline (assuan_context_t ctx, const char * const *argv, char **cmdline)
 {
   int i, n;
   const char *s;
@@ -558,7 +558,7 @@ build_w32_commandline (const char * const *argv, char **cmdline)
     }
   n++;
 
-  buf = p = _assuan_malloc (n);
+  buf = p = _assuan_malloc (ctx, n);
   if (!buf)
     return -1;
 
@@ -606,7 +606,7 @@ create_inheritable_pipe (assuan_context_t ctx,
   if (!CreatePipe (&r, &w, &sec_attr, 0))
     {
       TRACE1 (ctx, ASSUAN_LOG_SYSIO, "create_inheritable_pipe", ctx,
-	      "CreatePipe failed: %s", w32_strerror (ctx, -1));
+	      "CreatePipe failed: %s", _assuan_w32_strerror (ctx, -1));
       return -1;
     }
 
@@ -615,7 +615,7 @@ create_inheritable_pipe (assuan_context_t ctx,
                         TRUE, DUPLICATE_SAME_ACCESS ))
     {
       TRACE1 (ctx, ASSUAN_LOG_SYSIO, "create_inheritable_pipe", ctx,
-	      "DuplicateHandle failed: %s", w32_strerror (ctx, -1));
+	      "DuplicateHandle failed: %s", _assuan_w32_strerror (ctx, -1));
       CloseHandle (r);
       CloseHandle (w);
       return -1;
@@ -675,13 +675,13 @@ pipe_connect_w32 (assuan_context_t ctx,
   sprintf (mypidstr, "%lu", (unsigned long)getpid ());
 
   /* Build the command line.  */
-  if (build_w32_commandline (argv, &cmdline))
+  if (build_w32_commandline (ctx, argv, &cmdline))
     return _assuan_error (ctx, gpg_err_code_from_syserror ());
 
   /* Create thew two pipes. */
   if (create_inheritable_pipe (ctx, rp, 0))
     {
-      _assuan_free (cmdline);
+      _assuan_free (ctx, cmdline);
       return _assuan_error (ctx, GPG_ERR_ASS_GENERAL);
     }
   
@@ -689,7 +689,7 @@ pipe_connect_w32 (assuan_context_t ctx,
     {
       CloseHandle (rp[0]);
       CloseHandle (rp[1]);
-      _assuan_free (cmdline);
+      _assuan_free (ctx, cmdline);
       return _assuan_error (ctx, GPG_ERR_ASS_GENERAL);
     }
 
@@ -729,12 +729,12 @@ pipe_connect_w32 (assuan_context_t ctx,
       if (nullfd == INVALID_HANDLE_VALUE)
         {
 	  TRACE1 (ctx, ASSUAN_LOG_SYSIO, "pipe_connect_w32", ctx,
-		  "can't open `nul': %s", w32_strerror (ctx, -1));
+		  "can't open `nul': %s", _assuan_w32_strerror (ctx, -1));
           CloseHandle (rp[0]);
           CloseHandle (rp[1]);
           CloseHandle (wp[0]);
           CloseHandle (wp[1]);
-          _assuan_free (cmdline);
+          _assuan_free (ctx, cmdline);
 	  /* FIXME: Cleanup?  */
           return -1;
         }
@@ -765,18 +765,18 @@ pipe_connect_w32 (assuan_context_t ctx,
                       ))
     {
       TRACE1 (ctx, ASSUAN_LOG_SYSIO, "pipe_connect_w32", ctx,
-	      "CreateProcess failed: %s", w32_strerror (ctx, -1));
+	      "CreateProcess failed: %s", _assuan_w32_strerror (ctx, -1));
       CloseHandle (rp[0]);
       CloseHandle (rp[1]);
       CloseHandle (wp[0]);
       CloseHandle (wp[1]);
       if (nullfd != INVALID_HANDLE_VALUE)
         CloseHandle (nullfd);
-      _assuan_free (cmdline);
+      _assuan_free (ctx, cmdline);
       /* FIXME: Cleanup?  */
       return _assuan_error (ctx, GPG_ERR_ASS_GENERAL);
     }
-  _assuan_free (cmdline);
+  _assuan_free (ctx, cmdline);
   cmdline = NULL;
   if (nullfd != INVALID_HANDLE_VALUE)
     {

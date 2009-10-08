@@ -1,3 +1,17 @@
+2009-10-08  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan.h (assuan_get_assuan_log_stream,
+	assuan_set_assuan_log_stream): Remove prototypes.
+	* libassuan.def: Remove assuan_get_assuan_log_stream,
+	assuan_set_assuan_log_stream.
+	* libassuan.vers: Likewise.
+	* assuan-defs.h (_assuan_w32_strerror): Fix prototype.
+	(w32_strerror): Remove macro.
+	* assuan-pipe-connect.c (build_w32_commandline): Add argument for
+	context.  Use it for malloc routines.  Use _assuan_w32_strerror
+	instead of w32_strerror.
+	* vasprintf.c: New file.
+
 2009-09-29  Werner Koch  <wk@g10code.com>
 
 	* assuan.h: Comment fix.

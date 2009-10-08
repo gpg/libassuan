@@ -308,6 +308,7 @@ AC_REPLACE_FUNCS(stpcpy)
 # Check for unistd.h for setenv replacement function.
 AC_CHECK_HEADERS(unistd.h)
 AC_REPLACE_FUNCS(setenv)
+AC_REPLACE_FUNCS(vasprintf)
 
 
 #

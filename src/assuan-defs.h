@@ -276,8 +276,7 @@ int _assuan_error_is_eagain (gpg_error_t err);
   assuan_set_error ((c), _assuan_error (c,e), (t))
 
 #ifdef HAVE_W32_SYSTEM
-const char *_assuan_w32_strerror (int ec);
-#define w32_strerror(e) _assuan_w32_strerror ((e))
+char *_assuan_w32_strerror (assuan_context_t ctx, int ec);
 #endif /*HAVE_W32_SYSTEM*/
 
 

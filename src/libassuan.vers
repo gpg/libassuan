@@ -30,7 +30,6 @@ LIBASSUAN_1.0 {
     assuan_end_confidential;
     assuan_get_active_fds;
     assuan_get_assuan_log_prefix;
-    assuan_get_assuan_log_stream;
     assuan_get_data_fp;
     assuan_get_flag;
     assuan_get_input_fd;
@@ -62,7 +61,6 @@ LIBASSUAN_1.0 {
     assuan_send_data;
     assuan_sendfd;
     assuan_set_assuan_log_prefix;
-    assuan_set_assuan_log_stream;
     assuan_set_error;
     assuan_set_flag;
     assuan_set_hello_line;
