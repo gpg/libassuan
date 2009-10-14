@@ -288,6 +288,7 @@ gpg_error_t assuan_process_done (assuan_context_t ctx, gpg_error_t rc);
 int assuan_get_active_fds (assuan_context_t ctx, int what,
                            assuan_fd_t *fdarray, int fdarraysize);
 
+const char *assuan_get_command_name (assuan_context_t ctx);
 
 FILE *assuan_get_data_fp (assuan_context_t ctx);
 gpg_error_t assuan_set_okay_line (assuan_context_t ctx, const char *line);

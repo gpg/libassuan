@@ -330,6 +330,16 @@ assuan_register_command (assuan_context_t ctx,
   return 0;
 }
 
+/* Return the name of the command currently processed by a handler.
+   The string returned is valid until the next call to an assuan
+   function on the same context.  Returns NULL if no handler is
+   executed or the command is not known.  */
+const char *
+assuan_get_command_name (assuan_context_t ctx)
+{
+  return ctx? ctx->current_cmd_name : NULL;
+}
+
 gpg_error_t
 assuan_register_post_cmd_notify (assuan_context_t ctx,
                                  void (*fnc)(assuan_context_t, gpg_error_t))
@@ -453,6 +463,7 @@ my_strcasecmp (const char *a, const char *b)
 static gpg_error_t
 dispatch_command (assuan_context_t ctx, char *line, int linelen)
 {
+  gpg_error_t err;
   char *p;
   const char *s;
   int shift, i;
@@ -499,7 +510,10 @@ dispatch_command (assuan_context_t ctx, char *line, int linelen)
   linelen -= shift;
 
 /*    fprintf (stderr, "DBG-assuan: processing %s `%s'\n", s, line); */
-  return ctx->cmdtbl[i].handler (ctx, line);
+  ctx->current_cmd_name = ctx->cmdtbl[i].name;
+  err = ctx->cmdtbl[i].handler (ctx, line);
+  ctx->current_cmd_name = NULL;
+  return err;
 }
 
 

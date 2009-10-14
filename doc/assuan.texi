@@ -1675,6 +1675,15 @@ functions like @code{fdopen} or @code{dup}.
 
 @end deftypefun
 
+@deftypefun @w{const char *} assuan_get_command_name (@w{assuan_context_t @var{ctx}})
+
+Return the name of the command currently processed by a handler.
+The returned string is valid until the next call to an Assuan
+function on the same context.  Returns @code{NULL} if no handler is
+executed or the command is not known.
+@end deftypefun
+
+
 @deftypefun int assuan_get_input_fd (@w{assuan_context_t @var{ctx}})
 
 Return the file descriptor sent by the client using the last @code{INPUT}

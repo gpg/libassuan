@@ -50,7 +50,9 @@ assuan_init_pipe_server        CHANGED: Take ctx arg instead of pointer to ctx.
 assuan_set_io_hooks	       REMOVED: Will come back in expanded form.
 assuan_io_hooks_t  	       REMOVED: Will come back in expanded form.
 assuan_io_monitor_t	       CHANGED: Add a hook data argument.
+assuan_get_command_name        NEW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 Noteworthy changes in version 1.0.5 (2008-05-25)
 ------------------------------------------------

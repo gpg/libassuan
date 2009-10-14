@@ -1,3 +1,10 @@
+2009-10-14  Werner Koch  <wk@g10code.com>
+
+	* assuan-defs.h (assuan_context_s): Add field CURRENT_CMD_NAME.
+	* assuan-handler.c (dispatch_command): Set this field.
+	(assuan_get_command_name): New.
+	* assuan.h, libassuan.vers, libassuan.def: Add new fucntion.
+
 2009-10-08  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan.h (assuan_get_assuan_log_stream,

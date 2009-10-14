@@ -84,6 +84,7 @@ EXPORTS
     assuan_transact			@63
     assuan_write_line			@64
     assuan_write_status			@65
+    assuan_get_command_name             @66
 
 ; END
 

@@ -160,7 +160,7 @@ _assuan_reset (assuan_context_t ctx)
       ctx->engine.release = NULL;
     }
 
-  // FIXME: Clean standard commands
+  /* FIXME: Clean standard commands */
 }
 
 

@@ -1,3 +1,7 @@
+2009-10-14  Werner Koch  <wk@g10code.com>
+
+	* assuan.texi (Utilities): Describe assuan_get_command_name.
+
 2009-09-21  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan.texi: Update to new API.

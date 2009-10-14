@@ -200,6 +200,11 @@ struct assuan_context_s
   struct cmdtbl_s *cmdtbl;
   size_t cmdtbl_used; /* used entries */
   size_t cmdtbl_size; /* allocated size of table */
+  
+  /* The name of the command currently processed by a command handler.
+     This is a pointer into CMDTBL.  NULL if not in a command
+     handler.  */
+  const char *current_cmd_name;
 
   void (*bye_notify_fnc)(assuan_context_t);
   void (*reset_notify_fnc)(assuan_context_t);
