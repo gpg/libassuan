@@ -13,7 +13,11 @@ Noteworthy changes in version 1.1.0 (unreleased)
    If you use assuan_pipe_connect or assuan_pipe_connect_ext with NAME
    of NULL, you have to provide a non-NULL ARGV argument and check
    that against "server" or "client" to determine which end you got
-   after fork().
+   after fork().  If you use the assuan sock interface, you must call
+   assuan_sock_init after setting global context defaults.
+
+ * Pth support has changed.  This now follows the same style as
+   libgcrypt by setting system hook callbacks.
 
  * Interface changes relative to the 1.0.5 release:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -51,6 +55,18 @@ assuan_set_io_hooks	       REMOVED: Will come back in expanded form.
 assuan_io_hooks_t  	       REMOVED: Will come back in expanded form.
 assuan_io_monitor_t	       CHANGED: Add a hook data argument.
 assuan_get_command_name        NEW
+assuan_msghdr_t		       NEW
+ASSUAN_INVALID_PID	       NEW
+ASSUAN_NO_FIXSIGNALS           NEW
+ASSUAN_SYSTEM_HOOKS_VERSION    NEW
+assuan_system_hooks_t          NEW
+assuan_set_system_hooks        NEW
+assuan_ctx_set_system_hooks    NEW
+ASSUAN_SYSTEM_PTH_IMPL         NEW
+ASSUAN_SYSTEM_PTH_DECL         NEW
+ASSUAN_SYSTEM_PTH              NEW
+assuan_sock_init               NEW
+assuan_sock_deinit             NEW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

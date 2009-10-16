@@ -92,6 +92,13 @@ assuan_get_log_cb (assuan_log_cb_t *log_cb, void **log_cb_data)
 }
 
 
+void
+assuan_set_system_hooks (assuan_system_hooks_t system_hooks)
+{
+  _assuan_system_hooks_copy (&_assuan_system_hooks, system_hooks);
+}
+
+
 /* Create a new Assuan context.  The initial parameters are all needed
    in the creation of the context.  */
 gpg_error_t
@@ -123,6 +130,7 @@ assuan_new_ext (assuan_context_t *r_ctx, gpg_err_source_t err_source,
       return TRACE_ERR (gpg_err_code_from_syserror ());
 
     memcpy (ctx, &wctx, sizeof (*ctx));
+    ctx->system = _assuan_system_hooks;
 
     /* FIXME: Delegate to subsystems/engines, as the FDs are not our
        responsibility (we don't deallocate them, for example).  */
@@ -168,13 +176,13 @@ _assuan_reset (assuan_context_t ctx)
 void
 assuan_release (assuan_context_t ctx)
 {
-  if (ctx)
-    {
-      TRACE (ctx, ASSUAN_LOG_CTX, "assuan_release", ctx);
-      
-      _assuan_reset (ctx);
-      /* None of the members that are our responsibility requires
-         deallocation.  */
-      _assuan_free (ctx, ctx);
-    }
+  TRACE (ctx, ASSUAN_LOG_CTX, "assuan_release", ctx);
+
+  if (! ctx)
+    return;
+
+  _assuan_reset (ctx);
+  /* None of the members that are our responsibility requires
+     deallocation.  */
+  _assuan_free (ctx, ctx);
 }

@@ -144,33 +144,11 @@ read_port_and_nonce (const char *fname, unsigned short *port, char *nonce)
 #endif /*HAVE_W32_SYSTEM*/
 
 
-
-int
-_assuan_close (assuan_fd_t fd)
-{
-#ifdef HAVE_W32_SYSTEM
-  int rc = closesocket (HANDLE2SOCKET(fd));
-  if (rc)
-    errno = _assuan_sock_wsa2errno (WSAGetLastError ());
-  if (rc && WSAGetLastError () == WSAENOTSOCK)
-    {
-      rc = CloseHandle (fd);
-      if (rc)
-	/* FIXME. */
-	errno = EIO;
-    }
-  return rc;
-#else
-  return close (fd);
-#endif
-}
-
-
 /* Return a new socket.  Note that under W32 we consider a socket the
    same as an System Handle; all functions using such a handle know
    about this dual use and act accordingly. */ 
 assuan_fd_t
-_assuan_sock_new (int domain, int type, int proto)
+_assuan_sock_new (assuan_context_t ctx, int domain, int type, int proto)
 {
 #ifdef HAVE_W32_SYSTEM
   assuan_fd_t res;
@@ -187,7 +165,8 @@ _assuan_sock_new (int domain, int type, int proto)
 
 
 int
-_assuan_sock_connect (assuan_fd_t sockfd, struct sockaddr *addr, int addrlen)
+_assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
+		      struct sockaddr *addr, int addrlen)
 {
 #ifdef HAVE_W32_SYSTEM
   if (addr->sa_family == AF_LOCAL || addr->sa_family == AF_UNIX)
@@ -199,7 +178,7 @@ _assuan_sock_connect (assuan_fd_t sockfd, struct sockaddr *addr, int addrlen)
       int ret;
       
       unaddr = (struct sockaddr_un *)addr;
-      if (read_port_and_nonce (unaddr->sun_path, &port, nonce))
+      if (read_port_and_nonce (ctx, unaddr->sun_path, &port, nonce))
         return -1;
       
       myaddr.sin_family = AF_INET;
@@ -216,7 +195,7 @@ _assuan_sock_connect (assuan_fd_t sockfd, struct sockaddr *addr, int addrlen)
       if (!ret)
         {
           /* Send the nonce. */
-          ret = _assuan_io_write (sockfd, nonce, 16);
+          ret = _assuan_write (ctx, sockfd, nonce, 16);
           if (ret >= 0 && ret != 16)
             {
               errno = EIO;
@@ -240,7 +219,8 @@ _assuan_sock_connect (assuan_fd_t sockfd, struct sockaddr *addr, int addrlen)
 
 
 int
-_assuan_sock_bind (assuan_fd_t sockfd, struct sockaddr *addr, int addrlen)
+_assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
+		   struct sockaddr *addr, int addrlen)
 {
 #ifdef HAVE_W32_SYSTEM
   if (addr->sa_family == AF_LOCAL || addr->sa_family == AF_UNIX)
@@ -312,8 +292,8 @@ _assuan_sock_bind (assuan_fd_t sockfd, struct sockaddr *addr, int addrlen)
 
 
 int
-_assuan_sock_get_nonce (struct sockaddr *addr, int addrlen, 
-                        assuan_sock_nonce_t *nonce)
+_assuan_sock_get_nonce (assuan_context_t ctx, struct sockaddr *addr,
+			int addrlen, assuan_sock_nonce_t *nonce)
 {
 #ifdef HAVE_W32_SYSTEM
   if (addr->sa_family == AF_LOCAL || addr->sa_family == AF_UNIX)
@@ -328,7 +308,7 @@ _assuan_sock_get_nonce (struct sockaddr *addr, int addrlen,
         }
       nonce->length = 16;
       unaddr = (struct sockaddr_un *)addr;
-      if (read_port_and_nonce (unaddr->sun_path, &port, nonce->nonce))
+      if (read_port_and_nonce (ctx, unaddr->sun_path, &port, nonce->nonce))
         return -1;
     }
   else
@@ -346,7 +326,8 @@ _assuan_sock_get_nonce (struct sockaddr *addr, int addrlen,
  
  
 int
-_assuan_sock_check_nonce (assuan_fd_t fd, assuan_sock_nonce_t *nonce)
+_assuan_sock_check_nonce (assuan_context_t ctx, assuan_fd_t fd,
+			  assuan_sock_nonce_t *nonce)
 {
 #ifdef HAVE_W32_SYSTEM
   char buffer[16], *p;
@@ -367,12 +348,12 @@ _assuan_sock_check_nonce (assuan_fd_t fd, assuan_sock_nonce_t *nonce)
       errno = EINVAL;
       return -1;
     }
-      
+
   p = buffer;
   nleft = 16;
   while (nleft)
     {
-      n = _assuan_io_read (SOCKET2HANDLE(fd), p, nleft);
+      n = _assuan_read (ctx, SOCKET2HANDLE(fd), p, nleft);
       if (n < 0 && errno == EINTR)
         ;
       else if (n < 0 && errno == EAGAIN)
@@ -404,39 +385,83 @@ _assuan_sock_check_nonce (assuan_fd_t fd, assuan_sock_nonce_t *nonce)
 
 
 /* Public API.  */
+
+/* In the future, we can allow access to sock_ctx, if that context's
+   hook functions need to be overridden.  There can only be one global
+   assuan_sock_* user (one library or one application) with this
+   convenience interface, if non-standard hook functions are
+   needed.  */
+static assuan_context_t sock_ctx;
+
+gpg_error_t
+assuan_sock_init ()
+{
+  gpg_error_t err;
+#ifdef HAVE_W32_SYSTEM
+  WSADATA wsadat;
+#endif
+
+  if (sock_ctx != NULL)
+    return 0;
+
+  err = assuan_new (&sock_ctx);
+	
+#ifdef HAVE_W32_SYSTEM
+  if (! err)
+    WSAStartup (0x202, &wsadat);
+#endif
+
+  return err;
+}
+
+
+void
+assuan_sock_deinit ()
+{
+  if (sock_ctx == NULL)
+    return;
+
+#ifdef HAVE_W32_SYSTEM
+  WSACleanup ();
+#endif
+
+  assuan_release (sock_ctx);
+}
+  
+
 int
 assuan_sock_close (assuan_fd_t fd)
 {
-  return _assuan_close (fd);
+  return _assuan_close (sock_ctx, fd);
 }
 
 assuan_fd_t 
 assuan_sock_new (int domain, int type, int proto)
 {
-  return _assuan_sock_new (domain, type, proto);
+  return _assuan_sock_new (sock_ctx, domain, type, proto);
 }
 
 int
 assuan_sock_connect (assuan_fd_t sockfd, struct sockaddr *addr, int addrlen)
 {
-  return _assuan_sock_connect (sockfd, addr, addrlen);
+  return _assuan_sock_connect (sock_ctx, sockfd, addr, addrlen);
 }
 
 int
 assuan_sock_bind (assuan_fd_t sockfd, struct sockaddr *addr, int addrlen)
 {
-  return _assuan_sock_bind (sockfd, addr, addrlen);
+  return _assuan_sock_bind (sock_ctx, sockfd, addr, addrlen);
 }
 
 int
 assuan_sock_get_nonce (struct sockaddr *addr, int addrlen, 
                        assuan_sock_nonce_t *nonce)
 {     
-  return _assuan_sock_get_nonce (addr, addrlen, nonce);
+  return _assuan_sock_get_nonce (sock_ctx, addr, addrlen, nonce);
 }
 
 int
 assuan_sock_check_nonce (assuan_fd_t fd, assuan_sock_nonce_t *nonce)
 {
-  return _assuan_sock_check_nonce (fd, nonce);
+  return _assuan_sock_check_nonce (sock_ctx, fd, nonce);
 }

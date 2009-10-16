@@ -84,7 +84,16 @@ EXPORTS
     assuan_transact			@63
     assuan_write_line			@64
     assuan_write_status			@65
+    assuan_sock_init
+    assuan_sock_deinit
     assuan_get_command_name             @66
+
+    __assuan_pipe
+    __assuan_close
+    __assuan_spawn
+    __assuan_socketpair
+    assuan_set_system_hooks
+    assuan_ctx_set_system_hooks
 
 ; END
 

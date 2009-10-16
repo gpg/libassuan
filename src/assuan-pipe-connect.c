@@ -62,7 +62,6 @@
 static void
 fix_signals (void)
 {
-#ifndef _ASSUAN_NO_FIXED_SIGNALS
 #ifndef HAVE_DOSISH_SYSTEM  /* No SIGPIPE for these systems.  */
   static int fixed_signals;
 
@@ -82,58 +81,28 @@ fix_signals (void)
       /* FIXME: This is not MT safe */
     }
 #endif /*HAVE_DOSISH_SYSTEM*/
-#endif /*!_ASSUAN_NO_FIXED_SIGNALS*/
 }
 
-
-#ifndef HAVE_W32_SYSTEM
-static int
-writen (int fd, const char *buffer, size_t length)
-{
-  while (length)
-    {
-      int nwritten = write (fd, buffer, length);
-      
-      if (nwritten < 0)
-        {
-          if (errno == EINTR)
-            continue;
-          return -1; /* write error */
-        }
-      length -= nwritten;
-      buffer += nwritten;
-    }
-  return 0;  /* okay */
-}
-#endif
 
 static void
 do_finish (assuan_context_t ctx)
 {
   if (ctx->inbound.fd != ASSUAN_INVALID_FD)
     {
-      _assuan_close (ctx->inbound.fd);
+      _assuan_close (ctx, ctx->inbound.fd);
       if (ctx->inbound.fd == ctx->outbound.fd)
         ctx->outbound.fd = ASSUAN_INVALID_FD;
       ctx->inbound.fd = ASSUAN_INVALID_FD;
     }
   if (ctx->outbound.fd != ASSUAN_INVALID_FD)
     {
-      _assuan_close (ctx->outbound.fd);
+      _assuan_close (ctx, ctx->outbound.fd);
       ctx->outbound.fd = ASSUAN_INVALID_FD;
     }
-  if (ctx->pid != (pid_t)(-1) && ctx->pid)
+  if (ctx->pid != ASSUAN_INVALID_PID && ctx->pid)
     {
-#ifndef HAVE_W32_SYSTEM
-#ifndef _ASSUAN_USE_DOUBLE_FORK
-      if (!ctx->flags.no_waitpid)
-        _assuan_waitpid (ctx->pid, NULL, 0); 
-      ctx->pid =(pid_t)(-1);
-#endif
-#else /*!HAVE_W32_SYSTEM*/
-      CloseHandle ((HANDLE) ctx->pid);
-      ctx->pid = (pid_t) INVALID_HANDLE_VALUE;
-#endif /*HAVE_W32_SYSTEM*/
+      _assuan_waitpid (ctx, ctx->pid, ctx->flags.no_waitpid, NULL, 0);
+      ctx->pid = ASSUAN_INVALID_PID;
     }
 }
 
@@ -166,178 +135,96 @@ initial_handshake (assuan_context_t ctx)
   return err;
 }
 
+
+struct at_pipe_fork
+{
+  void (*user_atfork) (void *opaque, int reserved);
+  void *user_atforkvalue;
+};
+
+
+static void
+at_pipe_fork_cb (void *opaque, int reserved)
+{
+  struct at_pipe_fork *atp = opaque;
+          
+  if (atp->user_atfork)
+    atp->user_atfork (atp->user_atforkvalue, reserved);
 
 #ifndef HAVE_W32_SYSTEM
-#define pipe_connect pipe_connect_unix
-/* Unix version of the pipe connection code.  We use an extra macro to
-   make ChangeLog entries easier. */
-static gpg_error_t
-pipe_connect_unix (assuan_context_t ctx,
-                   const char *name, const char *const argv[],
-                   int *fd_child_list,
-                   void (*atfork) (void *opaque, int reserved),
-                   void *atforkvalue, unsigned int flags)
-{
-  int rp[2];
-  int wp[2];
-  pid_t pid;
-  char mypidstr[50];
-  gpg_error_t rc;
-  static struct assuan_io io = { _assuan_simple_read, _assuan_simple_write,
-				 0, 0 };
+  {
+    char mypidstr[50];
+    
+    /* We store our parents pid in the environment so that the execed
+       assuan server is able to read the actual pid of the client.
+       The server can't use getppid because it might have been double
+       forked before the assuan server has been initialized. */
+    sprintf (mypidstr, "%lu", (unsigned long) getpid ());
+    setenv ("_assuan_pipe_connect_pid", mypidstr, 1);
 
-  (void)flags;
+    /* Make sure that we never pass a connection fd variable when
+       using a simple pipe.  */
+    unsetenv ("_assuan_connection_fd");
+  }
+#endif
+}
+
+
+static gpg_error_t
+pipe_connect (assuan_context_t ctx,
+	      const char *name, const char **argv,
+	      int *fd_child_list,
+	      void (*atfork) (void *opaque, int reserved),
+	      void *atforkvalue, unsigned int flags)
+{
+  gpg_error_t rc;
+  assuan_fd_t rp[2];
+  assuan_fd_t wp[2];
+  pid_t pid;
+  int res;
+  struct at_pipe_fork atp;
+
+  atp.user_atfork = atfork;
+  atp.user_atforkvalue = atforkvalue;
 
   if (!ctx || !name || !argv || !argv[0])
     return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
 
-  fix_signals ();
+  if (! ctx->flags.no_fixsignals)
+    fix_signals ();
 
-  sprintf (mypidstr, "%lu", (unsigned long)getpid ());
-
-  if (pipe (rp) < 0)
-    return _assuan_error (ctx, GPG_ERR_ASS_GENERAL);
+  if (_assuan_pipe (ctx, rp, 1) < 0)
+    return _assuan_error (ctx, gpg_err_code_from_syserror ());
   
-  if (pipe (wp) < 0)
+  if (_assuan_pipe (ctx, wp, 0) < 0)
     {
-      close (rp[0]);
-      close (rp[1]);
-      return _assuan_error (ctx, GPG_ERR_ASS_GENERAL);
+      _assuan_close (ctx, rp[0]);
+      _assuan_close (ctx, rp[1]);
+      return _assuan_error (ctx, gpg_err_code_from_syserror ());
     }
 
-  /* FIXME: For GPGME we should better use _gpgme_io_spawn.  The PID
-     stored here is actually soon useless.  */
-  pid = fork ();
-  if (pid < 0)
+  /* FIXME: Use atfork handler that closes child fds on Unix.  */
+  res = _assuan_spawn (ctx, &pid, name, argv, wp[0], rp[1],
+		       fd_child_list, at_pipe_fork_cb, &atp, flags);
+  if (res < 0)
     {
-      close (rp[0]);
-      close (rp[1]);
-      close (wp[0]);
-      close (wp[1]);
-      return _assuan_error (ctx, GPG_ERR_ASS_GENERAL);
+      rc = gpg_err_code_from_syserror ();
+      _assuan_close (ctx, rp[0]);
+      _assuan_close (ctx, rp[1]);
+      _assuan_close (ctx, wp[0]);
+      _assuan_close (ctx, wp[1]);
+      return _assuan_error (ctx, rc);
     }
 
-  if (pid == 0)
-    {
-#ifdef _ASSUAN_USE_DOUBLE_FORK      
-      pid_t pid2;
+  /* Close the stdin/stdout child fds in the parent.  */
+  _assuan_close (ctx, rp[1]);
+  _assuan_close (ctx, wp[0]);
 
-      if ((pid2 = fork ()) == 0)
-#endif
-	{
-          int i, n;
-          char errbuf[512];
-          int *fdp;
-          
-          if (atfork)
-            atfork (atforkvalue, 0);
-
-          /* Dup handles to stdin/stdout. */
-          if (rp[1] != STDOUT_FILENO)
-            {
-              if (dup2 (rp[1], STDOUT_FILENO) == -1)
-                {
-		  TRACE1 (ctx, ASSUAN_LOG_SYSIO, "pipe_connect_unix", ctx,
-			  "dup2 failed in child: %s", strerror (errno));
-                  _exit (4);
-                }
-            }
-          if (wp[0] != STDIN_FILENO)
-            {
-              if (dup2 (wp[0], STDIN_FILENO) == -1)
-                {
-		  TRACE1 (ctx, ASSUAN_LOG_SYSIO, "pipe_connect_unix", ctx,
-			  "dup2 failed in child: %s", strerror (errno));
-                  _exit (4);
-                }
-            }
-
-          /* Dup stderr to /dev/null unless it is in the list of FDs to be
-             passed to the child. */
-          fdp = fd_child_list;
-          if (fdp)
-            {
-              for (; *fdp != -1 && *fdp != STDERR_FILENO; fdp++)
-                ;
-            }
-          if (!fdp || *fdp == -1)
-            {
-              int fd = open ("/dev/null", O_WRONLY);
-              if (fd == -1)
-                {
-		  TRACE1 (ctx, ASSUAN_LOG_SYSIO, "pipe_connect_unix", ctx,
-			  "can't open `/dev/null': %s", strerror (errno));
-                  _exit (4);
-                }
-              if (dup2 (fd, STDERR_FILENO) == -1)
-                {
-		  TRACE1 (ctx, ASSUAN_LOG_SYSIO, "pipe_connect_unix", ctx,
-			  "dup2(dev/null, 2) failed: %s", strerror (errno));
-                  _exit (4);
-                }
-            }
-
-
-          /* Close all files which will not be duped and are not in the
-             fd_child_list. */
-          n = sysconf (_SC_OPEN_MAX);
-          if (n < 0)
-            n = MAX_OPEN_FDS;
-          for (i=0; i < n; i++)
-            {
-              if ( i == STDIN_FILENO || i == STDOUT_FILENO
-                   || i == STDERR_FILENO)
-                continue;
-              fdp = fd_child_list;
-              if (fdp)
-                {
-                  while (*fdp != -1 && *fdp != i)
-                    fdp++;
-                }
-
-              if (!(fdp && *fdp != -1))
-                close(i);
-            }
-          errno = 0;
-
-          /* We store our parents pid in the environment so that the
-             execed assuan server is able to read the actual pid of the
-             client.  The server can't use getppid because it might have
-             been double forked before the assuan server has been
-             initialized. */
-          setenv ("_assuan_pipe_connect_pid", mypidstr, 1);
-
-          /* Make sure that we never pass a connection fd variable
-             when using a simple pipe.  */
-          unsetenv ("_assuan_connection_fd");
-
-          execv (name, (char *const *) argv); 
-          /* oops - use the pipe to tell the parent about it */
-          snprintf (errbuf, sizeof(errbuf)-1,
-                    "ERR %d can't exec `%s': %.50s\n",
-                    _assuan_error (ctx, GPG_ERR_ASS_SERVER_START),
-                    name, strerror (errno));
-          errbuf[sizeof(errbuf)-1] = 0;
-          writen (1, errbuf, strlen (errbuf));
-          _exit (4);
-        }
-#ifdef _ASSUAN_USE_DOUBLE_FORK
-      if (pid2 == -1)
-	_exit (1);
-      else
-	_exit (0);
-#endif
-    }
-
-#ifdef _ASSUAN_USE_DOUBLE_FORK
-  _assuan_waitpid (pid, NULL, 0);
-  pid = -1;
-#endif
-
-  close (rp[1]);
-  close (wp[0]);
-
-  ctx->io = &io;
+  ctx->engine.release = _assuan_disconnect;
+  ctx->engine.readfnc = _assuan_simple_read;
+  ctx->engine.writefnc = _assuan_simple_write;
+  ctx->engine.sendfd = NULL;
+  ctx->engine.receivefd = NULL;
   ctx->pipe_mode = 1;
   ctx->inbound.fd  = rp[0];  /* Our inbound is read end of read pipe. */
   ctx->outbound.fd = wp[1];  /* Our outbound is write end of write pipe. */
@@ -350,176 +237,133 @@ pipe_connect_unix (assuan_context_t ctx,
     _assuan_reset (ctx);
   return rc;
 }
-#endif /*!HAVE_W32_SYSTEM*/
 
+
+/* FIXME: For socketpair_connect, use spawn function and add atfork
+   handler to do the right thing.  Instead of stdin and stdout, we
+   extend the fd_child_list by fds[1].  */
 
 #ifndef HAVE_W32_SYSTEM
+struct at_socketpair_fork
+{
+  assuan_fd_t peer_fd;
+  void (*user_atfork) (void *opaque, int reserved);
+  void *user_atforkvalue;
+};
+
+
+static void
+at_socketpair_fork_cb (void *opaque, int reserved)
+{
+  struct at_socketpair_fork *atp = opaque;
+          
+  if (atp->user_atfork)
+    atp->user_atfork (atp->user_atforkvalue, reserved);
+
+#ifndef HAVE_W32_SYSTEM
+  {
+    char mypidstr[50];
+    
+    /* We store our parents pid in the environment so that the execed
+       assuan server is able to read the actual pid of the client.
+       The server can't use getppid because it might have been double
+       forked before the assuan server has been initialized. */
+    sprintf (mypidstr, "%lu", (unsigned long) getpid ());
+    setenv ("_assuan_pipe_connect_pid", mypidstr, 1);
+
+    /* Now set the environment variable used to convey the
+       connection's file descriptor.  */
+    sprintf (mypidstr, "%d", atp->peer_fd);
+    if (setenv ("_assuan_connection_fd", mypidstr, 1))
+      _exit (4);
+  }
+#endif
+}
+
+
 /* This function is similar to pipe_connect but uses a socketpair and
    sets the I/O up to use sendmsg/recvmsg. */
 static gpg_error_t
 socketpair_connect (assuan_context_t ctx,
-                    const char *name, const char *argv[],
+                    const char *name, const char **argv,
                     int *fd_child_list,
                     void (*atfork) (void *opaque, int reserved),
                     void *atforkvalue)
 {
   gpg_error_t err;
+  int idx;
   int fds[2];
   char mypidstr[50];
   pid_t pid;
+  int *child_fds = NULL;
+  int child_fds_cnt = 0;
+  struct at_socketpair_fork atp;
+  int rc;
+
+  TRACE_BEG3 (ctx, ASSUAN_LOG_CTX, "socketpair_connect", ctx,
+	      "name=%s,atfork=%p,atforkvalue=%p", name ? name : "(null)",
+	      atfork, atforkvalue);
+
+  atp.user_atfork = atfork;
+  atp.user_atforkvalue = atforkvalue;
 
   if (!ctx
       || (name && (!argv || !argv[0]))
       || (!name && !argv))
     return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
 
-  fix_signals ();
+  if (! ctx->flags.no_fixsignals)
+    fix_signals ();
 
   sprintf (mypidstr, "%lu", (unsigned long)getpid ());
 
-  if ( socketpair (AF_LOCAL, SOCK_STREAM, 0, fds) )
+  while (fd_child_list[child_fds_cnt] != ASSUAN_INVALID_FD)
+    child_fds_cnt++;
+  child_fds = _assuan_malloc (ctx, (child_fds_cnt + 2) * sizeof (int));
+  if (! child_fds)
+    return TRACE_ERR (gpg_err_code_from_syserror ());
+  memcpy (&child_fds[1], fd_child_list, (child_fds_cnt + 1) * sizeof (int));
+  
+  if (_assuan_socketpair (ctx, AF_LOCAL, SOCK_STREAM, 0, fds))
     {
-      TRACE1 (ctx, ASSUAN_LOG_SYSIO, "socketpair_connect", ctx,
-	      "socketpair failed: %s", strerror (errno));
-      return _assuan_error (ctx, GPG_ERR_ASS_GENERAL);
+      TRACE_LOG1 ("socketpair failed: %s", strerror (errno));
+      _assuan_free (ctx, child_fds);
+      return TRACE_ERR (GPG_ERR_ASS_GENERAL);
+    }
+  atp.peer_fd = fds[1];
+  child_fds[0] = fds[1];
+
+
+  rc = _assuan_spawn (ctx, &pid, name, argv, ASSUAN_INVALID_FD,
+		      ASSUAN_INVALID_FD, child_fds, at_socketpair_fork_cb,
+		      &atp, 0);
+  if (rc < 0)
+    {
+      err = gpg_err_code_from_syserror ();
+      _assuan_close (ctx, fds[0]);
+      _assuan_close (ctx, fds[1]);
+      _assuan_free (ctx, child_fds);
+      return TRACE_ERR (err);
     }
 
-  pid = fork ();
-  if (pid < 0)
+  /* For W32, the user needs to know the server-local names of the
+     inherited handles.  Return them here.  Note that the translation
+     of the peer socketpair fd (fd_child_list[0]) must be done by the
+     wrapper program based on the environment variable
+     _assuan_connection_fd.  */
+  for (idx = 0; fd_child_list[idx] != -1; idx++)
+    /* We add 1 to skip over the socketpair end.  */
+    fd_child_list[idx] = child_fds[idx + 1];
+
+  /* If this is the server child process, exit early.  */
+  if (! name && (*argv)[0] == 's')
     {
-      close (fds[0]);
-      close (fds[1]);
-      /* FIXME: cleanup ctx */
-      return _assuan_error (ctx, GPG_ERR_ASS_GENERAL);
+      _assuan_free (ctx, child_fds);
+      _assuan_close (ctx, fds[0]);
+      return 0;
     }
 
-  if (pid == 0)
-    {
-#ifdef _ASSUAN_USE_DOUBLE_FORK      
-      pid_t pid2;
-
-      if ((pid2 = fork ()) == 0)
-#endif
-	{
-          int fd, i, n;
-          char errbuf[512];
-          int *fdp;
-          
-          if (atfork)
-            atfork (atforkvalue, 0);
-
-          /* Connect stdin and stdout to /dev/null. */
-          fd = open ("/dev/null", O_RDONLY);
-          if (fd == -1 || dup2 (fd, STDIN_FILENO) == -1)
-            {
-	      TRACE1 (ctx, ASSUAN_LOG_SYSIO, "socketpair_connect", ctx,
-		      "dup2(dev/null) failed: %s", strerror (errno));
-              _exit (4);
-            }
-          fd = open ("/dev/null", O_WRONLY);
-          if (fd == -1 || dup2 (fd, STDOUT_FILENO) == -1)
-            {
-	      TRACE1 (ctx, ASSUAN_LOG_SYSIO, "socketpair_connect", ctx,
-		      "dup2(dev/null) failed: %s", strerror (errno));
-              _exit (4);
-            }
-
-          /* Dup stderr to /dev/null unless it is in the list of FDs to be
-             passed to the child. */
-          fdp = fd_child_list;
-          if (fdp)
-            {
-              for (; *fdp != -1 && *fdp != STDERR_FILENO; fdp++)
-                ;
-            }
-          if (!fdp || *fdp == -1)
-            {
-              fd = open ("/dev/null", O_WRONLY);
-              if (fd == -1 || dup2 (fd, STDERR_FILENO) == -1)
-                {
-		  TRACE1 (ctx, ASSUAN_LOG_SYSIO, "socketpair_connect", ctx,
-			  "dup2(dev/null) failed: %s", strerror (errno));
-                  _exit (4);
-                }
-            }
-
-
-          /* Close all files which will not be duped, are not in the
-             fd_child_list and are not the connection fd. */
-          n = sysconf (_SC_OPEN_MAX);
-          if (n < 0)
-            n = MAX_OPEN_FDS;
-          for (i=0; i < n; i++)
-            {
-              if ( i == STDIN_FILENO || i == STDOUT_FILENO
-                   || i == STDERR_FILENO || i == fds[1])
-                continue;
-              fdp = fd_child_list;
-              if (fdp)
-                {
-                  while (*fdp != -1 && *fdp != i)
-                    fdp++;
-                }
-
-              if (!(fdp && *fdp != -1))
-                close(i);
-            }
-          errno = 0;
-
-          /* We store our parents pid in the environment so that the
-             execed assuan server is able to read the actual pid of the
-             client.  The server can't use getppid becuase it might have
-             been double forked before the assuan server has been
-             initialized. */
-          setenv ("_assuan_pipe_connect_pid", mypidstr, 1);
-
-          /* Now set the environment variable used to convey the
-             connection's file descriptor. */
-          sprintf (mypidstr, "%d", fds[1]);
-          if (setenv ("_assuan_connection_fd", mypidstr, 1))
-            {
-	      TRACE1 (ctx, ASSUAN_LOG_SYSIO, "socketpair_connect", ctx,
-		      "setenv failed: %s", strerror (errno));
-              _exit (4);
-            }
-
-          if (!name)
-            {
-              /* No name and no args given, thus we don't do an exec
-                 but continue the forked process.  */
-	      *argv = "server";
-
- 	      /* FIXME: Cleanup.  */
-               return 0;
-            }
-
-          execv (name, (char *const *) argv); 
-          /* oops - use the pipe to tell the parent about it */
-          snprintf (errbuf, sizeof(errbuf)-1,
-                    "ERR %d can't exec `%s': %.50s\n",
-                    _assuan_error (ctx, GPG_ERR_ASS_SERVER_START),
-                    name, strerror (errno));
-          errbuf[sizeof(errbuf)-1] = 0;
-          writen (fds[1], errbuf, strlen (errbuf));
-          _exit (4);
-        }
-#ifdef _ASSUAN_USE_DOUBLE_FORK
-      if (pid2 == -1)
-	_exit (1);
-      else
-	_exit (0);
-#endif
-    }
-
-  if (! name)
-    *argv = "client";
-
-#ifdef _ASSUAN_USE_DOUBLE_FORK
-  _assuan_waitpid (pid, NULL, 0);
-  pid = -1;
-#endif
-
-  close (fds[1]);
+  _assuan_close (ctx, fds[1]);
 
   ctx->pipe_mode = 1;
   ctx->inbound.fd  = fds[0]; 
@@ -535,282 +379,6 @@ socketpair_connect (assuan_context_t ctx,
 }
 #endif /*!HAVE_W32_SYSTEM*/
 
-
-
-#ifdef HAVE_W32_SYSTEM
-/* Build a command line for use with W32's CreateProcess.  On success
-   CMDLINE gets the address of a newly allocated string.  */
-static int
-build_w32_commandline (assuan_context_t ctx, const char * const *argv, char **cmdline)
-{
-  int i, n;
-  const char *s;
-  char *buf, *p;
-
-  *cmdline = NULL;
-  n = 0;
-  for (i=0; (s=argv[i]); i++)
-    {
-      n += strlen (s) + 1 + 2;  /* (1 space, 2 quoting */
-      for (; *s; s++)
-        if (*s == '\"')
-          n++;  /* Need to double inner quotes.  */
-    }
-  n++;
-
-  buf = p = _assuan_malloc (ctx, n);
-  if (!buf)
-    return -1;
-
-  for (i=0; argv[i]; i++) 
-    {
-      if (i)
-        p = stpcpy (p, " ");
-      if (!*argv[i]) /* Empty string. */
-        p = stpcpy (p, "\"\"");
-      else if (strpbrk (argv[i], " \t\n\v\f\""))
-        {
-          p = stpcpy (p, "\"");
-          for (s=argv[i]; *s; s++)
-            {
-              *p++ = *s;
-              if (*s == '\"')
-                *p++ = *s;
-            }
-          *p++ = '\"';
-          *p = 0;
-        }
-      else
-        p = stpcpy (p, argv[i]);
-    }
-
-  *cmdline= buf;
-  return 0;
-}
-#endif /*HAVE_W32_SYSTEM*/
-
-
-#ifdef HAVE_W32_SYSTEM
-/* Create pipe where one end end is inheritable.  */
-static int
-create_inheritable_pipe (assuan_context_t ctx,
-			 assuan_fd_t filedes[2], int for_write)
-{
-  HANDLE r, w, h;
-  SECURITY_ATTRIBUTES sec_attr;
-
-  memset (&sec_attr, 0, sizeof sec_attr );
-  sec_attr.nLength = sizeof sec_attr;
-  sec_attr.bInheritHandle = FALSE;
-    
-  if (!CreatePipe (&r, &w, &sec_attr, 0))
-    {
-      TRACE1 (ctx, ASSUAN_LOG_SYSIO, "create_inheritable_pipe", ctx,
-	      "CreatePipe failed: %s", _assuan_w32_strerror (ctx, -1));
-      return -1;
-    }
-
-  if (!DuplicateHandle (GetCurrentProcess(), for_write? r : w,
-                        GetCurrentProcess(), &h, 0,
-                        TRUE, DUPLICATE_SAME_ACCESS ))
-    {
-      TRACE1 (ctx, ASSUAN_LOG_SYSIO, "create_inheritable_pipe", ctx,
-	      "DuplicateHandle failed: %s", _assuan_w32_strerror (ctx, -1));
-      CloseHandle (r);
-      CloseHandle (w);
-      return -1;
-    }
-  if (for_write)
-    {
-      CloseHandle (r);
-      r = h;
-    }
-  else
-    {
-      CloseHandle (w);
-      w = h;
-    }
-
-  filedes[0] = r;
-  filedes[1] = w;
-  return 0;
-}
-#endif /*HAVE_W32_SYSTEM*/
-
-
-#ifdef HAVE_W32_SYSTEM
-#define pipe_connect pipe_connect_w32
-/* W32 version of the pipe connection code. */
-static gpg_error_t
-pipe_connect_w32 (assuan_context_t ctx,
-                  const char *name, const char *const argv[],
-                  int *fd_child_list,
-                  void (*atfork) (void *opaque, int reserved),
-                  void *atforkvalue, unsigned int flags)
-{
-  gpg_error_t err;
-  assuan_fd_t rp[2];
-  assuan_fd_t wp[2];
-  char mypidstr[50];
-  char *cmdline;
-  SECURITY_ATTRIBUTES sec_attr;
-  PROCESS_INFORMATION pi = 
-    {
-      NULL,      /* Returns process handle.  */
-      0,         /* Returns primary thread handle.  */
-      0,         /* Returns pid.  */
-      0          /* Returns tid.  */
-    };
-  STARTUPINFO si;
-  int fd, *fdp;
-  HANDLE nullfd = INVALID_HANDLE_VALUE;
-  static struct assuan_io io = { _assuan_simple_read, _assuan_simple_write,
-				 0, 0 };
-
-  if (!ctx || !name || !argv || !argv[0])
-    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
-
-  fix_signals ();
-
-  sprintf (mypidstr, "%lu", (unsigned long)getpid ());
-
-  /* Build the command line.  */
-  if (build_w32_commandline (ctx, argv, &cmdline))
-    return _assuan_error (ctx, gpg_err_code_from_syserror ());
-
-  /* Create thew two pipes. */
-  if (create_inheritable_pipe (ctx, rp, 0))
-    {
-      _assuan_free (ctx, cmdline);
-      return _assuan_error (ctx, GPG_ERR_ASS_GENERAL);
-    }
-  
-  if (create_inheritable_pipe (ctx, wp, 1))
-    {
-      CloseHandle (rp[0]);
-      CloseHandle (rp[1]);
-      _assuan_free (ctx, cmdline);
-      return _assuan_error (ctx, GPG_ERR_ASS_GENERAL);
-    }
-
-
-  /* fixme: Actually we should set the "_assuan_pipe_connect_pid" env
-     variable.  However this requires us to write a full environment
-     handler, because the strings are expected in sorted order.  The
-     suggestion given in the MS Reference Library, to save the old
-     value, changeit, create proces and restore it, is not thread
-     safe.  */
-
-  /* Start the process.  */
-  memset (&sec_attr, 0, sizeof sec_attr );
-  sec_attr.nLength = sizeof sec_attr;
-  sec_attr.bInheritHandle = FALSE;
-  
-  memset (&si, 0, sizeof si);
-  si.cb = sizeof (si);
-  si.dwFlags = STARTF_USESTDHANDLES;
-  si.hStdInput  = wp[0];
-  si.hStdOutput = rp[1];
-
-  /* Dup stderr to /dev/null unless it is in the list of FDs to be
-     passed to the child. */
-  fd = fileno (stderr);
-  fdp = fd_child_list;
-  if (fdp)
-    {
-      for (; *fdp != -1 && *fdp != fd; fdp++)
-        ;
-    }
-  if (!fdp || *fdp == -1)
-    {
-      nullfd = CreateFile ("nul", GENERIC_WRITE,
-                           FILE_SHARE_READ | FILE_SHARE_WRITE,
-                           NULL, OPEN_EXISTING, 0, NULL);
-      if (nullfd == INVALID_HANDLE_VALUE)
-        {
-	  TRACE1 (ctx, ASSUAN_LOG_SYSIO, "pipe_connect_w32", ctx,
-		  "can't open `nul': %s", _assuan_w32_strerror (ctx, -1));
-          CloseHandle (rp[0]);
-          CloseHandle (rp[1]);
-          CloseHandle (wp[0]);
-          CloseHandle (wp[1]);
-          _assuan_free (ctx, cmdline);
-	  /* FIXME: Cleanup?  */
-          return -1;
-        }
-      si.hStdError = nullfd;
-    }
-  else
-    si.hStdError = (void*)_get_osfhandle (fd);
-
-
-  /* Note: We inherit all handles flagged as inheritable.  This seems
-     to be a security flaw but there seems to be no way of selecting
-     handles to inherit. */
-  /*   _assuan_log_printf ("CreateProcess, path=`%s' cmdline=`%s'\n", */
-  /*                       name, cmdline); */
-  if (!CreateProcess (name,                 /* Program to start.  */
-                      cmdline,              /* Command line arguments.  */
-                      &sec_attr,            /* Process security attributes.  */
-                      &sec_attr,            /* Thread security attributes.  */
-                      TRUE,                 /* Inherit handles.  */
-                      (CREATE_DEFAULT_ERROR_MODE
-                       | ((flags & 128)? DETACHED_PROCESS : 0)
-                       | GetPriorityClass (GetCurrentProcess ())
-                       | CREATE_SUSPENDED), /* Creation flags.  */
-                      NULL,                 /* Environment.  */
-                      NULL,                 /* Use current drive/directory.  */
-                      &si,                  /* Startup information. */
-                      &pi                   /* Returns process information.  */
-                      ))
-    {
-      TRACE1 (ctx, ASSUAN_LOG_SYSIO, "pipe_connect_w32", ctx,
-	      "CreateProcess failed: %s", _assuan_w32_strerror (ctx, -1));
-      CloseHandle (rp[0]);
-      CloseHandle (rp[1]);
-      CloseHandle (wp[0]);
-      CloseHandle (wp[1]);
-      if (nullfd != INVALID_HANDLE_VALUE)
-        CloseHandle (nullfd);
-      _assuan_free (ctx, cmdline);
-      /* FIXME: Cleanup?  */
-      return _assuan_error (ctx, GPG_ERR_ASS_GENERAL);
-    }
-  _assuan_free (ctx, cmdline);
-  cmdline = NULL;
-  if (nullfd != INVALID_HANDLE_VALUE)
-    {
-      CloseHandle (nullfd);
-      nullfd = INVALID_HANDLE_VALUE;
-    }
-
-  CloseHandle (rp[1]);
-  CloseHandle (wp[0]);
-
-  /*   _assuan_log_printf ("CreateProcess ready: hProcess=%p hThread=%p" */
-  /*                       " dwProcessID=%d dwThreadId=%d\n", */
-  /*                       pi.hProcess, pi.hThread, */
-  /*                       (int) pi.dwProcessId, (int) pi.dwThreadId); */
-
-  ResumeThread (pi.hThread);
-  CloseHandle (pi.hThread); 
-
-  ctx->io = &io;
-  ctx->engine.release = _assuan_disconnect;
-  ctx->pipe_mode = 1;
-  ctx->inbound.fd  = rp[0];  /* Our inbound is read end of read pipe. */
-  ctx->outbound.fd = wp[1];  /* Our outbound is write end of write pipe. */
-  ctx->deinit_handler = do_deinit;
-  ctx->finish_handler = do_finish;
-  ctx->pid = (pid_t) pi.hProcess;
-
-  err = initial_handshake (ctx);
-  if (err)
-    _assuan_reset (ctx);
-  return err;
-}
-#endif /*HAVE_W32_SYSTEM*/
-
 
 /* Connect to a server over a pipe, creating the assuan context and
    returning it in CTX.  The server filename is NAME, the argument
@@ -820,6 +388,9 @@ gpg_error_t
 assuan_pipe_connect (assuan_context_t ctx, const char *name,
 		     const char *argv[], int *fd_child_list)
 {
+  TRACE1 (ctx, ASSUAN_LOG_CTX, "assuan_pipe_connect", ctx,
+	  "name=%s", name ? name : "(null)");
+
   return pipe_connect (ctx, name, argv, fd_child_list, NULL, NULL, 0);
 }
 
@@ -860,6 +431,9 @@ assuan_pipe_connect_ext (assuan_context_t ctx,
                          void (*atfork) (void *opaque, int reserved),
                          void *atforkvalue, unsigned int flags)
 {
+  TRACE2 (ctx, ASSUAN_LOG_CTX, "assuan_pipe_connect_ext", ctx,
+	  "name=%s,flags=0x%x", name ? name : "(null)", flags);
+
   if ((flags & 1))
     {
 #ifdef HAVE_W32_SYSTEM
@@ -873,3 +447,4 @@ assuan_pipe_connect_ext (assuan_context_t ctx,
     return pipe_connect (ctx, name, argv, fd_child_list, atfork, atforkvalue,
                          flags);
 }
+

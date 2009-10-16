@@ -21,16 +21,10 @@ EXTRA_DIST = libassuan-config.in libassuan.m4 libassuan.vers \
              versioninfo.rc.in libassuan.def
 INCLUDES = -I.. -I$(top_srcdir)/include
 
-if HAVE_PTH
-libassuan_pth = libassuan-pth.la
-else
-libassuan_pth = 
-endif
-
 bin_SCRIPTS = libassuan-config
 m4datadir = $(datadir)/aclocal
 m4data_DATA = libassuan.m4
-lib_LTLIBRARIES = libassuan.la $(libassuan_pth)
+lib_LTLIBRARIES = libassuan.la
 include_HEADERS = assuan.h
 
 if HAVE_LD_VERSION_SCRIPT
@@ -107,11 +101,3 @@ libassuan_la_LDFLAGS = $(libassuan_res_ldflag) $(no_undefined) \
 libassuan_la_DEPENDENCIES = @LTLIBOBJS@ \
 	$(srcdir)/libassuan.vers $(libassuan_deps)
 libassuan_la_LIBADD = @LTLIBOBJS@ @NETLIBS@ @GPG_ERROR_LIBS@
-
-if HAVE_PTH
-libassuan_pth_la_SOURCES = $(common_sources) assuan-io-pth.c
-libassuan_pth_la_CPPFLAGS = $(AM_CPPFLAGS) @GPG_ERROR_CFLAGS@ @PTH_CFLAGS@
-libassuan_pth_la_CFLAGS = $(AM_CFLAGS) @GPG_ERROR_CFLAGS@ $(PTH_CFLAGS)
-libassuan_pth_la_LIBADD = @LTLIBOBJS@ @NETLIBS@ @GPG_ERROR_LIBS@ @PTH_LIBS@
-endif
-

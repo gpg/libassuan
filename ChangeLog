@@ -1,3 +1,12 @@
+2009-10-16  Marcus Brinkmann  <marcus@g10code.de>
+
+	* autogen.sh: Remove --with-pth-prefix from configure invocation.
+	* configure.ac (_ASSUAN_IN_LIBASSUAN, PTH_SYSCALL_SOFT): Do not
+	set anymore.
+	(GNUPG_PATH_PTH): Don't invoke.
+	(HAVE_PTH): Remove conditional.
+	(LIBASSUAN_CONFIG_THREAD_MODULES): Removed.
+
 2009-10-08  Marcus Brinkmann  <marcus@g10code.de>
 
 	* configure.ac: AC_REPLACE_FUNCS for vasprintf.

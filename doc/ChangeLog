@@ -1,3 +1,8 @@
+2009-10-16  Marcus Brinkmann  <marcus@g10code.com>
+
+	* assuan.texi: Remove documentation for thread support.
+	(assuan_pipe_connect_ext): Update prototype.
+
 2009-10-14  Werner Koch  <wk@g10code.com>
 
 	* assuan.texi (Utilities): Describe assuan_get_command_name.

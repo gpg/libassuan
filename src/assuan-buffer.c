@@ -37,7 +37,7 @@ writen (assuan_context_t ctx, const char *buffer, size_t length)
 {
   while (length)
     {
-      ssize_t nwritten = ctx->io->writefnc (ctx, buffer, length);
+      ssize_t nwritten = ctx->engine.writefnc (ctx, buffer, length);
       
       if (nwritten < 0)
         {
@@ -66,7 +66,7 @@ readline (assuan_context_t ctx, char *buf, size_t buflen,
   *r_nread = 0;
   while (nleft > 0)
     {
-      ssize_t n = ctx->io->readfnc (ctx, buf, nleft);
+      ssize_t n = ctx->engine.readfnc (ctx, buf, nleft);
 
       if (n < 0)
         {
@@ -249,7 +249,7 @@ assuan_read_line (assuan_context_t ctx, char **line, size_t *linelen)
     {
       err = _assuan_read_line (ctx);
     }
-  while (_assuan_error_is_eagain (err));
+  while (_assuan_error_is_eagain (ctx, err));
 
   *line = ctx->inbound.line;
   *linelen = ctx->inbound.linelen;
@@ -551,19 +551,19 @@ assuan_sendfd (assuan_context_t ctx, assuan_fd_t fd)
   return _assuan_error (ctx, GPG_ERR_NOT_IMPLEMENTED);
 #endif
 
-  if (! ctx->io->sendfd)
+  if (! ctx->engine.sendfd)
     return set_error (ctx, GPG_ERR_NOT_IMPLEMENTED,
 		      "server does not support sending and receiving "
 		      "of file descriptors");
-  return ctx->io->sendfd (ctx, fd);
+  return ctx->engine.sendfd (ctx, fd);
 }
 
 gpg_error_t
 assuan_receivefd (assuan_context_t ctx, assuan_fd_t *fd)
 {
-  if (! ctx->io->receivefd)
+  if (! ctx->engine.receivefd)
     return set_error (ctx, GPG_ERR_NOT_IMPLEMENTED,
 		      "server does not support sending and receiving "
 		      "of file descriptors");
-  return ctx->io->receivefd (ctx, fd);
+  return ctx->engine.receivefd (ctx, fd);
 }

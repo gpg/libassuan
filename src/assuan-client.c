@@ -49,7 +49,7 @@ _assuan_read_from_server (assuan_context_t ctx, int *okay, int *off)
 	{
 	  rc = _assuan_read_line (ctx);
 	}
-      while (_assuan_error_is_eagain (rc));
+      while (_assuan_error_is_eagain (ctx, rc));
       if (rc)
         return rc;
       line = ctx->inbound.line;

@@ -56,19 +56,6 @@ struct cmdtbl_s
 };
 
 
-/* A structure to dispatch I/O functions.  */
-struct assuan_io
-{
-  /* Routine to read from input_fd.  Sets errno on failure.  */
-  ssize_t (*readfnc) (assuan_context_t, void *, size_t);
-  /* Routine to write to output_fd.  Sets errno on failure.  */
-  ssize_t (*writefnc) (assuan_context_t, const void *, size_t);
-  /* Send a file descriptor.  */
-  gpg_error_t (*sendfd) (assuan_context_t, assuan_fd_t);
-  /* Receive a file descriptor.  */
-  gpg_error_t (*receivefd) (assuan_context_t, assuan_fd_t *);
-};
-
 
 /* The context we use with most functions. */
 struct assuan_context_s
@@ -97,17 +84,30 @@ struct assuan_context_s
   {
     unsigned int no_waitpid : 1;
     unsigned int confidential : 1;
+    unsigned int no_fixsignals : 1;
   } flags;
 
   /* If set, this is called right before logging an I/O line.  */
   assuan_io_monitor_t io_monitor;
   void *io_monitor_data;
 
+  /* Callback handlers replacing system I/O functions.  */
+  struct assuan_system_hooks system;
+
   /* Now come the members specific to subsystems or engines.  FIXME:
      This is not developed yet.  See below for the legacy members.  */
   struct
   {
     void (*release) (assuan_context_t ctx);
+
+    /* Routine to read from input_fd.  Sets errno on failure.  */
+    ssize_t (*readfnc) (assuan_context_t, void *, size_t);
+    /* Routine to write to output_fd.  Sets errno on failure.  */
+    ssize_t (*writefnc) (assuan_context_t, const void *, size_t);
+    /* Send a file descriptor.  */
+    gpg_error_t (*sendfd) (assuan_context_t, assuan_fd_t);
+    /* Receive a file descriptor.  */
+    gpg_error_t (*receivefd) (assuan_context_t, assuan_fd_t *);
   } engine;
 
 
@@ -220,11 +220,6 @@ struct assuan_context_s
 
   assuan_fd_t input_fd;   /* Set by the INPUT command.  */
   assuan_fd_t output_fd;  /* Set by the OUTPUT command.  */
-
-  /* io routines.  */
-  struct assuan_io *io;
-
-
 };
 
 
@@ -241,6 +236,38 @@ void *_assuan_malloc (assuan_context_t ctx, size_t cnt);
 void *_assuan_realloc (assuan_context_t ctx, void *ptr, size_t cnt);
 void *_assuan_calloc (assuan_context_t ctx, size_t cnt, size_t elsize);
 void _assuan_free (assuan_context_t ctx, void *ptr);
+
+/* System hooks.  */
+void _assuan_usleep (assuan_context_t ctx, unsigned int usec);
+int _assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx);
+int _assuan_close (assuan_context_t ctx, assuan_fd_t fd);
+ssize_t _assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer,
+		      size_t size);
+ssize_t _assuan_write (assuan_context_t ctx, assuan_fd_t fd, const void *buffer,
+		       size_t size);
+int _assuan_recvmsg (assuan_context_t ctx, assuan_fd_t fd,
+		     assuan_msghdr_t msg, int flags);
+int _assuan_sendmsg (assuan_context_t ctx, assuan_fd_t fd,
+		     assuan_msghdr_t msg, int flags);
+int _assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
+		   const char *argv[],
+		   assuan_fd_t fd_in, assuan_fd_t fd_out,
+		   assuan_fd_t *fd_child_list,
+		   void (*atfork) (void *opaque, int reserved),
+		   void *atforkvalue, unsigned int flags);
+pid_t  _assuan_waitpid (assuan_context_t ctx, pid_t pid, int nowait,
+			int *status, int options);
+int _assuan_socketpair (assuan_context_t ctx, int namespace, int style,
+			int protocol, int filedes[2]);
+
+extern struct assuan_system_hooks _assuan_system_hooks;
+
+/* Copy the system hooks struct, paying attention to version
+   differences.  SRC is usually from the user, DST MUST be from the
+   library.  */
+void
+_assuan_system_hooks_copy (assuan_system_hooks_t dst,
+			   assuan_system_hooks_t src);
 
 
 /*-- assuan-pipe-server.c --*/
@@ -273,7 +300,7 @@ gpg_error_t _assuan_inquire_ext_cb (assuan_context_t ctx);
 void _assuan_inquire_release (assuan_context_t ctx);
 
 /* Check if ERR means EAGAIN.  */
-int _assuan_error_is_eagain (gpg_error_t err);
+int _assuan_error_is_eagain (assuan_context_t ctx, gpg_error_t err);
 
 
 
@@ -290,33 +317,22 @@ void _assuan_log_print_buffer (FILE *fp, const void *buffer, size_t length);
 
 
 /*-- assuan-io.c --*/
-pid_t _assuan_waitpid (pid_t pid, int *status, int options);
-
 ssize_t _assuan_simple_read (assuan_context_t ctx, void *buffer, size_t size);
 ssize_t _assuan_simple_write (assuan_context_t ctx, const void *buffer,
 			      size_t size);
-ssize_t _assuan_io_read (assuan_fd_t fd, void *buffer, size_t size);
-ssize_t _assuan_io_write (assuan_fd_t fd, const void *buffer, size_t size);
-#ifdef HAVE_W32_SYSTEM
-int _assuan_simple_sendmsg (assuan_context_t ctx, void *msg);
-int _assuan_simple_recvmsg (assuan_context_t ctx, void *msg);
-#else
-ssize_t _assuan_simple_sendmsg (assuan_context_t ctx, struct msghdr *msg);
-ssize_t _assuan_simple_recvmsg (assuan_context_t ctx, struct msghdr *msg);
-#endif
-
-void _assuan_usleep (unsigned int usec);
-
 
 /*-- assuan-socket.c --*/
-int _assuan_close (assuan_fd_t fd);
-assuan_fd_t _assuan_sock_new (int domain, int type, int proto);
-int _assuan_sock_connect (assuan_fd_t sockfd,
+
+assuan_fd_t _assuan_sock_new (assuan_context_t ctx, int domain, int type,
+			      int proto);
+int _assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
                           struct sockaddr *addr, int addrlen);
-int _assuan_sock_bind (assuan_fd_t sockfd, struct sockaddr *addr, int addrlen);
-int _assuan_sock_get_nonce (struct sockaddr *addr, int addrlen, 
-                            assuan_sock_nonce_t *nonce);
-int _assuan_sock_check_nonce (assuan_fd_t fd, assuan_sock_nonce_t *nonce);
+int _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
+		       struct sockaddr *addr, int addrlen);
+int _assuan_sock_get_nonce (assuan_context_t ctx, struct sockaddr *addr,
+			    int addrlen, assuan_sock_nonce_t *nonce);
+int _assuan_sock_check_nonce (assuan_context_t ctx, assuan_fd_t fd,
+			      assuan_sock_nonce_t *nonce);
 #ifdef HAVE_W32_SYSTEM
 int _assuan_sock_wsa2errno (int err);
 #endif

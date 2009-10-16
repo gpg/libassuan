@@ -77,8 +77,6 @@ assuan_init_pipe_server (assuan_context_t ctx, int filedes[2])
   assuan_fd_t infd = ASSUAN_INVALID_FD;
   assuan_fd_t outfd = ASSUAN_INVALID_FD;
   int is_usd = 0;
-  static struct assuan_io io = { _assuan_simple_read, _assuan_simple_write,
-				 0, 0 };
 
   rc = _assuan_register_std_commands (ctx);
   if (rc)
@@ -117,6 +115,10 @@ assuan_init_pipe_server (assuan_context_t ctx, int filedes[2])
 
   ctx->is_server = 1;
   ctx->engine.release = deinit_pipe_server;
+  ctx->engine.readfnc = _assuan_simple_read;
+  ctx->engine.writefnc = _assuan_simple_write;
+  ctx->engine.sendfd = NULL;
+  ctx->engine.receivefd = NULL;
   ctx->pipe_mode = 1;
 
   s = getenv ("_assuan_pipe_connect_pid");
@@ -135,8 +137,6 @@ assuan_init_pipe_server (assuan_context_t ctx, int filedes[2])
       _assuan_init_uds_io (ctx);
       ctx->deinit_handler = _assuan_uds_deinit;
     }
-  else
-    ctx->io = &io;
 
   return 0;
 }

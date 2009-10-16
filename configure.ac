@@ -1,5 +1,5 @@
 # configure.ac - for libassuan
-# Copyright (C) 2001, 2002, 2003, 2006, 2007 Free Software Foundation, Inc.
+# Copyright (C) 2001-2003, 2006, 2007, 2009 Free Software Foundation, Inc.
 # 
 # This file is part of Assuan.
 #
@@ -132,16 +132,6 @@ if test "$GCC" = yes; then
 fi
 
 
-AH_BOTTOM([
-#define _ASSUAN_IN_LIBASSUAN 1
-
-/* We explicitly need to disable PTH's soft mapping as Debian
-   currently enables it by default for no reason. */
-#define PTH_SYSCALL_SOFT 0
-
-])
-
-
 # 
 # Options depending on the host OS.
 # 
@@ -191,12 +181,6 @@ AC_SUBST(BUILD_TIMESTAMP)
 AC_SUBST(BUILD_FILEVERSION)
 AM_CONDITIONAL(HAVE_W32_SYSTEM, test "$have_w32_system" = yes)
 
-#
-# See whether we can build a Pth enabled version
-#
-GNUPG_PATH_PTH
-AM_CONDITIONAL(HAVE_PTH, test "$have_pth" = "yes")
-
 
 # Check for network libraries.  They are needed for tests.
 AC_CHECK_FUNC(setsockopt, , AC_CHECK_LIB(socket, setsockopt,
@@ -211,10 +195,6 @@ fi
 # For src/libassuan-config.in
 LIBASSUAN_CONFIG_LIB="-lassuan"
 LIBASSUAN_CONFIG_CFLAGS=""
-LIBASSUAN_CONFIG_THREAD_MODULES=
-if test "$have_pth" = yes; then
-LIBASSUAN_CONFIG_THREAD_MODULES="pth"
-fi
 LIBASSUAN_CONFIG_EXTRA_LIBS=
 if test x"$NETLIBS" != x; then
   LIBASSUAN_CONFIG_EXTRA_LIBS="$LIBASSUAN_CONFIG_EXTRA_LIBS $NETLIBS"
@@ -222,7 +202,6 @@ fi
 AC_SUBST(LIBASSUAN_CONFIG_LIB)
 AC_SUBST(LIBASSUAN_CONFIG_CFLAGS)
 AC_SUBST(LIBASSUAN_CONFIG_API_VERSION)
-AC_SUBST(LIBASSUAN_CONFIG_THREAD_MODULES)
 AC_SUBST(LIBASSUAN_CONFIG_EXTRA_LIBS)
 
 # Checks for header files.

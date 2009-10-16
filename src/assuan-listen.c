@@ -138,7 +138,7 @@ assuan_close_input_fd (assuan_context_t ctx)
 {
   if (!ctx || ctx->input_fd == ASSUAN_INVALID_FD)
     return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
-  _assuan_close (ctx->input_fd);
+  _assuan_close (ctx, ctx->input_fd);
   ctx->input_fd = ASSUAN_INVALID_FD;
   return 0;
 }
@@ -151,7 +151,7 @@ assuan_close_output_fd (assuan_context_t ctx)
   if (!ctx || ctx->output_fd == ASSUAN_INVALID_FD)
     return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
 
-  _assuan_close (ctx->output_fd);
+  _assuan_close (ctx, ctx->output_fd);
   ctx->output_fd = ASSUAN_INVALID_FD;
   return 0;
 }

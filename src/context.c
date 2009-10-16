@@ -28,10 +28,13 @@
 
 /* Set user-data in a context.  */
 void
-assuan_set_pointer (assuan_context_t ctx, void *pointer)
+assuan_set_pointer (assuan_context_t ctx, void *user_pointer)
 {
+  TRACE1 (ctx, ASSUAN_LOG_CTX, "assuan_set_pointer", ctx,
+	  "user_pointer=%p", user_pointer);
+
   if (ctx)
-    ctx->user_pointer = pointer;
+    ctx->user_pointer = user_pointer;
 }
 
 
@@ -39,6 +42,9 @@ assuan_set_pointer (assuan_context_t ctx, void *pointer)
 void *
 assuan_get_pointer (assuan_context_t ctx)
 {
+  TRACE1 (ctx, ASSUAN_LOG_CTX, "assuan_get_pointer", ctx,
+	  "ctx->user_pointer=%p", ctx ? ctx->user_pointer : NULL);
+
   if (! ctx)
     return NULL;
 
@@ -52,6 +58,9 @@ assuan_get_pointer (assuan_context_t ctx)
 void
 assuan_set_flag (assuan_context_t ctx, assuan_flag_t flag, int value)
 {
+  TRACE2 (ctx, ASSUAN_LOG_CTX, "assuan_set_flag", ctx,
+	  "flag=%i,value=%i", flag, value);
+
   if (!ctx)
     return;
 
@@ -64,6 +73,10 @@ assuan_set_flag (assuan_context_t ctx, assuan_flag_t flag, int value)
     case ASSUAN_CONFIDENTIAL:
       ctx->flags.confidential = value;
       break;
+
+    case ASSUAN_NO_FIXSIGNALS:
+      ctx->flags.no_fixsignals = value;
+      break;
     }
 }
 
@@ -72,18 +85,29 @@ assuan_set_flag (assuan_context_t ctx, assuan_flag_t flag, int value)
 int
 assuan_get_flag (assuan_context_t ctx, assuan_flag_t flag)
 {
+  int res = 0;
+  TRACE_BEG1 (ctx, ASSUAN_LOG_CTX, "assuan_get_flag", ctx,
+	      "flag=%i", flag);
+
   if (! ctx)
     return 0;
 
   switch (flag)
     {
     case ASSUAN_NO_WAITPID:
-      return ctx->flags.no_waitpid;
+      res = ctx->flags.no_waitpid;
+      break;
+
     case ASSUAN_CONFIDENTIAL:
-      return ctx->flags.confidential;
+      res = ctx->flags.confidential;
+      break;
+
+    case ASSUAN_NO_FIXSIGNALS:
+      res = ctx->flags.no_fixsignals;
+      break;
     }
 
-  return 0;
+  return TRACE_SUC1 ("flag_value=%i", res);
 }
 
 
@@ -103,15 +127,31 @@ assuan_end_confidential (assuan_context_t ctx)
 }
 
 
+/* Set the system callbacks.  */
+void
+assuan_ctx_set_system_hooks (assuan_context_t ctx,
+			     assuan_system_hooks_t system_hooks)
+{
+  TRACE2 (ctx, ASSUAN_LOG_CTX, "assuan_set_system_hooks", ctx,
+	  "system_hooks=%p (version %i)", system_hooks,
+	  system_hooks->version);
+
+  _assuan_system_hooks_copy (&ctx->system, system_hooks);
+}
+
+
 /* Set the IO monitor function.  */
 void assuan_set_io_monitor (assuan_context_t ctx,
 			    assuan_io_monitor_t io_monitor, void *hook_data)
 {
-  if (ctx)
-    {
-      ctx->io_monitor = io_monitor;
-      ctx->io_monitor_data = hook_data;
-    }
+  TRACE2 (ctx, ASSUAN_LOG_CTX, "assuan_set_io_monitor", ctx,
+	  "io_monitor=%p,hook_data=%p", io_monitor, hook_data);
+
+  if (! ctx)
+    return;
+
+  ctx->io_monitor = io_monitor;
+  ctx->io_monitor_data = hook_data;
 }
 
 
@@ -121,6 +161,10 @@ void assuan_set_io_monitor (assuan_context_t ctx,
 gpg_error_t
 assuan_set_error (assuan_context_t ctx, gpg_error_t err, const char *text)
 {
+  TRACE4 (ctx, ASSUAN_LOG_CTX, "assuan_set_error", ctx,
+	  "err=%i (%s,%s),text=%s", err, gpg_strsource (err),
+	  gpg_strerror (err), text);
+  
   ctx->err_no = err;
   ctx->err_str = text;
   return err;

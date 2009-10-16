@@ -123,6 +123,12 @@ void _assuan_debug_buffer (assuan_context_t ctx, unsigned int cat,
 		 "%s (%s=%p): enter: " fmt "\n",			\
 		 _assuan_trace_func, _assuan_trace_tagname,		\
 		 _assuan_trace_tag, arg1, arg2, arg3, arg4), 0
+#define TRACE_BEG6(ctx, lvl, name, tag, fmt, arg1, arg2, arg3, arg4,arg5,arg6) \
+  _TRACE (ctx, lvl, name, tag);						\
+  _assuan_debug (_assuan_trace_context, _assuan_trace_level,		\
+		 "%s (%s=%p): enter: " fmt "\n",			\
+		 _assuan_trace_func, _assuan_trace_tagname,		\
+		 _assuan_trace_tag, arg1, arg2, arg3, arg4, arg5, arg6), 0
 
 #define TRACE_BEG8(ctx, lvl, name, tag, fmt, arg1, arg2, arg3, arg4,	\
 		   arg5, arg6, arg7, arg8)				\
@@ -149,6 +155,10 @@ void _assuan_debug_buffer (assuan_context_t ctx, unsigned int cat,
   _assuan_debug (ctx, lvl, "%s (%s=%p): call: " fmt "\n",		\
 		 name, STRINGIFY (tag), (void *) (uintptr_t) tag, arg1, \
 		 arg2, arg3), 0
+#define TRACE4(ctx, lvl, name, tag, fmt, arg1, arg2, arg3, arg4)	\
+  _assuan_debug (ctx, lvl, "%s (%s=%p): call: " fmt "\n",		\
+		 name, STRINGIFY (tag), (void *) (uintptr_t) tag, arg1, \
+		 arg2, arg3, arg4), 0
 #define TRACE6(ctx, lvl, name, tag, fmt, arg1, arg2, arg3, arg4, arg5, arg6) \
   _assuan_debug (ctx, lvl, "%s (%s=%p): call: " fmt "\n",		\
 		 name, STRINGIFY (tag), (void *) (uintptr_t) tag, arg1,	\
@@ -171,7 +181,7 @@ void _assuan_debug_buffer (assuan_context_t ctx, unsigned int cat,
 		   _assuan_trace_tag, strerror (errno)), (res))
 #define TRACE_SYSERR(res)						\
   res == 0 ? ((void) (TRACE_SUC1 ("result=%i", res)), (res)) :		\
-    (_assuan_debug (_assuan_trace_level, "%s (%s=%p): error: %s\n",	\
+    (_assuan_debug (_assuan_trace_context, _assuan_trace_level, "%s (%s=%p): error: %s\n", \
 		    _assuan_trace_func, _assuan_trace_tagname,		\
 		    _assuan_trace_tag, strerror (res)), (res))
 

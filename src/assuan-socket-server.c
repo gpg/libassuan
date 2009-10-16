@@ -96,9 +96,9 @@ accept_connection (assuan_context_t ctx)
     {
       return _assuan_error (ctx, gpg_err_code_from_syserror ());
     }
-  if (_assuan_sock_check_nonce (fd, &ctx->listen_nonce))
+  if (_assuan_sock_check_nonce (ctx, fd, &ctx->listen_nonce))
     {
-      _assuan_close (fd);
+      _assuan_close (ctx, fd);
       return _assuan_error (ctx, GPG_ERR_ASS_ACCEPT_FAILED);
     }
 
@@ -112,12 +112,12 @@ finish_connection (assuan_context_t ctx)
 {
   if (ctx->inbound.fd != ASSUAN_INVALID_FD)
     {
-      _assuan_close (ctx->inbound.fd);
+      _assuan_close (ctx, ctx->inbound.fd);
       ctx->inbound.fd = ASSUAN_INVALID_FD;
     }
   if (ctx->outbound.fd != ASSUAN_INVALID_FD)
     {
-      _assuan_close (ctx->outbound.fd);
+      _assuan_close (ctx, ctx->outbound.fd);
       ctx->outbound.fd = ASSUAN_INVALID_FD;
     }
 }
@@ -155,15 +155,16 @@ assuan_init_socket_server_ext (assuan_context_t ctx, assuan_fd_t fd,
                                unsigned int flags)
 {
   gpg_error_t rc;
-  static struct assuan_io io = { _assuan_simple_read, _assuan_simple_write,
-				 0, 0 };
 
   rc = _assuan_register_std_commands (ctx);
   if (rc)
     return rc;
 
-  ctx->io = &io;
   ctx->engine.release = deinit_socket_server;
+  ctx->engine.readfnc = _assuan_simple_read;
+  ctx->engine.writefnc = _assuan_simple_write;
+  ctx->engine.sendfd = NULL;
+  ctx->engine.receivefd = NULL;
   ctx->is_server = 1;
   if (flags & 2)
     ctx->pipe_mode = 1; /* We want a second accept to indicate EOF. */

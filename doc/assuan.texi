@@ -465,10 +465,6 @@ specifying both options to @command{libassuan-config}:
 gcc -o foo foo.c $(libassuan-config --cflags --libs)
 @end example
 
-If your application uses Pth or pthread, you need to pass the option
-@option{--thread=pth} respective @option{--thread=pthread} to the
-invocation of @command{libassuan-config}.
-
 
 @node Automake
 @section Building sources using Automake
@@ -498,36 +494,27 @@ AM_CPPFLAGS = $(LIBASSUAN_CFLAGS)
 LDADD = $(LIBASSUAN_LIBS)
 @end example
 
-@defmac AM_PATH_LIBASSUAN_PTH (@ovar{minimum-version}, @ovar{action-if-found}, @ovar{action-if-not-found})
-Same as @code{AM_PATH_LIBASSUAN} but checks for the GNU Pth enabled
-version of the library and defines @code{LIBASSUAN_PTH_CFLAGS}
-@code{LIBASSUAN_PTH_LIBS} instead.  Use this is you are using GNU Pth.
-Note that you also need to pass the appropriate options for Pth to the
-compiler and linker.
-@end defmac
-
-@defmac AM_PATH_LIBASSUAN_PTHREAD (@ovar{minimum-version}, @ovar{action-if-found}, @ovar{action-if-not-found})
-Same as @code{AM_PATH_LIBASSUAN} but checks for the pthreads enabled
-version of the library and defines @code{LIBASSUAN_PTHREAD_CFLAGS}
-@code{LIBASSUAN_PTHREAD_LIBS} instead.  Use this is you are using GNU Pth.
-Note that you also need to pass the appropriate options for Pth to the
-compiler and linker.
-@end defmac
-
-
 
 @node Multi Threading
 @section Multi Threading
 
-The @code{libassuan} library is thread-safe if you adhere to the following
-requirements:
+The @code{libassuan} library is designed so that it can be used in a
+threaded application, if some rules are followed.
 
 @itemize @bullet
 @item Run the initialization functions before you actually start
-to use threads.
+to use threads.  Specifically, the functions
+@code{assuan_set_gpg_err_source}, @code{assuan_set_malloc_hooks} and
+@code{assuan_set_log_cb} should not be called concurrently with
+@code{assuan_new}.  Use @code{assuan_new_ext} instead or ensure proper
+serialization.
 @item Only one thread at a time may access an @code{libassuan} context.
 @item If you use the default log handler, use
 @code{assuan_set_assuan_log_stream} to setup a default log stream.
+@item If you have callback functions shared by multiple functions,
+the callback function must be reentrant for that purpose.
+@code{libassuan} does not serialize invocation of callback functions
+across contexts.
 @end itemize
 
 
@@ -950,12 +937,12 @@ If the peer is not a simple pipe server but one using full-duplex
 sockets, the full-fledged variant of the above function should be
 used:
 
-@deftypefun gpg_error_t assuan_pipe_connect_ext (@w{assuan_context_t *@var{ctx}},@w{const char *@var{name}}, @w{const char *@var{argv}[]}, @w{int *@var{fd_child_list}}, @w{void (*@var{atfork}) (void *, int)}, @w{void *@var{atforkvalue}}, @w{unsigned int @var{flags}})
+@deftypefun gpg_error_t assuan_pipe_connect_ext (@w{assuan_context_t *@var{ctx}},@w{const char *@var{name}}, @w{const char *@var{argv}[]}, @w{assuan_fd_t *@var{fd_child_list}}, @w{void (*@var{atfork}) (void *, int)}, @w{void *@var{atforkvalue}}, @w{unsigned int @var{flags}})
 
 A call to this functions forks the current process and executes the
 program @var{name}, passing the arguments given in the NULL-terminated
 list @var{argv}.  A list of file descriptors not to be closed may be
-given using the @code{-1} terminated array @var{fd_child_list}.
+given using the @code{ASSUAN_INVLID_FD} terminated array @var{fd_child_list}.
 
 If @var{name} is a null pointer, only a fork but no exec is done.
 Thus the child continues to run.  However all file descriptors are

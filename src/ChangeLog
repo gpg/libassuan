@@ -1,9 +1,123 @@
+2009-10-16  Marcus Brinkmann  <marcus@g10code.com>
+
+	* conversion.c: Do not include <sys/types.h> and <time.h>.
+	* debug.h (TRACE_BEG6, TRACE4): New macros.
+	(TRACE_SYSERR): Pass _assuan_trace_context to _assuan_debug.
+	* context.c (assuan_set_pointer, assuan_get_pointer,
+	assuan_set_flag, assuan_get_flag, assuan_set_io_monitor,
+	assuan_set_error): Add trace messages.
+
+	* libassuan-config.in, libassuan.m4, Makefile.am: Remove PTH support.
+	* assuan.h (assuan_msghdr_t): New type.
+	(ASSUAN_INVALID_PID): New macro.
+	(ASSUAN_NO_FIXSIGNALS): New flag macro.
+	(ASSUAN_SYSTEM_HOOKS_VERSION): New macro.
+	(struct assuan_system_hooks, assuan_system_hooks_t): New types.
+	(assuan_pipe_connect, assuan_pipe_connect_ext): Don't make ARGV
+	const for name==NULL operation.  Make fd_child_list an array of
+	assuan_fd_t.
+	(assuan_sock_init, assuan_sock_deinit, assuan_set_system_hooks,
+	assuan_ctx_set_system_hooks, __assuan_pipe, __assuan_close,
+	__assuan_spawn, __assuan_socketpair): New function prototypes.
+	(_ASSUAN_SYSTEM_PTH_IMPL, ASSUAN_SYSTEM_PTH_DECL,
+	ASSUAN_SYSTEM_PTH): New macros.
+	(_assuan_system_pth): New declaration.
+	* libassuan.vers, libassuan.defs: Add assuan_sock_init,
+	assuan_sock_deinit, __assuan_pipe, __assuan_close, __assuan_spawn,
+	__assuan_socketpair, assuan_set_system_hooks,
+	assuan_ctx_set_system_hooks.
+
+	* assuan-defs.h (struct assuan_io): Removed, move members to ...
+	(struct assuan_context_s): ... this to ENGINE.  New flag
+	no_fixsignals.  New member SYSTEM.  Remove member IO.
+	(_assuan_pipe, _assuan_read, _assuan_write, _assuan_recvmsg,
+	_assuan_sendmsg, _assuan_spawn, _assuan_socketpair,
+	_assuan_system_hooks, _assuan_system_hooks_copy): New
+	declarations.
+	(_assuan_error_is_eagain, _assuan_waitpid, _assuan_usleep,
+	_assuan_close, _assuan_sock_new, _assuan_sock_connect,
+	_assuan_sock_bind, _assuan_sock_get_nonce,
+	_assuan_sock_check_nonce): Add context argument.
+	(_assuan_io_read, _assuan_io_write, _assuan_simple_sendmsg,
+	_assuan_simple_recvmsg): Removed.
+
+	* context.c (assuan_ctx_set_system_hooks): New function.
+	* assuan.c (assuan_set_system_hooks): New function.
+	(assuan_new_ext): Initialize CTX->system.
+	(assuan_release): Always output trace message.
+	
+	* assuan-error.c (_assuan_error_is_eagain): Add ctx argument, pass
+	along to _assuan_usleep.
+	* assuan-inquire.c assuan-listen.c, assuan-socket-server.c,
+	assuan-handler.c, assuan-socket-connect.c, assuan-client.c,
+	assuan-pipe-connect.c, assuan-socket.c: Pass CTX argument to
+	functions that need it
+	(_assuan_sock_new, _assuan_sock_check_none, _assuan_close,
+	_assuan_error_is_eagain and many more).
+	* assuan-socket-server.c (assuan_init_socket_server_ext): Update
+	fields in CTX->engine instead of CTX->io.
+	* assuan-socket-connect (assuan_socket_connect_ext): Likewise.
+	* assuan-uds.c (uds_reader, uds_writer, uds_sendfd): Use
+	_assuan_recvmsg and _assuan_sendmsg instead of
+	_assuan_simple_recvmsg and _assuan_simple_sendmsg respectively.
+	(_assuan_init_uds_io): Update fields in CTX->engine instead of
+	CTX->io.
+	* assuan-buffer.c: Use functions in CTX->engine instead of CTX->io.
+	* assuan-pipe-server.c (assuan_init_pipe_server): Update
+	fields in CTX->engine instead of CTX->io.
+
+	* system.c: Include <sys/types.h>, <time.h>, <fcntl.h>, and
+	<windows.h> resp. <sys/wait.h>.  Define MAX_OPEN_FDS.
+	(_assuan_system_hooks_copy, __assuan_usleep, _assuan_usleep,
+	__assuan_pipe, _assuan_pipe, __assuan_close, _assuan_close,
+	__assuan_read, _assuan_read, __assuan_write, _assuan_write,
+	__assuan_recvmsg, _assuan_recvmsg, __assuan_sendmsg,
+	_assuan_sendmsg, __assuan_spawn, _assuan_spawn, __assuan_waitpid,
+	_assuan_waitpid, __assuan_socketpair, _assuan_socketpair): New
+	functions.
+	(_assuan_system_hooks): New singleton.
+	* assuan-io.c (_assuan_waitpid, do_io_read, _assuan_io_read,
+	do_io_write, _assuan_io_write, _assuan_simple_sendmsg,
+	_assuan_simple_recvmsg, _assuan_usleep): Removed.
+
+	* assuan-pipe-connect (writen, build_w32_commandline,
+	create_inheritable_pipe): Removed (actually moved to system.c).
+	(fix_signals) [_ASSUAN_NO_FIXED_SIGNALS]: Still fix signals.
+	(do_finish): Move waitpid logic to _assuan_waitpid, just call
+	that.
+	(struct at_pipe_fork, struct at_socketpair_fork): New types.
+	(at_pipe_fork_cb, at_socketpair_fork_cb): New callback functions.
+	(pipe_connect_unix, pipe_connect_w32): Replaced by ...
+	(pipe_connect): ... this new function using new system functions.
+	(socketpair_connect): Reimplement to use new system functions.
+	(assuan_pipe_connect, assuan_pipe_connect_ext): Add trace message.
+
+	* assuan-socket.c (_assuan_close): Removed (moved to system.c).
+	(_assuan_sock_new, _assuan_sock_connect, _assuan_sock_bind,
+	_assuan_sock_get_nonce, _assuan_sock_check_nonce): Add context
+	argument.  Use new system interface.
+	(sock_ctx): New singleton.
+	(assuan_sock_init, assuan_sock_deinit): New functions to
+	initialize and deinitialize the singleton.
+		
 2009-10-14  Werner Koch  <wk@g10code.com>
 
 	* assuan-defs.h (assuan_context_s): Add field CURRENT_CMD_NAME.
 	* assuan-handler.c (dispatch_command): Set this field.
 	(assuan_get_command_name): New.
 	* assuan.h, libassuan.vers, libassuan.def: Add new fucntion.
+
+2009-10-08  Marcus Brinkmann  <marcus@g10code.de>
+
+	* Makefile.am (libassuan_pth): Removed.
+	(lib_LTLIBRARIES): Remove $(libassuan_pth).
+	(libassuan_pth_la_SOURCES, libassuan_pth_la_CPPFLAGS)
+	(libassuan_pth_la_CFLAGS, libassuan_pth_la_LIBADD): Removed.
+	* libassuan.m4 (AM_PATH_LIBASSUAN_PTH, AM_PATH_LIBASSUAN_PTHREAD):
+	Removed.
+	* assuan-io-pth.c: Removed.
+	* libassuan-config.in (all_thread_modules): Removed.  Also removed
+	option --thread.
 
 2009-10-08  Marcus Brinkmann  <marcus@g10code.de>
 

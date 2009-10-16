@@ -107,7 +107,7 @@ uds_reader (assuan_context_t ctx, void *buf, size_t buflen)
       msg.msg_controllen = sizeof (control_u.control);
 #endif
 
-      len = _assuan_simple_recvmsg (ctx, &msg);
+      len = _assuan_recvmsg (ctx, ctx->inbound.fd, &msg, 0);
       if (len < 0)
         return -1;
       if (len == 0)
@@ -133,7 +133,7 @@ uds_reader (assuan_context_t ctx, void *buf, size_t buflen)
 		  TRACE1 (ctx, ASSUAN_LOG_SYSIO, "uds_reader", ctx,
 			  "too many descriptors pending - "
 			  "closing received descriptor %d", fd);
-                  _assuan_close (fd);
+                  _assuan_close (ctx, fd);
                 }
               else
                 ctx->uds.pendingfds[ctx->uds.pendingfdscount++] = fd;
@@ -181,7 +181,7 @@ uds_writer (assuan_context_t ctx, const void *buf, size_t buflen)
   iovec.iov_base = (void*)buf;
   iovec.iov_len = buflen;
 
-  len = _assuan_simple_sendmsg (ctx, &msg);
+  len = _assuan_sendmsg (ctx, ctx->outbound.fd, &msg, 0);
 
   return len;
 #else /*HAVE_W32_SYSTEM*/
@@ -231,7 +231,7 @@ uds_sendfd (assuan_context_t ctx, assuan_fd_t fd)
   cmptr->cmsg_type = SCM_RIGHTS;
   *((int*)CMSG_DATA (cmptr)) = fd;
 
-  len = _assuan_simple_sendmsg (ctx, &msg);
+  len = _assuan_sendmsg (ctx, ctx->outbound.fd, &msg, 0);
   if (len < 0)
     {
       int saved_errno = errno;
@@ -281,7 +281,7 @@ _assuan_uds_close_fds (assuan_context_t ctx)
   int i;
 
   for (i = 0; i < ctx->uds.pendingfdscount; i++)
-    _assuan_close (ctx->uds.pendingfds[i]);
+    _assuan_close (ctx, ctx->uds.pendingfds[i]);
   ctx->uds.pendingfdscount = 0;
 }
 
@@ -307,10 +307,11 @@ _assuan_uds_deinit (assuan_context_t ctx)
 void
 _assuan_init_uds_io (assuan_context_t ctx)
 {
-  static struct assuan_io io = { uds_reader, uds_writer,
-				 uds_sendfd, uds_receivefd };
+  ctx->engine.readfnc = uds_reader;
+  ctx->engine.writefnc = uds_writer;
+  ctx->engine.sendfd = uds_sendfd;
+  ctx->engine.receivefd = uds_receivefd;
 
-  ctx->io = &io;
   ctx->uds.buffer = 0;
   ctx->uds.bufferoffset = 0;
   ctx->uds.buffersize = 0;

@@ -58,12 +58,12 @@ do_finish (assuan_context_t ctx)
 {
   if (ctx->inbound.fd != ASSUAN_INVALID_FD)
     {
-      _assuan_close (ctx->inbound.fd);
+      _assuan_close (ctx, ctx->inbound.fd);
       ctx->inbound.fd = ASSUAN_INVALID_FD;
     }
   if (ctx->outbound.fd != ASSUAN_INVALID_FD)
     {
-      _assuan_close (ctx->outbound.fd);
+      _assuan_close (ctx, ctx->outbound.fd);
       ctx->outbound.fd = ASSUAN_INVALID_FD;
     }
 }
@@ -96,8 +96,6 @@ assuan_socket_connect_ext (assuan_context_t ctx,
                            const char *name, pid_t server_pid,
                            unsigned int flags)
 {
-  static struct assuan_io io = { _assuan_simple_read, _assuan_simple_write,
-				 NULL, NULL };
   gpg_error_t err;
   assuan_fd_t fd;
   struct sockaddr_un srvr_addr;
@@ -120,7 +118,7 @@ assuan_socket_connect_ext (assuan_context_t ctx,
   if (strlen (name)+1 >= sizeof srvr_addr.sun_path)
     return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
 
-  fd = _assuan_sock_new (PF_LOCAL, SOCK_STREAM, 0);
+  fd = _assuan_sock_new (ctx, PF_LOCAL, SOCK_STREAM, 0);
   if (fd == ASSUAN_INVALID_FD)
     {
       TRACE1 (ctx, ASSUAN_LOG_SYSIO, "assuan_socket_connect_ext", ctx,
@@ -135,17 +133,20 @@ assuan_socket_connect_ext (assuan_context_t ctx,
   srvr_addr.sun_path[sizeof (srvr_addr.sun_path) - 1] = 0;
   len = SUN_LEN (&srvr_addr);
 
-  if ( _assuan_sock_connect (fd, (struct sockaddr *) &srvr_addr, len) == -1 )
+  if (_assuan_sock_connect (ctx, fd, (struct sockaddr *) &srvr_addr, len) == -1)
     {
       TRACE2 (ctx, ASSUAN_LOG_SYSIO, "assuan_socket_connect_ext", ctx,
 	      "can't connect to `%s': %s\n", name, strerror (errno));
       /* FIXME: Cleanup */
-      _assuan_close (fd);
+      _assuan_close (ctx, fd);
       return _assuan_error (ctx, GPG_ERR_ASS_CONNECT_FAILED);
     }
  
-  ctx->io = &io;
   ctx->engine.release = _assuan_disconnect;
+  ctx->engine.readfnc = _assuan_simple_read;
+  ctx->engine.writefnc = _assuan_simple_write;
+  ctx->engine.sendfd = NULL;
+  ctx->engine.receivefd = NULL;
   ctx->deinit_handler = ((flags&1))? _assuan_uds_deinit :  do_deinit;
   ctx->finish_handler = do_finish;
   ctx->inbound.fd = fd;

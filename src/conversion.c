@@ -1,6 +1,6 @@
 /* conversion.c - String conversion helper functions.
    Copyright (C) 2000 Werner Koch (dd9jn)
-   Copyright (C) 2001, 2002, 2003, 2004, 2007 g10 Code GmbH
+   Copyright (C) 2001, 2002, 2003, 2004, 2007, 2009 g10 Code GmbH
  
    This file is part of Assuan.
 
@@ -25,9 +25,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-/* Solaris 8 needs sys/types.h before time.h.  */
-#include <sys/types.h>
-#include <time.h>
 #include <errno.h>
 #include <ctype.h>
 

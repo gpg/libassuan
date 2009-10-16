@@ -219,6 +219,7 @@ std_handler_input (assuan_context_t ctx, char *line)
   return PROCESS_DONE (ctx, 0);
 }
 
+
 /* Format is OUTPUT FD=<n> */
 static gpg_error_t
 std_handler_output (assuan_context_t ctx, char *line)
@@ -235,9 +236,6 @@ std_handler_output (assuan_context_t ctx, char *line)
   return PROCESS_DONE (ctx, 0);
 }
 
-
-
-  
 
 /* This is a table with the standard commands and handler for them.
    The table is used to initialize a new context and associate strings
@@ -592,7 +590,7 @@ process_next (assuan_context_t ctx)
      required to write full lines without blocking long after starting
      a partial line.  */
   rc = _assuan_read_line (ctx);
-  if (_assuan_error_is_eagain (rc))
+  if (_assuan_error_is_eagain (ctx, rc))
     return 0;
   if (rc)
     return rc;
@@ -670,7 +668,7 @@ process_request (assuan_context_t ctx)
     {
       rc = _assuan_read_line (ctx);
     }
-  while (_assuan_error_is_eagain (rc));
+  while (_assuan_error_is_eagain (ctx, rc));
   if (rc)
     return rc;
   if (*ctx->inbound.line == '#' || !ctx->inbound.linelen)

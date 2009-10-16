@@ -91,6 +91,14 @@ LIBASSUAN_1.0 {
     assuan_new_ext;
     assuan_new;
     assuan_release;
+    assuan_sock_init;
+    assuan_sock_deinit;
+    __assuan_pipe;
+    __assuan_close;
+    __assuan_spawn;
+    __assuan_socketpair;
+    assuan_set_system_hooks;
+    assuan_ctx_set_system_hooks;
 
   local:
     *;
