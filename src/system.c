@@ -158,7 +158,7 @@ _assuan_usleep (assuan_context_t ctx, unsigned int usec)
   TRACE1 (ctx, ASSUAN_LOG_SYSIO, "_assuan_usleep", ctx,
 	  "usec=%u", usec);
 
-  return (ctx->system.usleep) (ctx, usec);
+  (ctx->system.usleep) (ctx, usec);
 }
 
 
@@ -820,6 +820,7 @@ __assuan_waitpid (assuan_context_t ctx, pid_t pid, int nowait,
 #else	/* ! HAVE_W32_SYSTEM */
   CloseHandle ((HANDLE) pid);
 #endif	/* HAVE_W32_SYSTEM */
+  return 0;
 }
 
 

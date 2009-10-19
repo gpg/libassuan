@@ -1,3 +1,8 @@
+2009-10-19  Marcus Brinkmann  <marcus@g10code.com>
+
+	* system.c (__assuan_waitpid): Return something.
+	(_assuan_usleep): Don't return value in void function.
+
 2009-10-16  Marcus Brinkmann  <marcus@g10code.com>
 
 	* conversion.c: Do not include <sys/types.h> and <time.h>.
