@@ -120,7 +120,7 @@ _assuan_system_hooks_copy (assuan_system_hooks_t dst,
 
 /* Sleep for the given number of microseconds.  Default
    implementation.  */
-static void
+void
 __assuan_usleep (assuan_context_t ctx, unsigned int usec)
 {
   if (! usec)

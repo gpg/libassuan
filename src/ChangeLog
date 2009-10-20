@@ -1,3 +1,9 @@
+2009-10-20  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan.h (__assuan_usleep): Add declaration.
+	* system.c (__assuan_usleep): Make non-static.
+	* libassuan.vers, libassuan.defs: Sort lexicographically.
+
 2009-10-19  Marcus Brinkmann  <marcus@g10code.com>
 
 	* system.c (__assuan_waitpid): Return something.

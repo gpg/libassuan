@@ -459,6 +459,7 @@ void assuan_set_system_hooks (assuan_system_hooks_t system_hooks);
 void assuan_ctx_set_system_hooks (assuan_context_t ctx,
 				  assuan_system_hooks_t system_hooks);
 
+void __assuan_usleep (assuan_context_t ctx, unsigned int usec);
 int __assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx);
 int __assuan_close (assuan_context_t ctx, assuan_fd_t fd);
 int __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,

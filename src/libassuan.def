@@ -24,76 +24,76 @@ EXPORTS
     assuan_close_input_fd		@3
     assuan_close_output_fd		@4
     assuan_command_parse_fd		@5
-    assuan_end_confidential		@6
-    assuan_get_active_fds		@7
-    assuan_get_assuan_log_prefix	@8
-    assuan_get_data_fp			@9
-    assuan_get_flag			@10  
-    assuan_get_gpg_err_source           @11
-    assuan_get_input_fd			@12  
-    assuan_get_log_cb                   @13
-    assuan_get_malloc_hooks             @14
-    assuan_get_output_fd		@15  
-    assuan_get_pid			@16
-    assuan_get_pointer			@17
-    assuan_init_pipe_server		@18
-    assuan_init_socket_server		@19  
-    assuan_init_socket_server_ext	@20
-    assuan_inquire			@21
-    assuan_inquire_ext			@22
-    assuan_new                          @23
-    assuan_new_ext                      @24
-    assuan_pending_line			@25
-    assuan_pipe_connect			@26
-    assuan_pipe_connect_ext		@27
-    assuan_process			@28
-    assuan_process_done			@29
-    assuan_process_next			@30
-    assuan_read_line			@31
-    assuan_receivefd			@32
-    assuan_register_bye_notify		@33
-    assuan_register_cancel_notify	@34
-    assuan_register_command		@35
-    assuan_register_input_notify	@36
-    assuan_register_option_handler	@37
-    assuan_register_output_notify	@38
-    assuan_register_post_cmd_notify	@39
-    assuan_register_reset_notify	@40
-    assuan_release                      @41
-    assuan_send_data			@42
-    assuan_sendfd			@43
-    assuan_set_assuan_log_prefix	@44
-    assuan_set_error			@45
-    assuan_set_flag			@46
-    assuan_set_gpg_err_source           @47
-    assuan_set_hello_line		@48
-    assuan_set_io_monitor		@49
-    assuan_set_log_cb                   @50
-    assuan_set_log_stream		@51
-    assuan_set_malloc_hooks		@52
-    assuan_set_okay_line		@53
-    assuan_set_pointer			@54
-    assuan_sock_bind			@55
-    assuan_sock_check_nonce		@56
-    assuan_sock_close			@57
-    assuan_sock_connect			@58
-    assuan_sock_get_nonce		@59
-    assuan_sock_new			@60
-    assuan_socket_connect		@61
-    assuan_socket_connect_ext		@62
-    assuan_transact			@63
-    assuan_write_line			@64
-    assuan_write_status			@65
-    assuan_sock_init
-    assuan_sock_deinit
-    assuan_get_command_name             @66
-
-    __assuan_pipe
-    __assuan_close
-    __assuan_spawn
-    __assuan_socketpair
-    assuan_set_system_hooks
-    assuan_ctx_set_system_hooks
+    assuan_ctx_set_system_hooks		@6
+    assuan_end_confidential		@7
+    assuan_get_active_fds		@8
+    assuan_get_assuan_log_prefix	@9
+    assuan_get_command_name             @10
+    assuan_get_data_fp			@11
+    assuan_get_flag			@12  
+    assuan_get_gpg_err_source           @13
+    assuan_get_input_fd			@14  
+    assuan_get_log_cb                   @15
+    assuan_get_malloc_hooks             @16
+    assuan_get_output_fd		@17  
+    assuan_get_pid			@18
+    assuan_get_pointer			@19
+    assuan_init_pipe_server		@20
+    assuan_init_socket_server		@21  
+    assuan_init_socket_server_ext	@22
+    assuan_inquire			@23
+    assuan_inquire_ext			@24
+    assuan_new                          @25
+    assuan_new_ext                      @26
+    assuan_pending_line			@27
+    assuan_pipe_connect			@28
+    assuan_pipe_connect_ext		@29
+    assuan_process			@30
+    assuan_process_done			@31
+    assuan_process_next			@32
+    assuan_read_line			@33
+    assuan_receivefd			@34
+    assuan_register_bye_notify		@35
+    assuan_register_cancel_notify	@36
+    assuan_register_command		@37
+    assuan_register_input_notify	@38
+    assuan_register_option_handler	@39
+    assuan_register_output_notify	@40
+    assuan_register_post_cmd_notify	@41
+    assuan_register_reset_notify	@42
+    assuan_release                      @43
+    assuan_send_data			@44
+    assuan_sendfd			@45
+    assuan_set_assuan_log_prefix	@46
+    assuan_set_error			@47
+    assuan_set_flag			@48
+    assuan_set_gpg_err_source           @49
+    assuan_set_hello_line		@50
+    assuan_set_io_monitor		@51
+    assuan_set_log_cb                   @52
+    assuan_set_log_stream		@53
+    assuan_set_malloc_hooks		@54
+    assuan_set_okay_line		@55
+    assuan_set_pointer			@56
+    assuan_set_system_hooks		@57
+    assuan_sock_bind			@58
+    assuan_sock_check_nonce		@59
+    assuan_sock_close			@60
+    assuan_sock_connect			@61
+    assuan_sock_deinit			@62
+    assuan_sock_get_nonce		@63
+    assuan_sock_init			@64
+    assuan_sock_new			@65
+    assuan_socket_connect		@66
+    assuan_socket_connect_ext		@67
+    assuan_transact			@68
+    assuan_write_line			@69
+    assuan_write_status			@70
+    __assuan_close			@71
+    __assuan_pipe			@72
+    __assuan_socketpair			@73
+    __assuan_spawn			@74
+    __assuan_usleep			@75
 
 ; END
 
