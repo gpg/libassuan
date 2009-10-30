@@ -1,3 +1,7 @@
+2009-10-30  Marcus Brinkmann  <marcus@g10code.de>
+
+	* system.c (_assuan_spawn): Check fd_child_list before dumping it.
+
 2009-10-20  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan.h (__assuan_usleep): Add declaration.

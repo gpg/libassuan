@@ -783,10 +783,13 @@ _assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 	}
     }
   i = 0;
-  while (fd_child_list[i] != ASSUAN_INVALID_FD)
+  if (fd_child_list)
     {
-      TRACE_LOG2 ("fd_child_list[%2i] = 0x%x", i, fd_child_list[i]);
-      i++;
+      while (fd_child_list[i] != ASSUAN_INVALID_FD)
+	{
+	  TRACE_LOG2 ("fd_child_list[%2i] = 0x%x", i, fd_child_list[i]);
+	  i++;
+	}
     }
 
   res = (ctx->system.spawn) (ctx, r_pid, name, argv, fd_in, fd_out,
