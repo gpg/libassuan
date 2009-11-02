@@ -58,7 +58,8 @@ static gpg_error_t
 std_handler_cancel (assuan_context_t ctx, char *line)
 {
   if (ctx->cancel_notify_fnc)
-    ctx->cancel_notify_fnc (ctx);
+    /* Return value ignored.  */
+    ctx->cancel_notify_fnc (ctx, line);
   return PROCESS_DONE (ctx, set_error (ctx, GPG_ERR_NOT_IMPLEMENTED, NULL));
 }
 
@@ -119,7 +120,8 @@ static gpg_error_t
 std_handler_bye (assuan_context_t ctx, char *line)
 {
   if (ctx->bye_notify_fnc)
-    ctx->bye_notify_fnc (ctx);
+    /* Return value ignored.  */
+    ctx->bye_notify_fnc (ctx, line);
   assuan_close_input_fd (ctx);
   assuan_close_output_fd (ctx);
   /* pretty simple :-) */
@@ -135,12 +137,17 @@ std_handler_auth (assuan_context_t ctx, char *line)
 static gpg_error_t
 std_handler_reset (assuan_context_t ctx, char *line)
 {
+  gpg_error_t err = 0;
+
   if (ctx->reset_notify_fnc)
-    ctx->reset_notify_fnc (ctx);
-  assuan_close_input_fd (ctx);
-  assuan_close_output_fd (ctx);
-  _assuan_uds_close_fds (ctx);
-  return PROCESS_DONE (ctx, 0);
+    err = ctx->reset_notify_fnc (ctx, line);
+  if (! err)
+    {
+      assuan_close_input_fd (ctx);
+      assuan_close_output_fd (ctx);
+      _assuan_uds_close_fds (ctx);
+    }
+  return PROCESS_DONE (ctx, err);
 }
   
 static gpg_error_t
@@ -213,10 +220,11 @@ std_handler_input (assuan_context_t ctx, char *line)
   rc = assuan_command_parse_fd (ctx, line, &fd);
   if (rc)
     return PROCESS_DONE (ctx, rc);
-  ctx->input_fd = fd;
   if (ctx->input_notify_fnc)
-    ctx->input_notify_fnc (ctx, line);
-  return PROCESS_DONE (ctx, 0);
+    rc = ctx->input_notify_fnc (ctx, line);
+  if (! rc)
+    ctx->input_fd = fd;
+  return PROCESS_DONE (ctx, rc);
 }
 
 
@@ -230,10 +238,11 @@ std_handler_output (assuan_context_t ctx, char *line)
   rc = assuan_command_parse_fd (ctx, line, &fd);
   if (rc)
     return PROCESS_DONE (ctx, rc);
-  ctx->output_fd = fd;
   if (ctx->output_notify_fnc)
-    ctx->output_notify_fnc (ctx, line);
-  return PROCESS_DONE (ctx, 0);
+    rc = ctx->output_notify_fnc (ctx, line);
+  if (!rc)
+    ctx->output_fd = fd;
+  return PROCESS_DONE (ctx, rc);
 }
 
 
@@ -274,9 +283,8 @@ static struct {
  * Return value: 0 on success or an error code
  **/
 gpg_error_t
-assuan_register_command (assuan_context_t ctx,
-                         const char *cmd_name,
-                         gpg_error_t (*handler)(assuan_context_t, char *))
+assuan_register_command (assuan_context_t ctx, const char *cmd_name,
+                         assuan_handler_t handler)
 {
   int i;
   const char *s;
@@ -349,8 +357,7 @@ assuan_register_post_cmd_notify (assuan_context_t ctx,
 }
 
 gpg_error_t
-assuan_register_bye_notify (assuan_context_t ctx,
-                            void (*fnc)(assuan_context_t))
+assuan_register_bye_notify (assuan_context_t ctx, assuan_handler_t fnc)
 {
   if (!ctx)
     return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
@@ -359,8 +366,7 @@ assuan_register_bye_notify (assuan_context_t ctx,
 }
 
 gpg_error_t
-assuan_register_reset_notify (assuan_context_t ctx,
-                              void (*fnc)(assuan_context_t))
+assuan_register_reset_notify (assuan_context_t ctx, assuan_handler_t fnc)
 {
   if (!ctx)
     return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
@@ -369,8 +375,7 @@ assuan_register_reset_notify (assuan_context_t ctx,
 }
 
 gpg_error_t
-assuan_register_cancel_notify (assuan_context_t ctx,
-                               void (*fnc)(assuan_context_t))
+assuan_register_cancel_notify (assuan_context_t ctx, assuan_handler_t fnc)
 {
   if (!ctx)
     return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
@@ -390,8 +395,7 @@ assuan_register_option_handler (assuan_context_t ctx,
 }
 
 gpg_error_t
-assuan_register_input_notify (assuan_context_t ctx,
-                              void (*fnc)(assuan_context_t, const char *))
+assuan_register_input_notify (assuan_context_t ctx, assuan_handler_t fnc)
 {
   if (!ctx)
     return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
@@ -400,8 +404,7 @@ assuan_register_input_notify (assuan_context_t ctx,
 }
 
 gpg_error_t
-assuan_register_output_notify (assuan_context_t ctx,
-                              void (*fnc)(assuan_context_t, const char *))
+assuan_register_output_notify (assuan_context_t ctx, assuan_handler_t fnc)
 {
   if (!ctx)
     return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);

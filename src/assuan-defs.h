@@ -52,7 +52,7 @@
 struct cmdtbl_s
 {
   const char *name;
-  gpg_error_t (*handler)(assuan_context_t, char *line);
+  assuan_handler_t handler;
 };
 
 
@@ -206,12 +206,12 @@ struct assuan_context_s
      handler.  */
   const char *current_cmd_name;
 
-  void (*bye_notify_fnc)(assuan_context_t);
-  void (*reset_notify_fnc)(assuan_context_t);
-  void (*cancel_notify_fnc)(assuan_context_t);
+  assuan_handler_t bye_notify_fnc;
+  assuan_handler_t reset_notify_fnc;
+  assuan_handler_t cancel_notify_fnc;
   gpg_error_t  (*option_handler_fnc)(assuan_context_t,const char*, const char*);
-  void (*input_notify_fnc)(assuan_context_t, const char *);
-  void (*output_notify_fnc)(assuan_context_t, const char *);
+  assuan_handler_t input_notify_fnc;
+  assuan_handler_t output_notify_fnc;
 
   /* This function is called right after a command has been processed.
      It may be used to command related cleanup.  */

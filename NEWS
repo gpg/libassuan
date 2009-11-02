@@ -67,6 +67,12 @@ ASSUAN_SYSTEM_PTH_DECL         NEW
 ASSUAN_SYSTEM_PTH              NEW
 assuan_sock_init               NEW
 assuan_sock_deinit             NEW
+assuan_handler_t	       NEW
+assuan_register_bye_notify     CHANGED: Handler gets line and returns err now.
+assuan_register_reset_notify   CHANGED: Handler gets line and returns err now.
+assuan_register_cancel_notify  CHANGED: Handler gets line and returns err now.
+assuan_register_input_notify   CHANGED: Handler returns error now.
+assuan_register_output_notify   CHANGED: Handler returns error now.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

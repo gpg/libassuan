@@ -1,3 +1,21 @@
+2009-11-02  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan.h (assuan_handler_t): New type.
+	(assuan_register_bye_notify, assuan_register_reset_notify)
+	(assuan_register_cancel_notify, assuan_register_input_notify)
+	(assuan_register_output_notify, assuan_register_command): Use it.
+	* assuan-handler.c (std_handler_cancel, std_handler_bye): Pass
+	LINE argument to user handler.
+	(std_handler_reset): Likewise, and also abort RESET if error is
+	returned from user handler.
+	(std_handler_input, std_handler_output): Check return value from
+	user handler before assigning FD.
+	* assuan-defs.h (struct cmdtbl_s): Change type of member HANDLER
+	to assuan_handler_t.
+	(struct assuan_context_s): Change type of members
+	RESET_NOTIFY_FNC, CANCEL_NOTIFY_FNC, BYE_NOTIFY_FNC,
+	INPUT_NOTIFY_FNC and OUTPUT_NOTIFY_FNC to assuan_handler_t.
+
 2009-10-30  Marcus Brinkmann  <marcus@g10code.de>
 
 	* system.c (_assuan_spawn): Check fd_child_list before dumping it.

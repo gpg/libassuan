@@ -300,22 +300,24 @@ const char *assuan_get_assuan_log_prefix (void);
 void assuan_set_log_stream (assuan_context_t ctx, FILE *fp);
 
 
+typedef gpg_error_t (*assuan_handler_t) (assuan_context_t, char *);
+
 /*-- assuan-handler.c --*/
 gpg_error_t assuan_register_command (assuan_context_t ctx,
 				     const char *cmd_string,
-				     gpg_error_t (*handler)(assuan_context_t, char *));
+				     assuan_handler_t handler);
 gpg_error_t assuan_register_post_cmd_notify (assuan_context_t ctx,
 					     void (*fnc)(assuan_context_t, gpg_error_t));
 gpg_error_t assuan_register_bye_notify (assuan_context_t ctx,
-					void (*fnc)(assuan_context_t));
+					assuan_handler_t handler);
 gpg_error_t assuan_register_reset_notify (assuan_context_t ctx,
-					  void (*fnc)(assuan_context_t));
+					  assuan_handler_t handler);
 gpg_error_t assuan_register_cancel_notify (assuan_context_t ctx,
-					   void (*fnc)(assuan_context_t));
+					   assuan_handler_t handler);
 gpg_error_t assuan_register_input_notify (assuan_context_t ctx,
-					  void (*fnc)(assuan_context_t, const char *));
+					  assuan_handler_t handler);
 gpg_error_t assuan_register_output_notify (assuan_context_t ctx,
-					   void (*fnc)(assuan_context_t, const char *));
+					   assuan_handler_t handler);
 
 gpg_error_t assuan_register_option_handler (assuan_context_t ctx,
 					    gpg_error_t (*fnc)(assuan_context_t,
