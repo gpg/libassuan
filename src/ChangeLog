@@ -1,3 +1,11 @@
+2009-11-04  Werner Koch  <wk@g10code.com>
+
+	* Makefile.am (common_sources): Add debug.h.
+
+	* assuan-defs.h (cmdtbl_s): Add field HELPSTR.
+	* assuan-handler.c (assuan_register_command): Add arg HELP_STRING.
+	(std_handler_help): Print the help.
+
 2009-11-02  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan.h (assuan_handler_t): New type.

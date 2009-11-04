@@ -14,7 +14,8 @@ Noteworthy changes in version 1.1.0 (unreleased)
    of NULL, you have to provide a non-NULL ARGV argument and check
    that against "server" or "client" to determine which end you got
    after fork().  If you use the assuan sock interface, you must call
-   assuan_sock_init after setting global context defaults.
+   assuan_sock_init after setting global context defaults.  Add a NULL
+   as the last arg to assuan_register_command.
 
  * Pth support has changed.  This now follows the same style as
    libgcrypt by setting system hook callbacks.
@@ -68,11 +69,12 @@ ASSUAN_SYSTEM_PTH              NEW
 assuan_sock_init               NEW
 assuan_sock_deinit             NEW
 assuan_handler_t	       NEW
+assuan_register_command        CHANGED: Add arg HELP_STRING.
 assuan_register_bye_notify     CHANGED: Handler gets line and returns err now.
 assuan_register_reset_notify   CHANGED: Handler gets line and returns err now.
 assuan_register_cancel_notify  CHANGED: Handler gets line and returns err now.
 assuan_register_input_notify   CHANGED: Handler returns error now.
-assuan_register_output_notify   CHANGED: Handler returns error now.
+assuan_register_output_notify  CHANGED: Handler returns error now.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

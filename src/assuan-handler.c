@@ -155,12 +155,55 @@ std_handler_help (assuan_context_t ctx, char *line)
 {
   unsigned int i;
   char buf[ASSUAN_LINELENGTH];
+  const char *helpstr;
+  size_t n;
 
-  for (i = 0; i < ctx->cmdtbl_used; i++)
+  n = strcspn (line, " \t\n");
+  if (!n)
     {
-      snprintf (buf, sizeof (buf), "# %s", ctx->cmdtbl[i].name);
-      buf[ASSUAN_LINELENGTH - 1] = '\0';
-      assuan_write_line (ctx, buf);
+      /* Print all commands.  If a help string is available and that
+         starts with the command name, print the first line of the
+         help string.  */
+      for (i = 0; i < ctx->cmdtbl_used; i++)
+        {
+          n = strlen (ctx->cmdtbl[i].name);
+          helpstr = ctx->cmdtbl[i].helpstr; 
+          if (helpstr
+              && !strncmp (ctx->cmdtbl[i].name, helpstr, n)
+              && (!helpstr[n] || helpstr[n] == '\n' || helpstr[n] == ' ')
+              && (n = strcspn (helpstr, "\n"))          )
+            snprintf (buf, sizeof (buf), "# %.*s", (int)n, helpstr);
+          else
+            snprintf (buf, sizeof (buf), "# %s", ctx->cmdtbl[i].name);
+          buf[ASSUAN_LINELENGTH - 1] = '\0';
+          assuan_write_line (ctx, buf);
+        }
+    }
+  else
+    {
+      /* Print the help for the given command.  */
+      int c = line[n];
+      line[n] = 0;
+      for (i=0; ctx->cmdtbl[i].name; i++)
+        if (!my_strcasecmp (line, ctx->cmdtbl[i].name))
+          break;
+      line[n] = c;
+      if (!ctx->cmdtbl[i].name)
+        return PROCESS_DONE (ctx, set_error (ctx,GPG_ERR_UNKNOWN_COMMAND,NULL));
+      helpstr = ctx->cmdtbl[i].helpstr; 
+      if (!helpstr)
+        return PROCESS_DONE (ctx, set_error (ctx, GPG_ERR_NOT_FOUND, NULL));
+      do
+        {
+          n = strcspn (helpstr, "\n");
+          snprintf (buf, sizeof (buf), "# %.*s", (int)n, helpstr);
+          helpstr += n;
+          if (*helpstr == '\n')
+            helpstr++;
+          buf[ASSUAN_LINELENGTH - 1] = '\0';
+          assuan_write_line (ctx, buf);
+        }
+      while (*helpstr);
     }
 
   return PROCESS_DONE (ctx, 0);
@@ -275,6 +318,7 @@ static struct {
  * @cmd_name: A string with the command name
  * @handler: The handler function to be called or NULL to use a default
  *           handler.
+ * HELPSTRING
  * 
  * Register a handler to be used for a given command.  Note that
  * several default handlers are already regsitered with a new context.
@@ -284,7 +328,7 @@ static struct {
  **/
 gpg_error_t
 assuan_register_command (assuan_context_t ctx, const char *cmd_name,
-                         assuan_handler_t handler)
+                         assuan_handler_t handler, const char *help_string)
 {
   int i;
   const char *s;
@@ -332,6 +376,7 @@ assuan_register_command (assuan_context_t ctx, const char *cmd_name,
 
   ctx->cmdtbl[ctx->cmdtbl_used].name = cmd_name;
   ctx->cmdtbl[ctx->cmdtbl_used].handler = handler;
+  ctx->cmdtbl[ctx->cmdtbl_used].helpstr = help_string;
   ctx->cmdtbl_used++;
   return 0;
 }
@@ -424,7 +469,7 @@ _assuan_register_std_commands (assuan_context_t ctx)
     {
       if (std_cmd_table[i].always)
         {
-          rc = assuan_register_command (ctx, std_cmd_table[i].name, NULL);
+          rc = assuan_register_command (ctx, std_cmd_table[i].name, NULL, NULL);
           if (rc)
             return rc;
         }

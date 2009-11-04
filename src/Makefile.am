@@ -39,7 +39,7 @@ common_sources = \
 	assuan.c \
 	context.c \
 	system.c \
-	debug.c \
+	debug.c debug.h \
 	conversion.c \
 	assuan-error.c \
 	assuan-buffer.c \

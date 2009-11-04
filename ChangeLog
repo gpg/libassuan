@@ -1,3 +1,8 @@
+2009-11-04  Werner Koch  <wk@g10code.com>
+
+	* tests/fdpassing.c (register_commands): Add NULL arg to
+	assuan_register_command.
+
 2009-10-16  Marcus Brinkmann  <marcus@g10code.de>
 
 	* autogen.sh: Remove --with-pth-prefix from configure invocation.

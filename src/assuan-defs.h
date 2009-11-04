@@ -53,6 +53,7 @@ struct cmdtbl_s
 {
   const char *name;
   assuan_handler_t handler;
+  const char *helpstr;
 };
 
 

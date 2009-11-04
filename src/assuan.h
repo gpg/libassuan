@@ -305,9 +305,11 @@ typedef gpg_error_t (*assuan_handler_t) (assuan_context_t, char *);
 /*-- assuan-handler.c --*/
 gpg_error_t assuan_register_command (assuan_context_t ctx,
 				     const char *cmd_string,
-				     assuan_handler_t handler);
+				     assuan_handler_t handler,
+                                     const char *help_string);
 gpg_error_t assuan_register_post_cmd_notify (assuan_context_t ctx,
-					     void (*fnc)(assuan_context_t, gpg_error_t));
+					     void (*fnc)(assuan_context_t,
+                                                         gpg_error_t));
 gpg_error_t assuan_register_bye_notify (assuan_context_t ctx,
 					assuan_handler_t handler);
 gpg_error_t assuan_register_reset_notify (assuan_context_t ctx,
@@ -321,7 +323,8 @@ gpg_error_t assuan_register_output_notify (assuan_context_t ctx,
 
 gpg_error_t assuan_register_option_handler (assuan_context_t ctx,
 					    gpg_error_t (*fnc)(assuan_context_t,
-							       const char*, const char*));
+							       const char*,
+                                                               const char*));
 
 gpg_error_t assuan_process (assuan_context_t ctx);
 gpg_error_t assuan_process_next (assuan_context_t ctx);
