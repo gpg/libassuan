@@ -95,6 +95,9 @@ struct assuan_context_s
   /* Callback handlers replacing system I/O functions.  */
   struct assuan_system_hooks system;
 
+  int peercred_valid;   /* Whether this structure has valid information. */
+  struct _assuan_peercred peercred;
+
   /* Now come the members specific to subsystems or engines.  FIXME:
      This is not developed yet.  See below for the legacy members.  */
   struct
@@ -168,15 +171,6 @@ struct assuan_context_s
                              socket servers) */
   assuan_sock_nonce_t listen_nonce; /* Used with LISTEN_FD.  */
   assuan_fd_t connected_fd; /* helper */
-
-  struct {
-    int valid;   /* Whether this structure has valid information. */
-#ifdef HAVE_SO_PEERCRED
-    pid_t pid;     /* The pid of the peer. */
-    uid_t uid;     /* The uid of the peer. */
-    gid_t gid;     /* The gid of the peer. */
-#endif /* HAVE_SO_PEERCRED */
-  } peercred;
 
   /* Used for Unix domain sockets.  */
   struct sockaddr_un myaddr;

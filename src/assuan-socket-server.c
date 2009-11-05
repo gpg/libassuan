@@ -46,7 +46,7 @@ accept_connection_bottom (assuan_context_t ctx)
 {
   assuan_fd_t fd = ctx->connected_fd;
 
-  ctx->peercred.valid = 0;
+  ctx->peercred_valid = 0;
 #ifdef HAVE_SO_PEERCRED
   {
     struct ucred cr; 
@@ -57,7 +57,7 @@ accept_connection_bottom (assuan_context_t ctx)
          ctx->peercred.pid = cr.pid;
          ctx->peercred.uid = cr.uid;
          ctx->peercred.gid = cr.gid;
-         ctx->peercred.valid = 1;
+         ctx->peercred_valid = 1;
 
          /* This overrides any already set PID if the function returns
             a valid one. */
@@ -137,22 +137,14 @@ deinit_socket_server (assuan_context_t ctx)
   ctx->cmdtbl = NULL;
 }
 
-/* Initialize a server for the socket LISTEN_FD which has already be
-   put into listen mode */
-gpg_error_t
-assuan_init_socket_server (assuan_context_t ctx, assuan_fd_t listen_fd)
-{
-  return assuan_init_socket_server_ext (ctx, listen_fd, 0);
-}
-
 
 /* 
    Flag bits: 0 - use sendmsg/recvmsg to allow descriptor passing
               1 - FD has already been accepted.
 */
 gpg_error_t
-assuan_init_socket_server_ext (assuan_context_t ctx, assuan_fd_t fd,
-                               unsigned int flags)
+assuan_init_socket_server (assuan_context_t ctx, assuan_fd_t fd,
+			   unsigned int flags)
 {
   gpg_error_t rc;
 

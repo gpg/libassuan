@@ -937,7 +937,7 @@ If the peer is not a simple pipe server but one using full-duplex
 sockets, the full-fledged variant of the above function should be
 used:
 
-@deftypefun gpg_error_t assuan_pipe_connect_ext (@w{assuan_context_t *@var{ctx}},@w{const char *@var{name}}, @w{const char *@var{argv}[]}, @w{assuan_fd_t *@var{fd_child_list}}, @w{void (*@var{atfork}) (void *, int)}, @w{void *@var{atforkvalue}}, @w{unsigned int @var{flags}})
+@deftypefun gpg_error_t assuan_pipe_connect (@w{assuan_context_t *@var{ctx}},@w{const char *@var{name}}, @w{const char *@var{argv}[]}, @w{assuan_fd_t *@var{fd_child_list}}, @w{void (*@var{atfork}) (void *, int)}, @w{void *@var{atforkvalue}}, @w{unsigned int @var{flags}})
 
 A call to this functions forks the current process and executes the
 program @var{name}, passing the arguments given in the NULL-terminated
@@ -961,7 +961,7 @@ additional resources not to be used by the child.
 @var{flags} is a bit vector and controls how the function acts:
 
 @table @code
-@item bit 0 (value 1)
+@item ASSUAN_PIPE_CONNECT_FDPASSING
 If cleared a simple pipe based server is expected and the function
 behaves similar to @code{assuan_pipe_connect}.  
 
@@ -969,7 +969,7 @@ If set a server based on full-duplex pipes is expected. Such pipes are
 usually created using the @code{socketpair} function.  It also enables
 features only available with such servers.
 
-@item bit 7 (value 128)
+@item ASSUAN_PIPE_CONNECT_DETACHED
 If set and there is a need to start the server it will be started as a
 background process.  This flag is useful under W32 systems, so that no
 new console is created and pops up a console window when starting the server
@@ -977,37 +977,21 @@ new console is created and pops up a console window when starting the server
 @end deftypefun
 
 
-For a pipe-based server you can also use the following legacy function:
-
-@deftypefun gpg_error_t assuan_pipe_connect (@w{assuan_context_t *@var{ctx}},@w{const char *@var{name}}, @w{const char *@var{argv}[]}, @w{int *@var{fd_child_list}})
-
-A call to @code{assuan_pipe_connect} is equivalent to a call to
-@code{assuan_pipe_connect_ext} with @code{flags} being 0 and without
-an at-fork handler.
-@end deftypefun
-
 If you are using a long running server listening either on a TCP or a
 Unix domain socket, the following function is used to connect to the server:
 
-@deftypefun gpg_error_t assuan_socket_connect_ext (@w{assuan_context_t *@var{ctx}}, @w{const char *@var{name}}, @w{pid_t @var{server_pid}}, @w{unsigned int @var{flags}})
+@deftypefun gpg_error_t assuan_socket_connect (@w{assuan_context_t *@var{ctx}}, @w{const char *@var{name}}, @w{pid_t @var{server_pid}}, @w{unsigned int @var{flags}})
 
 Make a connection to the Unix domain socket @var{name} and return a
 new Assuan context at @var{ctx}.  @var{server_pid} is currently not
 used but may become handy in the future; if you don't know the
 server's process ID (PID), pass @code{-1}.  With @var{flags} set to
-@code{1}, @code{sendmsg} and @code{recvmesg} are used for input and
-output and thereby enable the use of descriptor passing.
+@code{ASSUAN_SOCKET_CONNECT_FDPASSIN}, @code{sendmsg} and
+@code{recvmesg} are used for input and output and thereby enable the
+use of descriptor passing.
 
 Connecting to a TCP server is not yet implemented.  Standard URL
 schemes are reserved for @var{name} specifying a TCP server.
-@end deftypefun
-
-@deftypefun gpg_error_t assuan_socket_connect (@w{assuan_context_t *@var{ctx}}, @w{const char *@var{name}}, @w{pid_t @var{server_pid}})
-
-A call to @code{assuan_socket_connect} is equivalent to a call to
-@code{assuan_socket_connect_ext} with @code{flags} being 0.
-
-Same as above but no way to specify flags.
 @end deftypefun
 
 Eventually, after using the Assuan connection, the resources should be
@@ -1132,7 +1116,7 @@ command_handler (int fd)
       rc = assuan_init_pipe_server (&ctx, filedes);
     @}
   else
-    rc = assuan_init_socket_server_ext (&ctx, fd, 2);
+    rc = assuan_init_socket_server (&ctx, fd, 2);
   if (rc)
     @{
       fprintf (stderr, "server init failed: %s\n", gpg_strerror (rc));
@@ -1167,17 +1151,17 @@ variable.
 If a file descriptor has been passed, the assuan context gets
 initialized by the function:
 
-@deftypefun gpg_error_t assuan_init_socket_server_ext (@w{assuan_context_t *@var{r_ctx}}, @w{int @var{fd}}, @w{unsigned int @var{flags}})
+@deftypefun gpg_error_t assuan_init_socket_server (@w{assuan_context_t *@var{r_ctx}}, @w{int @var{fd}}, @w{unsigned int @var{flags}})
 
 The function takes the file descriptor @var{fd} which is expected to be
 associated with a socket and returns a new Assuan context at
 @var{r_ctx}. The following bits are currently defined for @var{flags}:
 
 @table @code
-@item Bit 0
+@item ASSUAN_SOCKET_SERVER_FDPASSING
 If set, @code{sendmsg} and @code{recvmesg} are used for input and
 output and thus enabling the use of descriptor passing.
-@item Bit 1
+@item ASSUAN_SOCKET_SERVER_ACCEPTED
 If set, @var{fd} refers to an already accepted socket.  That is,
 Libassuan won't call @var{accept} for it.  It is suggested to set this
 bit as it allows better control of the connection state.
@@ -1190,16 +1174,16 @@ is indicated by a returning an error value.  In case of error,
 
 @noindent
 On the Windows platform the following function needs to be called after
-assuan_init_socket_server_ext:
+@code{assuan_init_socket_server}:
 
 @deftypefun void assuan_set_sock_nonce ( @
         @w{assuan_context_t @var{ctx}}, @
         @w{assuan_sock_nonce_t *@var{nonce}})
 
-Save a copy of @var{nonce} in context @var{ctx}.  This should be used to
-register the server's nonce with a context established by
-assuan_init_socket_server.  It is actually only needed for Windows but
-it does not harm to use it on other systems as well.
+Save a copy of @var{nonce} in context @var{ctx}.  This should be used
+to register the server's nonce with a context established by
+@code{assuan_init_socket_server}.  It is actually only needed for
+Windows but it does not harm to use it on other systems as well.
 @end deftypefun
 
 
@@ -1504,7 +1488,7 @@ For socket servers: You can not use @code{assuan_accept}, so you
 should just implement the bind/connect/listen/accept stage yourself.
 You can register the listen FD with your main event loop, accept the
 connection when it becomes ready, and finally call
-@code{assuan_init_socket_server_ext} with the final argument being 2
+@code{assuan_init_socket_server} with the final argument being 2
 to create an Assuan context for this connection.  This way you can
 also handle multiple connections in parallel.  The reference
 implementation for this approach is DirMngr.
@@ -1726,13 +1710,29 @@ knowledge only the Linux kernel has this feature}.
 @end deftypefun
 
 
-@deftypefun gpg_error_t assuan_get_peercred (@w{assuan_context_t @var{ctx}}, @w{pid_t *@var{pid}}, @w{uid_t *@var{uid}}, @w{gid_t *@var{pid}})
+@deftp {Data type} {assuan_peercred_t}
+This structure is used to store the peer credentials.  The available
+members depend on the operating system.
 
+@table @code
+@item pid_t pid
+The process ID of the peer.
+
+@item uid_t uid
+The user ID of the peer process.
+
+@item gid_t gid
+The group ID of the peer process.
+@end table
+@end deftp
+
+
+@deftypefun gpg_error_t assuan_get_peercred (@w{assuan_context_t @var{ctx}}, @w{assuan_peercred_t *@var{peercred}})
 Return user credentials of the peer. This will work only on certain
-systems and only when connected over a socket.  If you are not
-interested in some of the values, pass @code{NULL} instead of the
-address of an appropriate variable.  @var{pid}, @var{uid} and @var{gid}
-are only set if the function succeeds and returns with @code{0}.
+systems and only when connected over a socket.  On success, a pointer
+to the peer credentials is stored in @var{peercred}.  The information
+is only valid as long as the state of the connection is unchanged (at
+least until the next assuan call to the same context).
 
 As of now only the server is able to retrieve this information.  Note,
 that for getting the pid of the peer @code{assuan_get_pid} is usually

@@ -1,3 +1,8 @@
+2009-11-05  Marcus Brinkmann  <marcus@g10code.de>
+
+	* tests/fdpassing.c (main): Call assuan_pipe_connect instead
+	of assuan_pipe_connect_ext.
+
 2009-11-04  Werner Koch  <wk@g10code.com>
 
 	* tests/fdpassing.c (register_commands): Add NULL arg to

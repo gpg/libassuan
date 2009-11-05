@@ -288,9 +288,9 @@ main (int argc, char **argv)
       if (err)
 	log_fatal ("assuan_new failed: %s\n", gpg_strerror (err));
 
-      err = assuan_pipe_connect_ext (ctx, with_exec? "./fdpassing":NULL,
-                                     with_exec ? arglist : &loc,
-                                     no_close_fds, NULL, NULL, 1);
+      err = assuan_pipe_connect (ctx, with_exec? "./fdpassing":NULL,
+				 with_exec ? arglist : &loc,
+				 no_close_fds, NULL, NULL, 1);
       if (err)
         {
           log_error ("assuan_pipe_connect failed: %s\n", gpg_strerror (err));

@@ -10,12 +10,12 @@ Noteworthy changes in version 1.1.0 (unreleased)
    context with assuan_new and use that.  Instead of assuan_disconnect
    or assuan_deinit_server, call assuan_release.  Use
    assuan_set_gpg_err_source instead of assuan_set_assuan_err_source.
-   If you use assuan_pipe_connect or assuan_pipe_connect_ext with NAME
-   of NULL, you have to provide a non-NULL ARGV argument and check
-   that against "server" or "client" to determine which end you got
-   after fork().  If you use the assuan sock interface, you must call
-   assuan_sock_init after setting global context defaults.  Add a NULL
-   as the last arg to assuan_register_command.
+   If you use assuan_pipe_connect with NAME of NULL, you have to
+   provide a non-NULL ARGV argument and check that against "server" or
+   "client" to determine which end you got after fork().  If you use
+   the assuan sock interface, you must call assuan_sock_init after
+   setting global context defaults.  Add a NULL as the last arg to
+   assuan_register_command.
 
  * Pth support has changed.  This now follows the same style as
    libgcrypt by setting system hook callbacks.
@@ -44,13 +44,15 @@ assuan_new_ext                 NEW
 assuan_new                     NEW
 assuan_release                 NEW
 assuan_init_socket_server      CHANGED: Take ctx arg instead of pointer to ctx.
-assuan_init_socket_server_ext  CHANGED: Take ctx arg instead of pointer to ctx.
+			       CHANGED: As assuan_init_socket_server_ext was.
+assuan_init_socket_server_ext  REMOVED
 assuan_socket_connect          CHANGED: Take ctx arg instead of pointer to ctx.
-assuan_socket_connect_ext      CHANGED: Take ctx arg instead of pointer to ctx.
+			       CHANGED: Is what assuan_socket_connect_ext was.
+assuan_socket_connect_ext      REMOVED
 assuan_pipe_connect            CHANGED: Take ctx arg instead of pointer to ctx.
 			       If NAME is NULL, ARGV will contain fork result.
-assuan_pipe_connect_ext        CHANGED: Take ctx arg instead of pointer to ctx.
-			       If NAME is NULL, ARGV will contain fork result.
+			       CHANGED: Is now what assuan_pipe_connect_ext was.
+assuan_pipe_connect_ext	       REMOVED
 assuan_init_pipe_server        CHANGED: Take ctx arg instead of pointer to ctx.
 assuan_set_io_hooks	       REMOVED: Will come back in expanded form.
 assuan_io_hooks_t  	       REMOVED: Will come back in expanded form.
@@ -76,6 +78,13 @@ assuan_register_cancel_notify  CHANGED: Handler gets line and returns err now.
 assuan_register_input_notify   CHANGED: Handler returns error now.
 assuan_register_output_notify  CHANGED: Handler returns error now.
 assuan_process_next	       CHANGED: New DONE argument instead EOF return.
+ASSUAN_PIPE_CONNECT_FDPASSING  NEW
+ASSUAN_PIPE_CONNECT_DETACHED   NEW
+ASSUAN_SOCKET_SERVER_FDPASSING NEW
+ASSUAN_SOCKET_SERVER_ACCEPTED  NEW
+ASSUAN_SOCKET_CONNECT_FDPASSING NEW
+assuan_peercred_t	       NEW
+assuan_get_peercred	       CHANGED: Return assuan_peercred_t.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

@@ -78,23 +78,11 @@ do_deinit (assuan_context_t ctx)
 
 /* Make a connection to the Unix domain socket NAME and return a new
    Assuan context in CTX.  SERVER_PID is currently not used but may
-   become handy in the future.  */
-gpg_error_t
-assuan_socket_connect (assuan_context_t ctx,
-                       const char *name, pid_t server_pid)
-{
-  return assuan_socket_connect_ext (ctx, name, server_pid, 0);
-}
-
-
-/* Make a connection to the Unix domain socket NAME and return a new
-   Assuan context in CTX.  SERVER_PID is currently not used but may
    become handy in the future.  With flags set to 1 sendmsg and
    recvmsg are used. */
 gpg_error_t
-assuan_socket_connect_ext (assuan_context_t ctx,
-                           const char *name, pid_t server_pid,
-                           unsigned int flags)
+assuan_socket_connect (assuan_context_t ctx, const char *name,
+		       pid_t server_pid, unsigned int flags)
 {
   gpg_error_t err;
   assuan_fd_t fd;

@@ -1,5 +1,13 @@
 2009-11-05  Marcus Brinkmann  <marcus@g10code.de>
 
+	* assuan.texi: Update assuan_pipe_connect, assuan_socket_connect
+	and assuan_init_socket_connect.
+	(Client code): Document ASSUAN_PIPE_CONNECT_FDPASSING and
+	ASSUAN_PIPE_CONNECT_DETACHED.
+	(Server code): Document ASSUAN_SOCKET_SERVER_FDPASSING and
+	ASSUAN_SOCKET_SERVER_ACCEPTED.
+	(Utilities): Update documentation of assuan_get_peercred.
+
 	* assuan.texi (External I/O Loop Server): Document change to
 	assuan_process_next.
 

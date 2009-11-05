@@ -169,3 +169,19 @@ assuan_set_error (assuan_context_t ctx, gpg_error_t err, const char *text)
   ctx->err_str = text;
   return err;
 }
+
+
+/* Return user credentials.  For getting the pid of the peer the
+   assuan_get_pid is usually better suited. */
+gpg_error_t
+assuan_get_peercred (assuan_context_t ctx, assuan_peercred_t *peercred)
+{
+  if (!ctx)
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
+  if (!ctx->peercred_valid)
+    return _assuan_error (ctx, GPG_ERR_ASS_GENERAL);
+
+  *peercred = &ctx->peercred;
+
+  return 0;
+}

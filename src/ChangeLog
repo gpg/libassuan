@@ -1,5 +1,31 @@
 2009-11-05  Marcus Brinkmann  <marcus@g10code.de>
 
+	* assuan.h (struct _assuan_peercred, assuan_peercred_t): New.
+	(assuan_get_peercred): Define on all systems, return
+	assuan_peercred_t.
+	* assuan-defs.h (struct assuan_context_s): Move valid flag out of
+	peercred struct, use struct _assuan_peercred.
+	* libassuan.def: Add assuan_get_peercred.
+	* assuan-connect.c (assuan_get_peercred): Moved to ...
+	* context.c (assuan_get_peercred): ... here.  Reimplement.
+	* assuan-socket-server.c (accept_connection_bottom): Adjust access
+	to peercred in context.
+	* assuan.h (ASSUAN_PIPE_CONNECT_FDPASSING)
+	(ASSUAN_PIPE_CONNECT_DETACHED, ASSUAN_SOCKET_SERVER_FDPASSING)
+	(ASSUAN_SOCKET_SERVER_ACCEPTED, ASSUAN_SOCKET_CONNECT_FDPASSING): New.
+	(assuan_pipe_connect_ext): Renamed to ...
+	(assuan_pipe_connect): ... this, overwriting old prototype.
+	(assuan_socket_connect_ext): Renamed to ...
+	(assuan_socket_connect): ... this, overwriting old prototype.
+	(assuan_init_socket_server_ext): Renamed to ...
+	(assuan_init_socket_server): ... this, overwriting old prototype.
+	* assuan-pipe-connect.c: Likewise for functions.
+	* assuan-socket-connect.c: Likewise.
+	* assuan-socket-server.c: Likewise.
+	* libassuan.def (assuan_init_socket_server_ext)
+	(assuan_pipe_connect_ext, assuan_socket_connect_ext): Removed.
+	* libassuan.vers: Likewise.
+
 	* assuan-defs.h (assuan_context_t): Add member PROCESS_DONE.
 	* assuan.h (assuan_process_next): Add argument DONE to prototype.
 	* assuan-handler.c (assuan_process_next): Likewise, handle it.

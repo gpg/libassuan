@@ -44,7 +44,6 @@ LIBASSUAN_1.0 {
     assuan_get_pointer;
     assuan_init_pipe_server;
     assuan_init_socket_server;
-    assuan_init_socket_server_ext;
     assuan_inquire;
     assuan_inquire_ext;
     assuan_new;
@@ -52,7 +51,6 @@ LIBASSUAN_1.0 {
     assuan_new_ext;
     assuan_pending_line;
     assuan_pipe_connect;
-    assuan_pipe_connect_ext;
     assuan_process;
     assuan_process_done;
     assuan_process_next;
@@ -91,7 +89,6 @@ LIBASSUAN_1.0 {
     assuan_sock_init;
     assuan_sock_new;
     assuan_socket_connect;
-    assuan_socket_connect_ext;
     assuan_transact;
     assuan_write_line;
     assuan_write_status;

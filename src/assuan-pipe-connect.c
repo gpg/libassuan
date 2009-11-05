@@ -380,21 +380,6 @@ socketpair_connect (assuan_context_t ctx,
 #endif /*!HAVE_W32_SYSTEM*/
 
 
-/* Connect to a server over a pipe, creating the assuan context and
-   returning it in CTX.  The server filename is NAME, the argument
-   vector in ARGV.  FD_CHILD_LIST is a -1 terminated list of file
-   descriptors not to close in the child.  */
-gpg_error_t
-assuan_pipe_connect (assuan_context_t ctx, const char *name,
-		     const char *argv[], int *fd_child_list)
-{
-  TRACE1 (ctx, ASSUAN_LOG_CTX, "assuan_pipe_connect", ctx,
-	  "name=%s", name ? name : "(null)");
-
-  return pipe_connect (ctx, name, argv, fd_child_list, NULL, NULL, 0);
-}
-
-
 /* Connect to a server over a full-duplex socket (i.e. created by
    socketpair), creating the assuan context and returning it in CTX.
    The server filename is NAME, the argument vector in ARGV.
@@ -425,11 +410,11 @@ assuan_pipe_connect (assuan_context_t ctx, const char *name,
    "server" in *ARGV (but it is sufficient to check only the first
    character).  */
 gpg_error_t
-assuan_pipe_connect_ext (assuan_context_t ctx,
-                         const char *name, const char *argv[],
-                         int *fd_child_list,
-                         void (*atfork) (void *opaque, int reserved),
-                         void *atforkvalue, unsigned int flags)
+assuan_pipe_connect (assuan_context_t ctx,
+		     const char *name, const char *argv[],
+		     int *fd_child_list,
+		     void (*atfork) (void *opaque, int reserved),
+		     void *atforkvalue, unsigned int flags)
 {
   TRACE2 (ctx, ASSUAN_LOG_CTX, "assuan_pipe_connect_ext", ctx,
 	  "name=%s,flags=0x%x", name ? name : "(null)", flags);

@@ -361,42 +361,43 @@ gpg_error_t assuan_close_output_fd (assuan_context_t ctx);
 gpg_error_t assuan_init_pipe_server (assuan_context_t ctx, int filedes[2]);
 
 /*-- assuan-socket-server.c --*/
+#define ASSUAN_SOCKET_SERVER_FDPASSING 1
+#define ASSUAN_SOCKET_SERVER_ACCEPTED 2
 gpg_error_t assuan_init_socket_server (assuan_context_t ctx,
-				       assuan_fd_t listen_fd);
-gpg_error_t assuan_init_socket_server_ext (assuan_context_t ctx,
-					   assuan_fd_t fd,
-					   unsigned int flags);
+				       assuan_fd_t listen_fd,
+				       unsigned int flags);
 void assuan_set_sock_nonce (assuan_context_t ctx, assuan_sock_nonce_t *nonce);
 
 /*-- assuan-pipe-connect.c --*/
+#define ASSUAN_PIPE_CONNECT_FDPASSING 1
+#define ASSUAN_PIPE_CONNECT_DETACHED 128
 gpg_error_t assuan_pipe_connect (assuan_context_t ctx,
 				 const char *name,
 				 const char *argv[],
-				 assuan_fd_t *fd_child_list);
-gpg_error_t assuan_pipe_connect_ext (assuan_context_t ctx,
-				     const char *name,
-				     const char *argv[],
-				     assuan_fd_t *fd_child_list,
-				     void (*atfork) (void *, int),
-				     void *atforkvalue,
-				     unsigned int flags);
+				 assuan_fd_t *fd_child_list,
+				 void (*atfork) (void *, int),
+				 void *atforkvalue,
+				 unsigned int flags);
 
 /*-- assuan-socket-connect.c --*/
-gpg_error_t assuan_socket_connect (assuan_context_t ctx, 
-				   const char *name,
-				   pid_t server_pid);
-
-gpg_error_t assuan_socket_connect_ext (assuan_context_t ctx,
-				       const char *name,
-				       pid_t server_pid,
-				       unsigned int flags);
+#define ASSUAN_SOCKET_CONNECT_FDPASSING 1
+gpg_error_t assuan_socket_connect (assuan_context_t ctx, const char *name,
+				   pid_t server_pid, unsigned int flags);
 
 /*-- assuan-connect.c --*/
 pid_t assuan_get_pid (assuan_context_t ctx);
+struct _assuan_peercred
+{
 #ifndef _WIN32
-gpg_error_t assuan_get_peercred (assuan_context_t ctx,
-                                    pid_t *pid, uid_t *uid, gid_t *gid);
+  pid_t pid;
+  uid_t uid;
+  gid_t gid;
 #endif
+};
+typedef struct _assuan_peercred *assuan_peercred_t;
+
+gpg_error_t assuan_get_peercred (assuan_context_t ctx,
+				 assuan_peercred_t *peercred);
 
 /*-- assuan-client.c --*/
 gpg_error_t 
