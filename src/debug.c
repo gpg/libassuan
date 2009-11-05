@@ -59,6 +59,7 @@ _assuan_debug (assuan_context_t ctx, unsigned int cat, const char *format, ...)
   if (res < 0)
     return;
   ctx->log_cb (ctx, ctx->log_cb_data, cat, msg);
+  free (msg);
   errno = saved_errno;
 }
 

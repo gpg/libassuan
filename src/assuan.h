@@ -327,7 +327,7 @@ gpg_error_t assuan_register_option_handler (assuan_context_t ctx,
                                                                const char*));
 
 gpg_error_t assuan_process (assuan_context_t ctx);
-gpg_error_t assuan_process_next (assuan_context_t ctx);
+gpg_error_t assuan_process_next (assuan_context_t ctx, int *done);
 gpg_error_t assuan_process_done (assuan_context_t ctx, gpg_error_t rc);
 int assuan_get_active_fds (assuan_context_t ctx, int what,
                            assuan_fd_t *fdarray, int fdarraysize);

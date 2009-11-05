@@ -124,6 +124,7 @@ struct assuan_context_s
   int is_server;      /* Set if this is context belongs to a server */
   int in_inquire;
   int in_process_next;
+  int process_done;
   int in_command;
 
   /* The following members are used by assuan_inquire_ext.  */

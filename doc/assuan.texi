@@ -1524,8 +1524,8 @@ operation.  When it returns, the inbound status FD may still be
 readable, but Assuan does not check this.
 
 The function @code{assuan_process_next} returns 0 if it can not make
-progress reliably, and it returns an end of file error value if the
-client closed the connection.  See below for more information on this
+progress reliably, and it returns true in @code{done} if the client
+closed the connection.  See below for more information on this
 function.
 
 @item
@@ -1562,11 +1562,10 @@ the client with @code{assuan_process_done}.  For long running
 operations, the server should send progress status messages to the
 client in regular intervals to notice when the client disconnects.
 
-@deftypefun gpg_error_t assuan_process_next (@w{assuan_context_t @var{ctx}})
+@deftypefun gpg_error_t assuan_process_next (@w{assuan_context_t @var{ctx}}, @w{int *@var{done}})
 This is the same as @code{assuan_process} but the caller has to
 provide the outer loop.  He should loop as long as the return code is
-zero and stop otherwise; @code{-1} or @code{GPG_ERR_EOF} indicate a
-regular end.
+zero and @var{done} is false.
 @end deftypefun
 
 @deftypefun gpg_error_t assuan_process_done (@w{assuan_context_t @var{ctx}}, @w{gpg_error_t @var{rc}})

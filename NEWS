@@ -75,6 +75,7 @@ assuan_register_reset_notify   CHANGED: Handler gets line and returns err now.
 assuan_register_cancel_notify  CHANGED: Handler gets line and returns err now.
 assuan_register_input_notify   CHANGED: Handler returns error now.
 assuan_register_output_notify  CHANGED: Handler returns error now.
+assuan_process_next	       CHANGED: New DONE argument instead EOF return.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

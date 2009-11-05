@@ -1,3 +1,8 @@
+2009-11-05  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan.texi (External I/O Loop Server): Document change to
+	assuan_process_next.
+
 2009-10-16  Marcus Brinkmann  <marcus@g10code.com>
 
 	* assuan.texi: Remove documentation for thread support.

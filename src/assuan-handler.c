@@ -125,7 +125,8 @@ std_handler_bye (assuan_context_t ctx, char *line)
   assuan_close_input_fd (ctx);
   assuan_close_output_fd (ctx);
   /* pretty simple :-) */
-  return PROCESS_DONE (ctx, _assuan_error (ctx, GPG_ERR_EOF));
+  ctx->process_done = 1;
+  return PROCESS_DONE (ctx, 0);
 }
   
 static gpg_error_t
@@ -592,18 +593,19 @@ assuan_process_done (assuan_context_t ctx, gpg_error_t rc)
   /* Error handling.  */
   if (!rc)
     {
-      rc = assuan_write_line (ctx, ctx->okay_line ? ctx->okay_line : "OK");
-    }
-  else if (gpg_err_code (rc) == GPG_ERR_EOF)
-    { /* No error checking because the peer may have already disconnect. */ 
-      assuan_write_line (ctx, "OK closing connection");
-      ctx->finish_handler (ctx);
+      if (ctx->process_done)
+	{
+	  /* No error checking because the peer may have already
+	     disconnect. */ 
+	  assuan_write_line (ctx, "OK closing connection");
+	  ctx->finish_handler (ctx);
+	}
+      else
+	rc = assuan_write_line (ctx, ctx->okay_line ? ctx->okay_line : "OK");
     }
   else 
     {
-      char errline[300];
-
-      const char *text = ctx->err_no == rc ? ctx->err_str : NULL;
+      char errline      const char *text = ctx->err_no == rc ? ctx->err_str : NULL;
       char ebuf[50];
 	  
       gpg_strerror_r (rc, ebuf, sizeof (ebuf));
@@ -686,18 +688,24 @@ process_next (assuan_context_t ctx)
    ready for reading.  If the equivalent to EWOULDBLOCK is returned
    (this should be done by the command handler), assuan_process_next
    should be invoked the next time the connected FD is readable.
-   Eventually, the caller will finish by invoking
-   assuan_process_done.  */
+   Eventually, the caller will finish by invoking assuan_process_done.
+   DONE is set to 1 if the connection has ended.  */
 gpg_error_t
-assuan_process_next (assuan_context_t ctx)
+assuan_process_next (assuan_context_t ctx, int *done)
 {
   gpg_error_t rc;
 
+  if (done)
+    *done = 0;
+  ctx->process_done = 0;
   do
     {
       rc = process_next (ctx);
     }
-  while (!rc && assuan_pending_line (ctx));
+  while (!rc && !ctx->process_done && assuan_pending_line (ctx));
+
+  if (done)
+    *done = !!ctx->process_done;
 
   return rc;
 }
@@ -747,12 +755,10 @@ assuan_process (assuan_context_t ctx)
 {
   gpg_error_t rc;
 
+  ctx->process_done = 0;
   do {
     rc = process_request (ctx);
-  } while (!rc);
-
-  if (gpg_err_code (rc) == GPG_ERR_EOF)
-    rc = 0;
+  } while (!rc && !ctx->process_done);
 
   return rc;
 }
