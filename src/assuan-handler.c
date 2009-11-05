@@ -605,7 +605,8 @@ assuan_process_done (assuan_context_t ctx, gpg_error_t rc)
     }
   else 
     {
-      char errline      const char *text = ctx->err_no == rc ? ctx->err_str : NULL;
+      char errline[300];
+      const char *text = ctx->err_no == rc ? ctx->err_str : NULL;
       char ebuf[50];
 	  
       gpg_strerror_r (rc, ebuf, sizeof (ebuf));
