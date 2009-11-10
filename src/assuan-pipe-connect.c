@@ -317,12 +317,15 @@ socketpair_connect (assuan_context_t ctx,
 
   sprintf (mypidstr, "%lu", (unsigned long)getpid ());
 
-  while (fd_child_list[child_fds_cnt] != ASSUAN_INVALID_FD)
-    child_fds_cnt++;
+  if (fd_child_list)
+    while (fd_child_list[child_fds_cnt] != ASSUAN_INVALID_FD)
+      child_fds_cnt++;
   child_fds = _assuan_malloc (ctx, (child_fds_cnt + 2) * sizeof (int));
   if (! child_fds)
     return TRACE_ERR (gpg_err_code_from_syserror ());
-  memcpy (&child_fds[1], fd_child_list, (child_fds_cnt + 1) * sizeof (int));
+  child_fds[1] = ASSUAN_INVALID_FD;
+  if (fd_child_list)
+    memcpy (&child_fds[1], fd_child_list, (child_fds_cnt + 1) * sizeof (int));
   
   if (_assuan_socketpair (ctx, AF_LOCAL, SOCK_STREAM, 0, fds))
     {
@@ -332,7 +335,6 @@ socketpair_connect (assuan_context_t ctx,
     }
   atp.peer_fd = fds[1];
   child_fds[0] = fds[1];
-
 
   rc = _assuan_spawn (ctx, &pid, name, argv, ASSUAN_INVALID_FD,
 		      ASSUAN_INVALID_FD, child_fds, at_socketpair_fork_cb,
@@ -351,9 +353,12 @@ socketpair_connect (assuan_context_t ctx,
      of the peer socketpair fd (fd_child_list[0]) must be done by the
      wrapper program based on the environment variable
      _assuan_connection_fd.  */
-  for (idx = 0; fd_child_list[idx] != -1; idx++)
-    /* We add 1 to skip over the socketpair end.  */
-    fd_child_list[idx] = child_fds[idx + 1];
+  if (fd_child_list)
+    {
+      for (idx = 0; fd_child_list[idx] != -1; idx++)
+	/* We add 1 to skip over the socketpair end.  */
+	fd_child_list[idx] = child_fds[idx + 1];
+    }
 
   /* If this is the server child process, exit early.  */
   if (! name && (*argv)[0] == 's')

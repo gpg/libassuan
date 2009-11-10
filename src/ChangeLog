@@ -1,3 +1,18 @@
+2009-11-10  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan-defs.h (struct assuan_context_s): Rename
+	CTX->process_done to CTX->process_complete for clarity.  Remove
+	buffer variables from UDS.
+	* assuan-pipe-connect.c (socketpair_connect): Allow FD_CHILD_LIST
+	to be NULL.
+	* assuan-handler.c: Rename CTX->process_done to
+	CTX->process_complete for clarity.
+	(process_request, process_next): Handle EOF.
+	* assuan-uds.c (uds_reader): Remove buffering, which breaks the
+	pending line algorithm in assuan-buffer.c.
+	(_assuan_init_uds_io, _assuan_uds_deinit): Remove buffering.
+	* assuan-buffer.c (_assuan_read_line): Add comment.
+
 2009-11-05  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan.h (struct _assuan_peercred, assuan_peercred_t): New.

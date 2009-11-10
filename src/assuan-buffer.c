@@ -79,6 +79,7 @@ readline (assuan_context_t ctx, char *buf, size_t buflen,
           *r_eof = 1;
           break; /* allow incomplete lines */
         }
+
       p = buf;
       nleft -= n;
       buf += n;
@@ -88,7 +89,6 @@ readline (assuan_context_t ctx, char *buf, size_t buflen,
       if (p)
         break; /* at least one full line available - that's enough for now */
     }
-
   return 0;
 }
 
@@ -142,7 +142,9 @@ _assuan_read_line (assuan_context_t ctx)
 
       if (saved_errno == EAGAIN)
         {
-          /* We have to save a partial line.  */
+          /* We have to save a partial line.  Due to readline's
+	     behaviour, we know that this is not a complete line yet
+	     (no newline).  So we don't set PENDING to true.  */
           memcpy (ctx->inbound.attic.line, line, atticlen + nread);
           ctx->inbound.attic.pending = 0;
           ctx->inbound.attic.linelen = atticlen + nread;
@@ -253,6 +255,7 @@ assuan_read_line (assuan_context_t ctx, char **line, size_t *linelen)
 
   *line = ctx->inbound.line;
   *linelen = ctx->inbound.linelen;
+
   return err;
 }
 

@@ -125,7 +125,7 @@ std_handler_bye (assuan_context_t ctx, char *line)
   assuan_close_input_fd (ctx);
   assuan_close_output_fd (ctx);
   /* pretty simple :-) */
-  ctx->process_done = 1;
+  ctx->process_complete = 1;
   return PROCESS_DONE (ctx, 0);
 }
   
@@ -593,7 +593,7 @@ assuan_process_done (assuan_context_t ctx, gpg_error_t rc)
   /* Error handling.  */
   if (!rc)
     {
-      if (ctx->process_done)
+      if (ctx->process_complete)
 	{
 	  /* No error checking because the peer may have already
 	     disconnect. */ 
@@ -643,6 +643,11 @@ process_next (assuan_context_t ctx)
   rc = _assuan_read_line (ctx);
   if (_assuan_error_is_eagain (ctx, rc))
     return 0;
+  if (gpg_err_code (rc) == GPG_ERR_EOF)
+    {
+      ctx->process_complete = 1;
+      return 0;
+    }
   if (rc)
     return rc;
   if (*ctx->inbound.line == '#' || !ctx->inbound.linelen)
@@ -698,15 +703,15 @@ assuan_process_next (assuan_context_t ctx, int *done)
 
   if (done)
     *done = 0;
-  ctx->process_done = 0;
+  ctx->process_complete = 0;
   do
     {
       rc = process_next (ctx);
     }
-  while (!rc && !ctx->process_done && assuan_pending_line (ctx));
+  while (!rc && !ctx->process_complete && assuan_pending_line (ctx));
 
   if (done)
-    *done = !!ctx->process_done;
+    *done = !!ctx->process_complete;
 
   return rc;
 }
@@ -726,6 +731,11 @@ process_request (assuan_context_t ctx)
       rc = _assuan_read_line (ctx);
     }
   while (_assuan_error_is_eagain (ctx, rc));
+  if (gpg_err_code (rc) == GPG_ERR_EOF)
+    {
+      ctx->process_complete = 1;
+      return 0;
+    }
   if (rc)
     return rc;
   if (*ctx->inbound.line == '#' || !ctx->inbound.linelen)
@@ -756,10 +766,10 @@ assuan_process (assuan_context_t ctx)
 {
   gpg_error_t rc;
 
-  ctx->process_done = 0;
+  ctx->process_complete = 0;
   do {
     rc = process_request (ctx);
-  } while (!rc && !ctx->process_done);
+  } while (!rc && !ctx->process_complete);
 
   return rc;
 }

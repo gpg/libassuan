@@ -127,7 +127,7 @@ struct assuan_context_s
   int is_server;      /* Set if this is context belongs to a server */
   int in_inquire;
   int in_process_next;
-  int process_done;
+  int process_complete;
   int in_command;
 
   /* The following members are used by assuan_inquire_ext.  */
@@ -176,15 +176,8 @@ struct assuan_context_s
   struct sockaddr_un myaddr;
   struct sockaddr_un serveraddr;
 
-  /* Structure used for unix domain socket buffering.  FIXME: We don't
-     use datagrams anymore thus we could get away with a simpler
-     buffering approach. */
+  /* Structure used for unix domain sockets.  */
   struct {
-    void *buffer;         /* Malloced buffer. */
-    int bufferallocated;  /* Memory allocated.  */
-    int bufferoffset;     /* Offset of start of buffer.  */
-    int buffersize;       /* Bytes buffered.  */
-    
     assuan_fd_t pendingfds[5]; /* Array to save received descriptors.  */
     int pendingfdscount;  /* Number of received descriptors. */
   } uds;

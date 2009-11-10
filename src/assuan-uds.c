@@ -64,24 +64,15 @@
 #endif /*USE_DESCRIPTOR_PASSING*/
 
 
-/* Read from a unix domain socket using sendmsg. 
-
-   FIXME: We don't need the buffering. It is a leftover from the time
-   when we used datagrams. */
+/* Read from a unix domain socket using sendmsg.  */
 static ssize_t
 uds_reader (assuan_context_t ctx, void *buf, size_t buflen)
 {
 #ifndef HAVE_W32_SYSTEM
-  int len = ctx->uds.buffersize;
-
-  if (!ctx->uds.bufferallocated)
-    {
-      ctx->uds.buffer = _assuan_malloc (ctx, 2048);
-      if (!ctx->uds.buffer)
-        return gpg_error_from_syserror ();
-      ctx->uds.bufferallocated = 2048;
-    }
-
+  int len = 0;
+  /* This loop should be OK.  As FDs are followed by data, the
+     readable status of the socket does not change and no new
+     select/event-loop round is necessary.  */
   while (!len)  /* No data is buffered.  */
     {
       struct msghdr msg;
@@ -100,8 +91,8 @@ uds_reader (assuan_context_t ctx, void *buf, size_t buflen)
       msg.msg_namelen = 0;
       msg.msg_iov = &iovec;
       msg.msg_iovlen = 1;
-      iovec.iov_base = ctx->uds.buffer;
-      iovec.iov_len = ctx->uds.bufferallocated;
+      iovec.iov_base = buf;
+      iovec.iov_len = buflen;
 #ifdef USE_DESCRIPTOR_PASSING
       msg.msg_control = control_u.control;
       msg.msg_controllen = sizeof (control_u.control);
@@ -112,9 +103,6 @@ uds_reader (assuan_context_t ctx, void *buf, size_t buflen)
         return -1;
       if (len == 0)
 	return 0;
-
-      ctx->uds.buffersize = len;
-      ctx->uds.bufferoffset = 0;
 
 #ifdef USE_DESCRIPTOR_PASSING
       cmptr = CMSG_FIRSTHDR (&msg);
@@ -141,17 +129,6 @@ uds_reader (assuan_context_t ctx, void *buf, size_t buflen)
 	}
 #endif /*USE_DESCRIPTOR_PASSING*/
     }
-
-  /* Return some data to the user.  */
-
-  if (len > buflen) /* We have more than the user requested.  */
-    len = buflen;
-
-  memcpy (buf, (char*)ctx->uds.buffer + ctx->uds.bufferoffset, len);
-  ctx->uds.buffersize -= len;
-  assert (ctx->uds.buffersize >= 0);
-  ctx->uds.bufferoffset += len;
-  assert (ctx->uds.bufferoffset <= ctx->uds.bufferallocated);
 
   return len;
 #else /*HAVE_W32_SYSTEM*/
@@ -291,14 +268,6 @@ _assuan_uds_deinit (assuan_context_t ctx)
 {
   /* First call the finish_handler which should close descriptors etc. */
   ctx->finish_handler (ctx);
-
-  if (ctx->uds.buffer)
-    {
-      assert (ctx->uds.bufferallocated);
-      ctx->uds.bufferallocated = 0;
-      _assuan_free (ctx, ctx->uds.buffer);
-    }
-
   _assuan_uds_close_fds (ctx);
 }
 
@@ -312,10 +281,6 @@ _assuan_init_uds_io (assuan_context_t ctx)
   ctx->engine.sendfd = uds_sendfd;
   ctx->engine.receivefd = uds_receivefd;
 
-  ctx->uds.buffer = 0;
-  ctx->uds.bufferoffset = 0;
-  ctx->uds.buffersize = 0;
-  ctx->uds.bufferallocated = 0;
   ctx->uds.pendingfdscount = 0;
 }
 
