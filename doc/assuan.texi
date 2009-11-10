@@ -624,7 +624,7 @@ contexts allocated with @code{assuan_new}.
 
 One way to call this function is
 @smallexample
-assuan_set_assuan_err_source (GPG_ERR_SOURCE_DEFAULT);
+assuan_set_gpg_err_source (GPG_ERR_SOURCE_DEFAULT);
 @end smallexample
 @end deftypefun
 
@@ -813,6 +813,8 @@ not desirable.  By setting this flag, a call to @code{waitpid} will be
 suppressed and the caller is responsible to cleanup the child process.
 @item ASSUAN_CONFIDENTIAL
 Uses to return the state of the confidential logging mode.
+@item ASSUAN_NO_FIXSIGNALS
+Do not modify signal handler for @code{SIGPIPE}.
 @end table
 @end deftp
 @end deftypefun
@@ -842,6 +844,100 @@ This is identical to:
 assuan_set_flag (ctx, ASSUAN_CONFIDENTIAL, 0);
 @end smallexample
 @end deftypefun
+
+
+@deftp {Data type} {struct assuan_system_hooks}
+This structure is used to store the system callback interface
+functions.  It has the following members, whose semantics are similar
+to the corresponding system functions, but not exactly equivalent.
+
+@table @code
+@item int version
+The user should set this to @code{ASSUAN_SYSTEM_HOOKS_VERSION}.  This
+indicates to the library which members of this structure are present
+in case of future extensions.  The user should initialize the whole
+structure with zero bytes.
+
+@item  void (*usleep) (assuan_context_t ctx, unsigned int usec)
+This is the function called by @sc{Assuan} to sleep for @code{USEC}
+microseconds.
+
+@item int (*pipe) (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx)
+This is the function called by @sc{Assuan} to create a pipe.  The
+returned file descriptor @code{fd[inherit_idx]} must be inheritable by
+the child process (under Windows, this requires some extra work).
+
+@item int (*close) (assuan_context_t ctx, assuan_fd_t fd)
+This is the function called by @sc{Assuan} to close a file descriptor
+created through the system functions.
+
+@item ssize_t (*read) (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
+This is the function called by @sc{Assuan} to read data from a file
+descriptor.  It is functionally equivalent to the system @code{read}
+function.
+
+@item ssize_t (*write) (assuan_context_t ctx, assuan_fd_t fd, const void *buffer, size_t size)
+This is the function called by @sc{Assuan} to write data to a file
+descriptor.  It is functionally equivalent to the system @code{write}
+function.
+
+@item int (*recvmsg) (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg, int flags)
+This is the function called by @sc{Assuan} to receive a message from a
+file descriptor.  It is functionally equivalent to the system
+@code{recvmsg} function.
+
+@item int (*sendmsg) (assuan_context_t ctx, assuan_fd_t fd, const assuan_msghdr_t msg, int flags);
+This is the function called by @sc{Assuan} to send a message to a
+file descriptor.  It is functionally equivalent to the system
+@code{sendmsg} function.
+
+@item int (*spawn) (assuan_context_t ctx, pid_t *r_pid, const char *name, const char **argv, assuan_fd_t fd_in, assuan_fd_t fd_out, assuan_fd_t *fd_child_list, void (*atfork) (void *opaque, int reserved), void *atforkvalue, unsigned int flags)
+This is the function called by @sc{Assuan} to spawn a child process.
+The @code{stdin} and @code{stdout} file descriptors are provided in
+@code{fd_in} and @code{fd_out} respectively, but can be set to
+@code{ASSUAN_INVALID_FD}, in which case they are set to
+@code{/dev/null}.  On systems which use @code{fork} and @code{exec},
+the @code{atfork} function should be called with @code{atforkvalue}
+and @code{0} for flags in the child process right after @code{fork}
+returns.  @code{fd_child_list} is a @code{ASSUAN_INVALID_FD}
+terminated array (or @code{NULL}) and specifies file descriptors to be
+inherited by the child process.
+
+A special situation occurs if @code{name} is a null pointer, in which
+case the process should just fork but not call @code{exec}.  In this
+case, @code{*argv} should be set to @code{"client"} in the parent
+process and @code{"server"} in the child process.
+
+@item pid_t (*waitpid) (assuan_context_t ctx, pid_t pid, int action, int *status, int options)
+This is the function called by @sc{Assuan} to wait for the spawned
+child process @var{pid} to exit, or, if @var{action} is 1, to just
+release all resources associated with @var{pid} (required on Windows
+platforms).  If @var{action} is 0, this is equivalent to @code{waitpid}.
+
+@item int (*socketpair) (assuan_context_t ctx, int namespace, int style, int protocol, assuan_fd_t filedes[2])
+This is the function called by @sc{Assuan} to create a socketpair.  It
+is equivalent to @code{socketpair}.
+@end table
+@end deftp
+
+
+@deftypefun void assuan_set_system_hooks (@w{assuan_system_hooks_t @var{system_hooks}})
+Set the default system hooks to use.  There is currently no way to
+reset to the default system hooks.
+@end deftypefun
+
+@deftypefun void assuan_ctx_set_system_hooks (@w{assuan_context_t @var{ctx}}, @w{assuan_system_hooks_t @var{system_hooks}})
+Set the system hooks for context @var{ctx}.  There is currently no way
+to reset tot the default system hooks, create a new context for that.
+@end deftypefun
+
+The following system hook collections are defined by the library for
+your convenience:
+
+@table @code
+@item ASSUAN_SYSTEM_PTH
+System hooks suitable for use with the GNU Pth library.
+@end table
 
 
 @node Reading and Writing
@@ -1040,7 +1136,7 @@ Libassuan supports descriptor passing on some platforms.  The next two
 functions are used with this feature:
 
 @anchor{function assuan_sendfd}
-@deftypefun gpg_error_t assuan_sendfd (@w{assuan_context_t @var{ctx}}, @w{int @var{fd}})
+@deftypefun gpg_error_t assuan_sendfd (@w{assuan_context_t @var{ctx}}, @w{assuan_fd_t @var{fd}})
 
 Send the descriptor @var{fd} to the peer using the context @var{ctx}.
 The descriptor must be sent before the command is issued that makes
@@ -1052,7 +1148,7 @@ descriptor passing is available on the platform.  If it is, 0 is returned, other
 @end deftypefun
 
 @anchor{function assuan_receivefd}
-@deftypefun gpg_error_t assuan_receivefd (@w{assuan_context_t @var{ctx}}, @w{int *@var{fd}})
+@deftypefun gpg_error_t assuan_receivefd (@w{assuan_context_t @var{ctx}}, @w{assuan_fd_t *@var{fd}})
 
 Receive a descriptor pending for the context @var{ctx} from the peer.
 The descriptor must be pending before this function is called.  To
@@ -1116,7 +1212,7 @@ command_handler (int fd)
       rc = assuan_init_pipe_server (&ctx, filedes);
     @}
   else
-    rc = assuan_init_socket_server (&ctx, fd, 2);
+    rc = assuan_init_socket_server (&ctx, fd, ASSUAN_SOCKET_SERVER_ACCEPTED);
   if (rc)
     @{
       fprintf (stderr, "server init failed: %s\n", gpg_strerror (rc));
@@ -1126,7 +1222,7 @@ command_handler (int fd)
 
 @noindent
 This is the first part of the command handler.  In case this is called
-as a pipe based server, @var{fd} will be based as @code{fd} and the
+as a pipe based server, @var{fd} will be based as @var{fd} and the
 code assumes that the server's @code{stdin} and @code{stdout} file
 handles are connected to a pipe.  The initialization is thus done
 using the function:
@@ -1142,7 +1238,7 @@ at @var{r_ctx}.
 In case the server has been called using a bi-directional pipe
 (socketpair), @var{filedes} is ignored and the file descriptor is
 taken from the environment variable @env{_assuan_connection_fd}.  You
-won't need to know that because @code{assuan_pipe_connect_ext}, used
+won't need to know that because @code{assuan_pipe_connect}, used
 by the client to connect to such a server, automagically sets this
 variable.
 @end deftypefun
@@ -1206,8 +1302,13 @@ the server.
     @} 
 @end example
 
+@deftp {Data type} {gpg_error_t (*assuan_handler_t) (@w{assuan_context_t @var{ctx}}, @w{char *@var{line}})}
+This is the function invoked by @sc{Assuan} for various command
+related callback functions.  Some of these callback functions have a
+different type, but most use @code{assuan_handler_t}.
+@end deftp
 
-@deftypefun gpg_error_t assuan_register_command (@w{assuan_context_t @var{ctx}}, @w{const char *@var{cmd_string}}, @w{int (*@var{handler}) (assuan_context_t, char *)})
+@deftypefun gpg_error_t assuan_register_command (@w{assuan_context_t @var{ctx}}, @w{const char *@var{cmd_string}}, @w{assuan_handler_t @var{handler}}, @w{const char *@var{help_string}})
 
 This registers the command named @var{cmd_string} with the Assuan
 context @var{ctx}.  @var{handler} is the function called by Libassuan
@@ -1218,6 +1319,10 @@ already been registered when the context has been created: @code{NOP},
 @code{CANCEL}, @code{OPTION}, @code{BYE}, @code{AUTH}, @code{RESET}
 and @code{END}.  It is possible, but not recommended, to override
 these commands.
+
+@var{help_string} is a help string that is used for automatic
+documentation.  It should contain a usage line followed by an empty
+line and a complete description.
 @end deftypefun
 
 @deftypefun gpg_error_t assuan_register_post_cmd_notify (@w{assuan_context_t @var{ctx}}, @w{void (*@var{fnc})(assuan_context_t)}, @w{gpg_error_t @var{err}})
@@ -1228,19 +1333,19 @@ operation and not the one returned by the handler.  It may be used for
 command-related cleanup.
 @end deftypefun
 
-@deftypefun gpg_error_t assuan_register_bye_notify (@w{assuan_context_t @var{ctx}}, @w{void (*@var{fnc})(assuan_context_t)})
+@deftypefun gpg_error_t assuan_register_bye_notify (@w{assuan_context_t @var{ctx}}, @w{assuan_handler_t @var{handler}})
 
 Register function @var{fnc} with context @var{ctx} to be called right
 before the standard handler for the @code{BYE} command is being called.
 @end deftypefun
 
-@deftypefun gpg_error_t assuan_register_reset_notify (@w{assuan_context_t @var{ctx}}, @w{void (*@var{fnc})(assuan_context_t)})
+@deftypefun gpg_error_t assuan_register_reset_notify (@w{assuan_context_t @var{ctx}}, @w{assuan_handler_t @var{handler}})
 
 Register function @var{fnc} with context @var{ctx} to be called right
 before the standard handler for the @code{RESET} command is being called.
 @end deftypefun
 
-@deftypefun gpg_error_t assuan_register_cancel_notify (@w{assuan_context_t @var{ctx}}, @w{void (*@var{fnc})(assuan_context_t)})
+@deftypefun gpg_error_t assuan_register_cancel_notify (@w{assuan_context_t @var{ctx}}, @w{assuan_handler_t @var{handler}})
 
 Register function @var{fnc} with context @var{ctx} to be called right
 before the standard handler for the @code{RESET} command is being called.
@@ -1258,7 +1363,7 @@ code.
 
 @end deftypefun
 
-@deftypefun gpg_error_t assuan_register_input_notify (@w{assuan_context_t @var{ctx}}, @w{void (*@var{fnc})(assuan_context_t, const char*)})
+@deftypefun gpg_error_t assuan_register_input_notify (@w{assuan_context_t @var{ctx}}, @w{assuan_handler_t @var{handler}})
 
 Although the input function may be overridden with a custom handler, it
 is often more convenient to use the default handler and to know whether
@@ -1269,7 +1374,7 @@ set with the @code{INPUT} command may already be used.  That file
 descriptor is available by calling @code{assuan_get_input_fd}.
 @end deftypefun
 
-@deftypefun gpg_error_t assuan_register_output_notify (@w{assuan_context_t @var{ctx}}, @w{void (*@var{fnc})(assuan_context_t, const char*)})
+@deftypefun gpg_error_t assuan_register_output_notify (@w{assuan_context_t @var{ctx}}, @w{assuan_handler_t @var{handler}})
 
 Although the output function may be overridden with a custom handler, it
 is often more convenient to use the default handler and to know whether
@@ -1488,10 +1593,10 @@ For socket servers: You can not use @code{assuan_accept}, so you
 should just implement the bind/connect/listen/accept stage yourself.
 You can register the listen FD with your main event loop, accept the
 connection when it becomes ready, and finally call
-@code{assuan_init_socket_server} with the final argument being 2
-to create an Assuan context for this connection.  This way you can
-also handle multiple connections in parallel.  The reference
-implementation for this approach is DirMngr.
+@code{assuan_init_socket_server} with the final argument being
+@code{ASSUAN_SOCKET_SERVER_ACCEPTED} to create an Assuan context for this
+connection.  This way you can also handle multiple connections in
+parallel.  The reference implementation for this approach is DirMngr.
 
 For pipe servers: @code{assuan_init_pipe_server} creates an Assuan
 context valid for the pipe FDs.
@@ -1654,16 +1759,16 @@ executed or the command is not known.
 @end deftypefun
 
 
-@deftypefun int assuan_get_input_fd (@w{assuan_context_t @var{ctx}})
+@deftypefun assuan_fd_t assuan_get_input_fd (@w{assuan_context_t @var{ctx}})
 
 Return the file descriptor sent by the client using the last @code{INPUT}
-command.  Returns @code{-1} if no file descriptor is available.
+command.  Returns @code{ASSUAN_INVALID_FD} if no file descriptor is available.
 @end deftypefun
 
-@deftypefun int assuan_get_output_fd (@w{assuan_context_t @var{ctx}})
+@deftypefun assuan_fd_t assuan_get_output_fd (@w{assuan_context_t @var{ctx}})
 
 Return the file descriptor sent by the client using the last
-@code{OUTPUT} command.  Returns @code{-1} if no file descriptor is
+@code{OUTPUT} command.  Returns @code{ASSUAN_INVALID_FD} if no file descriptor is
 available.
 @end deftypefun
 
@@ -1700,13 +1805,14 @@ that error to humans.
 
 @deftypefun pid_t assuan_get_pid (@w{assuan_context_t @var{ctx}})
 
-This function returns the pid of the connected connected peer.  If that
-pid is not known @code{-1} is returned.  Note that it is not always
-possible to learn the pid of the other process. For a pipe based server
-the client knows it instantly and a mechanism is in place to let the
-server learn it.  For socket based servers the pid is only available on
-systems providing the @code{SO_PEERCRED} socket option @footnote{to our
-knowledge only the Linux kernel has this feature}.
+This function returns the pid of the connected connected peer.  If
+that pid is not known @code{ASSUAN_INVALID_PID} is returned.  Note
+that it is not always possible to learn the pid of the other
+process. For a pipe based server the client knows it instantly and a
+mechanism is in place to let the server learn it.  For socket based
+servers the pid is only available on systems providing the
+@code{SO_PEERCRED} socket option @footnote{to our knowledge only the
+Linux kernel has this feature}.
 @end deftypefun
 
 
