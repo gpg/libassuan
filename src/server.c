@@ -1,5 +1,5 @@
-/* assuan-connect.c - Establish a connection (client) 
-   Copyright (C) 2001, 2002, 2009 Free Software Foundation, Inc.
+/* server.c - Interfaces for all assuan servers.
+   Copyright (C) 2009 Free Software Foundation, Inc.
 
    This file is part of Assuan.
 
@@ -17,47 +17,53 @@
    License along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <signal.h>
-#include <unistd.h>
-#include <errno.h>
-#include <sys/types.h>
-#ifndef HAVE_W32_SYSTEM
-#include <sys/wait.h>
-#endif
-
 #include "assuan-defs.h"
+#include "debug.h"
 
-/* Disconnect and release the context CTX. */
+
+
+/* Disconnect and release the context CTX.  */
 void
-_assuan_disconnect (assuan_context_t ctx)
+_assuan_server_finish (assuan_context_t ctx)
 {
-  assuan_write_line (ctx, "BYE");
-  ctx->finish_handler (ctx);
-  ctx->finish_handler = NULL;
-  ctx->deinit_handler (ctx);
-  ctx->deinit_handler = NULL;
+  if (ctx->inbound.fd != ASSUAN_INVALID_FD)
+    {
+      _assuan_close (ctx, ctx->inbound.fd);
+      if (ctx->inbound.fd == ctx->outbound.fd)
+        ctx->outbound.fd = ASSUAN_INVALID_FD;
+      ctx->inbound.fd = ASSUAN_INVALID_FD;
+    }
+  if (ctx->outbound.fd != ASSUAN_INVALID_FD)
+    {
+      _assuan_close (ctx, ctx->outbound.fd);
+      ctx->outbound.fd = ASSUAN_INVALID_FD;
+    }
+  if (ctx->pid != ASSUAN_INVALID_PID && ctx->pid)
+    {
+      _assuan_waitpid (ctx, ctx->pid, ctx->flags.no_waitpid, NULL, 0);
+      ctx->pid = ASSUAN_INVALID_PID;
+    }
+
+  _assuan_uds_deinit (ctx);
 
   _assuan_inquire_release (ctx);
+}
+
+
+void
+_assuan_server_release (assuan_context_t ctx)
+{
+  _assuan_server_finish (ctx);
+
   _assuan_free (ctx, ctx->hello_line);
   ctx->hello_line = NULL;
   _assuan_free (ctx, ctx->okay_line);
   ctx->okay_line = NULL;
   _assuan_free (ctx, ctx->cmdtbl);
   ctx->cmdtbl = NULL;
-}
-
-
-/* Return the PID of the peer or -1 if not known. This function works
-   in some situations where assuan_get_ucred fails. */
-pid_t
-assuan_get_pid (assuan_context_t ctx)
-{
-  return (ctx && ctx->pid) ? ctx->pid : -1;
 }

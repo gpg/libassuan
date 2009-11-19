@@ -171,6 +171,16 @@ assuan_set_error (assuan_context_t ctx, gpg_error_t err, const char *text)
 }
 
 
+/* Return the PID of the peer or ASSUAN_INVALID_PID if not known.
+   This function works in some situations where assuan_get_ucred
+   fails. */
+pid_t
+assuan_get_pid (assuan_context_t ctx)
+{
+  return (ctx && ctx->pid) ? ctx->pid : ASSUAN_INVALID_PID;
+}
+
+
 /* Return user credentials.  For getting the pid of the peer the
    assuan_get_pid is usually better suited. */
 gpg_error_t

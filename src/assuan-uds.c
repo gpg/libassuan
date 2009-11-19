@@ -266,8 +266,6 @@ _assuan_uds_close_fds (assuan_context_t ctx)
 void
 _assuan_uds_deinit (assuan_context_t ctx)
 {
-  /* First call the finish_handler which should close descriptors etc. */
-  ctx->finish_handler (ctx);
   _assuan_uds_close_fds (ctx);
 }
 

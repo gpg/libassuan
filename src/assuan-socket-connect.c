@@ -52,29 +52,6 @@
 	               + strlen ((ptr)->sun_path))
 #endif
 
- 
-static void
-do_finish (assuan_context_t ctx)
-{
-  if (ctx->inbound.fd != ASSUAN_INVALID_FD)
-    {
-      _assuan_close (ctx, ctx->inbound.fd);
-      ctx->inbound.fd = ASSUAN_INVALID_FD;
-    }
-  if (ctx->outbound.fd != ASSUAN_INVALID_FD)
-    {
-      _assuan_close (ctx, ctx->outbound.fd);
-      ctx->outbound.fd = ASSUAN_INVALID_FD;
-    }
-}
-
-
-static void
-do_deinit (assuan_context_t ctx)
-{
-  do_finish (ctx);
-}
-
 
 /* Make a connection to the Unix domain socket NAME and return a new
    Assuan context in CTX.  SERVER_PID is currently not used but may
@@ -130,17 +107,16 @@ assuan_socket_connect (assuan_context_t ctx, const char *name,
       return _assuan_error (ctx, GPG_ERR_ASS_CONNECT_FAILED);
     }
  
-  ctx->engine.release = _assuan_disconnect;
+  ctx->engine.release = _assuan_client_release;
   ctx->engine.readfnc = _assuan_simple_read;
   ctx->engine.writefnc = _assuan_simple_write;
   ctx->engine.sendfd = NULL;
   ctx->engine.receivefd = NULL;
-  ctx->deinit_handler = ((flags&1))? _assuan_uds_deinit :  do_deinit;
-  ctx->finish_handler = do_finish;
+  ctx->finish_handler = _assuan_client_finish;
   ctx->inbound.fd = fd;
   ctx->outbound.fd = fd;
 
-  if (flags & 1)
+  if (flags & ASSUAN_SOCKET_CONNECT_FDPASSING)
     _assuan_init_uds_io (ctx);
 
   /* initial handshake */

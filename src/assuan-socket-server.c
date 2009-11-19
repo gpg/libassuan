@@ -61,7 +61,7 @@ accept_connection_bottom (assuan_context_t ctx)
 
          /* This overrides any already set PID if the function returns
             a valid one. */
-         if (cr.pid != (pid_t)-1 && cr.pid) 
+         if (cr.pid != ASSUAN_INVALID_PID && cr.pid) 
            ctx->pid = cr.pid;
       }
   }
@@ -107,37 +107,6 @@ accept_connection (assuan_context_t ctx)
 }
 
 
-static void
-finish_connection (assuan_context_t ctx)
-{
-  if (ctx->inbound.fd != ASSUAN_INVALID_FD)
-    {
-      _assuan_close (ctx, ctx->inbound.fd);
-      ctx->inbound.fd = ASSUAN_INVALID_FD;
-    }
-  if (ctx->outbound.fd != ASSUAN_INVALID_FD)
-    {
-      _assuan_close (ctx, ctx->outbound.fd);
-      ctx->outbound.fd = ASSUAN_INVALID_FD;
-    }
-}
-
-
-static void
-deinit_socket_server (assuan_context_t ctx)
-{
-  finish_connection (ctx);
-
-  _assuan_inquire_release (ctx);
-  _assuan_free (ctx, ctx->hello_line);
-  ctx->hello_line = NULL;
-  _assuan_free (ctx, ctx->okay_line);
-  ctx->okay_line = NULL;
-  _assuan_free (ctx, ctx->cmdtbl);
-  ctx->cmdtbl = NULL;
-}
-
-
 /* 
    Flag bits: 0 - use sendmsg/recvmsg to allow descriptor passing
               1 - FD has already been accepted.
@@ -152,13 +121,13 @@ assuan_init_socket_server (assuan_context_t ctx, assuan_fd_t fd,
   if (rc)
     return rc;
 
-  ctx->engine.release = deinit_socket_server;
+  ctx->engine.release = _assuan_server_release;
   ctx->engine.readfnc = _assuan_simple_read;
   ctx->engine.writefnc = _assuan_simple_write;
   ctx->engine.sendfd = NULL;
   ctx->engine.receivefd = NULL;
   ctx->is_server = 1;
-  if (flags & 2)
+  if (flags & ASSUAN_SOCKET_SERVER_ACCEPTED)
     ctx->pipe_mode = 1; /* We want a second accept to indicate EOF. */
   ctx->input_fd = ASSUAN_INVALID_FD;
   ctx->output_fd = ASSUAN_INVALID_FD;
@@ -166,7 +135,7 @@ assuan_init_socket_server (assuan_context_t ctx, assuan_fd_t fd,
   ctx->inbound.fd = ASSUAN_INVALID_FD;
   ctx->outbound.fd = ASSUAN_INVALID_FD;
 
-  if ((flags & 2))
+  if (flags & ASSUAN_SOCKET_SERVER_ACCEPTED)
     {
       ctx->listen_fd = ASSUAN_INVALID_FD;
       ctx->connected_fd = fd;
@@ -176,13 +145,12 @@ assuan_init_socket_server (assuan_context_t ctx, assuan_fd_t fd,
       ctx->listen_fd = fd;
       ctx->connected_fd = ASSUAN_INVALID_FD;
     }
-  ctx->deinit_handler = (flags & 1)? _assuan_uds_deinit:deinit_socket_server;
-  ctx->accept_handler = ((flags & 2)
+  ctx->accept_handler = ((flags & ASSUAN_SOCKET_SERVER_ACCEPTED)
                          ? accept_connection_bottom 
                          : accept_connection);
-  ctx->finish_handler = finish_connection;
+  ctx->finish_handler = _assuan_server_finish;
 
-  if ((flags & 1))
+  if (flags & ASSUAN_SOCKET_SERVER_FDPASSING)
     _assuan_init_uds_io (ctx);
 
   rc = _assuan_register_std_commands (ctx);

@@ -34,26 +34,6 @@
 #include "assuan-defs.h"
 
 
-static void
-deinit_pipe_server (assuan_context_t ctx)
-{
-  /* nothing to do for this simple server */
-}
-
-static gpg_error_t
-accept_connection (assuan_context_t ctx)
-{
-  /* This is a NOP for a pipe server */
-  return 0;
-}
-
-static void
-finish_connection (assuan_context_t ctx)
-{
-  /* This is a NOP for a pipe server */
-}
-
-
 /* Returns true if atoi(S) denotes a valid socket. */
 #ifndef HAVE_W32_SYSTEM
 static int
@@ -114,7 +94,7 @@ assuan_init_pipe_server (assuan_context_t ctx, int filedes[2])
 #endif
 
   ctx->is_server = 1;
-  ctx->engine.release = deinit_pipe_server;
+  ctx->engine.release = _assuan_server_release;
   ctx->engine.readfnc = _assuan_simple_read;
   ctx->engine.writefnc = _assuan_simple_write;
   ctx->engine.sendfd = NULL;
@@ -126,35 +106,13 @@ assuan_init_pipe_server (assuan_context_t ctx, int filedes[2])
     ctx->pid = (pid_t)ul;
   else
     ctx->pid = (pid_t)-1;
-  ctx->accept_handler = accept_connection;
-  ctx->finish_handler = finish_connection;
-  ctx->deinit_handler = deinit_pipe_server;
+  ctx->accept_handler = NULL;
+  ctx->finish_handler = _assuan_server_finish;
   ctx->inbound.fd = infd;
   ctx->outbound.fd = outfd;
 
   if (is_usd)
-    {
-      _assuan_init_uds_io (ctx);
-      ctx->deinit_handler = _assuan_uds_deinit;
-    }
+    _assuan_init_uds_io (ctx);
 
   return 0;
-}
-
-
-void
-_assuan_deinit_server (assuan_context_t ctx)
-{
-  /* We use this function pointer to avoid linking other server when
-     not needed but still allow for a generic deinit function.  */
-  ctx->deinit_handler (ctx);
-  ctx->deinit_handler = NULL;
- 
-  _assuan_inquire_release (ctx);
-  _assuan_free (ctx, ctx->hello_line);
-  ctx->hello_line = NULL;
-  _assuan_free (ctx, ctx->okay_line);
-  ctx->okay_line = NULL;
-  _assuan_free (ctx, ctx->cmdtbl);
-  ctx->cmdtbl = NULL;
 }

@@ -84,36 +84,6 @@ fix_signals (void)
 }
 
 
-static void
-do_finish (assuan_context_t ctx)
-{
-  if (ctx->inbound.fd != ASSUAN_INVALID_FD)
-    {
-      _assuan_close (ctx, ctx->inbound.fd);
-      if (ctx->inbound.fd == ctx->outbound.fd)
-        ctx->outbound.fd = ASSUAN_INVALID_FD;
-      ctx->inbound.fd = ASSUAN_INVALID_FD;
-    }
-  if (ctx->outbound.fd != ASSUAN_INVALID_FD)
-    {
-      _assuan_close (ctx, ctx->outbound.fd);
-      ctx->outbound.fd = ASSUAN_INVALID_FD;
-    }
-  if (ctx->pid != ASSUAN_INVALID_PID && ctx->pid)
-    {
-      _assuan_waitpid (ctx, ctx->pid, ctx->flags.no_waitpid, NULL, 0);
-      ctx->pid = ASSUAN_INVALID_PID;
-    }
-}
-
-
-static void
-do_deinit (assuan_context_t ctx)
-{
-  do_finish (ctx);
-}
-
-
 /* Helper for pipe_connect. */
 static gpg_error_t
 initial_handshake (assuan_context_t ctx)
@@ -220,16 +190,15 @@ pipe_connect (assuan_context_t ctx,
   _assuan_close (ctx, rp[1]);
   _assuan_close (ctx, wp[0]);
 
-  ctx->engine.release = _assuan_disconnect;
+  ctx->engine.release = _assuan_client_release;
   ctx->engine.readfnc = _assuan_simple_read;
   ctx->engine.writefnc = _assuan_simple_write;
   ctx->engine.sendfd = NULL;
   ctx->engine.receivefd = NULL;
+  ctx->finish_handler = _assuan_client_finish;
   ctx->pipe_mode = 1;
   ctx->inbound.fd  = rp[0];  /* Our inbound is read end of read pipe. */
   ctx->outbound.fd = wp[1];  /* Our outbound is write end of write pipe. */
-  ctx->deinit_handler = do_deinit;
-  ctx->finish_handler = do_finish;
   ctx->pid = pid;
 
   rc = initial_handshake (ctx);
@@ -370,11 +339,11 @@ socketpair_connect (assuan_context_t ctx,
 
   _assuan_close (ctx, fds[1]);
 
+  ctx->engine.release = _assuan_client_release;
+  ctx->finish_handler = _assuan_client_finish;
   ctx->pipe_mode = 1;
   ctx->inbound.fd  = fds[0]; 
   ctx->outbound.fd = fds[0]; 
-  ctx->deinit_handler = _assuan_uds_deinit;
-  ctx->finish_handler = do_finish;
   _assuan_init_uds_io (ctx);
   
   err = initial_handshake (ctx);
@@ -424,7 +393,7 @@ assuan_pipe_connect (assuan_context_t ctx,
   TRACE2 (ctx, ASSUAN_LOG_CTX, "assuan_pipe_connect_ext", ctx,
 	  "name=%s,flags=0x%x", name ? name : "(null)", flags);
 
-  if ((flags & 1))
+  if (flags & ASSUAN_PIPE_CONNECT_FDPASSING)
     {
 #ifdef HAVE_W32_SYSTEM
       return _assuan_error (ctx, GPG_ERR_NOT_IMPLEMENTED);

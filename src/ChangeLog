@@ -1,3 +1,30 @@
+2009-11-19  Marcus Brinkmann  <marcus@g10code.de>
+
+	* Makefile.am (common_sources): Remove assuan-connect.c and add
+	client.c.
+	* client.c, server.c: New file.
+	* assuan-defs.h (_assuan_disconnect): Remove.
+	(struct assuan_context_s): Remove members deinit_handler.
+	(_assuan_client_release, _assuan_client_finish)
+	(_assuan_server_finish, _assuan_server_release): New.
+	* assuan-socket-server.c (accept_connection_bottom): Use
+	ASSUAN_INVALID_PID, not -1.
+	(finish_connection, deinit_socket_server): Remove.
+	(assuan_init_socket_server): Use _assuan_server_release.
+	* assuan-socket-connect.c (do_finish, do_deinit): Remove.
+	(assuan_socket_connect): Use _assuan_client_release.
+	* assuan-pipe-connect.c (do_finish, do_deinit): Remove.
+	(pipe_connect): Update deinitialization.
+	(socketpair_connect): Here as well.
+	* context.c (assuan_get_pid): New from ...
+	* assuan-connect.c (assuan_get_pid): ... here.  Remove this file.
+	* assuan-pipe-server.c (_assuan_deinit_server, accept_connection)
+	(deinit_pipe_server, finish_connection): Remove unused function.
+	* assuan-listen.c (assuan_accept): Check CTX->accept_handler
+	before calling.  Initialize RC.  Do not call finish handler for
+	pipe server.
+	* assuan-uds.c (_assuan_uds_deinit): Do not call finish handler.
+
 2009-11-10  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan-defs.h (struct assuan_context_s): Rename

@@ -182,7 +182,6 @@ struct assuan_context_s
     int pendingfdscount;  /* Number of received descriptors. */
   } uds;
 
-  void (*deinit_handler)(assuan_context_t);
   gpg_error_t (*accept_handler)(assuan_context_t);
   void (*finish_handler)(assuan_context_t);
 
@@ -364,7 +363,12 @@ int putc_unlocked (int c, FILE *stream);
 #endif
 
 
-void _assuan_disconnect (assuan_context_t ctx);
+void _assuan_client_finish (assuan_context_t ctx);
+void _assuan_client_release (assuan_context_t ctx);
+
+void _assuan_server_finish (assuan_context_t ctx);
+void _assuan_server_release (assuan_context_t ctx);
+
 
 /* Encode the C formatted string SRC and return the malloc'ed result.  */
 char *_assuan_encode_c_string (assuan_context_t ctx, const char *src);

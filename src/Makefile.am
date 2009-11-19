@@ -36,17 +36,14 @@ endif
 
 common_sources = \
 	assuan-defs.h \
-	assuan.c \
-	context.c \
-	system.c \
-	debug.c debug.h \
-	conversion.c \
+	assuan.c context.c system.c \
+	debug.c debug.h conversion.c \
+	client.c server.c \
 	assuan-error.c \
 	assuan-buffer.c \
 	assuan-handler.c \
 	assuan-inquire.c \
 	assuan-listen.c \
-	assuan-connect.c \
 	assuan-client.c \
 	assuan-pipe-server.c \
 	assuan-socket-server.c \

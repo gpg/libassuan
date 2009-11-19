@@ -72,7 +72,7 @@ assuan_set_hello_line (assuan_context_t ctx, const char *line)
 gpg_error_t
 assuan_accept (assuan_context_t ctx)
 {
-  gpg_error_t rc;
+  gpg_error_t rc = 0;
   const char *p, *pend;
 
   if (!ctx)
@@ -80,11 +80,14 @@ assuan_accept (assuan_context_t ctx)
 
   if (ctx->pipe_mode > 1)
     return -1; /* second invocation for pipemode -> terminate */
-  ctx->finish_handler (ctx);
+  if (! ctx->pipe_mode)
+    {
+      ctx->finish_handler (ctx);
 
-  rc = ctx->accept_handler (ctx);
-  if (rc)
-    return rc;
+      rc = ctx->accept_handler (ctx);
+      if (rc)
+	return rc;
+    }
 
   /* Send the hello. */
   p = ctx->hello_line;
