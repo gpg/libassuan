@@ -1,3 +1,9 @@
+2009-11-24  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan.h (struct _assuan_peercred) [_WIN32]: Define dummy member
+	so struct is not empty.
+	* assuan-socket.c (assuan_sock_deinit): Set sock_ctx to NULL.
+
 2009-11-19  Marcus Brinkmann  <marcus@g10code.de>
 
 	* Makefile.am (common_sources): Remove assuan-connect.c and add

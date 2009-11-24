@@ -426,6 +426,7 @@ assuan_sock_deinit ()
 #endif
 
   assuan_release (sock_ctx);
+  sock_ctx = NULL;
 }
   
 

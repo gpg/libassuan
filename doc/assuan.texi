@@ -594,9 +594,6 @@ This is the function called by @sc{Assuan} to release memory for a context.
 This is a pointer to a @code{struct assuan_malloc_hooks}.
 @end deftp
 
-/* Get the default malloc hooks.  */
-assuan_malloc_hooks_t assuan_get_malloc_hooks (void);
-
 @deftypefun void assuan_set_malloc_hooks (@w{assuan_malloc_hooks_t @var{malloc_hooks}})
 This function sets the default allocation hooks for new contexts
 allocated with @code{assuan_new}.  You need to provide all three
@@ -808,7 +805,7 @@ Currently only one flag is defined:
 @table @code
 @item ASSUAN_NO_WAITPID 
 When using a pipe server, by default Libassuan will wait for the forked
-process to die in @code{assuan_disconnect}.  In certain cases this is
+process to die in @code{assuan_release}.  In certain cases this is
 not desirable.  By setting this flag, a call to @code{waitpid} will be
 suppressed and the caller is responsible to cleanup the child process.
 @item ASSUAN_CONFIDENTIAL
@@ -937,6 +934,10 @@ your convenience:
 @table @code
 @item ASSUAN_SYSTEM_PTH
 System hooks suitable for use with the GNU Pth library.
+@item ASSUAN_SYSTEM_PTH_IMPL
+The implementation of system hooks for use with the GNU Pth library.
+This must be invoked once somewhere in the application, and defines
+the structure that is referenced by @code{ASSUAN_SYSTEM_PTH}.
 @end table
 
 
@@ -1058,17 +1059,16 @@ additional resources not to be used by the child.
 
 @table @code
 @item ASSUAN_PIPE_CONNECT_FDPASSING
-If cleared a simple pipe based server is expected and the function
-behaves similar to @code{assuan_pipe_connect}.  
-
-If set a server based on full-duplex pipes is expected. Such pipes are
-usually created using the @code{socketpair} function.  It also enables
+If cleared a simple pipe based server is expected.  If set a server
+based on full-duplex pipes is expected.  Such pipes are usually
+created using the @code{socketpair} function.  It also enables
 features only available with such servers.
 
 @item ASSUAN_PIPE_CONNECT_DETACHED
 If set and there is a need to start the server it will be started as a
 background process.  This flag is useful under W32 systems, so that no
-new console is created and pops up a console window when starting the server
+new console is created and pops up a console window when starting the
+server.
 @end table
 @end deftypefun
 
@@ -1081,24 +1081,13 @@ Unix domain socket, the following function is used to connect to the server:
 Make a connection to the Unix domain socket @var{name} and return a
 new Assuan context at @var{ctx}.  @var{server_pid} is currently not
 used but may become handy in the future; if you don't know the
-server's process ID (PID), pass @code{-1}.  With @var{flags} set to
-@code{ASSUAN_SOCKET_CONNECT_FDPASSIN}, @code{sendmsg} and
-@code{recvmesg} are used for input and output and thereby enable the
-use of descriptor passing.
+server's process ID (PID), pass @code{ASSUAN_INVALID_PID}.  With
+@var{flags} set to @code{ASSUAN_SOCKET_CONNECT_FDPASSIN},
+@code{sendmsg} and @code{recvmesg} are used for input and output and
+thereby enable the use of descriptor passing.
 
 Connecting to a TCP server is not yet implemented.  Standard URL
 schemes are reserved for @var{name} specifying a TCP server.
-@end deftypefun
-
-Eventually, after using the Assuan connection, the resources should be
-deallocated:
-
-@deftypefun void assuan_disconnect (@w{assuan_context_t @var{ctx}})
-
-Close the connection described by the Assuan context @var{ctx} and
-release all resources.  This function also tries to send the BYE command
-to the server but won't fail on error.  It is explicitly allowed to pass
-@code{NULL} for @var{ctx}, in which case the function does nothing.
 @end deftypefun
 
 Now that we have a connection to the server, all work may be
@@ -1247,7 +1236,7 @@ variable.
 If a file descriptor has been passed, the assuan context gets
 initialized by the function:
 
-@deftypefun gpg_error_t assuan_init_socket_server (@w{assuan_context_t *@var{r_ctx}}, @w{int @var{fd}}, @w{unsigned int @var{flags}})
+@deftypefun gpg_error_t assuan_init_socket_server (@w{assuan_context_t *@var{r_ctx}}, @w{assuan_fd_t @var{fd}}, @w{unsigned int @var{flags}})
 
 The function takes the file descriptor @var{fd} which is expected to be
 associated with a socket and returns a new Assuan context at
@@ -1292,11 +1281,11 @@ the server.
     @{
       rc = assuan_register_command (ctx,
                                     command_table[i].name,
-                                    command_table[i].handler);
+                                    command_table[i].handler, NULL);
       if (rc)
         @{
           fprintf (stderr, "register failed: %s\n", gpg_strerror (rc));
-          assuan_deinit_server (ctx);
+          assuan_release (ctx);
           return;
         @}
     @} 
@@ -1419,7 +1408,7 @@ clients requests.
           continue;
         @}
     @}
-  assuan_deinit_server (ctx);
+  assuan_release (ctx);
 @}
 @end example
 
@@ -1447,17 +1436,6 @@ protocol handler responsible for reading the client commands and calling
 the appropriate handlers.  The function returns @code{0} on success or
 an error value if something went seriously wrong.  Error values from the
 individual command handlers, i.e. operational error, are not seen here.
-@end deftypefun
-
-
-@noindent
-After the loop has terminated, the Assuan context needs to be released:
-
-@deftypefun void assuan_deinit_server (@w{assuan_context_t @var{ctx}})
-
-Releases the resources described by the Assuan context @var{ctx} It is
-explicitly allowed to pass @code{NULL} for @var{ctx}, in which case the
-function does nothing.
 @end deftypefun
 
 @noindent
@@ -1558,8 +1536,7 @@ assuan_read_line().
 You should close and unregister the bulk data FDs when you wrote all
 data (for outbound FDs) or receive an EOF (for inbound FDs).  When you
 receive an ERR from the server, or an OK for the final operation, you
-can unregister the inbound status FD and call @code{assuan_disconnect}
-to close it.
+can unregister the inbound status FD and call @code{assuan_release}.
 
 @item
 As noted above, all send operations on the outbound status FD are done
@@ -1733,7 +1710,7 @@ current handler.
 @end deftypefun
 
 
-@deftypefun gpg_error_t assuan_command_parse_fd (@w{assuan_context_t @var{ctx}}, @w{char *@var{line}}, @w{int *@var{rfd}})
+@deftypefun gpg_error_t assuan_command_parse_fd (@w{assuan_context_t @var{ctx}}, @w{char *@var{line}}, @w{assuan_fd_t *@var{rfd}})
 
 This is the core of the default @code{INPUT} and @code{OUTPUT}
 handler.  It may be used in custom commands as well to negotiate a
@@ -1888,23 +1865,29 @@ socket types.  The actual implementation is based on local TCP sockets
 and fully transparent for the client.  Server code needs to utilize two
 extra functions to check the permissions.
 
+@deftypefun gpg_error_t assuan_sock_init (void)
+Initialize the socket wrappers.  Must be called once at startup if any
+of the socket wrapper functions are used.
+@end deftypefun
+
+@deftypefun gpg_error_t assuan_sock_init (void)
+Deinitialize the socket wrappers.
+@end deftypefun
 
 @deftypefun int assuan_sock_close (@w{assuan_fd_t @var{fd}})
-
 Wrapper for close which does a closesocket on Windows if needed.
 @end deftypefun
 
 @deftypefun assuan_fd_t assuan_sock_new (@w{int @var{domain}}, @w{int @var{type}}, @w{int @var{proto}});
-
 Wrapper around socket.
 @end deftypefun
 
 @deftypefun int assuan_sock_connect (@w{assuan_fd_t @var{sockfd}}, @
-         @w{struct sockaddr *@var{addr}},  @
+         @w{struct sockaddr *@var{addr}}, @
          @w{int @var{addrlen}})
 
 Wrapper around connect.  For Unix domain sockets under Windows this
-function also does a write immediatley after the the connect to send the
+function also does a write immediately after the the connect to send the
 nonce as read from the socket's file.
 @end deftypefun
 

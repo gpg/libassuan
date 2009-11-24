@@ -1,3 +1,8 @@
+2009-11-24  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan.texi: Remove assuan_disconnect, assuan_deinit_server.
+	Many smaller API fixes.
+
 2009-11-10  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan.texi: Various fixes and updates for the new interface.

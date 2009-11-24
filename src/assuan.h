@@ -337,7 +337,7 @@ const char *assuan_get_command_name (assuan_context_t ctx);
 FILE *assuan_get_data_fp (assuan_context_t ctx);
 gpg_error_t assuan_set_okay_line (assuan_context_t ctx, const char *line);
 gpg_error_t assuan_write_status (assuan_context_t ctx,
-                                    const char *keyword, const char *text);
+				 const char *keyword, const char *text);
 
 /* Negotiate a file descriptor.  If LINE contains "FD=N", returns N
    assuming a local file descriptor.  If LINE contains "FD" reads a
@@ -388,7 +388,10 @@ gpg_error_t assuan_socket_connect (assuan_context_t ctx, const char *name,
 pid_t assuan_get_pid (assuan_context_t ctx);
 struct _assuan_peercred
 {
-#ifndef _WIN32
+#ifdef _WIN32
+  /* Empty struct not allowed on some compilers.  */
+  unsigned int _dummy;
+#else
   pid_t pid;
   uid_t uid;
   gid_t gid;
@@ -416,17 +419,17 @@ gpg_error_t assuan_inquire (assuan_context_t ctx, const char *keyword,
                                unsigned char **r_buffer, size_t *r_length,
                                size_t maxlen);
 gpg_error_t assuan_inquire_ext (assuan_context_t ctx, const char *keyword,
-				   size_t maxlen,
-				   gpg_error_t (*cb) (void *cb_data,
-						      gpg_error_t rc,
-						      unsigned char *buf,
-						      size_t buf_len),
-				   void *cb_data);
+				size_t maxlen,
+				gpg_error_t (*cb) (void *cb_data,
+						   gpg_error_t rc,
+						   unsigned char *buf,
+						   size_t buf_len),
+				void *cb_data);
 /*-- assuan-buffer.c --*/
 gpg_error_t assuan_read_line (assuan_context_t ctx,
                               char **line, size_t *linelen);
 int assuan_pending_line (assuan_context_t ctx);
-gpg_error_t assuan_write_line (assuan_context_t ctx, const char *line );
+gpg_error_t assuan_write_line (assuan_context_t ctx, const char *line);
 gpg_error_t assuan_send_data (assuan_context_t ctx,
                               const void *buffer, size_t length);
 
@@ -438,7 +441,8 @@ gpg_error_t assuan_receivefd (assuan_context_t ctx, assuan_fd_t *fd);
 
 
 /*-- assuan-util.c --*/
-gpg_error_t assuan_set_error (assuan_context_t ctx, gpg_error_t err, const char *text);
+gpg_error_t assuan_set_error (assuan_context_t ctx, gpg_error_t err,
+			      const char *text);
 
 
 

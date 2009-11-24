@@ -48,6 +48,8 @@ is_valid_socket (const char *s)
 #endif /*!HAVE_W32_SYSTEM*/
 
 
+/* This actually is a int file descriptor (and not assuan_fd_t) as
+   _get_osfhandle is called on W32 systems.  */
 gpg_error_t
 assuan_init_pipe_server (assuan_context_t ctx, int filedes[2])
 {
