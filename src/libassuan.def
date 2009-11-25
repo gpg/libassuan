@@ -92,6 +92,7 @@ EXPORTS
     __assuan_socketpair			@71
     __assuan_spawn			@72
     __assuan_usleep			@73
+    assuan_fdopen			@74
 
 ; END
 

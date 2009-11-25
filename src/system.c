@@ -44,6 +44,27 @@
 #endif
 
 
+assuan_fd_t
+assuan_fdopen (int fd)
+{
+#ifdef HAVE_W32_SYSTEM
+  assuan_fd_t ifd = (assuan_fd_t) _get_osfhandle (fd);
+  assuan_fd_t ofd;
+
+  if (! DuplicateHandle(GetCurrentProcess(), hfd, 
+			GetCurrentProcess(), &ofd, 0,
+			TRUE, DUPLICATE_SAME_ACCESS))
+    {
+      errno = EIO;
+      return ASSUAN_INVALID_FD:
+    }
+  return ofd;
+#else
+  return dup (fd);
+#endif
+}
+
+
 /* Manage memory specific to a context.  */
 
 void *

@@ -55,6 +55,8 @@ assuan_pipe_connect            CHANGED: Take ctx arg instead of pointer to ctx.
 assuan_pipe_connect_ext	       REMOVED
 assuan_init_pipe_server        CHANGED: Take ctx arg instead of pointer to ctx.
                                CHANGED: Swallows fds (are closed at end).
+			       CHANGED: Take assuan_fd_t.
+assuan_fdopen		       NEW
 assuan_set_io_hooks	       REMOVED: Will come back in expanded form.
 assuan_io_hooks_t  	       REMOVED: Will come back in expanded form.
 assuan_io_monitor_t	       CHANGED: Add a hook data argument.

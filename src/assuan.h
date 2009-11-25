@@ -91,6 +91,8 @@ typedef int assuan_fd_t;
 #define ASSUAN_INVALID_PID ((pid_t) -1)
 #endif
 
+assuan_fd_t assuan_fdopen (int fd);
+
 
 /* Assuan features an emulation of Unix domain sockets based on a
    local TCP connections.  To implement access permissions based on
@@ -358,7 +360,8 @@ gpg_error_t assuan_close_output_fd (assuan_context_t ctx);
 
 
 /*-- assuan-pipe-server.c --*/
-gpg_error_t assuan_init_pipe_server (assuan_context_t ctx, int filedes[2]);
+gpg_error_t assuan_init_pipe_server (assuan_context_t ctx,
+				     assuan_fd_t filedes[2]);
 
 /*-- assuan-socket-server.c --*/
 #define ASSUAN_SOCKET_SERVER_FDPASSING 1

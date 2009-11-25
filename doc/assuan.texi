@@ -556,13 +556,21 @@ used to specify invalid Assuan file descriptors.
 @end deftp
 
 
+@deftypefun assuan_fd_t assuan_fdopen (@w{int @var{fd}})
+Create an assuan file descriptor from a POSIX (libc) file descriptor
+@var{fd}.  On Unix, this is equivalent to @code{dup}, while on Windows
+this will retrieve the underlying system handle with
+@code{_get_osfhandle} and duplicate that.
+@end deftypefun
+
+
 @node Initializing the library
 @section Initializing the library
 
 In general the library requires no initialization.  There are however
 some initialization hooks provided which are often useful.  These
 should be called as early as possible and in a multi-threaded
-application before a second thread is created. 
+application before a second thread is created.
 
 These functions initialize default values that are used at context
 creation with @code{assuan_new}.  As there can only be one default,
@@ -1194,10 +1202,10 @@ command_handler (int fd)
 
   if (fd == -1)
     @{
-      int filedes[2];
+      assuan_fd_t filedes[2];
 
-      filedes[0] = 0;
-      filedes[1] = 1;
+      filedes[0] = assuan_fd_from_posix (0);
+      filedes[1] = assuan_fd_from_posix (1);
       rc = assuan_init_pipe_server (&ctx, filedes);
     @}
   else
@@ -1216,7 +1224,7 @@ code assumes that the server's @code{stdin} and @code{stdout} file
 handles are connected to a pipe.  The initialization is thus done
 using the function:
 
-@deftypefun gpg_error_t assuan_init_pipe_server (@w{assuan_context_t *@var{r_ctx}}, @w{int @var{filedes}[2]})
+@deftypefun gpg_error_t assuan_init_pipe_server (@w{assuan_context_t *@var{r_ctx}}, @w{assuan_fd_t @var{filedes}[2]})
 
 The function takes the two file descriptors from @var{filedes} and
 returns a new Assuan context at @var{r_ctx}.  As usual, a return value

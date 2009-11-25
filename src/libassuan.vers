@@ -29,6 +29,7 @@ LIBASSUAN_1.0 {
     assuan_command_parse_fd;
     assuan_ctx_set_system_hooks;
     assuan_end_confidential;
+    assuan_fdopen;
     assuan_get_active_fds;
     assuan_get_assuan_log_prefix;
     assuan_get_command_name;

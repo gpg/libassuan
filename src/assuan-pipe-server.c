@@ -51,7 +51,7 @@ is_valid_socket (const char *s)
 /* This actually is a int file descriptor (and not assuan_fd_t) as
    _get_osfhandle is called on W32 systems.  */
 gpg_error_t
-assuan_init_pipe_server (assuan_context_t ctx, int filedes[2])
+assuan_init_pipe_server (assuan_context_t ctx, assuan_fd_t filedes[2])
 {
   const char *s;
   unsigned long ul;
@@ -65,13 +65,8 @@ assuan_init_pipe_server (assuan_context_t ctx, int filedes[2])
     return rc;
 
 #ifdef HAVE_W32_SYSTEM
-  /* MS Windows has so many different types of handle that one needs
-     to tranlsate them at many place forth and back.  Also make sure
-     that the file descriptors are in binary mode.  */
-  setmode (filedes[0], O_BINARY);
-  setmode (filedes[1], O_BINARY);
-  infd  = (void*)_get_osfhandle (filedes[0]);
-  outfd = (void*)_get_osfhandle (filedes[1]);
+  infd  = filedes[0];
+  outfd = filedes[1];
 #else
   s = getenv ("_assuan_connection_fd");
   if (s && *s && is_valid_socket (s))
