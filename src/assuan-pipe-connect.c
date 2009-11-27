@@ -196,7 +196,8 @@ pipe_connect (assuan_context_t ctx,
   ctx->engine.sendfd = NULL;
   ctx->engine.receivefd = NULL;
   ctx->finish_handler = _assuan_client_finish;
-  ctx->pipe_mode = 1;
+  ctx->max_accepts = 1;
+  ctx->accept_handler = NULL;
   ctx->inbound.fd  = rp[0];  /* Our inbound is read end of read pipe. */
   ctx->outbound.fd = wp[1];  /* Our outbound is write end of write pipe. */
   ctx->pid = pid;
@@ -341,7 +342,7 @@ socketpair_connect (assuan_context_t ctx,
 
   ctx->engine.release = _assuan_client_release;
   ctx->finish_handler = _assuan_client_finish;
-  ctx->pipe_mode = 1;
+  ctx->max_accepts = 1;
   ctx->inbound.fd  = fds[0]; 
   ctx->outbound.fd = fds[0]; 
   _assuan_init_uds_io (ctx);
@@ -390,8 +391,8 @@ assuan_pipe_connect (assuan_context_t ctx,
 		     void (*atfork) (void *opaque, int reserved),
 		     void *atforkvalue, unsigned int flags)
 {
-  TRACE2 (ctx, ASSUAN_LOG_CTX, "assuan_pipe_connect_ext", ctx,
-	  "name=%s,flags=0x%x", name ? name : "(null)", flags);
+  TRACE2 (ctx, ASSUAN_LOG_CTX, "assuan_pipe_connect", ctx,
+	  "name=%s, flags=0x%x", name ? name : "(null)", flags);
 
   if (flags & ASSUAN_PIPE_CONNECT_FDPASSING)
     {

@@ -32,7 +32,7 @@
 #endif
 
 #include "assuan-defs.h"
-
+#include "debug.h"
 
 /* Returns true if atoi(S) denotes a valid socket. */
 #ifndef HAVE_W32_SYSTEM
@@ -59,10 +59,12 @@ assuan_init_pipe_server (assuan_context_t ctx, assuan_fd_t filedes[2])
   assuan_fd_t infd = ASSUAN_INVALID_FD;
   assuan_fd_t outfd = ASSUAN_INVALID_FD;
   int is_usd = 0;
+  TRACE_BEG2 (ctx, ASSUAN_LOG_CTX, "assuan_init_pipe_server", ctx,
+	      "fd[0]=0x%x, fd[1]=0x%x", filedes[0], filedes[1]);
 
   rc = _assuan_register_std_commands (ctx);
   if (rc)
-    return rc;
+    return TRACE_ERR (rc);
 
 #ifdef HAVE_W32_SYSTEM
   infd  = filedes[0];
@@ -87,7 +89,10 @@ assuan_init_pipe_server (assuan_context_t ctx, assuan_fd_t filedes[2])
       outfd = filedes[1];
     }
   else
-    return _assuan_error (ctx, GPG_ERR_ASS_SERVER_START);
+    {
+      rc = _assuan_error (ctx, GPG_ERR_ASS_SERVER_START);
+      return TRACE_ERR (rc);
+    }
 #endif
 
   ctx->is_server = 1;
@@ -96,7 +101,7 @@ assuan_init_pipe_server (assuan_context_t ctx, assuan_fd_t filedes[2])
   ctx->engine.writefnc = _assuan_simple_write;
   ctx->engine.sendfd = NULL;
   ctx->engine.receivefd = NULL;
-  ctx->pipe_mode = 1;
+  ctx->max_accepts = 1;
 
   s = getenv ("_assuan_pipe_connect_pid");
   if (s && (ul=strtoul (s, NULL, 10)) && ul)
@@ -111,5 +116,5 @@ assuan_init_pipe_server (assuan_context_t ctx, assuan_fd_t filedes[2])
   if (is_usd)
     _assuan_init_uds_io (ctx);
 
-  return 0;
+  return TRACE_SUC();
 }

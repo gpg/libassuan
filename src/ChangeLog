@@ -1,3 +1,21 @@
+2009-11-27  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan.h (assuan_set_assuan_log_stream): Add prototype.
+	* libassuan.def, libassuan.vers: Add back
+	assuan_set_assuan_log_stream.
+	* assuan-logging.c (assuan_set_assuan_log_stream): Add back.
+	* context.c (assuan_get_pointer): Don't output debug info here.
+	(assuan_get_peercred, assuan_get_pid): But do here.
+	* system.c: Improve debug output.
+	* assuan-defs.h (struct assuan_context_s): Rename pipe_mode to
+	max_accepts.
+	* assuan-listen.c (assuan_accept): Rework max accepts logic.
+	* assuan-socket-server.c (assuan_init_socket_server),
+	assuan-socket-connect.c (assuan_socket_connect),
+	assuan-pipe-server.c (assuan_init_pipe_server),
+	assuan-pipe-connect.c (socketpair_connect): Add debug output, set
+	max_accepts instead of pipe_mode.
+
 2009-11-25  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan.h (assuan_init_pipe_server): Change type of filedes to

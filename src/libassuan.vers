@@ -70,6 +70,7 @@ LIBASSUAN_1.0 {
     assuan_send_data;
     assuan_sendfd;
     assuan_set_assuan_log_prefix;
+    assuan_set_assuan_log_stream;
     assuan_set_error;
     assuan_set_flag;
     assuan_set_gpg_err_source;

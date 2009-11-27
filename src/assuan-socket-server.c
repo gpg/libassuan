@@ -38,7 +38,7 @@
 # include <sys/un.h>
 #endif
 
-
+#include "debug.h"
 #include "assuan-defs.h"
 
 static gpg_error_t
@@ -116,10 +116,12 @@ assuan_init_socket_server (assuan_context_t ctx, assuan_fd_t fd,
 			   unsigned int flags)
 {
   gpg_error_t rc;
-
+  TRACE_BEG2 (ctx, ASSUAN_LOG_CTX, "assuan_init_socket_server", ctx,
+	      "fd=0x%x, flags=0x%x", fd, flags);
+  
   rc = _assuan_register_std_commands (ctx);
   if (rc)
-    return rc;
+    return TRACE_ERR (rc);
 
   ctx->engine.release = _assuan_server_release;
   ctx->engine.readfnc = _assuan_simple_read;
@@ -128,7 +130,10 @@ assuan_init_socket_server (assuan_context_t ctx, assuan_fd_t fd,
   ctx->engine.receivefd = NULL;
   ctx->is_server = 1;
   if (flags & ASSUAN_SOCKET_SERVER_ACCEPTED)
-    ctx->pipe_mode = 1; /* We want a second accept to indicate EOF. */
+    /* We want a second accept to indicate EOF. */
+    ctx->max_accepts = 1;
+  else
+    ctx->max_accepts = -1;
   ctx->input_fd = ASSUAN_INVALID_FD;
   ctx->output_fd = ASSUAN_INVALID_FD;
 
@@ -156,7 +161,7 @@ assuan_init_socket_server (assuan_context_t ctx, assuan_fd_t fd,
   rc = _assuan_register_std_commands (ctx);
   if (rc)
     _assuan_reset (ctx);
-  return rc;
+  return TRACE_ERR (rc);
 }
 
 

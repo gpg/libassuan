@@ -45,6 +45,16 @@ static char prefix_buffer[80];
 static int full_logging;
 
 
+static FILE *_assuan_log;
+
+void
+assuan_set_assuan_log_stream (FILE *fp)
+{
+  _assuan_log = fp;
+  full_logging = !!getenv ("ASSUAN_FULL_LOGGING");
+}
+
+
 /* Set the per context log stream.  Also enable the default log stream
    if it has not been set.  */
 void
@@ -96,7 +106,7 @@ _assuan_log_handler (assuan_context_t ctx, void *hook, unsigned int cat,
   if (msg == NULL)
     return 1;
 
-  fp = ctx->log_fp;
+  fp = ctx->log_fp ? ctx->log_fp : _assuan_log;
   if (!fp)
     return 0;
 

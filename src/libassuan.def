@@ -64,35 +64,36 @@ EXPORTS
     assuan_send_data			@43
     assuan_sendfd			@44
     assuan_set_assuan_log_prefix	@45
-    assuan_set_error			@46
-    assuan_set_flag			@47
-    assuan_set_gpg_err_source           @48
-    assuan_set_hello_line		@49
-    assuan_set_io_monitor		@50
-    assuan_set_log_cb                   @51
-    assuan_set_log_stream		@52
-    assuan_set_malloc_hooks		@53
-    assuan_set_okay_line		@54
-    assuan_set_pointer			@55
-    assuan_set_system_hooks		@56
-    assuan_sock_bind			@57
-    assuan_sock_check_nonce		@58
-    assuan_sock_close			@59
-    assuan_sock_connect			@60
-    assuan_sock_deinit			@61
-    assuan_sock_get_nonce		@62
-    assuan_sock_init			@63
-    assuan_sock_new			@64
-    assuan_socket_connect		@65
-    assuan_transact			@66
-    assuan_write_line			@67
-    assuan_write_status			@68
-    __assuan_close			@69
-    __assuan_pipe			@70
-    __assuan_socketpair			@71
-    __assuan_spawn			@72
-    __assuan_usleep			@73
-    assuan_fdopen			@74
+    assuan_set_assuan_log_stream	@46
+    assuan_set_error			@47
+    assuan_set_flag			@48
+    assuan_set_gpg_err_source           @49
+    assuan_set_hello_line		@50
+    assuan_set_io_monitor		@51
+    assuan_set_log_cb                   @52
+    assuan_set_log_stream		@53
+    assuan_set_malloc_hooks		@54
+    assuan_set_okay_line		@55
+    assuan_set_pointer			@56
+    assuan_set_system_hooks		@57
+    assuan_sock_bind			@58
+    assuan_sock_check_nonce		@59
+    assuan_sock_close			@60
+    assuan_sock_connect			@61
+    assuan_sock_deinit			@62
+    assuan_sock_get_nonce		@63
+    assuan_sock_init			@64
+    assuan_sock_new			@65
+    assuan_socket_connect		@66
+    assuan_transact			@67
+    assuan_write_line			@68
+    assuan_write_status			@69
+    __assuan_close			@70
+    __assuan_pipe			@71
+    __assuan_socketpair			@72
+    __assuan_spawn			@73
+    __assuan_usleep			@74
+    assuan_fdopen			@75
 
 ; END
 

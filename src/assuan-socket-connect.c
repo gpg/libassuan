@@ -67,6 +67,8 @@ assuan_socket_connect (assuan_context_t ctx, const char *name,
   size_t len;
   const char *s;
 
+  TRACE2 (ctx, ASSUAN_LOG_CTX, "assuan_socket_connect", ctx,
+	  "name=%s, flags=0x%x", name ? name : "(null)", flags);
 
   if (!ctx || !name)
     return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
@@ -115,6 +117,7 @@ assuan_socket_connect (assuan_context_t ctx, const char *name,
   ctx->finish_handler = _assuan_client_finish;
   ctx->inbound.fd = fd;
   ctx->outbound.fd = fd;
+  ctx->max_accepts = -1;
 
   if (flags & ASSUAN_SOCKET_CONNECT_FDPASSING)
     _assuan_init_uds_io (ctx);

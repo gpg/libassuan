@@ -298,6 +298,9 @@ void assuan_set_assuan_log_prefix (const char *text);
    string, i.e. ""  */
 const char *assuan_get_assuan_log_prefix (void);
 
+/* Global default log stream.  */
+void assuan_set_assuan_log_stream (FILE *fp);
+
 /* Set the per context log stream for the default log handler.  */
 void assuan_set_log_stream (assuan_context_t ctx, FILE *fp);
 

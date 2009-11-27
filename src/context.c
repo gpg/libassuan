@@ -42,8 +42,11 @@ assuan_set_pointer (assuan_context_t ctx, void *user_pointer)
 void *
 assuan_get_pointer (assuan_context_t ctx)
 {
+#if 0
+  /* This is called often.  */
   TRACE1 (ctx, ASSUAN_LOG_CTX, "assuan_get_pointer", ctx,
 	  "ctx->user_pointer=%p", ctx ? ctx->user_pointer : NULL);
+#endif
 
   if (! ctx)
     return NULL;
@@ -177,6 +180,9 @@ assuan_set_error (assuan_context_t ctx, gpg_error_t err, const char *text)
 pid_t
 assuan_get_pid (assuan_context_t ctx)
 {
+  TRACE1 (ctx, ASSUAN_LOG_CTX, "assuan_get_pid", ctx,
+	  "pid=%i", ctx ? ctx->pid : -1);
+
   return (ctx && ctx->pid) ? ctx->pid : ASSUAN_INVALID_PID;
 }
 
@@ -186,6 +192,8 @@ assuan_get_pid (assuan_context_t ctx)
 gpg_error_t
 assuan_get_peercred (assuan_context_t ctx, assuan_peercred_t *peercred)
 {
+  TRACE (ctx, ASSUAN_LOG_CTX, "assuan_get_peercred", ctx);
+
   if (!ctx)
     return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
   if (!ctx->peercred_valid)

@@ -164,8 +164,8 @@ struct assuan_context_s
     } data;
   } outbound;
 
-  int pipe_mode;  /* We are in pipe mode, i.e. we can handle just one
-                     connection and must terminate then. */
+  int max_accepts;  /* If we can not handle more than one connection,
+		       set this to 1, otherwise to -1.  */
   pid_t pid;	  /* The pid of the peer. */
   assuan_fd_t listen_fd;  /* The fd we are listening on (used by
                              socket servers) */

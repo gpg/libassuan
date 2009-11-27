@@ -78,12 +78,16 @@ assuan_accept (assuan_context_t ctx)
   if (!ctx)
     return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
 
-  if (ctx->pipe_mode > 1)
-    return -1; /* second invocation for pipemode -> terminate */
-  if (! ctx->pipe_mode)
+  if (ctx->max_accepts != -1)
     {
+      if (ctx->max_accepts-- == 0)
+	return -1; /* second invocation for pipemode -> terminate */
+    }
+  if (ctx->accept_handler)
+    {
+      /* FIXME: This should be superfluous, if everything else is
+	 correct.  */
       ctx->finish_handler (ctx);
-
       rc = ctx->accept_handler (ctx);
       if (rc)
 	return rc;
@@ -111,10 +115,7 @@ assuan_accept (assuan_context_t ctx)
     rc = assuan_write_line (ctx, "OK Pleased to meet you");
   if (rc)
     return rc;
-  
-  if (ctx->pipe_mode)
-    ctx->pipe_mode = 2;
-  
+    
   return 0;
 }
 

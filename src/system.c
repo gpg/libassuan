@@ -192,9 +192,6 @@ __assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx)
   HANDLE wh;
   HANDLE th;
   SECURITY_ATTRIBUTES sec_attr;
-  TRACE_BEG2 (ctx, ASSUAN_LOG_SYSIO, "__assuan_pipe", ctx,
-	      "inherit_idx=%i (Assuan uses it for %s)",
-	      inherit_idx, inherit_idx ? "reading" : "writing");
 
   memset (&sec_attr, 0, sizeof (sec_attr));
   sec_attr.nLength = sizeof (sec_attr);
@@ -202,20 +199,22 @@ __assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx)
 
   if (! CreatePipe (&rh, &wh, &sec_attr, 0))
     {
-      TRACE_LOG1 ("CreatePipe failed: %s", _assuan_w32_strerror (ctx, -1));
+      TRACE1 (ctx, ASSUAN_LOG_SYSIO, "__assuan_pipe", ctx,
+	      "CreatePipe failed: %s", _assuan_w32_strerror (ctx, -1));
       errno = EIO;
-      return TRACE_SYSRES (-1);
+      return -1;
     }
 
   if (! DuplicateHandle (GetCurrentProcess(), (inherit_idx == 0) ? rh : wh,
 			 GetCurrentProcess(), &th, 0,
 			 TRUE, DUPLICATE_SAME_ACCESS ))
     {
-      TRACE_LOG1 ("DuplicateHandle failed: %s", _assuan_w32_strerror (ctx, -1));
+      TRACE1 (ctx, ASSUAN_LOG_SYSIO, "__assuan_pipe", ctx,
+	      "DuplicateHandle failed: %s", _assuan_w32_strerror (ctx, -1));
       CloseHandle (rh);
       CloseHandle (wh);
       errno = EIO;
-      return TRACE_SYSRES (-1);
+      return -1;
     }
   if (inherit_idx == 0)
     {
@@ -231,7 +230,7 @@ __assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx)
   fd[0] = rh;
   fd[1] = wh;
 
-  return TRACE_SUC ();
+  return 0;
 #else
   return pipe (fd);
 #endif
@@ -242,7 +241,16 @@ __assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx)
 int
 _assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx)
 {
-  return (ctx->system.pipe) (ctx, fd, inherit_idx);
+  int err;
+  TRACE_BEG2 (ctx, ASSUAN_LOG_SYSIO, "_assuan_pipe", ctx,
+	      "inherit_idx=%i (Assuan uses it for %s)",
+	      inherit_idx, inherit_idx ? "reading" : "writing");
+
+  err = (ctx->system.pipe) (ctx, fd, inherit_idx);
+  if (err)
+    return TRACE_SYSRES (err);
+
+  return TRACE_SUC2 ("read=0x%x, write=0x%x", fd[0], fd[1]); 
 }
 
 
@@ -341,7 +349,15 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
 ssize_t
 _assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
 {
+#if 0
+  ssize_t res;
+  TRACE_BEG3 (ctx, ASSUAN_LOG_SYSIO, "_assuan_read", ctx,
+	      "fd=0x%x, buffer=%p, size=%i", fd, buffer, size);
+  res = (ctx->system.read) (ctx, fd, buffer, size);
+  return TRACE_SYSRES (res);
+#else
   return (ctx->system.read) (ctx, fd, buffer, size);
+#endif
 }
 
 
@@ -390,7 +406,15 @@ ssize_t
 _assuan_write (assuan_context_t ctx, assuan_fd_t fd, const void *buffer,
 	       size_t size)
 {
+#if 0
+  ssize_t res;
+  TRACE_BEG3 (ctx, ASSUAN_LOG_SYSIO, "_assuan_write", ctx,
+	      "fd=0x%x, buffer=%p, size=%i", fd, buffer, size);
+  res = (ctx->system.write) (ctx, fd, buffer, size);
+  return TRACE_SYSRES (res);
+#else
   return (ctx->system.write) (ctx, fd, buffer, size);
+#endif
 }
 
 
