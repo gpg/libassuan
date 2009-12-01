@@ -59,9 +59,12 @@ assuan_init_pipe_server (assuan_context_t ctx, assuan_fd_t filedes[2])
   assuan_fd_t infd = ASSUAN_INVALID_FD;
   assuan_fd_t outfd = ASSUAN_INVALID_FD;
   int is_usd = 0;
-  TRACE_BEG2 (ctx, ASSUAN_LOG_CTX, "assuan_init_pipe_server", ctx,
-	      "fd[0]=0x%x, fd[1]=0x%x", filedes[0], filedes[1]);
-
+  TRACE_BEG (ctx, ASSUAN_LOG_CTX, "assuan_init_pipe_server", ctx);
+  if (filedes)
+    {
+      TRACE_LOG2 ("fd[0]=0x%x, fd[1]=0x%x", filedes[0], filedes[1]);
+    }
+  
   rc = _assuan_register_std_commands (ctx);
   if (rc)
     return TRACE_ERR (rc);

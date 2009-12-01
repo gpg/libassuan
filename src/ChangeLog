@@ -1,3 +1,7 @@
+2009-12-01  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan-pipe-server.c (assuan_init_pipe_server): Fix debug output.
+
 2009-11-27  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan.h (assuan_set_assuan_log_stream): Add prototype.
