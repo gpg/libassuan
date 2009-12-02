@@ -277,9 +277,9 @@ int _assuan_cookie_write_flush (void *cookie);
 gpg_error_t _assuan_write_line (assuan_context_t ctx, const char *prefix,
                                    const char *line, size_t len);
 
-/*-- assuan-client.c --*/
+/*-- client.c --*/
 gpg_error_t _assuan_read_from_server (assuan_context_t ctx,
-                                         int *okay, int *off);
+				      assuan_response_t *okay, int *off);
 
 /*-- assuan-error.c --*/
 

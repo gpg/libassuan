@@ -24,6 +24,8 @@ LIBASSUAN_1.0 {
   global:
     assuan_accept;
     assuan_begin_confidential;
+    assuan_client_read_response;
+    assuan_client_parse_response;
     assuan_close_input_fd;
     assuan_close_output_fd;
     assuan_command_parse_fd;

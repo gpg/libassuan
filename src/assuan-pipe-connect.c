@@ -88,14 +88,15 @@ fix_signals (void)
 static gpg_error_t
 initial_handshake (assuan_context_t ctx)
 {
-  int okay, off;
+  assuan_response_t response;
+  int off;
   gpg_error_t err;
   
-  err = _assuan_read_from_server (ctx, &okay, &off);
+  err = _assuan_read_from_server (ctx, &response, &off);
   if (err)
     TRACE1 (ctx, ASSUAN_LOG_SYSIO, "initial_handshake", ctx,
 	    "can't connect server: %s", gpg_strerror (err));
-  else if (okay != 1)
+  else if (response != ASSUAN_RESPONSE_OK)
     {
       TRACE1 (ctx, ASSUAN_LOG_SYSIO, "initial_handshake", ctx,
 	      "can't connect server: `%s'", ctx->inbound.line);

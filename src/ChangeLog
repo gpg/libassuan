@@ -1,3 +1,26 @@
+2009-12-02  Marcus Brinkmann  <marcus@g10code.de>
+
+	* Makefile.am (common_sources): Remove assuan-client.c.
+	* assuan-client.c: File removed.
+	* assuan.h (ASSUAN_RESPONSE_ERROR, ASSUAN_RESPONSE_OK)
+	(ASSUAN_RESPONSE_STATUS, ASSUAN_RESPONSE_INQUIRE)
+	(ASSUAN_RESPONSE_STATUS): New macros.
+	(assuan_response_t): New type.
+	(assuan_client_read_response, assuan_client_parse_response): New
+	prototypes.
+	* libassuan.def, libassuan.vers: Add assuan_client_read_response,
+	assuan_client_parse_response.
+	* assuan-client.c (xtoi_1, xtoi_2, assuan_transact)
+	(_assuan_read_from_server): Moved to ...
+	* client.c: ... here, with updates to use new functions and types.
+	Include <stdlib.h>.
+	(assuan_client_read_response, assuan_client_parse_response): New
+	functions.
+	* assuan-defs.h (_assuan_read_from_server): Use assuan_response_t.
+	* assuan-pipe-connect.c (initial_handshake): Use assuan_response_t
+	and ASSUAN_RESPONSE_OK.
+	* assuan-socket-connect.c (assuan_socket_connect): Likewise.
+
 2009-12-01  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan-pipe-server.c (assuan_init_pipe_server): Fix debug output.

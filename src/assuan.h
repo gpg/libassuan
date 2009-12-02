@@ -408,6 +408,26 @@ typedef struct _assuan_peercred *assuan_peercred_t;
 gpg_error_t assuan_get_peercred (assuan_context_t ctx,
 				 assuan_peercred_t *peercred);
 
+
+
+/* Client interface.  */
+#define ASSUAN_RESPONSE_ERROR 0
+#define ASSUAN_RESPONSE_OK 1
+#define ASSUAN_RESPONSE_DATA 2
+#define ASSUAN_RESPONSE_INQUIRE 3
+#define ASSUAN_RESPONSE_STATUS 4
+#define ASSUAN_RESPONSE_END 5
+typedef int assuan_response_t;
+
+/* This already de-escapes data lines.  */
+gpg_error_t assuan_client_read_response (assuan_context_t ctx,
+					 char **line, int *linelen);
+
+gpg_error_t assuan_client_parse_response (assuan_context_t ctx,
+					  char *line, int linelen,
+					  assuan_response_t *response,
+					  int *off);
+
 /*-- assuan-client.c --*/
 gpg_error_t 
 assuan_transact (assuan_context_t ctx,

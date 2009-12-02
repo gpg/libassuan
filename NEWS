@@ -88,6 +88,8 @@ ASSUAN_SOCKET_SERVER_ACCEPTED  NEW
 ASSUAN_SOCKET_CONNECT_FDPASSING NEW
 assuan_peercred_t	       NEW
 assuan_get_peercred	       CHANGED: Return assuan_peercred_t.
+assuan_client_read_response    NEW
+assuan_client_parse_response   NEW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

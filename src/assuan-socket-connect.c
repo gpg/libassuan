@@ -124,13 +124,14 @@ assuan_socket_connect (assuan_context_t ctx, const char *name,
 
   /* initial handshake */
   {
-    int okay, off;
+    assuan_response_t response;
+    int off;
 
-    err = _assuan_read_from_server (ctx, &okay, &off);
+    err = _assuan_read_from_server (ctx, &response, &off);
     if (err)
       TRACE1 (ctx, ASSUAN_LOG_SYSIO, "assuan_socket_connect_ext", ctx,
 	      "can't connect to server: %s\n", gpg_strerror (err));
-    else if (okay != 1)
+    else if (response != ASSUAN_RESPONSE_OK)
       {
 	char *sname = _assuan_encode_c_string (ctx, ctx->inbound.line);
 	if (sname)

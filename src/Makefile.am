@@ -44,7 +44,6 @@ common_sources = \
 	assuan-handler.c \
 	assuan-inquire.c \
 	assuan-listen.c \
-	assuan-client.c \
 	assuan-pipe-server.c \
 	assuan-socket-server.c \
 	assuan-pipe-connect.c \

@@ -94,6 +94,8 @@ EXPORTS
     __assuan_spawn			@73
     __assuan_usleep			@74
     assuan_fdopen			@75
+    assuan_client_read_response		@76
+    assuan_client_parse_response	@77
 
 ; END
 
