@@ -44,14 +44,27 @@ static char prefix_buffer[80];
    logging of buffer data.  */
 static int full_logging;
 
+/* A bitfield that specifies the categories to log.  Note that
+   assuan-buffer currently does not log through the default handler,
+   but directly.  This will be changed later.  Then the default here
+   should be to log that and only that.  */
+static int log_cats;
+#define TEST_LOG_CAT(x) (!! (log_cats & (1 << (x - 1))))
 
 static FILE *_assuan_log;
 
 void
 assuan_set_assuan_log_stream (FILE *fp)
 {
+  char *flagstr;
+
   _assuan_log = fp;
+
+  /* Set defaults.  */
   full_logging = !!getenv ("ASSUAN_FULL_LOGGING");
+  flagstr = getenv ("ASSUAN_DEBUG");
+  if (flagstr)
+    log_cats = atoi (flagstr);
 }
 
 
@@ -65,7 +78,8 @@ assuan_set_log_stream (assuan_context_t ctx, FILE *fp)
       if (ctx->log_fp)
         fflush (ctx->log_fp);
       ctx->log_fp = fp;
-      full_logging = !!getenv ("ASSUAN_FULL_LOGGING");
+      if (! _assuan_log)
+	assuan_set_assuan_log_stream (fp);
     }
 }
 
@@ -104,7 +118,10 @@ _assuan_log_handler (assuan_context_t ctx, void *hook, unsigned int cat,
 
   /* For now.  */
   if (msg == NULL)
-    return 1;
+    return TEST_LOG_CAT (cat);
+
+  if (! TEST_LOG_CAT (cat))
+    return 0;
 
   fp = ctx->log_fp ? ctx->log_fp : _assuan_log;
   if (!fp)
