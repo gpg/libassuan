@@ -55,7 +55,8 @@ section entitled ``Copying''.
 @c Change the font used for @def... commands, since the default
 @c proportional one used is bad for names starting __.
 @tex
-\global\setfont\defbf\ttbshape{10}{\magstep1}
+\gdef\mysetfont#1#2#3#4{\font#1=\fontprefix#2#3 scaled #4}
+\global\mysetfont\defbf\ttbshape{10}{\magstep1}
 @end tex
 
 @c %**end of header
