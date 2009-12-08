@@ -517,7 +517,7 @@ int __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 		    assuan_fd_t *fd_child_list,
 		    void (*atfork) (void *opaque, int reserved),
 		    void *atforkvalue, unsigned int flags);
-int __assuan_socketpair (assuan_context_t ctx, int namespace, int style,
+int __assuan_socketpair (assuan_context_t ctx, int _namespace, int style,
 			 int protocol, assuan_fd_t filedes[2]);
 
 #ifdef _WIN32
