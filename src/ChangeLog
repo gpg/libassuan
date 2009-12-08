@@ -1,5 +1,7 @@
 2009-12-08  Marcus Brinkmann  <marcus@g10code.de>
 
+	* client.c (assuan_client_read_response): Fix linelen.
+
 	* assuan.h (ASSUAN_SPAWN_DETACHED): New macro.
 	* assuan-pipe-connect.c (pipe_connect): Calculate spawn_flags from
 	flags.

@@ -112,6 +112,7 @@ assuan_client_read_response (assuan_context_t ctx,
 	}
       *d = 0; /* add a hidden string terminator */
 
+      linelen = d - line;
       ctx->inbound.linelen = linelen;
     }
 
