@@ -92,7 +92,7 @@ get_nonce (char *buffer, size_t nbytes)
     errno = ENODEV;
   else 
     {
-      if (!CryptGenRandom (prov, nbytes, buffer))
+      if (!CryptGenRandom (prov, nbytes, (unsigned char *) buffer))
         errno = ENODEV;
       else
         ret = 0;
@@ -178,7 +178,7 @@ _assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
       int ret;
       
       unaddr = (struct sockaddr_un *)addr;
-      if (read_port_and_nonce (ctx, unaddr->sun_path, &port, nonce))
+      if (read_port_and_nonce (unaddr->sun_path, &port, nonce))
         return -1;
       
       myaddr.sin_family = AF_INET;
@@ -308,7 +308,7 @@ _assuan_sock_get_nonce (assuan_context_t ctx, struct sockaddr *addr,
         }
       nonce->length = 16;
       unaddr = (struct sockaddr_un *)addr;
-      if (read_port_and_nonce (ctx, unaddr->sun_path, &port, nonce->nonce))
+      if (read_port_and_nonce (unaddr->sun_path, &port, nonce->nonce))
         return -1;
     }
   else

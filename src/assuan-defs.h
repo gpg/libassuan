@@ -246,7 +246,7 @@ int _assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 pid_t  _assuan_waitpid (assuan_context_t ctx, pid_t pid, int nowait,
 			int *status, int options);
 int _assuan_socketpair (assuan_context_t ctx, int namespace, int style,
-			int protocol, int filedes[2]);
+			int protocol, assuan_fd_t filedes[2]);
 
 extern struct assuan_system_hooks _assuan_system_hooks;
 

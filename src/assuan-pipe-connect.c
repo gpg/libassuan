@@ -144,7 +144,7 @@ at_pipe_fork_cb (void *opaque, int reserved)
 static gpg_error_t
 pipe_connect (assuan_context_t ctx,
 	      const char *name, const char **argv,
-	      int *fd_child_list,
+	      assuan_fd_t *fd_child_list,
 	      void (*atfork) (void *opaque, int reserved),
 	      void *atforkvalue, unsigned int flags)
 {
@@ -257,7 +257,7 @@ at_socketpair_fork_cb (void *opaque, int reserved)
 static gpg_error_t
 socketpair_connect (assuan_context_t ctx,
                     const char *name, const char **argv,
-                    int *fd_child_list,
+                    assuan_fd_t *fd_child_list,
                     void (*atfork) (void *opaque, int reserved),
                     void *atforkvalue)
 {
@@ -388,7 +388,7 @@ socketpair_connect (assuan_context_t ctx,
 gpg_error_t
 assuan_pipe_connect (assuan_context_t ctx,
 		     const char *name, const char *argv[],
-		     int *fd_child_list,
+		     assuan_fd_t *fd_child_list,
 		     void (*atfork) (void *opaque, int reserved),
 		     void *atforkvalue, unsigned int flags)
 {

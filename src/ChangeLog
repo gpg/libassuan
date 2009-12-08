@@ -1,3 +1,20 @@
+2009-12-08  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan-socket.c (get_nonce): Cast buffer to unsigned.
+	(_assuan_sock_connect) [HAVE_W32_SYSTEM]: Drop ctx argument from
+	read_port_and_nonce invocation.
+	* system.c (assuan_fdopen) [HAVE_W32_SYSTEM]: Fix typo in variable
+	name.
+	(__assuan_spawn) [HAVE_W32_SYSTEM]: Fix types of fd and fdp.  Use
+	ASSUAN_INVALID_FD.  Add missing context argument to _assuan_free,
+	and fix call to _assuan_w32_strerror.  Set errno on error.
+	(__assuan_socketpair) [HAVE_W32_STRERROR]: Fix type of filedes
+	argument.
+	* assuan-pipe-connect.c (pipe_connect, assuan_pipe_connect,
+	socketpair_connect) [HAVE_W32_SYSTEM]: Fix type of fd_child_list.
+	* assuan-defs.h (_assuan_socketpair): Likewise for prototype.
+	* assuan.h (assuan_fd_from_posix_fd): New static inline function.
+
 2009-12-03  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan-logging.c: (log_cats): New static variable.

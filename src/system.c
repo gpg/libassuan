@@ -51,12 +51,12 @@ assuan_fdopen (int fd)
   assuan_fd_t ifd = (assuan_fd_t) _get_osfhandle (fd);
   assuan_fd_t ofd;
 
-  if (! DuplicateHandle(GetCurrentProcess(), hfd, 
+  if (! DuplicateHandle(GetCurrentProcess(), ifd, 
 			GetCurrentProcess(), &ofd, 0,
 			TRUE, DUPLICATE_SAME_ACCESS))
     {
       errno = EIO;
-      return ASSUAN_INVALID_FD:
+      return ASSUAN_INVALID_FD;
     }
   return ofd;
 #else
@@ -540,8 +540,8 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
       0          /* Returns tid.  */
     };
   STARTUPINFO si;
-  int fd;
-  int *fdp;
+  assuan_fd_t fd;
+  assuan_fd_t *fdp;
   char *cmdline;
   HANDLE nullfd = INVALID_HANDLE_VALUE;
 
@@ -570,14 +570,14 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 
   /* Dup stderr to /dev/null unless it is in the list of FDs to be
      passed to the child. */
-  fd = fileno (stderr);
+  fd = assuan_fd_from_posix_fd (fileno (stderr));
   fdp = fd_child_list;
   if (fdp)
     {
-      for (; *fdp != -1 && *fdp != fd; fdp++)
+      for (; *fdp != ASSUAN_INVALID_FD && *fdp != fd; fdp++)
         ;
     }
-  if (!fdp || *fdp == -1)
+  if (!fdp || *fdp == ASSUAN_INVALID_FD)
     {
       nullfd = CreateFile ("nul", GENERIC_WRITE,
                            FILE_SHARE_READ | FILE_SHARE_WRITE,
@@ -585,14 +585,15 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
       if (nullfd == INVALID_HANDLE_VALUE)
         {
 	  TRACE1 (ctx, ASSUAN_LOG_SYSIO, "__assuan_spawn", ctx,
-		  "can't open `nul': %s", w32_strerror (ctx, -1));
-          _assuan_free (cmdline);
+		  "can't open `nul': %s", _assuan_w32_strerror (ctx, -1));
+          _assuan_free (ctx, cmdline);
+          errno = EIO;
           return -1;
         }
       si.hStdError = nullfd;
     }
   else
-    si.hStdError = (void*)_get_osfhandle (fd);
+    si.hStdError = fd;
 
 
   /* Note: We inherit all handles flagged as inheritable.  This seems
@@ -616,8 +617,8 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
                       ))
     {
       TRACE1 (ctx, ASSUAN_LOG_SYSIO, "pipe_connect_w32", ctx,
-	      "CreateProcess failed: %s", w32_strerror (ctx, -1));
-      _assuan_free (cmdline);
+	      "CreateProcess failed: %s", _assuan_w32_strerror (ctx, -1));
+      _assuan_free (ctx, cmdline);
       if (nullfd != INVALID_HANDLE_VALUE)
         CloseHandle (nullfd);
 
@@ -625,7 +626,7 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
       return -1;
     }
 
-  _assuan_free (cmdline);
+  _assuan_free (ctx, cmdline);
   if (nullfd != INVALID_HANDLE_VALUE)
     CloseHandle (nullfd);
 
@@ -882,7 +883,7 @@ _assuan_waitpid (assuan_context_t ctx, pid_t pid, int action,
 
 int
 __assuan_socketpair (assuan_context_t ctx, int namespace, int style,
-		     int protocol, int filedes[2])
+		     int protocol, assuan_fd_t filedes[2])
 {
 #if HAVE_W32_SYSTEM
   errno = ENOSYS;

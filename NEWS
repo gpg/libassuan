@@ -52,6 +52,7 @@ assuan_socket_connect_ext      REMOVED
 assuan_pipe_connect            CHANGED: Take ctx arg instead of pointer to ctx.
 			       If NAME is NULL, ARGV will contain fork result.
 			       CHANGED: Is now what assuan_pipe_connect_ext was.
+			       CHANGED: Child fds are now assuan_fd_t.
 assuan_pipe_connect_ext	       REMOVED
 assuan_init_pipe_server        CHANGED: Take ctx arg instead of pointer to ctx.
                                CHANGED: Swallows fds (are closed at end).
@@ -90,6 +91,7 @@ assuan_peercred_t	       NEW
 assuan_get_peercred	       CHANGED: Return assuan_peercred_t.
 assuan_client_read_response    NEW
 assuan_client_parse_response   NEW
+assuan_fd_from_posix_fd	       NEW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

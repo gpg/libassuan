@@ -85,10 +85,20 @@ typedef struct assuan_context_s *assuan_context_t;
 typedef void *assuan_fd_t;
 #define ASSUAN_INVALID_FD ((void*)(-1))
 #define ASSUAN_INVALID_PID ((pid_t) -1)
+static inline assuan_fd_t
+assuan_fd_from_posix_fd (int fd)
+{
+  return (assuan_fd_t) _get_osfhandle (fd);
+}
 #else
 typedef int assuan_fd_t;
 #define ASSUAN_INVALID_FD (-1)
 #define ASSUAN_INVALID_PID ((pid_t) -1)
+static inline assuan_fd_t
+assuan_fd_from_posix_fd (int fd)
+{
+  return fd;
+}
 #endif
 
 assuan_fd_t assuan_fdopen (int fd);
