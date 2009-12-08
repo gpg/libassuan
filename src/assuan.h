@@ -253,6 +253,7 @@ void assuan_set_io_monitor (assuan_context_t ctx,
 
 
 #define ASSUAN_SYSTEM_HOOKS_VERSION 1
+#define ASSUAN_SPAWN_DETACHED 128
 struct assuan_system_hooks
 {
   /* Always set to ASSUAN_SYTEM_HOOKS_VERSION.  */

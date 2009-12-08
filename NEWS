@@ -92,6 +92,7 @@ assuan_get_peercred	       CHANGED: Return assuan_peercred_t.
 assuan_client_read_response    NEW
 assuan_client_parse_response   NEW
 assuan_fd_from_posix_fd	       NEW
+ASSUAN_SPAWN_DETACHED	       NEW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

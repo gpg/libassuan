@@ -1,3 +1,7 @@
+2009-12-08  Marcus Brinkmann  <marcus@g10code.de>
+
+	* assuan.texi (Contexts): Document ASSUAN_SPAWN_DETACHED.
+
 2009-11-25  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan.texi (Data Types): Document assuan_fdopen.

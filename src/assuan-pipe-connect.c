@@ -154,6 +154,7 @@ pipe_connect (assuan_context_t ctx,
   pid_t pid;
   int res;
   struct at_pipe_fork atp;
+  unsigned int spawn_flags;
 
   atp.user_atfork = atfork;
   atp.user_atforkvalue = atforkvalue;
@@ -173,10 +174,14 @@ pipe_connect (assuan_context_t ctx,
       _assuan_close (ctx, rp[1]);
       return _assuan_error (ctx, gpg_err_code_from_syserror ());
     }
+  
+  spawn_flags = 0;
+  if (flags & ASSUAN_PIPE_CONNECT_DETACHED)
+    spawn_flags |= ASSUAN_SPAWN_DETACHED;
 
   /* FIXME: Use atfork handler that closes child fds on Unix.  */
   res = _assuan_spawn (ctx, &pid, name, argv, wp[0], rp[1],
-		       fd_child_list, at_pipe_fork_cb, &atp, flags);
+		       fd_child_list, at_pipe_fork_cb, &atp, spawn_flags);
   if (res < 0)
     {
       rc = gpg_err_code_from_syserror ();

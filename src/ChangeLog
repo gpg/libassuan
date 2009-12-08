@@ -1,5 +1,9 @@
 2009-12-08  Marcus Brinkmann  <marcus@g10code.de>
 
+	* assuan.h (ASSUAN_SPAWN_DETACHED): New macro.
+	* assuan-pipe-connect.c (pipe_connect): Calculate spawn_flags from
+	flags.
+
 	* assuan.h (assuan_fd_from_posix_fd): Handle invalid fd early.
 
 	* assuan-socket.c (get_nonce): Cast buffer to unsigned.

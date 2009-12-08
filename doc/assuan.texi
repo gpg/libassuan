@@ -913,6 +913,16 @@ case the process should just fork but not call @code{exec}.  In this
 case, @code{*argv} should be set to @code{"client"} in the parent
 process and @code{"server"} in the child process.
 
+Flags is the bit-wise OR of some (or none) of the following flags:
+
+@table @code
+@item ASSUAN_SPAWN_DETACHED
+If set and there is a need to start the server it will be started as a
+background process.  This flag is useful under W32 systems, so that no
+new console is created and pops up a console window when starting the
+server.
+@end table
+
 @item pid_t (*waitpid) (assuan_context_t ctx, pid_t pid, int action, int *status, int options)
 This is the function called by @sc{Assuan} to wait for the spawned
 child process @var{pid} to exit, or, if @var{action} is 1, to just
