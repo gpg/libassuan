@@ -293,7 +293,7 @@ struct assuan_system_hooks
   /* If action is 0, like waitpid.  If action is 1, just release the PID?  */
   pid_t (*waitpid) (assuan_context_t ctx, pid_t pid,
 		    int action, int *status, int options);
-  int (*socketpair) (assuan_context_t ctx, int namespace, int style,
+  int (*socketpair) (assuan_context_t ctx, int _namespace, int style,
 		     int protocol, assuan_fd_t filedes[2]);
 };
 typedef struct assuan_system_hooks *assuan_system_hooks_t;
