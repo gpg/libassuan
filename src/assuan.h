@@ -88,7 +88,10 @@ typedef void *assuan_fd_t;
 static inline assuan_fd_t
 assuan_fd_from_posix_fd (int fd)
 {
-  return (assuan_fd_t) _get_osfhandle (fd);
+  if (fd < 0)
+    return ASSUAN_INVALID_FD;
+  else
+    return (assuan_fd_t) _get_osfhandle (fd);
 }
 #else
 typedef int assuan_fd_t;

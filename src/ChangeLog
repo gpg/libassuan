@@ -1,5 +1,7 @@
 2009-12-08  Marcus Brinkmann  <marcus@g10code.de>
 
+	* assuan_fd_from_posix_fd (assuan_fd_from_posix_fd): Handle invalid fd early.
+
 	* assuan-socket.c (get_nonce): Cast buffer to unsigned.
 	(_assuan_sock_connect) [HAVE_W32_SYSTEM]: Drop ctx argument from
 	read_port_and_nonce invocation.
