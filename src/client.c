@@ -91,7 +91,7 @@ assuan_client_read_response (assuan_context_t ctx,
       line = ctx->inbound.line;
       linelen = ctx->inbound.linelen;
     }    
-  while (*line == '#' || !linelen);
+  while (!linelen);
 
   /* For data lines, we deescape immediately.  The user will never
      have to worry about it.  */
@@ -181,6 +181,11 @@ assuan_client_parse_response (assuan_context_t ctx, char *line, int linelen,
       *response = ASSUAN_RESPONSE_END;
       *off = 3;
     }
+  else if (linelen >= 1 && line[0] == '#')
+    {
+      *response = ASSUAN_RESPONSE_COMMENT;
+      *off = 1;
+    }
   else
     return _assuan_error (ctx, GPG_ERR_ASS_INV_RESPONSE);
 
@@ -196,11 +201,16 @@ _assuan_read_from_server (assuan_context_t ctx, assuan_response_t *response,
   char *line;
   int linelen;
 
-  *response = ASSUAN_RESPONSE_ERROR;
-  *off = 0;
-  rc = assuan_client_read_response (ctx, &line, &linelen);
-  if (!rc)
-    rc = assuan_client_parse_response (ctx, line, linelen, response, off);
+  do
+    {
+      *response = ASSUAN_RESPONSE_ERROR;
+      *off = 0;
+      rc = assuan_client_read_response (ctx, &line, &linelen);
+      if (!rc)
+        rc = assuan_client_parse_response (ctx, line, linelen, response, off);
+    }
+  while (!rc && *response == ASSUAN_RESPONSE_COMMENT);
+
   return rc;
 }
 

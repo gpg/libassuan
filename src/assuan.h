@@ -431,6 +431,7 @@ gpg_error_t assuan_get_peercred (assuan_context_t ctx,
 #define ASSUAN_RESPONSE_INQUIRE 3
 #define ASSUAN_RESPONSE_STATUS 4
 #define ASSUAN_RESPONSE_END 5
+#define ASSUAN_RESPONSE_COMMENT 6
 typedef int assuan_response_t;
 
 /* This already de-escapes data lines.  */
