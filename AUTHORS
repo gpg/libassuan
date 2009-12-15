@@ -13,7 +13,7 @@ Neal H. Walfield  <neal@g10code.de>
  - Code cleanup, descriptor passing and bug fixes.
 
 Marcus Brinkmann  <marcus@g10code.de>
- - Bug fixes.
+ - Shared library version, bug fixes.
 
 g10 Code GmbH   <info@g10code.com> 
  - all work indicated by mail addresses in ChangeLogs
