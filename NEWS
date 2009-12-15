@@ -1,4 +1,4 @@
-Noteworthy changes in version 1.1.0 (unreleased)
+Noteworthy changes in version 2.0.0 (unreleased)
 ------------------------------------------------
 
  * Now using libtool and builds a DSO. 
@@ -58,8 +58,8 @@ assuan_init_pipe_server        CHANGED: Take ctx arg instead of pointer to ctx.
                                CHANGED: Swallows fds (are closed at end).
 			       CHANGED: Take assuan_fd_t.
 assuan_fdopen		       NEW
-assuan_set_io_hooks	       REMOVED: Will come back in expanded form.
-assuan_io_hooks_t  	       REMOVED: Will come back in expanded form.
+assuan_set_io_hooks	       REMOVED: Use assuan_system_hooks interface.
+assuan_io_hooks_t  	       REMOVED: Use assuan_system_hooks interface.
 assuan_io_monitor_t	       CHANGED: Add a hook data argument.
 assuan_get_command_name        NEW
 assuan_msghdr_t		       NEW

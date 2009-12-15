@@ -1,3 +1,7 @@
+2009-12-15  Marcus Brinkmann  <marcus@g10code.de>
+
+	* configure.ac: Bump version to 2.0.0.
+
 2009-11-05  Marcus Brinkmann  <marcus@g10code.de>
 
 	* tests/fdpassing.c (main): Call assuan_pipe_connect instead

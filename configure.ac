@@ -19,12 +19,12 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-min_automake_version="1.10"
+min_automake_version="2.0.0"
 
 # Remember to change the version number immediately *after* a release.
 # Set my_issvn to "yes" for non-released code.  Remember to run an
 # "svn up" and "autogen.sh" right before creating a distribution.
-m4_define([my_version], [1.1.0])
+m4_define([my_version], [2.0.0])
 m4_define([my_issvn], [yes])
 
 m4_define([svn_revision], m4_esyscmd([echo -n $( (svn info 2>/dev/null \
