@@ -27,7 +27,7 @@ min_automake_version="1.10"
 m4_define([my_version], [2.0.0])
 m4_define([my_issvn], [yes])
 
-m4_define([svn_revision], m4_esyscmd([echo -n $( (svn info 2>/dev/null \
+m4_define([svn_revision], m4_esyscmd([printf "%d" $( (svn info 2>/dev/null \
             || echo 'Revision: 0')|sed -n '/^Revision:/ {s/[^0-9]//gp;q;}')]))
 AC_INIT([libassuan], my_version[]m4_if(my_issvn,[yes],[-svn[]svn_revision]),
         [bug-libassuan@gnupg.org])
