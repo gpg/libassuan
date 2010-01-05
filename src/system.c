@@ -43,6 +43,8 @@
 #define MAX_OPEN_FDS 20
 #endif
 
+#define DEBUG_SYSIO 0
+
 
 assuan_fd_t
 assuan_fdopen (int fd)
@@ -349,7 +351,7 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
 ssize_t
 _assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
 {
-#if 0
+#if DEBUG_SYSIO
   ssize_t res;
   TRACE_BEG3 (ctx, ASSUAN_LOG_SYSIO, "_assuan_read", ctx,
 	      "fd=0x%x, buffer=%p, size=%i", fd, buffer, size);
@@ -406,7 +408,7 @@ ssize_t
 _assuan_write (assuan_context_t ctx, assuan_fd_t fd, const void *buffer,
 	       size_t size)
 {
-#if 0
+#if DEBUG_SYSIO
   ssize_t res;
   TRACE_BEG3 (ctx, ASSUAN_LOG_SYSIO, "_assuan_write", ctx,
 	      "fd=0x%x, buffer=%p, size=%i", fd, buffer, size);
@@ -440,7 +442,33 @@ int
 _assuan_recvmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
 		 int flags)
 {
+#if DEBUG_SYSIO
+  ssize_t res;
+  TRACE_BEG3 (ctx, ASSUAN_LOG_SYSIO, "_assuan_recvmsg", ctx,
+	      "fd=0x%x, msg=%p, flags=0x%x", fd, msg, flags);
+  res = (ctx->system.recvmsg) (ctx, fd, msg, flags);
+  if (res > 0)
+    {
+      struct cmsghdr *cmptr;
+
+      TRACE_LOG2 ("msg->msg_iov[0] = { iov_base=%p, iov_len=%i }",
+		  msg->msg_iov[0].iov_base, msg->msg_iov[0].iov_len);
+      TRACE_LOGBUF (msg->msg_iov[0].iov_base, res);
+
+      cmptr = CMSG_FIRSTHDR (msg);
+      if (cmptr)
+	{
+	  void *data = CMSG_DATA (cmptr);
+	  TRACE_LOG5 ("cmsg_len=0x%x (0x%x data), cmsg_level=0x%x, "
+		      "cmsg_type=0x%x, first data int=0x%x", cmptr->cmsg_len,
+		      cmptr->cmsg_len - (((char *)data) - ((char *)cmptr)),
+		      cmptr->cmsg_level, cmptr->cmsg_type, *(int *)data);
+	}
+    }    
+  return TRACE_SYSRES (res);
+#else
   return (ctx->system.recvmsg) (ctx, fd, msg, flags);
+#endif
 }
 
 
@@ -466,7 +494,32 @@ int
 _assuan_sendmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
 		 int flags)
 {
+#if DEBUG_SYSIO
+  ssize_t res;
+  TRACE_BEG3 (ctx, ASSUAN_LOG_SYSIO, "_assuan_sendmsg", ctx,
+	      "fd=0x%x, msg=%p, flags=0x%x", fd, msg, flags);
+  {
+    struct cmsghdr *cmptr;
+
+    TRACE_LOG2 ("msg->iov[0] = { iov_base=%p, iov_len=%i }",
+		msg->msg_iov[0].iov_base, msg->msg_iov[0].iov_len);
+    TRACE_LOGBUF (msg->msg_iov[0].iov_base, msg->msg_iov[0].iov_len);
+    
+    cmptr = CMSG_FIRSTHDR (msg);
+    if (cmptr)
+      {
+	void *data = CMSG_DATA (cmptr);
+	TRACE_LOG5 ("cmsg_len=0x%x (0x%x data), cmsg_level=0x%x, "
+		    "cmsg_type=0x%x, first data int=0x%x", cmptr->cmsg_len,
+		    cmptr->cmsg_len - (((char *)data) - ((char *)cmptr)),
+		    cmptr->cmsg_level, cmptr->cmsg_type, *(int *)data);
+      }
+  }
+  res = (ctx->system.sendmsg) (ctx, fd, msg, flags);
+  return TRACE_SYSRES (res);
+#else
   return (ctx->system.sendmsg) (ctx, fd, msg, flags);
+#endif
 }
 
 
@@ -877,7 +930,16 @@ pid_t
 _assuan_waitpid (assuan_context_t ctx, pid_t pid, int action,
 		 int *status, int options)
 {
+#if DEBUG_SYSIO
+  ssize_t res;
+  TRACE_BEG4 (ctx, ASSUAN_LOG_SYSIO, "_assuan_waitpid", ctx,
+	      "pid=%i, action=%i, status=%p, options=%i",
+	      pid, action, status, options);
+  res = (ctx->system.waitpid) (ctx, pid, action, status, options);
+  return TRACE_SYSRES (res);
+#else
   return (ctx->system.waitpid) (ctx, pid, action, status, options);
+#endif
 }
 
 

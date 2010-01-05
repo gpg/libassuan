@@ -173,8 +173,9 @@ _assuan_debug_buffer (assuan_context_t ctx, unsigned int cat,
 	    *(strp++) = ' ';
 	}
       *(strp++) = ' ';
+      *(strp2++) = '\n';
       *(strp2) = '\0';
-
+      
       _assuan_debug (ctx, cat, fmt, func, tagname, tag, str);
     }
 }

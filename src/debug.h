@@ -236,6 +236,11 @@ void _assuan_debug_buffer (assuan_context_t ctx, unsigned int cat,
 		 "%s (%s=%p): check: " fmt "\n",		    \
 		_assuan_trace_func, _assuan_trace_tagname,	    \
 		_assuan_trace_tag, arg1, arg2, arg3, arg4), 0
+#define TRACE_LOG5(fmt, arg1, arg2, arg3, arg4, arg5)		    \
+  _assuan_debug (_assuan_trace_context, _assuan_trace_level,	    \
+		 "%s (%s=%p): check: " fmt "\n",		    \
+		_assuan_trace_func, _assuan_trace_tagname,	    \
+		 _assuan_trace_tag, arg1, arg2, arg3, arg4, arg5), 0
 #define TRACE_LOG6(fmt, arg1, arg2, arg3, arg4, arg5, arg6)	    \
   _assuan_debug (_assuan_trace_context, _assuan_trace_level,	    \
 		 "%s (%s=%p): check: " fmt "\n",			\

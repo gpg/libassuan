@@ -1,3 +1,10 @@
+2010-01-05  Marcus Brinkmann  <marcus@g10code.de>
+
+	* debug.h (TRACE_LOG5): Add macro.
+	* debug.c (_assuan_debug_buffer): Add newline
+	* system.c: Add more debug output (conditioned on the compile-time
+	DEBUG_SYSIO macro).
+
 2009-12-14  Werner Koch  <wk@g10code.com>
 
 	* assuan.h (ASSUAN_RESPONSE_COMMENT): New.
