@@ -31,7 +31,11 @@
 
 
 /* Extended version of write(2) to guarantee that all bytes are
-   written.  Returns 0 on success or -1 and ERRNO on failure. */
+   written.  Returns 0 on success or -1 and ERRNO on failure.  NOTE:
+   This function does not return the number of bytes written, so any
+   error must be treated as fatal for this connection as the state of
+   the receiver is unknown.  This works best if blocking is allowed
+   (so EAGAIN cannot occur).  */
 static int
 writen (assuan_context_t ctx, const char *buffer, size_t length)
 {
@@ -93,7 +97,8 @@ readline (assuan_context_t ctx, char *buf, size_t buflen,
 }
 
 
-/* Function returns an Assuan error.  */
+/* Read a line with buffering of partial lines.  Function returns an
+   Assuan error.  */
 gpg_error_t
 _assuan_read_line (assuan_context_t ctx)
 {
