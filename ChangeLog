@@ -1,3 +1,7 @@
+2010-01-05  Marcus Brinkmann  <marcus@g10code.de>
+
+	* configure.ac (_DARWIN_C_SOURCE): Define on frapple.
+
 2009-12-22  Marcus Brinkmann  <marcus@g10code.de>
 
 	* configure.ac: Do not use echo -n.

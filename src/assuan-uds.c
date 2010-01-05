@@ -45,7 +45,9 @@
 
 #ifdef USE_DESCRIPTOR_PASSING
 /* Provide replacement for missing CMSG maccros.  We assume that
-   size_t matches the alignment requirement. */
+   size_t matches the alignment requirement.  NOTE: This is not true
+   on Mac OS X, so be extra careful to define _DARWIN_C_SOURCE to get
+   those definitions instead of using these.  */
 #define MY_ALIGN(n) ((((n))+ sizeof(size_t)-1) & (size_t)~(sizeof(size_t)-1))
 #ifndef CMSG_SPACE
 #define CMSG_SPACE(n) (MY_ALIGN(sizeof(struct cmsghdr)) + MY_ALIGN((n)))
