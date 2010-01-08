@@ -1,7 +1,7 @@
-Noteworthy changes in version 2.0.0 (unreleased)
+Noteworthy changes in version 2.0.0 (2009-01-08)
 ------------------------------------------------
 
- * Now using libtool and builds a DSO. 
+ * Now using libtool and builds a DSO.
 
  * Lots of interface cleanups.  See below for details of the most
    important changes.  Here is a quick note on how to upgrade:
