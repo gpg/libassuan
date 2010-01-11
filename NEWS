@@ -1,4 +1,4 @@
-Noteworthy changes in version 2.0.0 (2009-01-08)
+Noteworthy changes in version 2.0.0 (2010-01-08)
 ------------------------------------------------
 
  * Now using libtool and builds a DSO.
