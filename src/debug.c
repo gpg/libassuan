@@ -49,7 +49,7 @@ _assuan_debug (assuan_context_t ctx, unsigned int cat, const char *format, ...)
   char *msg;
   int res;
 
-  if (ctx->log_cb == NULL)
+  if (!ctx || !ctx->log_cb)
     return;
 
   saved_errno = errno;
@@ -75,8 +75,9 @@ _assuan_debug_begin (assuan_context_t ctx,
 
   *line = NULL;
   /* Probe if this wants to be logged based on category.  */
-  if (! ctx->log_cb ||
-      ! (*ctx->log_cb) (ctx, ctx->log_cb_data, cat, NULL))
+  if (! ctx 
+      || ! ctx->log_cb 
+      || ! (*ctx->log_cb) (ctx, ctx->log_cb_data, cat, NULL))
     return;
   
   va_start (arg_ptr, format);
@@ -144,8 +145,9 @@ _assuan_debug_buffer (assuan_context_t ctx, unsigned int cat,
   int j;
 
   /* Probe if this wants to be logged based on category.  */
-  if (! ctx->log_cb ||
-      ! (*ctx->log_cb) (ctx, ctx->log_cb_data, cat, NULL))
+  if (!ctx 
+      || ! ctx->log_cb 
+      || ! (*ctx->log_cb) (ctx, ctx->log_cb_data, cat, NULL))
     return;
 
   while (idx < len)

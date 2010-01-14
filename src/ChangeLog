@@ -1,3 +1,10 @@
+2010-01-14  Werner Koch  <wk@g10code.com>
+
+	* debug.c (_assuan_debug, _assuan_debug_begin)
+	(_assuan_debug_buffer): Check CTX before dereferencing.
+
+	* assuan.c (assuan_release): Immediately leave on NULL CTX.
+
 2010-01-05  Marcus Brinkmann  <marcus@g10code.de>
 
 	* debug.h (TRACE_LOG5): Add macro.
