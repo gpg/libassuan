@@ -1,5 +1,12 @@
 2010-01-22  Werner Koch  <wk@g10code.com>
 
+	* setenv.c [W32CE]: Make it a dummy.
+
+	* assuan-pipe-connect.c: Remove signal.h.
+
+	* system.c (__assuan_spawn): Use CreateFileW.
+	(DETACHED_PROCESS) [W32CE]: Define to 0.
+
 	* assuan-socket.c (read_port_and_nonce): Replace ENOFILE by a
 	proper ENOENT.
 

@@ -921,7 +921,7 @@ Flags is the bit-wise OR of some (or none) of the following flags:
 If set and there is a need to start the server it will be started as a
 background process.  This flag is useful under W32 systems, so that no
 new console is created and pops up a console window when starting the
-server.
+server.  On W32CE systems this flag is ignored.
 @end table
 
 @item pid_t (*waitpid) (assuan_context_t ctx, pid_t pid, int action, int *status, int options)
@@ -1087,7 +1087,7 @@ features only available with such servers.
 If set and there is a need to start the server it will be started as a
 background process.  This flag is useful under W32 systems, so that no
 new console is created and pops up a console window when starting the
-server.
+server.  On W32CE systems this flag is ignored.
 @end table
 @end deftypefun
 

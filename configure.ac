@@ -145,7 +145,7 @@ case "${host}" in
           CFLAGS="$CFLAGS -fPIC -DPIC"
         fi
         ;;
-    *-mingw32de*)
+    *-mingw32ce*)
         have_dosish_system=yes
         have_w32_system=yes
         have_w32ce_system=yes
@@ -295,7 +295,6 @@ AC_REPLACE_FUNCS(isascii)
 AC_REPLACE_FUNCS(putc_unlocked)
 AC_REPLACE_FUNCS(memrchr)
 AC_REPLACE_FUNCS(stpcpy)
-# Check for unistd.h for setenv replacement function.
 AC_CHECK_HEADERS(unistd.h)
 AC_REPLACE_FUNCS(setenv)
 AC_REPLACE_FUNCS(vasprintf)

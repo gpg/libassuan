@@ -632,7 +632,7 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
     }
   if (!fdp || *fdp == ASSUAN_INVALID_FD)
     {
-      nullfd = CreateFile ("nul", GENERIC_WRITE,
+      nullfd = CreateFileW (L"nul", GENERIC_WRITE,
                            FILE_SHARE_READ | FILE_SHARE_WRITE,
                            NULL, OPEN_EXISTING, 0, NULL);
       if (nullfd == INVALID_HANDLE_VALUE)
@@ -648,7 +648,9 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
   else
     si.hStdError = fd;
 
-
+#ifdef HAVE_W32CE_SYSTEM
+# define DETACHED_PROCESS (0)
+#endif
   /* Note: We inherit all handles flagged as inheritable.  This seems
      to be a security flaw but there seems to be no way of selecting
      handles to inherit. */
