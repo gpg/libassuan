@@ -57,7 +57,7 @@ assuan_fdopen (int fd)
 			GetCurrentProcess(), &ofd, 0,
 			TRUE, DUPLICATE_SAME_ACCESS))
     {
-      errno = EIO;
+      gpg_err_set_errno (EIO);
       return ASSUAN_INVALID_FD;
     }
   return ofd;
@@ -92,7 +92,7 @@ _assuan_calloc (assuan_context_t ctx, size_t cnt, size_t elsize)
   /* Check for overflow.  */
   if (elsize && nbytes / elsize != cnt) 
     {
-      errno = ENOMEM;
+      gpg_err_set_errno (ENOMEM);
       return NULL;
     }
 
@@ -203,7 +203,7 @@ __assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx)
     {
       TRACE1 (ctx, ASSUAN_LOG_SYSIO, "__assuan_pipe", ctx,
 	      "CreatePipe failed: %s", _assuan_w32_strerror (ctx, -1));
-      errno = EIO;
+      gpg_err_set_errno (EIO);
       return -1;
     }
 
@@ -215,7 +215,7 @@ __assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx)
 	      "DuplicateHandle failed: %s", _assuan_w32_strerror (ctx, -1));
       CloseHandle (rh);
       CloseHandle (wh);
-      errno = EIO;
+      gpg_err_set_errno (EIO);
       return -1;
     }
   if (inherit_idx == 0)
@@ -264,13 +264,13 @@ __assuan_close (assuan_context_t ctx, assuan_fd_t fd)
 #ifdef HAVE_W32_SYSTEM
   int rc = closesocket (HANDLE2SOCKET(fd));
   if (rc)
-    errno = _assuan_sock_wsa2errno (WSAGetLastError ());
+    gpg_err_set_errno ( _assuan_sock_wsa2errno (WSAGetLastError ()) );
   if (rc && WSAGetLastError () == WSAENOTSOCK)
     {
       rc = CloseHandle (fd);
       if (rc)
         /* FIXME. */
-        errno = EIO;
+        gpg_err_set_errno (EIO);
     }
   return rc;
 #else
@@ -315,11 +315,11 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
                 switch (GetLastError ())
                   {
                   case ERROR_BROKEN_PIPE:
-		    errno = EPIPE;
+		    gpg_err_set_errno (EPIPE);
 		    break;
 
                   default:
-		    errno = EIO; 
+		    gpg_err_set_errno (EIO); 
                   }
                 res = -1;
               }
@@ -329,15 +329,15 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
           break;
           
         case WSAEWOULDBLOCK:
-	  errno = EAGAIN;
+	  gpg_err_set_errno (EAGAIN);
 	  break;
 
         case ERROR_BROKEN_PIPE:
-	  errno = EPIPE;
+	  gpg_err_set_errno (EPIPE);
 	  break;
 
         default:
-	  errno = EIO;
+	  gpg_err_set_errno (EIO);
 	  break;
         }
     }
@@ -385,11 +385,11 @@ __assuan_write (assuan_context_t ctx, assuan_fd_t fd, const void *buffer,
             {
             case ERROR_BROKEN_PIPE: 
             case ERROR_NO_DATA:
-	      errno = EPIPE;
+	      gpg_err_set_errno (EPIPE);
 	      break;
 	      
             default:
-	      errno = EIO;
+	      gpg_err_set_errno (EIO);
 	      break;
             }
           res = -1;
@@ -425,7 +425,7 @@ __assuan_recvmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
 		  int flags)
 {
 #ifdef HAVE_W32_SYSTEM
-  errno = ENOSYS;
+  gpg_err_set_errno (ENOSYS);
   return -1;
 #else
   int ret;
@@ -477,7 +477,7 @@ __assuan_sendmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
 		  int flags)
 {
 #ifdef HAVE_W32_SYSTEM
-  errno = ENOSYS;
+  gpg_err_set_errno (ENOSYS);
   return -1;
 #else
   int ret;
@@ -640,7 +640,7 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 	  TRACE1 (ctx, ASSUAN_LOG_SYSIO, "__assuan_spawn", ctx,
 		  "can't open `nul': %s", _assuan_w32_strerror (ctx, -1));
           _assuan_free (ctx, cmdline);
-          errno = EIO;
+          gpg_err_set_errno (EIO);
           return -1;
         }
       si.hStdError = nullfd;
@@ -675,7 +675,7 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
       if (nullfd != INVALID_HANDLE_VALUE)
         CloseHandle (nullfd);
 
-      errno = EIO;
+      gpg_err_set_errno (EIO);
       return -1;
     }
 
@@ -818,7 +818,7 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 	  if (!(fdp && *fdp != -1))
 	    close (i);
 	}
-      errno = 0;
+      gpg_err_set_errno (0);
       
       if (! name)
 	{
@@ -948,7 +948,7 @@ __assuan_socketpair (assuan_context_t ctx, int namespace, int style,
 		     int protocol, assuan_fd_t filedes[2])
 {
 #if HAVE_W32_SYSTEM
-  errno = ENOSYS;
+  gpg_err_set_errno (ENOSYS);
   return -1;
 #else
   return socketpair (namespace, style, protocol, filedes);

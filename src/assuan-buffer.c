@@ -155,7 +155,7 @@ _assuan_read_line (assuan_context_t ctx)
           ctx->inbound.attic.linelen = atticlen + nread;
         }
 
-      errno = saved_errno;
+      gpg_err_set_errno (saved_errno);
       return _assuan_error (ctx, gpg_err_code_from_syserror ());
     }
   if (!nread)

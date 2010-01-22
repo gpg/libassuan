@@ -137,7 +137,7 @@ _assuan_log_handler (assuan_context_t ctx, void *hook, unsigned int cat,
      with a LF.  */ 
   if (msg && *msg && msg[strlen (msg) - 1] == '\n')
     fflush (fp);
-  errno = saved_errno;
+  gpg_err_set_errno (saved_errno);
 
   return 0;
 }

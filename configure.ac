@@ -138,11 +138,17 @@ fi
 # 
 have_dosish_system=no
 have_w32_system=no
+have_w32ce_system=no
 case "${host}" in
     *-linux*)
         if test "$GCC" = yes; then
           CFLAGS="$CFLAGS -fPIC -DPIC"
         fi
+        ;;
+    *-mingw32de*)
+        have_dosish_system=yes
+        have_w32_system=yes
+        have_w32ce_system=yes
         ;;
     *-mingw32*)
         have_dosish_system=yes
@@ -165,6 +171,9 @@ dnl AM_CONDITIONAL(HAVE_DOSISH_SYSTEM, test "$have_dosish_system" = yes)
 
 if test "$have_w32_system" = yes; then
     AC_DEFINE(HAVE_W32_SYSTEM,1,[Defined if we run on a W32 API based system])
+    if test "$have_w32ce_system" = yes; then
+       AC_DEFINE(HAVE_W32CE_SYSTEM,1,[Defined if we run on WindowsCE])
+    fi
     BUILD_TIMESTAMP=`date --iso-8601=minutes`
     AC_SUBST(BUILD_TIMESTAMP)
     changequote(,)dnl 
@@ -181,6 +190,7 @@ AC_SUBST(BUILD_REVISION)
 AC_SUBST(BUILD_TIMESTAMP)
 AC_SUBST(BUILD_FILEVERSION)
 AM_CONDITIONAL(HAVE_W32_SYSTEM, test "$have_w32_system" = yes)
+AM_CONDITIONAL(HAVE_W32CE_SYSTEM, test "$have_w32ce_system" = yes)
 
 
 # Check for network libraries.  They are needed for tests.
@@ -247,7 +257,7 @@ AM_CONDITIONAL(USE_DESCRIPTOR_PASSING, test "$use_descriptor_passing" = "yes")
 
 
 # Checking for libgpg-error.
-AM_PATH_GPG_ERROR(1.4,, AC_MSG_ERROR([libgpg-error was not found]))
+AM_PATH_GPG_ERROR(1.8,, AC_MSG_ERROR([libgpg-error was not found]))
 
 #
 # Checks for library functions.

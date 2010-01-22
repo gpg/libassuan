@@ -89,11 +89,11 @@ get_nonce (char *buffer, size_t nbytes)
 
   if (!CryptAcquireContext (&prov, NULL, NULL, PROV_RSA_FULL, 
                             (CRYPT_VERIFYCONTEXT|CRYPT_SILENT)) )
-    errno = ENODEV;
+    gpg_err_set_errno (ENODEV);
   else 
     {
       if (!CryptGenRandom (prov, nbytes, (unsigned char *) buffer))
-        errno = ENODEV;
+        gpg_err_set_errno (ENODEV);
       else
         ret = 0;
       CryptReleaseContext (prov, 0);
@@ -119,14 +119,14 @@ read_port_and_nonce (const char *fname, unsigned short *port, char *nonce)
   fclose (fp);
   if (!nread)
     {
-      errno = ENOFILE;
+      gpg_err_set_errno (ENOENT);
       return -1;
     }
   buffer[nread] = 0;
   aval = atoi (buffer);
   if (aval < 1 || aval > 65535)
     {
-      errno = EINVAL;
+      gpg_err_set_errno (EINVAL);
       return -1;
     }
   *port = (unsigned int)aval;
@@ -134,7 +134,7 @@ read_port_and_nonce (const char *fname, unsigned short *port, char *nonce)
     ;
   if (*p != '\n' || nread != 17)
     {
-      errno = EINVAL;
+      gpg_err_set_errno (EINVAL);
       return -1;
     }
   p++; nread--;
@@ -156,7 +156,7 @@ _assuan_sock_new (assuan_context_t ctx, int domain, int type, int proto)
     domain = AF_INET;
   res = SOCKET2HANDLE(socket (domain, type, proto));
   if (res == ASSUAN_INVALID_FD)
-    errno = _assuan_sock_wsa2errno (WSAGetLastError ());
+    gpg_err_set_errno (_assuan_sock_wsa2errno (WSAGetLastError ()));
   return res;
 #else
   return socket (domain, type, proto);
@@ -198,7 +198,7 @@ _assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
           ret = _assuan_write (ctx, sockfd, nonce, 16);
           if (ret >= 0 && ret != 16)
             {
-              errno = EIO;
+              gpg_err_set_errno (EIO);
               ret = -1;
             }
         }
@@ -209,7 +209,7 @@ _assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
       int res;
       res = connect (HANDLE2SOCKET (sockfd), addr, addrlen);
       if (res < 0)
-	errno = _assuan_sock_wsa2errno (WSAGetLastError ());
+	gpg_err_set_errno (_assuan_sock_wsa2errno (WSAGetLastError ()));
       return res;
     }      
 #else
@@ -248,7 +248,7 @@ _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
       if (filefd == -1)
         {
           if (errno == EEXIST)
-            errno = WSAEADDRINUSE;
+            gpg_err_set_errno (WSAEADDRINUSE);
           return -1;
         }
       fp = fdopen (filefd, "wb");
@@ -256,7 +256,7 @@ _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
         { 
           int save_e = errno;
           close (filefd);
-          errno = save_e;
+          gpg_err_set_errno (save_e);
           return -1;
         }
 
@@ -269,7 +269,7 @@ _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
           int save_e = errno;
           fclose (fp);
           remove (unaddr->sun_path);
-          errno = save_e;
+          gpg_err_set_errno (save_e);
           return rc;
         }
       fprintf (fp, "%d\n", ntohs (myaddr.sin_port));
@@ -282,7 +282,7 @@ _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
     {
       int res = bind (HANDLE2SOCKET(sockfd), addr, addrlen);
       if (res < 0)
-	errno = _assuan_sock_wsa2errno (WSAGetLastError ());
+	gpg_err_set_errno ( _assuan_sock_wsa2errno (WSAGetLastError ()));
       return res;
     }
 #else
@@ -303,7 +303,7 @@ _assuan_sock_get_nonce (assuan_context_t ctx, struct sockaddr *addr,
 
       if (sizeof nonce->nonce != 16)
         {
-          errno = EINVAL;
+          gpg_err_set_errno (EINVAL);
           return -1;
         }
       nonce->length = 16;
@@ -336,7 +336,7 @@ _assuan_sock_check_nonce (assuan_context_t ctx, assuan_fd_t fd,
 
   if (sizeof nonce->nonce != 16)
     {
-      errno = EINVAL;
+      gpg_err_set_errno (EINVAL);
       return -1;
     }
 
@@ -345,7 +345,7 @@ _assuan_sock_check_nonce (assuan_context_t ctx, assuan_fd_t fd,
 
   if (nonce->length != 16)
     {
-      errno = EINVAL;
+      gpg_err_set_errno (EINVAL);
       return -1;
     }
 
@@ -362,7 +362,7 @@ _assuan_sock_check_nonce (assuan_context_t ctx, assuan_fd_t fd,
         return -1;
       else if (!n)
         {
-          errno = EIO;
+          gpg_err_set_errno (EIO);
           return -1;
         }
       else
@@ -373,7 +373,7 @@ _assuan_sock_check_nonce (assuan_context_t ctx, assuan_fd_t fd,
     }
   if (memcmp (buffer, nonce->nonce, 16))
     {
-      errno = EACCES;
+      gpg_err_set_errno (EACCES);
       return -1;
     }
 #else

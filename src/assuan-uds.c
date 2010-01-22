@@ -136,7 +136,7 @@ uds_reader (assuan_context_t ctx, void *buf, size_t buflen)
 #else /*HAVE_W32_SYSTEM*/
   int res = recvfrom (HANDLE2SOCKET(ctx->inbound.fd), buf, buflen, 0, NULL, NULL);
   if (res < 0)
-    errno = _assuan_sock_wsa2errno (WSAGetLastError ());
+    gpg_err_set_errno (_assuan_sock_wsa2errno (WSAGetLastError ()));
   return res;
 #endif /*HAVE_W32_SYSTEM*/
 }
@@ -168,7 +168,7 @@ uds_writer (assuan_context_t ctx, const void *buf, size_t buflen)
 		    (struct sockaddr *)&ctx->serveraddr,
 		    sizeof (struct sockaddr_in));
   if (res < 0)
-    errno = _assuan_sock_wsa2errno (WSAGetLastError ());
+    gpg_err_set_errno ( _assuan_sock_wsa2errno (WSAGetLastError ()));
   return res;
 #endif /*HAVE_W32_SYSTEM*/
 }

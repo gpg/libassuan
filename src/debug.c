@@ -60,7 +60,7 @@ _assuan_debug (assuan_context_t ctx, unsigned int cat, const char *format, ...)
     return;
   ctx->log_cb (ctx, ctx->log_cb_data, cat, msg);
   free (msg);
-  errno = saved_errno;
+  gpg_err_set_errno (saved_errno);
 }
 
 

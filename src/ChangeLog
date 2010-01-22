@@ -1,3 +1,10 @@
+2010-01-22  Werner Koch  <wk@g10code.com>
+
+	* assuan-socket.c (read_port_and_nonce): Replace ENOFILE by a
+	proper ENOENT.
+
+	Replace all assignments to ERRNO by a call to gpg_err_set_errno.
+
 2010-01-14  Werner Koch  <wk@g10code.com>
 
 	* debug.c (_assuan_debug, _assuan_debug_begin)

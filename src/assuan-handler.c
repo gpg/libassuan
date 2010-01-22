@@ -864,7 +864,7 @@ assuan_get_data_fp (assuan_context_t ctx)
   ctx->outbound.data.error = 0;
   return ctx->outbound.data.fp;
 #else
-  errno = ENOSYS;
+  gpg_err_set_errno (ENOSYS);
   return NULL;
 #endif
 }
