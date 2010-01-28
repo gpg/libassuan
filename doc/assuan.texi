@@ -1889,7 +1889,7 @@ Initialize the socket wrappers.  Must be called once at startup if any
 of the socket wrapper functions are used.
 @end deftypefun
 
-@deftypefun gpg_error_t assuan_sock_init (void)
+@deftypefun gpg_error_t assuan_sock_deinit (void)
 Deinitialize the socket wrappers.
 @end deftypefun
 
@@ -1933,11 +1933,18 @@ keep the code readable this may also be used on POSIX system.
         @w{assuan_fd_t @var{fd}}, @
         @w{assuan_sock_nonce_t *@var{nonce}})
 
-On Windows this is used by the server after an accept to read the nonce
-from the client and compare it with the saved @var{nonce}.  If this
-function fails the server should immediatly drop the connection.  To
-keep the code readable this may also be used on POSIX system; it is a
-dummy function then.  See also @code{assuan_set_sock_nonce}.
+If the option @code{ASSUAN_SOCKET_SERVER_ACCEPTED} has been used,
+Libassuan has no way to check the nonce of the server.  Thus an explicit
+check of the saved nonce using this function is required.  If this
+function fails the server should immediately drop the connection.  This
+function may not be used if Libassuan does the accept call itself
+(i.e. @code{ASSUAN_SOCKET_SERVER_ACCEPTED} has not been used) because
+in this case Libassuan calls this function internally.  See also
+@code{assuan_set_sock_nonce}.
+
+Actually this mechanism is only required on Windows but for cleanness of
+code it may be used on POSIX systems as well, where this function is
+a nop.
 @end deftypefun
 
 

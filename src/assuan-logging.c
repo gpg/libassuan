@@ -65,6 +65,8 @@ assuan_set_assuan_log_stream (FILE *fp)
   flagstr = getenv ("ASSUAN_DEBUG");
   if (flagstr)
     log_cats = atoi (flagstr);
+
+  _assuan_sysutils_blurb (); /* Make sure this code gets linked in.  */
 }
 
 

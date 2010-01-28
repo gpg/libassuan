@@ -1,5 +1,6 @@
 /* assuan.h - Definitions for the Assuan IPC library
-   Copyright (C) 2001-2003, 2005, 2007-2009 Free Software Foundation, Inc.
+   Copyright (C) 2001, 2002, 2003, 2005, 2007, 2008, 2009,
+                 2010  Free Software Foundation, Inc.
 
    This file is part of Assuan.
 
@@ -88,10 +89,14 @@ typedef void *assuan_fd_t;
 static inline assuan_fd_t
 assuan_fd_from_posix_fd (int fd)
 {
+#ifdef __MINGW32CE__
+    return (assuan_fd_t)(fd);
+#else
   if (fd < 0)
     return ASSUAN_INVALID_FD;
   else
     return (assuan_fd_t) _get_osfhandle (fd);
+#endif
 }
 #else
 typedef int assuan_fd_t;
@@ -109,7 +114,7 @@ assuan_fd_t assuan_fdopen (int fd);
 
 /* Assuan features an emulation of Unix domain sockets based on a
    local TCP connections.  To implement access permissions based on
-   file permissions a nonce is used which is expected by th server as
+   file permissions a nonce is used which is expected by the server as
    the first bytes received.  This structure is used by the server to
    save the nonce created initially by bind.  On POSIX systems this is
    a dummy operation. */  

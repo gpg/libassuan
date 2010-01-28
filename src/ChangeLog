@@ -1,3 +1,24 @@
+2010-01-28  Werner Koch  <wk@g10code.com>
+
+	* assuan.h: Remove ranges in list of copyright years.
+	(getenv) [W32CE]: Provide macro.
+	* sysutils.c: New.
+	(_assuan_sysutils_blurb): New.
+	(_assuan_getenv): new.
+	* assuan-logging.c: Call _assuan_sysutils_blurb.
+
+2010-01-27  Werner Koch  <wk@g10code.com>
+
+	* assuan-socket.c (_assuan_sock_bind): Replace remove by DeleteFile.
+
+	* assuan-handler.c (assuan_get_active_fds) [W32CE]: Remove use of
+	_get_osfhandle.
+	* assuan.h (assuan_fd_from_posix_fd) [__MINGW32CE__]: Ditto.
+	* system.c (assuan_fdopen): Ditto.
+	(__assuan_spawn) [W32CE]: Do not use GetPriorityClass.
+
+	* assuan-defs.h (getpid) [W32CE]: New.
+
 2010-01-22  Werner Koch  <wk@g10code.com>
 
 	* setenv.c [W32CE]: Make it a dummy.
@@ -691,7 +712,7 @@
 2007-10-04  Werner Koch  <wk@g10code.com>
 
 	* mkerrors: Map EAGAIN to GPG_ERR_EAGAIN for read and write
-	errors. 
+	errors.
 
 2007-10-02  Werner Koch  <wk@g10code.com>
 
@@ -707,7 +728,7 @@
 	* assuan.h (ASSUAN_INT2FD, ASSUAN_FD2INT): New.
 
 	* assuan-socket.c: Rewritten.
-	(assuan_sock_new, assuan_sock_connect, assuan_sock_bind) 
+	(assuan_sock_new, assuan_sock_connect, assuan_sock_bind)
 	(assuan_sock_get_nonce, assuan_sock_check_nonce): New APIs.
 
 	* assuan-io.c (_assuan_simple_read, _assuan_simple_write):

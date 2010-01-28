@@ -19,12 +19,24 @@
 
 #include <stdarg.h>
 
+#ifdef HAVE_W32CE_SYSTEM
+#define getpid() GetCurrentProcessId ()
+#define getenv(a) (NULL)
+#endif
+
+#if HAVE_W32_SYSTEM
+#define SOCKET2HANDLE(s) ((void *)(s))
+#define HANDLE2SOCKET(h) ((unsigned int)(h))
+#else
+#define SOCKET2HANDLE(s) (s)
+#define HANDLE2SOCKET(h) (h)
+#endif
+
 
 static const char *log_prefix;
 static int errorcount;
 static int verbose;
 static int debug;
-
 
 void *
 xmalloc (size_t n)
@@ -32,6 +44,8 @@ xmalloc (size_t n)
   char *p = malloc (n);
   if (!p)
     {
+      if (log_prefix)
+        fprintf (stderr, "%s[%u]: ", log_prefix, (unsigned int)getpid ());
       fprintf (stderr, "out of core\n");
       exit (1);
     }
@@ -44,6 +58,8 @@ xcalloc (size_t n, size_t m)
   char *p = calloc (n, m);
   if (!p)
     {
+      if (log_prefix)
+        fprintf (stderr, "%s[%u]: ", log_prefix, (unsigned int)getpid ());
       fprintf (stderr, "out of core\n");
       exit (1);
     }
@@ -66,6 +82,13 @@ log_set_prefix (const char *s)
     log_prefix++;
   else
     log_prefix = s;
+}
+
+
+const char *
+log_get_prefix (void)
+{
+  return log_prefix? log_prefix:"";
 }
 
 

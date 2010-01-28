@@ -25,7 +25,7 @@ EXTRA_DIST = motd
 BUILT_SOURCES = 
 CLEANFILES = 
 
-TESTS =
+TESTS = ce-server
 
 if USE_DESCRIPTOR_PASSING
 TESTS += fdpassing
@@ -35,5 +35,5 @@ AM_CFLAGS = $(GPG_ERROR_CFLAGS)
 
 noinst_HEADERS = common.h
 noinst_PROGRAMS = $(TESTS)
-LDADD =  ../src/libassuan.la  $(NETLIBS) $(GPG_ERROR_LIBS)
+LDADD = ../src/libassuan.la  $(NETLIBS) $(GPG_ERROR_LIBS)
 

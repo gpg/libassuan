@@ -38,6 +38,7 @@
 #include <assert.h>
 
 #include "assuan-defs.h"
+#include "debug.h"
 
 /* Hacks for Slowaris.  */
 #ifndef PF_LOCAL
@@ -268,7 +269,7 @@ _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
         {
           int save_e = errno;
           fclose (fp);
-          remove (unaddr->sun_path);
+          DeleteFile (unaddr->sun_path);
           gpg_err_set_errno (save_e);
           return rc;
         }
@@ -313,7 +314,7 @@ _assuan_sock_get_nonce (assuan_context_t ctx, struct sockaddr *addr,
     }
   else
     {
-      nonce->length = 42; /* Arbitrary valuie to detect unitialized nonce. */
+      nonce->length = 42; /* Arbitrary value to detect unitialized nonce. */
       nonce->nonce[0] = 42;
     }
 #else

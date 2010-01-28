@@ -50,7 +50,11 @@ assuan_fd_t
 assuan_fdopen (int fd)
 {
 #ifdef HAVE_W32_SYSTEM
+#ifdef HAVE_W32CE_SYSTEM
+  assuan_fd_t ifd = (assuan_fd_t)fd;
+#else
   assuan_fd_t ifd = (assuan_fd_t) _get_osfhandle (fd);
+#endif
   assuan_fd_t ofd;
 
   if (! DuplicateHandle(GetCurrentProcess(), ifd, 
@@ -199,6 +203,11 @@ __assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx)
   sec_attr.nLength = sizeof (sec_attr);
   sec_attr.bInheritHandle = FALSE;
 
+#ifdef HAVE_W32CE_SYSTEM
+# warning Implement a CreatePipe Replacement.  
+      gpg_err_set_errno (EIO);
+      return -1;
+#else
   if (! CreatePipe (&rh, &wh, &sec_attr, 0))
     {
       TRACE1 (ctx, ASSUAN_LOG_SYSIO, "__assuan_pipe", ctx,
@@ -206,6 +215,7 @@ __assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx)
       gpg_err_set_errno (EIO);
       return -1;
     }
+#endif
 
   if (! DuplicateHandle (GetCurrentProcess(), (inherit_idx == 0) ? rh : wh,
 			 GetCurrentProcess(), &th, 0,
@@ -663,7 +673,9 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
                       TRUE,                 /* Inherit handles.  */
                       (CREATE_DEFAULT_ERROR_MODE
                        | ((flags & 128)? DETACHED_PROCESS : 0)
+#ifndef HAVE_W32CE_SYSTEM
                        | GetPriorityClass (GetCurrentProcess ())
+#endif
                        | CREATE_SUSPENDED), /* Creation flags.  */
                       NULL,                 /* Environment.  */
                       NULL,                 /* Use current drive/directory.  */

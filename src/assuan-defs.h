@@ -335,6 +335,16 @@ FILE *_assuan_funopen(void *cookie,
 #define funopen(a,r,w,s,c) _assuan_funopen ((a), (r), (w), (s), (c))
 #endif /*HAVE_FOPENCOOKIE*/
 
+/*-- sysutils.c --*/
+const char *_assuan_sysutils_blurb (void);
+
+#ifdef HAVE_W32CE_SYSTEM
+#define getpid() GetCurrentProcessId ()
+char *_assuan_getenv (const char *name);
+#define getenv(a) _assuan_getenv ((a))
+#endif
+
+
 /* Prototypes for replacement functions.  */
 #ifndef HAVE_MEMRCHR
 void *memrchr (const void *block, int c, size_t size);

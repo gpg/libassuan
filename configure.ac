@@ -199,7 +199,12 @@ AC_CHECK_FUNC(setsockopt, , AC_CHECK_LIB(socket, setsockopt,
 AC_SUBST(NETLIBS)
 
 if test "$have_w32_system" = yes; then
-   NETLIBS="-lws2_32 $NETLIBS"
+   if test "$have_w32ce_system" = yes; then
+     NETLIBS="-lws2 $NETLIBS"
+   else
+     # FIXME: Check why we need to use ws2_32 and document that.
+     NETLIBS="-lws2_32 $NETLIBS"
+   fi
 fi
 
 

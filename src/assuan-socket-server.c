@@ -46,6 +46,8 @@ accept_connection_bottom (assuan_context_t ctx)
 {
   assuan_fd_t fd = ctx->connected_fd;
 
+  TRACE (ctx, ASSUAN_LOG_SYSIO, "accept_connection_bottom", ctx);
+
   ctx->peercred_valid = 0;
 #ifdef HAVE_SO_PEERCRED
   {
@@ -90,12 +92,17 @@ accept_connection (assuan_context_t ctx)
   struct sockaddr_un clnt_addr;
   socklen_t len = sizeof clnt_addr;
 
+  TRACE1 (ctx, ASSUAN_LOG_SYSIO, "accept_connection", ctx, 
+         "listen_fd=0x%x", ctx->listen_fd);
+
   fd = SOCKET2HANDLE(accept (HANDLE2SOCKET(ctx->listen_fd), 
                              (struct sockaddr*)&clnt_addr, &len ));
   if (fd == ASSUAN_INVALID_FD)
     {
       return _assuan_error (ctx, gpg_err_code_from_syserror ());
     }
+  TRACE1 (ctx, ASSUAN_LOG_SYSIO, "accept_connection", ctx, 
+          "fd->0x%x", fd);
   if (_assuan_sock_check_nonce (ctx, fd, &ctx->listen_nonce))
     {
       _assuan_close (ctx, fd);
