@@ -19,6 +19,13 @@
 
 #include <stdarg.h>
 
+#if __GNUC__ >= 4 
+# define MY_GCC_A_SENTINEL(a) __attribute__ ((sentinel(a)))
+#else
+# define MY_GCC_A_SENTINEL(a) 
+#endif
+
+
 #ifdef HAVE_W32CE_SYSTEM
 #define getpid() GetCurrentProcessId ()
 #define getenv(a) (NULL)
@@ -31,6 +38,12 @@
 #define SOCKET2HANDLE(s) (s)
 #define HANDLE2SOCKET(h) (h)
 #endif
+
+#define DIM(v)		     (sizeof(v)/sizeof((v)[0]))
+#define DIMof(type,member)   DIM(((type *)0)->member)
+
+
+char *xstrconcat (const char *s1, ...) MY_GCC_A_SENTINEL(0);
 
 
 static const char *log_prefix;
@@ -71,6 +84,14 @@ xfree (void *a)
 {
   if (a)
     free (a);
+}
+
+void *
+xstrdup (const char *string)
+{
+  char *p = xmalloc (strlen (string) + 1);
+  strcpy (p, string);
+  return p;
 }
 
 
@@ -165,6 +186,84 @@ prepend_srcdir (const char *fname)
   strcpy (result, srcdir);
   strcat (result, "/");
   strcat (result, fname);
+  return result;
+}
+
+
+#ifndef HAVE_STPCPY
+#undef __stpcpy
+#undef stpcpy
+#ifndef weak_alias
+# define __stpcpy stpcpy
+#endif
+char *
+__stpcpy (char *a,const char *b)
+{
+  while (*b)
+    *a++ = *b++;
+  *a = 0;
+  return (char*)a;
+}
+#ifdef libc_hidden_def
+libc_hidden_def (__stpcpy)
+#endif
+#ifdef weak_alias
+weak_alias (__stpcpy, stpcpy)
+#endif
+#ifdef libc_hidden_builtin_def
+libc_hidden_builtin_def (stpcpy)
+#endif
+#endif
+
+
+static char *
+do_strconcat (const char *s1, va_list arg_ptr)
+{
+  const char *argv[48];
+  size_t argc;
+  size_t needed;
+  char *buffer, *p;
+
+  argc = 0;
+  argv[argc++] = s1;
+  needed = strlen (s1);
+  while (((argv[argc] = va_arg (arg_ptr, const char *))))
+    {
+      needed += strlen (argv[argc]);
+      if (argc >= DIM (argv)-1)
+        {
+          fprintf (stderr, "too many args in strconcat\n");
+          exit (1);
+        }
+      argc++;
+    }
+  needed++;
+  buffer = xmalloc (needed);
+  if (buffer)
+    {
+      for (p = buffer, argc=0; argv[argc]; argc++)
+        p = stpcpy (p, argv[argc]);
+    }
+  return buffer;
+}
+
+
+/* Concatenate the string S1 with all the following strings up to a
+   NULL.  Returns a malloced buffer or dies on malloc error.  */
+char *
+xstrconcat (const char *s1, ...)
+{
+  va_list arg_ptr;
+  char *result;
+
+  if (!s1)
+    result = xstrdup ("");
+  else
+    {
+      va_start (arg_ptr, s1);
+      result = do_strconcat (s1, arg_ptr);
+      va_end (arg_ptr);
+    }
   return result;
 }
 
