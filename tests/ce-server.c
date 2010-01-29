@@ -361,6 +361,112 @@ cmd_ls (assuan_context_t ctx, char *line)
 #endif /*HAVE_W32CE_SYSTEM*/
 
 
+#ifdef HAVE_W32CE_SYSTEM
+static const char hlp_run[] = 
+  "RUN <filename> [<args>]\n"
+  "\n"
+  "Run the program in FILENAME with the arguments ARGS.\n"
+  "This creates a new process and waits for it to finish.\n"
+  "FIXME: The process' stdin is connected to the file set by the\n"
+  "INPUT command; stdout and stderr to the one set by OUTPUT.\n";
+static gpg_error_t
+cmd_run (assuan_context_t ctx, char *line)
+{
+  /*  state_t state = assuan_get_pointer (ctx); */
+  gpg_error_t err;
+  PROCESS_INFORMATION pi = { NULL, 0, 0, 0 };
+  char *p;
+  wchar_t *pgmname = NULL;
+  wchar_t *cmdline = NULL;
+  int code;
+  DWORD exc;
+
+  p = strchr (line, ' ');
+  if (p)
+    {
+      *p = 0;
+      pgmname = utf8_to_wchar (line);
+      for (p++; *p && *p == ' '; p++)
+        ;
+      cmdline = utf8_to_wchar (p);
+    }
+  else
+    pgmname = utf8_to_wchar (line);
+  {
+    char *tmp1 = wchar_to_utf8 (pgmname);
+    char *tmp2 = wchar_to_utf8 (cmdline);
+    log_info ("CreateProcess, path=`%s' cmdline=`%s'\n", tmp1, tmp2);
+    xfree (tmp2);
+    xfree (tmp1);
+  }
+  if (!CreateProcess (pgmname,     /* Program to start.  */
+                      cmdline,     /* Command line arguments.  */
+                      NULL,        /* Process security attributes. notsup. */
+                      NULL,        /* Thread security attributes.  notsup. */
+                      FALSE,       /* Inherit handles.  notsup.  */
+                      CREATE_SUSPENDED, /* Creation flags.  */
+                      NULL,        /* Environment.  notsup.  */
+                      NULL,        /* Use current drive/directory.  notsup. */
+                      NULL,        /* Startup information.  notsup. */
+                      &pi          /* Returns process information.  */
+                      ))
+    {
+      log_error ("CreateProcess failed: %d", GetLastError ());
+      err = gpg_error_from_syserror ();
+      goto leave;
+    }
+
+  log_info ("CreateProcess ready: hProcess=%p hThread=%p" 
+            " dwProcessID=%d dwThreadId=%d\n", 
+            pi.hProcess, pi.hThread,
+            (int) pi.dwProcessId, (int) pi.dwThreadId);
+
+  ResumeThread (pi.hThread);
+  CloseHandle (pi.hThread); 
+
+  code = WaitForSingleObject (pi.hProcess, INFINITE);
+  switch (code) 
+    {
+      case WAIT_FAILED:
+        err = gpg_error_from_syserror ();;
+        log_error ("waiting for process %d to terminate failed: %d\n",
+                   (int)pi.dwProcessId, GetLastError ());
+        break;
+
+      case WAIT_OBJECT_0:
+        if (!GetExitCodeProcess (pi.hProcess, &exc))
+          {
+            err = gpg_error_from_syserror ();;
+            log_error ("error getting exit code of process %d: %s\n",
+                       (int)pi.dwProcessId, GetLastError () );
+          }
+        else if (exc)
+          {
+            log_info ("error running process: exit status %d\n", (int)exc);
+            err = gpg_error (GPG_ERR_GENERAL);
+          }
+        else
+          {
+            err = 0;
+          }
+        break;
+        
+      default:
+        err = gpg_error_from_syserror ();;
+        log_error ("WaitForSingleObject returned unexpected "
+                   "code %d for pid %d\n", code, (int)pi.dwProcessId);
+        break;
+    }
+  CloseHandle (pi.hProcess);
+  
+ leave:
+  xfree (cmdline);
+  xfree (pgmname);
+  return leave_cmd (ctx, err);
+}
+#endif /*HAVE_W32CE_SYSTEM*/
+
+
 static const char hlp_shutdown[] = 
   "SHUTDOWN\n"
   "\n"
@@ -387,6 +493,7 @@ register_commands (assuan_context_t ctx)
       {
 #ifdef HAVE_W32CE_SYSTEM
         { "LS",   cmd_ls, hlp_ls },
+        { "RUN",  cmd_run, hlp_run },
 #endif
         { "PWD",  cmd_pwd, hlp_pwd },
         { "CD",   cmd_cd,  hlp_cd },
