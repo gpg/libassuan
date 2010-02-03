@@ -83,6 +83,7 @@ LIBASSUAN_1.0 {
     assuan_set_malloc_hooks;
     assuan_set_okay_line;
     assuan_set_pointer;
+    assuan_set_sock_nonce;
     assuan_set_system_hooks;
     assuan_sock_bind;
     assuan_sock_check_nonce;
