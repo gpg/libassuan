@@ -216,7 +216,7 @@ octets.  The default IPC mechanism is Unix Domain Sockets.
 
 On a connect request the server responds either with an okay or an
 error status.  For authentication-check the server may send an Inquiry
-Response prior to the first Okay, and it may also issue Status
+response prior to the first Okay, and it may also issue Status
 messages.  The server must check that the client is allowed to
 connect, this is done by requesting the credentials for the peer and
 comparing them to those of the server.  This avoids attacks based on
@@ -1379,7 +1379,8 @@ an @code{INPUT} command has been seen and successfully parsed.  The second
 argument passed to that function is the entire line.  Because that line
 has already been parsed when the function gets called, a file descriptor
 set with the @code{INPUT} command may already be used.  That file
-descriptor is available by calling @code{assuan_get_input_fd}.
+descriptor is available by calling @code{assuan_get_input_fd}.  If the
+notification function returns an error, the input fd does not change.
 @end deftypefun
 
 @deftypefun gpg_error_t assuan_register_output_notify (@w{assuan_context_t @var{ctx}}, @w{assuan_handler_t @var{handler}})
@@ -1390,7 +1391,8 @@ an @code{OUTPUT} command has been seen and successfully parsed.  The second
 argument passed to that function is the entire line.  Because that line
 has already been parsed when the function gets called, a file descriptor
 set with the @code{OUTPUT} command may already be used.  That file
-descriptor is available by calling @code{assuan_get_output_fd}.
+descriptor is available by calling @code{assuan_get_output_fd}. If the
+notification function returns an error, the output fd does not change.
 @end deftypefun
 
 @deftypefun gpg_error_t assuan_set_hello_line (@w{assuan_context_t @var{ctx}}, @w{const char *@var{line}})

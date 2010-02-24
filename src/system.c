@@ -113,6 +113,16 @@ _assuan_free (assuan_context_t ctx, void *ptr)
     ctx->malloc_hooks.free (ptr);
 }
 
+
+/* Release the memory at PTR using the allocation handler of the
+   context CTX.  This is a convenience function.  */
+void
+assuan_free (assuan_context_t ctx, void *ptr)
+{
+  _assuan_free (ctx, ptr);
+}
+
+
 
 /* Copy the system hooks struct, paying attention to version
    differences.  SRC is usually from the user, DST MUST be from the
@@ -203,19 +213,13 @@ __assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx)
   sec_attr.nLength = sizeof (sec_attr);
   sec_attr.bInheritHandle = FALSE;
 
-#ifdef HAVE_W32CE_SYSTEM
-# warning Implement a CreatePipe Replacement.  
-      gpg_err_set_errno (EIO);
-      return -1;
-#else
-  if (! CreatePipe (&rh, &wh, &sec_attr, 0))
+  if (!CreatePipe (&rh, &wh, &sec_attr, 0))
     {
       TRACE1 (ctx, ASSUAN_LOG_SYSIO, "__assuan_pipe", ctx,
 	      "CreatePipe failed: %s", _assuan_w32_strerror (ctx, -1));
       gpg_err_set_errno (EIO);
       return -1;
     }
-#endif
 
   if (! DuplicateHandle (GetCurrentProcess(), (inherit_idx == 0) ? rh : wh,
 			 GetCurrentProcess(), &th, 0,

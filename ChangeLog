@@ -1,3 +1,17 @@
+2010-02-24  Werner Koch  <wk@g10code.com>
+
+	* tests/ce-server.c: New.
+
+	* tests/ce-createpipe.c [W32CE]: New.
+
+2010-02-11  Werner Koch  <wk@g10code.com>
+
+	* configure.ac (inet_pton): Check for it.
+
+2010-02-04  Werner Koch  <wk@g10code.com>
+
+	* configure.ac (AC_TYPE_UINT16_T): New.
+
 2010-01-27  Werner Koch  <wk@g10code.com>
 
 	* tests/common.h (SOCKET2HANDLE, HANDLE2SOCKET): New.

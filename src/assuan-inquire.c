@@ -183,15 +183,23 @@ assuan_inquire (assuan_context_t ctx, const char *keyword,
           linelen = ctx->inbound.linelen;
         }    
       while (*line == '#' || !linelen);
-      if (line[0] == 'E' && line[1] == 'N' && line[2] == 'D'
+
+      /* Note: As a convenience for manual testing we allow case
+         insensitive keywords.  */
+      if ((line[0] == 'E'||line[0] == 'e')
+          && (line[1] == 'N' || line[1] == 'n')
+          && (line[2] == 'D' || line[2] == 'd')
           && (!line[3] || line[3] == ' '))
         break; /* END command received*/
-      if (line[0] == 'C' && line[1] == 'A' && line[2] == 'N')
+      if ((line[0] == 'C' || line[0] == 'c')
+          && (line[1] == 'A' || line[1] == 'a')
+          && (line[2] == 'N' || line[2] == 'n'))
         {
           rc = _assuan_error (ctx, GPG_ERR_ASS_CANCELED);
           goto leave;
         }
-      if (line[0] != 'D' || line[1] != ' ' || nodataexpected)
+      if ((line[0] != 'D' && line[0] != 'd') 
+          || line[1] != ' ' || nodataexpected)
         {
           rc = _assuan_error (ctx, GPG_ERR_ASS_UNEXPECTED_CMD);
           goto leave;
@@ -268,19 +276,23 @@ _assuan_inquire_ext_cb (assuan_context_t ctx)
   linelen = ctx->inbound.linelen;
   mb = ctx->inquire_membuf;
 
-  if (line[0] == 'C' && line[1] == 'A' && line[2] == 'N')
+  if ((line[0] == 'C' || line[0] == 'c')
+      && (line[1] == 'A' || line[1] == 'a')
+      && (line[2] == 'N' || line[2] == 'n'))
     {
       rc = _assuan_error (ctx, GPG_ERR_ASS_CANCELED);
       goto leave;
     }
-  if (line[0] == 'E' && line[1] == 'N' && line[2] == 'D'
+  if ((line[0] == 'E'||line[0] == 'e')
+      && (line[1] == 'N' || line[1] == 'n')
+      && (line[2] == 'D' || line[2] == 'd')
       && (!line[3] || line[3] == ' '))
     {
       rc = 0;
       goto leave;
     }
 
-  if (line[0] != 'D' || line[1] != ' ' || mb == NULL)
+  if ((line[0] != 'D' && line[0] != 'd') || line[1] != ' ' || mb == NULL)
     {
       rc = _assuan_error (ctx, GPG_ERR_ASS_UNEXPECTED_CMD);
       goto leave;
@@ -344,8 +356,8 @@ _assuan_inquire_ext_cb (assuan_context_t ctx)
  * @cb: A callback handler which is invoked after the operation completed.
  * @cb_data: A user-provided value passed to the callback handler.
  * 
- * A Server may use this to Send an inquire.  r_buffer, r_length and
- * maxlen may all be NULL/0 to indicate that no real data is expected.
+ * A server may use this to send an inquire.  R_BUFFER, R_LENGTH and
+ * MAXLEN may all be NULL/0 to indicate that no real data is expected.
  * When this function returns, 
  *
  * Return value: 0 on success or an ASSUAN error code

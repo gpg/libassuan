@@ -97,5 +97,8 @@ EXPORTS
     assuan_client_read_response		@76
     assuan_client_parse_response	@77
     assuan_set_sock_nonce               @78
+    _assuan_w32ce_create_pipe           @79
+    assuan_free                         @80
+
 ; END
 

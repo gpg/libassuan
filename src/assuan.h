@@ -199,6 +199,10 @@ gpg_error_t assuan_new (assuan_context_t *ctx);
 /* Release all resources associated with the given context.  */
 void assuan_release (assuan_context_t ctx);
 
+/* Release the memory at PTR using the allocation handler of the
+   context CTX.  This is a convenience function.  */
+void assuan_free (assuan_context_t ctx, void *ptr);
+
 
 /* Set user-data in a context.  */
 void assuan_set_pointer (assuan_context_t ctx, void *pointer);
@@ -634,6 +638,13 @@ int __assuan_socketpair (assuan_context_t ctx, int _namespace, int style,
 extern struct assuan_system_hooks _assuan_system_pth;
 #define ASSUAN_SYSTEM_PTH &_assuan_system_pth
 
+#ifdef __MINGW32CE__
+/* FIXME: Include this code only if build for this platform.  */
+DWORD _assuan_w32ce_create_pipe (HANDLE *read_hd, HANDLE *write_hd,
+                                 LPSECURITY_ATTRIBUTES sec_attr, DWORD size);
+#define CreatePipe(a,b,c,d) _assuan_w32ce_create_pipe ((a),(b),(c),(d))
+
+#endif /*__MINGW32CE__*/
 
 #ifdef __cplusplus
 }

@@ -1,6 +1,45 @@
+2010-02-24  Werner Koch  <wk@g10code.com>
+
+	* gpgcemgr.c: New.
+	* gpgcedev.c: New.
+	* sysutils.c (_assuan_w32ce_create_pipe): Rewrote to make use of
+	the new driver.
+
+2010-02-16  Werner Koch  <wk@g10code.com>
+
+	* system.c (assuan_free): New.
+	* libassuan.vers (assuan_free): Add it.
+	* libassuan.def (assuan_free): Add it.
+
+2010-02-11  Werner Koch  <wk@g10code.com>
+
+	* assuan-inquire.c (assuan_inquire): Allow case insensitive
+	responses.
+	(_assuan_inquire_ext_cb): Ditto.
+
+2010-02-10  Werner Koch  <wk@g10code.com>
+
+	* assuan-handler.c (std_handler_input, std_handler_output): Make
+	the parsed FD available to the notification functions.  This is
+	the documented behaviour.
+
+2010-02-04  Werner Koch  <wk@g10code.com>
+
+	* assuan-socket-connect.c: Include stdint.h and arpa/inet.h.
+	(parse_portno): New.
+	(assuan_socket_connect): Return a correct error code on failure.
+	Support assuan:// and file:// schemes.
+
 2010-02-03  Marcus Brinkmann  <marcus@g10code.de>
 
 	* libassuan.vers, libassuan.def: Add assuan_set_sock_nonce.
+
+2010-02-01  Werner Koch  <wk@g10code.com>
+
+	* sysutils.c (_assuan_w32ce_create_pipe): New.
+	* libassuan.def (_assuan_w32ce_create_pipe): New.
+	* assuan-defs.h (CreateFile) [W32CE]: New macro
+	* system.c (__assuan_pipe): Make it work for W32CE.
 
 2010-01-28  Werner Koch  <wk@g10code.com>
 

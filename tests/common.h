@@ -34,9 +34,14 @@
 #if HAVE_W32_SYSTEM
 #define SOCKET2HANDLE(s) ((void *)(s))
 #define HANDLE2SOCKET(h) ((unsigned int)(h))
+CRITICAL_SECTION _log_critsect;
+#define _log_enter()  do { EnterCriticalSection (&_log_critsect); } while (0)
+#define _log_leave()  do { LeaveCriticalSection (&_log_critsect); } while (0)
 #else
 #define SOCKET2HANDLE(s) (s)
 #define HANDLE2SOCKET(h) (h)
+#define _log_enter()  do { } while (0)
+#define _log_leave()  do { } while (0)
 #endif
 
 #define DIM(v)		     (sizeof(v)/sizeof((v)[0]))
@@ -71,9 +76,11 @@ xcalloc (size_t n, size_t m)
   char *p = calloc (n, m);
   if (!p)
     {
+      _log_enter ();
       if (log_prefix)
         fprintf (stderr, "%s[%u]: ", log_prefix, (unsigned int)getpid ());
       fprintf (stderr, "out of core\n");
+      _log_leave ();
       exit (1);
     }
   return p;
@@ -98,7 +105,12 @@ xstrdup (const char *string)
 void
 log_set_prefix (const char *s)
 {
+#ifdef HAVE_W32_SYSTEM
+  InitializeCriticalSection (&_log_critsect);
+  log_prefix = strrchr (s, '\\');
+#else  
   log_prefix = strrchr (s, '/');
+#endif  
   if (log_prefix)
     log_prefix++;
   else
@@ -122,9 +134,11 @@ log_info (const char *format, ...)
     return;
 
   va_start (arg_ptr, format) ;
+  _log_enter ();
   if (log_prefix)
     fprintf (stderr, "%s[%u]: ", log_prefix, (unsigned int)getpid ());
   vfprintf (stderr, format, arg_ptr );
+  _log_leave ();
   va_end (arg_ptr);
 }
 
@@ -135,9 +149,11 @@ log_error (const char *format, ...)
   va_list arg_ptr ;
 
   va_start (arg_ptr, format) ;
+  _log_enter ();
   if (log_prefix)
     fprintf (stderr, "%s[%u]: ", log_prefix, (unsigned int)getpid ());
   vfprintf (stderr, format, arg_ptr );
+  _log_leave ();
   va_end (arg_ptr);
   errorcount++;
 }
@@ -149,9 +165,11 @@ log_fatal (const char *format, ...)
   va_list arg_ptr ;
 
   va_start (arg_ptr, format) ;
+  _log_enter ();
   if (log_prefix)
     fprintf (stderr, "%s[%u]: ", log_prefix, (unsigned int)getpid ());
   vfprintf (stderr, format, arg_ptr );
+  _log_leave ();
   va_end (arg_ptr);
   exit (2);
 }
@@ -162,12 +180,14 @@ log_printhex (const char *text, const void *buffer, size_t length)
 {
   const unsigned char *s;
 
+  _log_enter ();
   if (log_prefix)
     fprintf (stderr, "%s[%u]: ", log_prefix, (unsigned int)getpid ());
   fputs (text, stderr);
   for (s=buffer; length; s++, length--)
     fprintf (stderr, "%02X", *s);
   putc ('\n', stderr);
+  _log_leave ();
 }
 
 

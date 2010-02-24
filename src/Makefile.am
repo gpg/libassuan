@@ -25,6 +25,10 @@ bin_SCRIPTS = libassuan-config
 m4datadir = $(datadir)/aclocal
 m4data_DATA = libassuan.m4
 lib_LTLIBRARIES = libassuan.la
+if HAVE_W32CE_SYSTEM
+lib_LTLIBRARIES += libgpgcedev.la
+bin_PROGRAMS = gpgcemgr
+endif
 include_HEADERS = assuan.h
 
 if HAVE_LD_VERSION_SCRIPT
@@ -97,3 +101,12 @@ libassuan_la_LDFLAGS = $(libassuan_res_ldflag) $(no_undefined) \
 libassuan_la_DEPENDENCIES = @LTLIBOBJS@ \
 	$(srcdir)/libassuan.vers $(libassuan_deps)
 libassuan_la_LIBADD = @LTLIBOBJS@ @NETLIBS@ @GPG_ERROR_LIBS@
+
+if HAVE_W32CE_SYSTEM
+libgpgcedev_la_SOURCES = gpgcedev.c
+libgpgcedev_la_CPPFLAGS = $(AM_CPPFLAGS)
+libgpgcedev_la_LDFLAGS = $(no_undefined) -export-symbols $(srcdir)/gpgcedev.def
+libgpgcedev_la_DEPENDENCIES = gpgcedev.def
+gpgcemgr_SOURCES = gpgcemgr.c
+gpgcemgr_CPPFLAGS = $(AM_CPPFLAGS)
+endif

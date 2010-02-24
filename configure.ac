@@ -224,6 +224,7 @@ AC_SUBST(LIBASSUAN_CONFIG_EXTRA_LIBS)
 AC_HEADER_STDC
 AC_CHECK_HEADERS([string.h locale.h sys/uio.h stdint.h inttypes.h])
 AC_TYPE_UINTPTR_T
+AC_TYPE_UINT16_T
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -267,7 +268,7 @@ AM_PATH_GPG_ERROR(1.8,, AC_MSG_ERROR([libgpg-error was not found]))
 #
 # Checks for library functions.
 #
-AC_CHECK_FUNCS([flockfile funlockfile])
+AC_CHECK_FUNCS([flockfile funlockfile inet_pton])
 
 # On some systems (e.g. Solaris) nanosleep requires linking to librl.
 # Given that we use nanosleep only as an optimization over a select

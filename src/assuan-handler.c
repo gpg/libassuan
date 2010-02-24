@@ -234,7 +234,7 @@ assuan_command_parse_fd (assuan_context_t ctx, char *line, assuan_fd_t *rfd)
 	return set_error (ctx, GPG_ERR_ASS_SYNTAX, "number required");
 #ifdef HAVE_W32_SYSTEM
       /* Fixme: For a W32/64bit system we will need to change the cast
-         and the conversion fucntion.  */
+         and the conversion function.  */
       *rfd = (void*)strtoul (line, &endp, 10);
 #else
       *rfd = strtoul (line, &endp, 10);
@@ -259,14 +259,20 @@ static gpg_error_t
 std_handler_input (assuan_context_t ctx, char *line)
 {
   gpg_error_t rc;
-  assuan_fd_t fd;
+  assuan_fd_t fd, oldfd;
 
   rc = assuan_command_parse_fd (ctx, line, &fd);
   if (rc)
     return PROCESS_DONE (ctx, rc);
   if (ctx->input_notify_fnc)
-    rc = ctx->input_notify_fnc (ctx, line);
-  if (! rc)
+    {
+      oldfd = ctx->input_fd;
+      ctx->input_fd = fd;
+      rc = ctx->input_notify_fnc (ctx, line);
+      if (rc)
+        ctx->input_fd = oldfd;
+    }
+  else if (!rc)
     ctx->input_fd = fd;
   return PROCESS_DONE (ctx, rc);
 }
@@ -277,14 +283,20 @@ static gpg_error_t
 std_handler_output (assuan_context_t ctx, char *line)
 {
   gpg_error_t rc;
-  assuan_fd_t fd;
+  assuan_fd_t fd, oldfd;
 
   rc = assuan_command_parse_fd (ctx, line, &fd);
   if (rc)
     return PROCESS_DONE (ctx, rc);
   if (ctx->output_notify_fnc)
-    rc = ctx->output_notify_fnc (ctx, line);
-  if (!rc)
+    {
+      oldfd = ctx->output_fd;
+      ctx->output_fd = fd;
+      rc = ctx->output_notify_fnc (ctx, line);
+      if (rc)
+        ctx->output_fd = oldfd;
+    }
+  else if (!rc)
     ctx->output_fd = fd;
   return PROCESS_DONE (ctx, rc);
 }

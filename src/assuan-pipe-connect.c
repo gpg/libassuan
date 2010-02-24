@@ -382,7 +382,7 @@ socketpair_connect (assuan_context_t ctx,
           pipes are usually created using the `socketpair' function.
           It also enables features only available with such servers.
 
-   Bit 7: If set and there is a need to start ther server it will be
+   Bit 7: If set and there is a need to start the server it will be
           started as a background process.  This flag is useful under
           W32 systems, so that no new console is created and pops up a
           console window when starting the server

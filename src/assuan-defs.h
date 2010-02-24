@@ -1,5 +1,6 @@
 /* assuan-defs.h - Internal definitions to Assuan
-   Copyright (C) 2001, 2002, 2004, 2005, 2007-2009 Free Software Foundation, Inc.
+   Copyright (C) 2001, 2002, 2004, 2005, 2007, 2008,
+                 2009, 2010 Free Software Foundation, Inc.
 
    This file is part of Assuan.
 
@@ -339,10 +340,12 @@ FILE *_assuan_funopen(void *cookie,
 const char *_assuan_sysutils_blurb (void);
 
 #ifdef HAVE_W32CE_SYSTEM
+
 #define getpid() GetCurrentProcessId ()
 char *_assuan_getenv (const char *name);
 #define getenv(a) _assuan_getenv ((a))
-#endif
+
+#endif /*HAVE_W32CE_SYSTEM*/
 
 
 /* Prototypes for replacement functions.  */

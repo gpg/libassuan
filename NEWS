@@ -5,6 +5,15 @@ Noteworthy changes in version 2.0.1 (unreleased)
 
  * Support for WindowsCE.
 
+ * Input and output notification handler can now really access the
+   parsed fd as stated in the manual.
+
+ * Interface changes relative to the 2.0.0 release:
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ assuan_free               NEW.
+ _assuan_w32ce_create_pipe NEW.
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 Noteworthy changes in version 2.0.0 (2010-01-08)
 ------------------------------------------------
