@@ -1,3 +1,8 @@
+2010-02-25  Werner Koch  <wk@g10code.com>
+
+	* m4/libtool.m4 (_LT_CHECK_MAGIC_METHOD): Fix for non x86 mingw
+	targets.
+
 2010-02-24  Werner Koch  <wk@g10code.com>
 
 	* tests/ce-server.c: New.
