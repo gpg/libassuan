@@ -13,3 +13,23 @@ category "libassuan".
 
 The primary FTP site is ftp://ftp.gnupg.org/gcrypt/libassuan.
 
+
+
+Notes for Windows CE:
+----------------------
+
+Libassuan supports WindowsCE (tested with WindowsMobile 6.5).  To
+install it, copy libassuan-0.dll into a location where DLL are found
+and install the included gpgcedev driver: First copy "gpgcedev.dll"
+into the root directory, second run the included program gpgcemgr on
+the device: "gpgcemgr --register".  This creates the necessary
+registry keys.  In case the copy step fails, the driver may still be
+in use: Close all applications using that driver, run "gpgcemgr
+--deactivate" to deactivate the running driver and try again.
+
+Registry keys created by "gpgcemgr --register" are:
+
+   Drivers\\GnuPG_Device\dll    -> "gpgcedev.dll"
+   Drivers\\GnuPG_Device\prefix -> "GPG"
+   Drivers\\GnuPG_Device\Index  -> 1      (dword)
+
