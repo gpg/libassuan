@@ -1,5 +1,5 @@
 /* assuan-buffer.c - read and send data
-   Copyright (C) 2001-2004, 2006, 2009 Free Software Foundation, Inc.
+   Copyright (C) 2001-2004, 2006, 2009, 2010 Free Software Foundation, Inc.
 
    This file is part of Assuan.
 
@@ -138,12 +138,10 @@ _assuan_read_line (assuan_context_t ctx)
   if (rc)
     {
       int saved_errno = errno;
+      char buf[100];
 
-      if (ctx->log_fp)
-	fprintf (ctx->log_fp, "%s[%u.%d] DBG: <- [Error: %s]\n",
-                 assuan_get_assuan_log_prefix (),
-                 (unsigned int)getpid (), (int)ctx->inbound.fd,
-                 strerror (errno));
+      snprintf (buf, sizeof buf, "error: %s", strerror (errno));
+      _assuan_log_control_channel (ctx, 0, buf, NULL, 0, NULL, 0);
 
       if (saved_errno == EAGAIN)
         {
@@ -161,11 +159,7 @@ _assuan_read_line (assuan_context_t ctx)
   if (!nread)
     {
       assert (ctx->inbound.eof);
-      if (ctx->log_fp)
-	fprintf (ctx->log_fp, "%s[%u.%d] DBG: <- [EOF]\n",
-		 assuan_get_assuan_log_prefix (),
-                 (unsigned int)getpid (), (int)ctx->inbound.fd);
-
+      _assuan_log_control_channel (ctx, 0, "eof", NULL, 0, NULL, 0);
       return _assuan_error (ctx, GPG_ERR_EOF);
     }
 
@@ -205,27 +199,16 @@ _assuan_read_line (assuan_context_t ctx)
       if (monitor_result & ASSUAN_IO_MONITOR_IGNORE)
         ctx->inbound.linelen = 0;
       
-      if (ctx->log_fp && !(monitor_result & ASSUAN_IO_MONITOR_NOLOG))
-	{
-	  fprintf (ctx->log_fp, "%s[%u.%d] DBG: <- ",
-		   assuan_get_assuan_log_prefix (),
-                   (unsigned int)getpid (), (int)ctx->inbound.fd);
-	  if (ctx->flags.confidential)
-	    fputs ("[Confidential data not shown]", ctx->log_fp);
-	  else
-	    _assuan_log_print_buffer (ctx->log_fp,
-				      ctx->inbound.line,
-				      ctx->inbound.linelen);
-	  putc ('\n', ctx->log_fp);
-	}
+      if ( !(monitor_result & ASSUAN_IO_MONITOR_NOLOG))
+        _assuan_log_control_channel (ctx, 0, NULL,
+                                     ctx->inbound.line, ctx->inbound.linelen,
+                                     NULL, 0);
       return 0;
     }
   else
     {
-      if (ctx->log_fp)
-	fprintf (ctx->log_fp, "%s[%u.%d] DBG: <- [Invalid line]\n",
-		 assuan_get_assuan_log_prefix (),
-                 (unsigned int)getpid (), (int)ctx->inbound.fd);
+      _assuan_log_control_channel (ctx, 0, "invalid line", 
+                                   NULL, 0, NULL, 0);
       *line = 0;
       ctx->inbound.linelen = 0;
       return _assuan_error (ctx, ctx->inbound.eof 
@@ -285,11 +268,9 @@ _assuan_write_line (assuan_context_t ctx, const char *prefix,
   /* Make sure that the line is short enough. */
   if (len + prefixlen + 2 > ASSUAN_LINELENGTH)
     {
-      if (ctx->log_fp)
-        fprintf (ctx->log_fp, "%s[%u.%d] DBG: -> "
-                 "[supplied line too long -truncated]\n",
-                 assuan_get_assuan_log_prefix (),
-                 (unsigned int)getpid (), (int)ctx->inbound.fd);
+      _assuan_log_control_channel (ctx, 1, 
+                                   "supplied line too long - truncated",
+                                   NULL, 0, NULL, 0);
       if (prefixlen > 5)
         prefixlen = 5;
       if (len > ASSUAN_LINELENGTH - prefixlen - 2)
@@ -301,21 +282,10 @@ _assuan_write_line (assuan_context_t ctx, const char *prefix,
     monitor_result = ctx->io_monitor (ctx, ctx->io_monitor_data, 1, line, len);
 
   /* Fixme: we should do some kind of line buffering.  */
-  if (ctx->log_fp && !(monitor_result & ASSUAN_IO_MONITOR_NOLOG))
-    {
-      fprintf (ctx->log_fp, "%s[%u.%d] DBG: -> ",
-	       assuan_get_assuan_log_prefix (),
-               (unsigned int)getpid (), (int)ctx->inbound.fd);
-      if (ctx->flags.confidential)
-	fputs ("[Confidential data not shown]", ctx->log_fp);
-      else
-        {
-          if (prefixlen)
-            _assuan_log_print_buffer (ctx->log_fp, prefix, prefixlen);
-          _assuan_log_print_buffer (ctx->log_fp, line, len);
-        }
-      putc ('\n', ctx->log_fp);
-    }
+  if (!(monitor_result & ASSUAN_IO_MONITOR_NOLOG))
+    _assuan_log_control_channel (ctx, 1, NULL,
+                                 prefixlen? prefix:NULL, prefixlen,
+                                 line, len);
 
   if (prefixlen && !(monitor_result & ASSUAN_IO_MONITOR_IGNORE))
     {
@@ -353,11 +323,10 @@ assuan_write_line (assuan_context_t ctx, const char *line)
   str = strchr (line, '\n');
   len = str ? (str - line) : strlen (line);
 
-  if (ctx->log_fp && str)
-    fprintf (ctx->log_fp, "%s[%u.%d] DBG: -> "
-             "[supplied line contained a LF - truncated]\n",
-             assuan_get_assuan_log_prefix (),
-             (unsigned int) getpid (), (int) ctx->inbound.fd);
+  if (str)
+    _assuan_log_control_channel (ctx, 1,
+                                 "supplied line with LF - truncated",
+                                 NULL, 0, NULL, 0);
 
   return _assuan_write_line (ctx, NULL, line, len);
 }
@@ -418,20 +387,11 @@ _assuan_cookie_write_data (void *cookie, const char *buffer, size_t orig_size)
 
       if (linelen >= LINELENGTH-2-2)
         {
-          if (ctx->log_fp && !(monitor_result & ASSUAN_IO_MONITOR_NOLOG))
-            {
-	      fprintf (ctx->log_fp, "%s[%u.%d] DBG: -> ",
-		       assuan_get_assuan_log_prefix (),
-                       (unsigned int)getpid (), (int)ctx->inbound.fd);
+          if (!(monitor_result & ASSUAN_IO_MONITOR_NOLOG))
+            _assuan_log_control_channel (ctx, 1, NULL,
+                                         ctx->outbound.data.line, linelen,
+                                         NULL, 0);
 
-              if (ctx->flags.confidential)
-                fputs ("[Confidential data not shown]", ctx->log_fp);
-              else 
-                _assuan_log_print_buffer (ctx->log_fp, 
-                                          ctx->outbound.data.line,
-                                          linelen);
-              putc ('\n', ctx->log_fp);
-            }
           *line++ = '\n';
           linelen++;
           if ( !(monitor_result & ASSUAN_IO_MONITOR_IGNORE)
@@ -474,18 +434,10 @@ _assuan_cookie_write_flush (void *cookie)
   
   if (linelen)
     {
-      if (ctx->log_fp && !(monitor_result & ASSUAN_IO_MONITOR_NOLOG))
-	{
-	  fprintf (ctx->log_fp, "%s[%u.%d] DBG: -> ",
-		   assuan_get_assuan_log_prefix (),
-                   (unsigned int)getpid (), (int)ctx->inbound.fd);
-	  if (ctx->flags.confidential)
-	    fputs ("[Confidential data not shown]", ctx->log_fp);
-	  else
-	    _assuan_log_print_buffer (ctx->log_fp,
-				      ctx->outbound.data.line, linelen);
-	  putc ('\n', ctx->log_fp);
-	}
+      if (!(monitor_result & ASSUAN_IO_MONITOR_NOLOG))
+        _assuan_log_control_channel (ctx, 1, NULL,
+                                     ctx->outbound.data.line, linelen,
+                                     NULL, 0);
       *line++ = '\n';
       linelen++;
       if (! (monitor_result & ASSUAN_IO_MONITOR_IGNORE)

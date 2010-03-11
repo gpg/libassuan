@@ -80,6 +80,7 @@ assuan_set_log_cb (assuan_log_cb_t log_cb, void *log_cb_data)
 {
   _assuan_default_log_cb = log_cb;
   _assuan_default_log_cb_data = log_cb_data;
+  _assuan_init_log_envvars ();
 }
 
 

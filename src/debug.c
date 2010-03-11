@@ -40,7 +40,7 @@
 #include "debug.h"
 
 
-/* Log the formatted string FORMAT at debug category CAT or higher.  */
+/* Log the formatted string FORMAT at debug category CAT higher.  */
 void
 _assuan_debug (assuan_context_t ctx, unsigned int cat, const char *format, ...)
 {

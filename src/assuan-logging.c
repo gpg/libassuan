@@ -1,5 +1,6 @@
 /* assuan-logging.c - Default logging function.
-   Copyright (C) 2002, 2003, 2004, 2007, 2009 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003, 2004, 2007, 2009,
+                 2010 Free Software Foundation, Inc.
 
    This file is part of Assuan.
 
@@ -41,32 +42,39 @@
 static char prefix_buffer[80];
 
 /* A global flag read from the environment to check if to enable full
-   logging of buffer data.  */
+   logging of buffer data.  This is also used by custom log
+   handlers.  */
 static int full_logging;
 
-/* A bitfield that specifies the categories to log.  Note that
-   assuan-buffer currently does not log through the default handler,
-   but directly.  This will be changed later.  Then the default here
-   should be to log that and only that.  */
+/* A bitfield that specifies the categories to log.  */
 static int log_cats;
 #define TEST_LOG_CAT(x) (!! (log_cats & (1 << (x - 1))))
 
 static FILE *_assuan_log;
 
+
 void
-assuan_set_assuan_log_stream (FILE *fp)
+_assuan_init_log_envvars (void)
 {
   char *flagstr;
 
-  _assuan_log = fp;
-
-  /* Set defaults.  */
   full_logging = !!getenv ("ASSUAN_FULL_LOGGING");
   flagstr = getenv ("ASSUAN_DEBUG");
   if (flagstr)
     log_cats = atoi (flagstr);
+  else /* Default to log the control channel.  */
+    log_cats = (1 << (ASSUAN_LOG_CONTROL - 1));
 
   _assuan_sysutils_blurb (); /* Make sure this code gets linked in.  */
+}
+
+
+void
+assuan_set_assuan_log_stream (FILE *fp)
+{
+  _assuan_log = fp;
+
+  _assuan_init_log_envvars ();
 }
 
 
@@ -144,45 +152,148 @@ _assuan_log_handler (assuan_context_t ctx, void *hook, unsigned int cat,
   return 0;
 }
 
+
 
-/* Dump a possibly binary string (used for debugging).  Distinguish
-   ascii text from binary and print it accordingly.  This function
-   takes FILE pointer arg because logging may be enabled on a per
-   context basis.  */
+/* Log a control channel message.  This is either a STRING with a
+   diagnostic or actual data in (BUFFER1,LENGTH1) and
+   (BUFFER2,LENGTH2).  If OUTBOUND is true the data is intended for
+   the peer.  */
 void
-_assuan_log_print_buffer (FILE *fp, const void *buffer, size_t length)
+_assuan_log_control_channel (assuan_context_t ctx, int outbound,
+                             const char *string,
+                             const void *buffer1, size_t length1,
+                             const void *buffer2, size_t length2)
 {
-  const unsigned char *s;
-  unsigned int n;
+  int res;
+  char *outbuf;
+  int saved_errno;
 
-  for (n = length, s = buffer; n; n--, s++)
-    if  ((! isascii (*s) || iscntrl (*s) || ! isprint (*s)) && !(*s >= 0x80))
-      break;
+  /* Check whether logging is enabled and do a quick check to see
+     whether the callback supports our category.  */
+  if (!ctx || !ctx->log_cb 
+      || !(*ctx->log_cb) (ctx, ctx->log_cb_data, ASSUAN_LOG_CONTROL, NULL))
+    return;
 
-  s = buffer;
-  if (! n && *s != '[')
-    fwrite (buffer, length, 1, fp);
-  else
-    {
-#ifdef HAVE_FLOCKFILE
-      flockfile (fp);
+  saved_errno = errno;
+
+  /* Note that we use the inbound channel fd as the printed channel
+     number for both directions.  */
+#ifdef HAVE_W32_SYSTEM
+# define CHANNEL_FMT "%p"
+#else
+# define CHANNEL_FMT "%d"
 #endif
-      putc_unlocked ('[', fp);
-      if (length > 16 && ! full_logging)
+#define TOHEX(val) (((val) < 10) ? ((val) + '0') : ((val) - 10 + 'a'))
+
+  if (!buffer1 && buffer2)
+    {
+      buffer1 = buffer2;
+      length1 = length2;
+      buffer2 = NULL;
+      length2 = 0;
+    }
+
+  if (ctx->flags.confidential && !string && buffer1)
+    string = "[Confidential data not shown]";
+
+  if (string)
+    {
+      /* Print the diagnostic.  */
+      res = asprintf (&outbuf, "chan_" CHANNEL_FMT " %s [%s]\n",
+                      ctx->inbound.fd, outbound? "->":"<-", string);
+    }
+  else if (buffer1)
+    {
+      /* Print the control channel data.  */
+      const unsigned char *s;
+      unsigned int n, x;
+
+      for (n = length1, s = buffer1; n; n--, s++)
+        if ((!isascii (*s) || iscntrl (*s) || !isprint (*s) || !*s)
+            && !(*s >= 0x80))
+          break;
+      if (!n && buffer2)
         {
-          for (n = 0; n < 12; n++, s++)
-            fprintf (fp, " %02x", *s);
-          fprintf (fp, " ...(%d bytes skipped)", (int) length - 12);
+          for (n = length2, s = buffer2; n; n--, s++)
+            if ((!isascii (*s) || iscntrl (*s) || !isprint (*s) || !*s)
+                && !(*s >= 0x80))
+              break;
+        }
+      if (!buffer2)
+        length2 = 0;
+
+      if (!n && (length1 && *(const char*)buffer1 != '['))
+        {
+          /* No control characters and not starting with our error
+             message indicator.  Log it verbatim.  */
+          res = asprintf (&outbuf, "chan_" CHANNEL_FMT " %s %.*s%.*s\n",
+                          ctx->inbound.fd, outbound? "->":"<-",
+                          (int)length1, (const char*)buffer1,
+                          (int)length2, buffer2? (const char*)buffer2:"");
         }
       else
         {
-          for (n = 0; n < length; n++, s++)
-            fprintf (fp, " %02x", *s);
+          /* The buffer contains control characters - do a hex dump.
+             Even in full logging mode we limit the line length -
+             however this is no real limit because the provided
+             buffers will never be larger than the maximum assuan line
+             length. */
+          char *hp;
+          unsigned int nbytes;
+          unsigned int maxbytes = full_logging? (2*LINELENGTH) : 16;
+            
+          nbytes = length1 + length2;
+          if (nbytes > maxbytes)
+            nbytes = maxbytes;
+
+          if (!(outbuf = malloc (50 + 3*nbytes + 60 + 3 + 1)))
+            res = -1;
+          else
+            {
+              res = 0;
+              hp = outbuf;
+              snprintf (hp, 50, "chan_" CHANNEL_FMT " %s [",
+                        ctx->inbound.fd, outbound? "->":"<-");
+              hp += strlen (hp);
+              n = 0;
+              for (s = buffer1, x = 0; x < length1 && n < nbytes; x++, n++)
+                {
+                  *hp++ = ' ';
+                  *hp++ = TOHEX (*s >> 4);
+                  *hp++ = TOHEX (*s & 0x0f);
+                  s++;
+                }
+              for (s = buffer2, x = 0; x < length2 && n < nbytes; x++, n++)
+                {
+                  *hp++ = ' ';
+                  *hp++ = TOHEX (*s >> 4);
+                  *hp++ = TOHEX (*s & 0x0f);
+                  s++;
+                }
+              if (nbytes < length1 + length2)
+                {
+                  snprintf (hp, 60, " ...(%u byte(s) skipped)",
+                            (unsigned int)((length1+length2) - nbytes));
+                  hp += strlen (hp);
+                }
+              strcpy (hp, " ]\n");
+            }
         }
-      putc_unlocked (' ', fp);
-      putc_unlocked (']', fp);
-#ifdef HAVE_FUNLOCKFILE
-      funlockfile (fp);
-#endif
     }
+  else
+    {
+      res = 0;
+      outbuf = NULL;
+    }
+  if (res < 0)
+    ctx->log_cb (ctx, ctx->log_cb_data, ASSUAN_LOG_CONTROL,
+                 "[libassuan failed to format the log message]");
+  else if (outbuf)
+    {
+      ctx->log_cb (ctx, ctx->log_cb_data, ASSUAN_LOG_CONTROL, outbuf);
+      free (outbuf);
+    }
+#undef TOHEX
+#undef CHANNEL_FMT
+  gpg_err_set_errno (saved_errno);
 }

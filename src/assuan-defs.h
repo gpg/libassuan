@@ -302,7 +302,11 @@ char *_assuan_w32_strerror (assuan_context_t ctx, int ec);
 
 
 /*-- assuan-logging.c --*/
-void _assuan_log_print_buffer (FILE *fp, const void *buffer, size_t length);
+void _assuan_init_log_envvars (void);
+void _assuan_log_control_channel (assuan_context_t ctx, int outbound,
+                                  const char *string,
+                                  const void *buffer1, size_t length1,
+                                  const void *buffer2, size_t length2);
 
 
 /*-- assuan-io.c --*/
@@ -364,6 +368,13 @@ int setenv (const char *name, const char *value, int replace);
 #ifndef HAVE_PUTC_UNLOCKED
 int putc_unlocked (int c, FILE *stream);
 #endif
+#ifndef HAVE_VASPRINTF
+int _assuan_vasprintf (char **result, const char *format, va_list args);
+int _assuan_asprintf (char **buf, const char *fmt, ...);
+#define vasprintf _assuan_vasprintf
+#define asprintf  _assuan_asprintf
+#endif
+
 
 #define DIM(v)		     (sizeof(v)/sizeof((v)[0]))
 

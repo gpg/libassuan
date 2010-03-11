@@ -135,34 +135,33 @@ int_vasprintf (result, format, args)
     return 0;
 }
 
+
+/* We use the _assuan prefix to keep our name space clean. */
 int
-vasprintf (result, format, args)
-     char **result;
-     const char *format;
-#if defined (_BSD_VA_LIST_) && defined (__FreeBSD__)
-     _BSD_VA_LIST_ args;
-#else
-     va_list args;
-#endif
+_assuan_vasprintf (char **result, const char *format, va_list args)
 {
   return int_vasprintf (result, format, &args);
 }
 
 
 int
-asprintf (char **buf, const char *fmt, ...)
+_assuan_asprintf (char **buf, const char *fmt, ...)
 {
   int status;
   va_list ap;
 
   va_start (ap, fmt);
-  status = vasprintf (buf, fmt, ap);
+  status = _assuan_vasprintf (buf, fmt, ap);
   va_end (ap);
   return status;
 }
 
 
 #ifdef TEST
+
+#define asprintf  _assuan_asprintf
+#define vasprintf _assuan_vasprintf
+
 void
 checkit (const char* format, ...)
 {

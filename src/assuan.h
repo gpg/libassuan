@@ -159,6 +159,7 @@ typedef struct assuan_malloc_hooks *assuan_malloc_hooks_t;
 #define ASSUAN_LOG_ENGINE 3
 #define ASSUAN_LOG_DATA 4
 #define ASSUAN_LOG_SYSIO 5
+#define ASSUAN_LOG_CONTROL 8
 
 /* If MSG is NULL, return true/false depending on if this category is
    logged.  This is used to probe before expensive log message

@@ -8,10 +8,13 @@ Noteworthy changes in version 2.0.1 (unreleased)
  * Input and output notification handler can now really access the
    parsed fd as stated in the manual.
 
+ * Cleaned up the logging.
+
  * Interface changes relative to the 2.0.0 release:
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  assuan_free               NEW.
  _assuan_w32ce_create_pipe NEW.
+ ASSUAN_LOG_CONTROL        NEW.
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

@@ -655,7 +655,11 @@ for the context with @code{assuan_set_log_cb}, and a category
 @item ASSUAN_LOG_CTX
 @item ASSUAN_LOG_ENGINE
 @item ASSUAN_LOG_DATA
+RFU
 @item ASSUAN_LOG_SYSIO
+Log lowlevel I/O data.
+@item ASSUAN_LOG_CONTROL
+Log the control channel.
 @end table
 
 The user may then, depending on the category, write the message to a
@@ -973,23 +977,23 @@ The basic read and write functions are:
 
 @deftypefun gpg_error_t assuan_read_line (@w{assuan_context_t @var{ctx}}, @w{char **@var{line}}, @w{size_t *@var{linelen}})
 
-Read the next line written by the peer and store a pointer to the
-buffer holding that line at the address @var{line}.  The valid length
-of the lines is stored at the address of @var{linelen}.  This buffer
-is valid until the next read operation on the same context @var{ctx}.
-You may modify the context of this buffer.  The buffer is invalid
-(i.e. must not be used) if an error is returned.  This function
+Read the next line written by the peer to the control channel and store
+a pointer to the buffer holding that line at the address @var{line}.
+The valid length of the lines is stored at the address of @var{linelen}.
+This buffer is valid until the next read operation on the same context
+@var{ctx}.  You may modify the context of this buffer.  The buffer is
+invalid (i.e. must not be used) if an error is returned.  This function
 returns @code{0} on success or an error value.
 @end deftypefun
 
 @deftypefun gpg_error_t assuan_write_line (@w{assuan_context_t @var{ctx}}, @w{const char *@var{line}})
 
-Write the string @var{line} to the other end.  This string needs to be
-a proper formatted Assuan protocol line and should not include a
-linefeed.  Sending linefeed or @code{Nul} characters is not possible
-and not allowed by the assuan protocol.  This function shall not be
-used for sending data (@code{D}) lines.  This function returns
-@code{0} on success or an error value.
+Write the string @var{line} to the other end on the control channel.
+This string needs to be a proper formatted Assuan protocol line and
+should not include a linefeed.  Sending linefeed or @code{Nul}
+characters is not possible and not allowed by the assuan protocol.  This
+function shall not be used for sending data (@code{D}) lines.  This
+function returns @code{0} on success or an error value.
 @end deftypefun
 
 @noindent 
@@ -997,11 +1001,11 @@ To actually send bulk data lines a specialized function is available:
 
 @deftypefun gpg_error_t assuan_send_data (@w{assuan_context_t @var{ctx}}, @w{const void *@var{buffer}}, @w{size_t @var{length}})
 
-This function is used by a server or a client to send
-@var{length} bytes of bulk data in @var{buffer} to the other end.
-The data will be escaped as required by the Assuan protocol and
-may get buffered until a line is full.  To flush any pending data,
-@var{buffer} may be passed as @code{NULL} and @var{length} be @code{0}.
+This function is used by a server or a client to send @var{length} bytes
+of bulk data in @var{buffer} to the other end on the control channel.
+The data will be escaped as required by the Assuan protocol and may get
+buffered until a line is full.  To flush any pending data, @var{buffer}
+may be passed as @code{NULL} and @var{length} be @code{0}.
 
 @noindent
 When used by a client, this flush operation does also send the
