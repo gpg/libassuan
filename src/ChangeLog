@@ -1,3 +1,9 @@
+2010-03-16  Werner Koch  <wk@g10code.com>
+
+	* system.c: For better readability move platform dependend code to ..
+	* system-posix.c, system-w32.c, system-w32ce.c: .. New.
+	* Makefile.am (common_sources): Account for this change.
+
 2010-03-11  Werner Koch  <wk@g10code.com>
 
 	* assuan-defs.h [!HAVE_VASPRINTF]: Add macros vasprintf and asprintf.

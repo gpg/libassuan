@@ -57,6 +57,17 @@ common_sources = \
 	assuan-socket.c
 
 if HAVE_W32_SYSTEM
+if HAVE_W32CE_SYSTEM
+common_sources += system-w32ce.c
+else
+common_sources += system-w32.c
+endif
+else
+common_sources += system-posix.c
+endif
+
+
+if HAVE_W32_SYSTEM
 
 LTRCCOMPILE = $(LIBTOOL) --mode=compile $(RC) \
      `echo $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) | \
