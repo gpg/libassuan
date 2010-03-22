@@ -29,7 +29,7 @@ if HAVE_W32CE_SYSTEM
 lib_LTLIBRARIES += libgpgcedev.la
 bin_PROGRAMS = gpgcemgr
 endif
-include_HEADERS = assuan.h
+nodist_include_HEADERS = assuan.h
 
 if HAVE_LD_VERSION_SCRIPT
 libassuan_version_script_cmd = -Wl,--version-script=$(srcdir)/libassuan.vers
@@ -42,7 +42,7 @@ CLEANFILES = mkheader assuan.h
 BUILT_SOURCES = assuan.h
 
 common_sources = \
-	assuan.h.in assuan.h w32ce-add.h \
+	assuan.h.in w32ce-add.h \
 	assuan-defs.h \
 	assuan.c context.c system.c \
 	debug.c debug.h conversion.c sysutils.c \
@@ -109,6 +109,7 @@ endif
 
 
 libassuan_la_SOURCES = $(common_sources) assuan-io.c
+nodist_libassuan_la_SOURCES = assuan.h
 libassuan_la_CPPFLAGS = $(AM_CPPFLAGS) @GPG_ERROR_CFLAGS@
 libassuan_la_LDFLAGS = $(libassuan_res_ldflag) $(no_undefined) \
 	$(export_symbols) $(libassuan_version_script_cmd) -version-info \

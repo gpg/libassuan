@@ -53,7 +53,9 @@ include_file (const char *fname, int lnr, const char *name)
 
   while (fgets (line, LINESIZE, fp))
     {
-      if (line[0] != '#' && line[1] != '#')
+      if (line[0] == '#' && line[1] == '#')
+        ;
+      else
         fputs (line, stdout);
     }
   if (ferror (fp))
