@@ -898,6 +898,8 @@ cmd_run (assuan_context_t ctx, char *line)
 #endif /*HAVE_W32CE_SYSTEM*/
 
 
+
+
 
 static const char hlp_newdataport[] = 
   "NEWDATAPORT\n"

@@ -170,6 +170,22 @@ _assuan_close (assuan_context_t ctx, assuan_fd_t fd)
 }
 
 
+/* Same as assuan_close but used for the inheritable end of a
+   pipe.  */
+int
+_assuan_close_inheritable (assuan_context_t ctx, assuan_fd_t fd)
+{
+  TRACE1 (ctx, ASSUAN_LOG_SYSIO, "_assuan_close", ctx,
+	  "fd=0x%x", fd);
+
+#ifdef HAVE_W32CE_SYSTEM
+  return 0; /* Nothing to do because it is a rendezvous id.  */
+#else
+  return (ctx->system.close) (ctx, fd);
+#endif
+}
+
+
 
 ssize_t
 _assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)

@@ -58,7 +58,7 @@ VERSION=$PACKAGE_VERSION
 
 AM_INIT_AUTOMAKE
 AM_MAINTAINER_MODE
-AC_CONFIG_SRCDIR(src/assuan.h)
+AC_CONFIG_SRCDIR(src/assuan.h.in)
 AC_CONFIG_MACRO_DIR(m4)
 AM_CONFIG_HEADER(config.h)
 AC_CANONICAL_HOST
@@ -117,6 +117,22 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 #AC_ARG_PROGRAM
+
+# We need to compile and run a program on the build machine.  A
+# comment in libgpg-error says that the AC_PROG_CC_FOR_BUILD macro in
+# the AC archive is broken for autoconf 2.57.  Given that there is no
+# newer version of that macro, we assume that it is also broken for
+# autoconf 2.61 and thus we use a simple but usually sufficient
+# approach.
+AC_MSG_CHECKING(for cc for build)
+if test "$cross_compiling" = "yes"; then
+  CC_FOR_BUILD="${CC_FOR_BUILD-cc}"
+else
+  CC_FOR_BUILD="${CC_FOR_BUILD-$CC}"
+fi
+AC_MSG_RESULT($CC_FOR_BUILD)
+AC_ARG_VAR(CC_FOR_BUILD,[build system C compiler])
+
 
 if test "$GCC" = yes; then
     CFLAGS="$CFLAGS -Wall -Wcast-align -Wshadow -Wstrict-prototypes"
@@ -323,8 +339,6 @@ if test $assuan_cv_sys_so_peercred = yes; then
   AC_DEFINE(HAVE_SO_PEERCRED, 1,
             [Defined if SO_PEERCRED is supported (Linux specific)])
 fi
-
-
 
 
 # Create the config files.

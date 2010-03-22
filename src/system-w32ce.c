@@ -27,26 +27,72 @@
 #include <time.h>
 #include <fcntl.h>
 #include <windows.h>
+#include <winioctl.h>
+#include <devload.h>
 
 #include "assuan-defs.h"
 #include "debug.h"
+
+
+#define GPGCEDEV_IOCTL_GET_RVID                                         \
+  CTL_CODE (FILE_DEVICE_STREAMS, 2048, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define GPGCEDEV_IOCTL_MAKE_PIPE                                        \
+  CTL_CODE (FILE_DEVICE_STREAMS, 2049, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+
+
+
+static wchar_t *
+utf8_to_wchar (const char *string)
+{
+  int n;
+  size_t nbytes;
+  wchar_t *result;
+
+  if (!string)
+    return NULL;
+
+  n = MultiByteToWideChar (CP_UTF8, 0, string, -1, NULL, 0);
+  if (n < 0)
+    {
+      gpg_err_set_errno (EINVAL);
+      return NULL;
+    }
+
+  nbytes = (size_t)(n+1) * sizeof(*result);
+  if (nbytes / sizeof(*result) != (n+1)) 
+    {
+      gpg_err_set_errno (ENOMEM);
+      return NULL;
+    }
+  result = malloc (nbytes);
+  if (!result)
+    return NULL;
+
+  n = MultiByteToWideChar (CP_UTF8, 0, string, -1, result, n);
+  if (n < 0)
+    {
+      free (result);
+      gpg_err_set_errno (EINVAL);
+      result = NULL;
+    }
+  return result;
+}
+
+/* Convenience function.  */
+static void
+free_wchar (wchar_t *string)
+{
+  if (string)
+    free (string);
+}
 
 
 
 assuan_fd_t
 assuan_fdopen (int fd)
 {
-  assuan_fd_t ifd = (assuan_fd_t)fd;
-  assuan_fd_t ofd;
-
-  if (! DuplicateHandle(GetCurrentProcess(), ifd, 
-			GetCurrentProcess(), &ofd, 0,
-			TRUE, DUPLICATE_SAME_ACCESS))
-    {
-      gpg_err_set_errno (EIO);
-      return ASSUAN_INVALID_FD;
-    }
-  return ofd;
+  return (assuan_fd_t)fd;
 }
 
 
@@ -56,28 +102,132 @@ assuan_fdopen (int fd)
 void
 __assuan_usleep (assuan_context_t ctx, unsigned int usec)
 {
-  if (!usec)
-    return;
-
-  Sleep (usec / 1000);
+  if (usec)
+    Sleep (usec / 1000);
 }
 
 
 
-/* Create a pipe with one inheritable end.  Default implementation.  */
+/* Prepare a pipe.  Returns a handle which is, depending on WRITE_END,
+   will either act the read or as the write end of the pipe.  The
+   other value returned is a rendezvous id used to complete the pipe
+   creation with _assuan_w32ce_finish_pipe.  The rendezvous id may be
+   passed to another process and that process may finish the pipe
+   creation.  This creates the interprocess pipe.  The rendezvous id
+   is not a handle but a plain number; there is no release function
+   and care should be taken not to pass it to a function expecting a
+   handle.  */
+HANDLE
+_assuan_w32ce_prepare_pipe (int *r_rvid, int write_end)
+{
+  HANDLE hd;
+  LONG rvid;
+
+  ActivateDevice (L"Drivers\\GnuPG_Device", 0);
+
+  /* Note: Using "\\$device\\GPG1" should be identical to "GPG1:".
+     However this returns an invalid parameter error without having
+     called GPG_Init in the driver.  The docs mention something about
+     RegisterAFXEx but that API is not documented.  */
+  hd = CreateFile (L"GPG1:", write_end? GENERIC_WRITE : GENERIC_READ,
+                   FILE_SHARE_READ | FILE_SHARE_WRITE,
+                   NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+  if (hd != INVALID_HANDLE_VALUE)
+    {
+      if (!DeviceIoControl (hd, GPGCEDEV_IOCTL_GET_RVID,
+                            NULL, 0, &rvid, sizeof rvid, NULL, NULL))
+        {
+          DWORD lastrc = GetLastError ();
+          CloseHandle (hd);
+          hd = INVALID_HANDLE_VALUE;
+          SetLastError (lastrc);
+        }
+      else
+        *r_rvid = rvid;
+    }
+  
+  return hd;
+}
+
+
+/* Create a pipe.  WRITE_END shall have the opposite value of the one
+   pssed to _assuan_w32ce_prepare_pipe; see there for more
+   details.  */
+HANDLE
+_assuan_w32ce_finish_pipe (int rvid, int write_end)
+{
+  HANDLE hd;
+
+  hd = CreateFile (L"GPG1:", write_end? GENERIC_WRITE : GENERIC_READ,
+                   FILE_SHARE_READ | FILE_SHARE_WRITE,
+                   NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL,NULL);
+  if (hd != INVALID_HANDLE_VALUE)
+    {
+      if (!DeviceIoControl (hd, GPGCEDEV_IOCTL_MAKE_PIPE,
+                            &rvid, sizeof rvid, NULL, 0, NULL, NULL))
+        {
+          DWORD lastrc = GetLastError ();
+          CloseHandle (hd);
+          hd = INVALID_HANDLE_VALUE;
+          SetLastError (lastrc);
+        }
+    }
+
+  return hd;
+}
+
+
+/* WindowsCE does not provide a pipe feature.  However we need
+   something like a pipe to convey data between processes and in some
+   cases within a process.  This replacement is not only used by
+   libassuan but exported and thus usable by gnupg and gpgme as well.  */
+DWORD
+_assuan_w32ce_create_pipe (HANDLE *read_hd, HANDLE *write_hd,
+                           LPSECURITY_ATTRIBUTES sec_attr, DWORD size)
+{
+  HANDLE hd[2] = {INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE};
+  int rvid;
+  int rc = 0;
+
+  hd[0] = _assuan_w32ce_prepare_pipe (&rvid, 0);
+  if (hd[0] != INVALID_HANDLE_VALUE)
+    {
+      hd[1] = _assuan_w32ce_finish_pipe (rvid, 1);
+      if (hd[1] != INVALID_HANDLE_VALUE)
+        rc = 1;
+      else
+        {
+          DWORD lastrc = GetLastError ();
+          CloseHandle (hd[0]);
+          hd[0] = INVALID_HANDLE_VALUE;
+          SetLastError (lastrc);
+        }
+    }
+  
+  *read_hd = hd[0];
+  *write_hd = hd[1];
+  return rc;
+}
+
+
+/* Create a pipe with one inheritable end.  Default implementation.
+   If INHERIT_IDX is 0, the read end of the pipe is made inheritable;
+   with INHERIT_IDX is 1 the write end will be inheritable.  The
+   question now is how we create an inheritable pipe end under windows
+   CE were handles are process local objects?  The trick we employ is
+   to defer the actual creation to the other end: We create an
+   incomplete pipe and pass a rendezvous id to the other end
+   (process).  The other end now uses the rendezvous id to lookup the
+   pipe in our device driver, creates a new handle and uses that one
+   to finally establish the pipe.  */
 int
 __assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx)
 {
-  HANDLE rh;
-  HANDLE wh;
-  HANDLE th;
-  SECURITY_ATTRIBUTES sec_attr;
+  HANDLE hd;
+  int rvid;
 
-  memset (&sec_attr, 0, sizeof (sec_attr));
-  sec_attr.nLength = sizeof (sec_attr);
-  sec_attr.bInheritHandle = FALSE;
-
-  if (!CreatePipe (&rh, &wh, &sec_attr, 0))
+  hd = _assuan_w32ce_prepare_pipe (&rvid, !inherit_idx);
+  if (hd == INVALID_HANDLE_VALUE)
     {
       TRACE1 (ctx, ASSUAN_LOG_SYSIO, "__assuan_pipe", ctx,
 	      "CreatePipe failed: %s", _assuan_w32_strerror (ctx, -1));
@@ -85,31 +235,16 @@ __assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx)
       return -1;
     }
 
-  if (! DuplicateHandle (GetCurrentProcess(), (inherit_idx == 0) ? rh : wh,
-			 GetCurrentProcess(), &th, 0,
-			 TRUE, DUPLICATE_SAME_ACCESS ))
+  if (inherit_idx)
     {
-      TRACE1 (ctx, ASSUAN_LOG_SYSIO, "__assuan_pipe", ctx,
-	      "DuplicateHandle failed: %s", _assuan_w32_strerror (ctx, -1));
-      CloseHandle (rh);
-      CloseHandle (wh);
-      gpg_err_set_errno (EIO);
-      return -1;
-    }
-  if (inherit_idx == 0)
-    {
-      CloseHandle (rh);
-      rh = th;
+      fd[0] = hd;
+      fd[1] = (void*)rvid;
     }
   else
     {
-      CloseHandle (wh);
-      wh = th;
+      fd[0] = (void*)rvid;
+      fd[1] = hd;
     }
-
-  fd[0] = rh;
-  fd[1] = wh;
-
   return 0;
 }
 
@@ -143,9 +278,13 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
      read if recv detects that it is not a network socket.  */
   int res;
 
+  TRACE_BEG3 (ctx, ASSUAN_LOG_SYSIO, "__assuan_read", ctx,
+	      "fd=0x%x, buffer=%p, size=%i", fd, buffer, size);
+
   res = recv (HANDLE2SOCKET (fd), buffer, size, 0);
   if (res == -1)
     {
+      TRACE_LOG1 ("recv failed: rc=%d", (int)WSAGetLastError ());
       switch (WSAGetLastError ())
         {
         case WSAENOTSOCK:
@@ -155,6 +294,7 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
             res = ReadFile (fd, buffer, size, &nread, NULL);
             if (! res)
               {
+                TRACE_LOG1 ("ReadFile failed: rc=%d", (int)GetLastError ());
                 switch (GetLastError ())
                   {
                   case ERROR_BROKEN_PIPE:
@@ -184,7 +324,7 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
 	  break;
         }
     }
-  return res;
+  return TRACE_SYSRES (res);
 }
 
 
@@ -198,14 +338,19 @@ __assuan_write (assuan_context_t ctx, assuan_fd_t fd, const void *buffer,
      write if send detects that it is not a network socket.  */
   int res;
 
-  res = send (HANDLE2SOCKET (fd), buffer, size, 0);
+  TRACE_BEG3 (ctx, ASSUAN_LOG_SYSIO, "__assuan_write", ctx,
+	      "fd=0x%x, buffer=%p, size=%i", fd, buffer, size);
+
+  res = send ((int)fd, buffer, size, 0);
   if (res == -1 && WSAGetLastError () == WSAENOTSOCK)
     {
       DWORD nwrite;
 
+      TRACE_LOG ("send call failed - trying WriteFile");
       res = WriteFile (fd, buffer, size, &nwrite, NULL);
       if (! res)
         {
+          TRACE_LOG1 ("WriteFile failed: rc=%d", (int)GetLastError ());
           switch (GetLastError ())
             {
             case ERROR_BROKEN_PIPE: 
@@ -222,7 +367,9 @@ __assuan_write (assuan_context_t ctx, assuan_fd_t fd, const void *buffer,
       else
         res = (int) nwrite;
     }
-  return res;
+  else if (res == -1)
+    TRACE_LOG1 ("send call failed: rc=%d", (int)GetLastError ());
+  return TRACE_SYSRES (res);
 }
 
 
@@ -253,17 +400,43 @@ __assuan_sendmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
    CMDLINE gets the address of a newly allocated string.  */
 static int
 build_w32_commandline (assuan_context_t ctx, const char * const *argv,
-		       char **cmdline)
+		       assuan_fd_t fd0, assuan_fd_t fd1, assuan_fd_t fd2,
+                       int fd2_isnull,
+                       char **cmdline)
 {
   int i, n;
   const char *s;
   char *buf, *p;
+  char fdbuf[3*30];
 
+  p = fdbuf;
+  *p = 0;
+  if (fd0 != ASSUAN_INVALID_FD)
+    {
+      snprintf (p, 25, "-&S0=%d ", (int)fd0);
+      p += strlen (p);
+    }
+  if (fd1 != ASSUAN_INVALID_FD)
+    {
+      snprintf (p, 25, "-&S1=%d ", (int)fd1);
+      p += strlen (p);
+    }
+  if (fd2 != ASSUAN_INVALID_FD)
+    {
+      if (fd2_isnull)
+        strcpy (p, "-&S2=null ");
+      else
+        snprintf (p, 25, "-&S2=%d ", (int)fd2);
+      p += strlen (p);
+    }
+  
   *cmdline = NULL;
-  n = 0;
+  n = strlen (fdbuf);
   for (i=0; (s = argv[i]); i++)
     {
-      n += strlen (s) + 1 + 2;  /* (1 space, 2 quoting */
+      if (!i)
+        continue; /* Ignore argv[0].  */
+      n += strlen (s) + 1 + 2;  /* (1 space, 2 quoting) */
       for (; *s; s++)
         if (*s == '\"')
           n++;  /* Need to double inner quotes.  */
@@ -274,10 +447,14 @@ build_w32_commandline (assuan_context_t ctx, const char * const *argv,
   if (! buf)
     return -1;
 
+  p = stpcpy (p, fdbuf);
   for (i = 0; argv[i]; i++) 
     {
-      if (i)
+      if (!i)
+        continue; /* Ignore argv[0].  */
+      if (i > 1)
         p = stpcpy (p, " ");
+
       if (! *argv[i]) /* Empty string. */
         p = stpcpy (p, "\"\"");
       else if (strpbrk (argv[i], " \t\n\v\f\""))
@@ -296,7 +473,7 @@ build_w32_commandline (assuan_context_t ctx, const char * const *argv,
         p = stpcpy (p, argv[i]);
     }
 
-  *cmdline= buf;
+  *cmdline = buf;
   return 0;
 }
 
@@ -309,7 +486,6 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 		void (*atfork) (void *opaque, int reserved),
 		void *atforkvalue, unsigned int flags)
 {
-  SECURITY_ATTRIBUTES sec_attr;
   PROCESS_INFORMATION pi = 
     {
       NULL,      /* Returns process handle.  */
@@ -317,117 +493,95 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
       0,         /* Returns pid.  */
       0          /* Returns tid.  */
     };
-  STARTUPINFO si;
   assuan_fd_t fd;
   assuan_fd_t *fdp;
+  assuan_fd_t fd_err;
+  int fd_err_isnull = 0;
   char *cmdline;
-  HANDLE nullfd = INVALID_HANDLE_VALUE;
-
-  /* fixme: Actually we should set the "_assuan_pipe_connect_pid" env
-     variable.  However this requires us to write a full environment
-     handler, because the strings are expected in sorted order.  The
-     suggestion given in the MS Reference Library, to save the old
-     value, changeit, create proces and restore it, is not thread
-     safe.  */
-
-  /* Build the command line.  */
-  if (build_w32_commandline (ctx, argv, &cmdline))
-    return -1;
-
-  /* Start the process.  */
-  memset (&sec_attr, 0, sizeof sec_attr);
-  sec_attr.nLength = sizeof sec_attr;
-  sec_attr.bInheritHandle = FALSE;
-  
-  memset (&si, 0, sizeof si);
-  si.cb = sizeof (si);
-  si.dwFlags = STARTF_USESTDHANDLES;
-  /* FIXME: Dup to nul if ASSUAN_INVALID_FD.  */
-  si.hStdInput  = fd_in;
-  si.hStdOutput = fd_out;
 
   /* Dup stderr to /dev/null unless it is in the list of FDs to be
-     passed to the child. */
+     passed to the child.  Well we don't actually open nul because
+     that is not available on Windows, but use our hack for it.
+     Because an RVID of 0 is an invalid value and HANDLES will never
+     have this value either, we test for this as well.  */
+
+  /* FIXME: CHECKOUT WHAT TO DO WITH STDERR HERE.  WE NEED TO DEFINE
+     WHETHER THE FD_CHILD_LIST HAS HANDLES OR RENDEZVOUS IDS.  */
+
   fd = assuan_fd_from_posix_fd (fileno (stderr));
   fdp = fd_child_list;
   if (fdp)
     {
-      for (; *fdp != ASSUAN_INVALID_FD && *fdp != fd; fdp++)
+      for (; *fdp != ASSUAN_INVALID_FD && *fdp != 0 && *fdp != fd; fdp++)
         ;
     }
   if (!fdp || *fdp == ASSUAN_INVALID_FD)
-    {
-      nullfd = CreateFileW (L"nul", GENERIC_WRITE,
-                           FILE_SHARE_READ | FILE_SHARE_WRITE,
-                           NULL, OPEN_EXISTING, 0, NULL);
-      if (nullfd == INVALID_HANDLE_VALUE)
-        {
-	  TRACE1 (ctx, ASSUAN_LOG_SYSIO, "__assuan_spawn", ctx,
-		  "can't open `nul': %s", _assuan_w32_strerror (ctx, -1));
-          _assuan_free (ctx, cmdline);
-          gpg_err_set_errno (EIO);
-          return -1;
-        }
-      si.hStdError = nullfd;
-    }
-  else
-    si.hStdError = fd;
+    fd_err_isnull = 1;
+  fd_err = fd;
 
-  /* Note: We inherit all handles flagged as inheritable.  This seems
-     to be a security flaw but there seems to be no way of selecting
-     handles to inherit. */
-  /*   _assuan_log_printf ("CreateProcess, path=`%s' cmdline=`%s'\n", */
-  /*                       name, cmdline); */
-  if (!CreateProcess (name,                 /* Program to start.  */
-                      cmdline,              /* Command line arguments.  */
-                      &sec_attr,            /* Process security attributes.  */
-                      &sec_attr,            /* Thread security attributes.  */
-                      TRUE,                 /* Inherit handles.  */
-                      (CREATE_DEFAULT_ERROR_MODE
-                       | CREATE_SUSPENDED), /* Creation flags.  */
-                      NULL,                 /* Environment.  */
-                      NULL,                 /* Use current drive/directory.  */
-                      &si,                  /* Startup information. */
-                      &pi                   /* Returns process information.  */
-                      ))
+  if (build_w32_commandline (ctx, argv, fd_in, fd_out, fd_err, fd_err_isnull,
+                             &cmdline))
     {
-      TRACE1 (ctx, ASSUAN_LOG_SYSIO, "pipe_connect_w32", ctx,
-	      "CreateProcess failed: %s", _assuan_w32_strerror (ctx, -1));
-      _assuan_free (ctx, cmdline);
-      if (nullfd != INVALID_HANDLE_VALUE)
-        CloseHandle (nullfd);
-
-      gpg_err_set_errno (EIO);
       return -1;
     }
 
-  _assuan_free (ctx, cmdline);
-  if (nullfd != INVALID_HANDLE_VALUE)
-    CloseHandle (nullfd);
+  TRACE2 (ctx, ASSUAN_LOG_SYSIO, "__assuan_spawn", ctx,
+          "path=`%s' cmdline=`%s'", name, cmdline);
+
+  {
+    wchar_t *wcmdline, *wname;
+
+    wcmdline = utf8_to_wchar (cmdline);
+    _assuan_free (ctx, cmdline);
+    if (!wcmdline)
+      return -1;
+
+    wname = utf8_to_wchar (name);
+    if (!wname)
+      {
+        free_wchar (wcmdline);
+        return -1;
+      }
+    
+    if (!CreateProcess (wname,                /* Program to start.  */
+                        wcmdline,             /* Command line arguments.  */
+                        NULL,                 /* (not supported)  */
+                        NULL,                 /* (not supported)  */
+                        FALSE,                /* (not supported)  */
+                        (CREATE_SUSPENDED),   /* Creation flags.  */
+                        NULL,                 /* (not supported)  */
+                        NULL,                 /* (not supported)  */
+                        NULL,                 /* (not supported) */
+                        &pi                   /* Returns process information.*/
+                        ))
+      {
+        TRACE1 (ctx, ASSUAN_LOG_SYSIO, "__assuan_spawn", ctx,
+                "CreateProcess failed: %s", _assuan_w32_strerror (ctx, -1));
+        free_wchar (wname);
+        free_wchar (wcmdline);
+        gpg_err_set_errno (EIO);
+        return -1;
+      }
+    free_wchar (wname);
+    free_wchar (wcmdline);
+  }
 
   ResumeThread (pi.hThread);
+
+  TRACE4 (ctx, ASSUAN_LOG_SYSIO, "__assuan_spawn", ctx,
+          "CreateProcess ready: hProcess=%p hThread=%p"
+          " dwProcessID=%d dwThreadId=%d\n",
+          pi.hProcess, pi.hThread, (int) pi.dwProcessId, (int) pi.dwThreadId);
+
   CloseHandle (pi.hThread); 
-
-  /*   _assuan_log_printf ("CreateProcess ready: hProcess=%p hThread=%p" */
-  /*                       " dwProcessID=%d dwThreadId=%d\n", */
-  /*                       pi.hProcess, pi.hThread, */
-  /*                       (int) pi.dwProcessId, (int) pi.dwThreadId); */
-
+  
   *r_pid = (pid_t) pi.hProcess;
-
-  /* No need to modify peer process, as we don't change the handle
-     names.  However this also means we are not safe, as we inherit
-     too many handles.  Should use approach similar to gpgme and glib
-     using a helper process.  */
-
   return 0;
 }
 
 
 
 
-/* FIXME: Add some sort of waitpid function that covers GPGME and
-   gpg-agent's use of assuan.  */
 static pid_t 
 __assuan_waitpid (assuan_context_t ctx, pid_t pid, int nowait,
 		  int *status, int options)
@@ -445,6 +599,7 @@ __assuan_socketpair (assuan_context_t ctx, int namespace, int style,
   gpg_err_set_errno (ENOSYS);
   return -1;
 }
+
 
 
 /* The default system hooks for assuan contexts.  */

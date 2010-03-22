@@ -1,4 +1,38 @@
+2010-03-22  Werner Koch  <wk@g10code.com>
+
+	* Makefile.am (mkheader, assuan.h): Build header file.
+	* mkheader.c: New.
+	* assuan.h: Rename to assuan.h.in.
+
+2010-03-18  Werner Koch  <wk@g10code.com>
+
+	* libassuan.def (_assuan_w32ce_prepare_pipe)
+	(_assuan_w32ce_finish_pipe): New
+	* gpgcedev.c (struct opnctx_s): Replace HD by RVID.
+	(GPGCEDEV_IOCTL_SET_HANDLE): Remove.
+	(GPGCEDEV_IOCTL_GET_RVID): New.
+	(create_rendezvous_id): New.
+	(get_new_opnctx): Init the RVID.
+	(set_handle): Remove.
+	(find_and_lock_opnctx, make_pipe, GPG_IOControl): Change to new
+	method.
+	* system-w32ce.c (_assuan_w32ce_prepare_pipe)
+	(_assuan_w32ce_finish_pipe): New.
+	(_assuan_w32ce_create_pipe): Re-implement using the new functions.
+	(__assuan_pipe): Create an inheritable pipe.
+	(build_w32_commandline): New arg FD2_ISNULL.
+	* system.c (_assuan_close_inheritable): New.
+	* assuan-pipe-connect.c (pipe_connect): Use the new function.
+
+	* sysutils.c (_assuan_w32ce_create_pipe): Move to system-w32ce.c.
+
 2010-03-16  Werner Koch  <wk@g10code.com>
+
+	* system-w32ce.c (build_w32_commandline): Add args to pass the
+	special options for the standard descriptors.
+	(utf8_to_wchar, free_wchar): New.
+	(__assuan_spawn): Adjust for changes.  Convert strings for
+	CreateProcess to wchar_t.
 
 	* system.c: For better readability move platform dependend code to ..
 	* system-posix.c, system-w32.c, system-w32ce.c: .. New.

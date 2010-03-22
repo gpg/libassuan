@@ -25,7 +25,7 @@ EXTRA_DIST = motd ce-createpipe.c
 BUILT_SOURCES = 
 CLEANFILES = 
 
-TESTS = 
+TESTS = pipeconnect
 
 if HAVE_W32CE_SYSTEM
 w32cetools = ce-createpipe

@@ -1064,12 +1064,13 @@ program @var{name}, passing the arguments given in the NULL-terminated
 list @var{argv}.  A list of file descriptors not to be closed may be
 given using the @code{ASSUAN_INVLID_FD} terminated array @var{fd_child_list}.
 
-If @var{name} is a null pointer, only a fork but no exec is done.
-Thus the child continues to run.  However all file descriptors are
-closed and some special environment variables are set.  To let the
-caller detect whether the child or the parent continues, the parent
-returns with @code{"client"} returned in @var{argv} and the child
-returns with @code{"server"} in @var{argv}.
+If @var{name} is a null pointer, only a fork but no exec is done.  Thus
+the child continues to run.  However all file descriptors are closed and
+some special environment variables are set.  To let the caller detect
+whether the child or the parent continues, the parent returns with
+@code{"client"} returned in @var{argv} and the child returns with
+@code{"server"} in @var{argv}.  This feature is only available on POSIX
+platforms.
 
 If @var{atfork} is not NULL, this function is called in the child right
 after the fork and the value @var{atforkvalue} is passed as the first

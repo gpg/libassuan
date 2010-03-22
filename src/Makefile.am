@@ -1,5 +1,5 @@
 # Assuan Makefile
-# Copyright (C) 2001, 2002, 2003, 2009 Free Software Foundation, Inc.
+# Copyright (C) 2001, 2002, 2003, 2009, 2010 Free Software Foundation, Inc.
 #
 # This file is part of Assuan.
 #
@@ -18,7 +18,7 @@
 ## Process this file with automake to produce Makefile.in
 
 EXTRA_DIST = libassuan-config.in libassuan.m4 libassuan.vers \
-             versioninfo.rc.in libassuan.def
+             versioninfo.rc.in libassuan.def mkheader.c
 INCLUDES = -I.. -I$(top_srcdir)/include
 
 bin_SCRIPTS = libassuan-config
@@ -37,8 +37,12 @@ else
 libassuan_version_script_cmd =
 endif
 
+CLEANFILES = mkheader assuan.h
+
+BUILT_SOURCES = assuan.h
 
 common_sources = \
+	assuan.h.in assuan.h w32ce-add.h \
 	assuan-defs.h \
 	assuan.c context.c system.c \
 	debug.c debug.h conversion.c sysutils.c \
@@ -121,3 +125,10 @@ libgpgcedev_la_DEPENDENCIES = gpgcedev.def
 gpgcemgr_SOURCES = gpgcemgr.c
 gpgcemgr_CPPFLAGS = $(AM_CPPFLAGS)
 endif
+
+mkheader: mkheader.c Makefile
+	$(CC_FOR_BUILD) -I. -I$(srcdir) -o $@ $(srcdir)/mkheader.c
+
+assuan.h: assuan.h.in mkheader w32ce-add.h
+	./mkheader $(host_os) $(srcdir)/assuan.h.in >$@
+

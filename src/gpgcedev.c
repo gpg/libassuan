@@ -17,6 +17,7 @@
    License along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <windows.h>
@@ -35,19 +36,21 @@
 #endif /*IOCTL_PSL_NOTIFY*/
 
 
-/* The IOCTL used to tell the device about the handle.
+/* The IOCTL to return the rendezvous id of the handle.
 
-   The required inbuf parameter is the address of a variable holding
-   the handle.  */
-#define GPGCEDEV_IOCTL_SET_HANDLE \
+   The required outbuf parameter is the address of a variable to store
+   the rendezvous ID, which is a LONG value.  */
+#define GPGCEDEV_IOCTL_GET_RVID \
   CTL_CODE (FILE_DEVICE_STREAMS, 2048, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
 /* The IOCTL used to create the pipe. 
 
-   The caller sends this IOCTL to the read handle.  The required inbuf
-   parameter is the address of variable holding the write handle.
-   Note that the SET_HANDLE IOCTLs must have been used prior to this
-   one.  */
+   The caller sends this IOCTL to the read or the write handle.  The
+   required inbuf parameter is address of a variable holding the
+   rendezvous id of the pipe's other end.  There is one possible
+   problem with eocdde: If a pipe is kept in non-rendezvous state
+   until after the rendezvous ids overflow, it is possible that the
+   wrong end will be used.  However this is not a realistic scenario.  */
 #define GPGCEDEV_IOCTL_MAKE_PIPE \
   CTL_CODE (FILE_DEVICE_STREAMS, 2049, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
@@ -62,7 +65,7 @@ struct opnctx_s
                        other context; i.e. a pipe has been
                        established.  */
   int is_write;     /* True if this is the write end of the pipe.  */
-  HANDLE hd;        /* The system's handle object or INVALID_HANDLE_VALUE.  */
+  LONG rvid;        /* The unique rendezvous identifier.  */
   DWORD access_code;/* Value from OpenFile.  */
   DWORD share_mode; /* Value from OpenFile.  */
   CRITICAL_SECTION critsect;  /* Lock for all operations.  */
@@ -118,6 +121,19 @@ log_debug (const char *fmt, ...)
 }
 
 
+/* Return a new rendezvous next command id.  Command Ids are used to group
+   resources of one command.  We will never return an RVID of 0. */
+static LONG
+create_rendezvous_id (void)
+{
+  static LONG rendezvous_id;
+  LONG rvid;
+
+  while (!(rvid = InterlockedIncrement (&rendezvous_id)))
+    ;
+  return rvid;
+}
+
 
 
 /* Return a new opnctx handle and mark it as used.  Returns NULL and
@@ -152,8 +168,7 @@ get_new_opnctx (void)
     }
   opnctx = opnctx_table + idx;
   opnctx->assoc = NULL;
-  opnctx->hd = INVALID_HANDLE_VALUE;
-  opnctx->assoc = 0;
+  opnctx->rvid = create_rendezvous_id ();
   opnctx->buffer_size = 512;
   opnctx->buffer = malloc (opnctx->buffer_size);
   if (!opnctx->buffer)
@@ -173,36 +188,45 @@ get_new_opnctx (void)
   
  leave:
   LeaveCriticalSection (&opnctx_table_cs);
-  log_debug ("get_new_opnctx -> %p\n", opnctx);
+  if (opnctx)
+    log_debug ("get_new_opnctx -> %p (rvid=%ld)\n", opnctx, opnctx->rvid);
+  else
+    log_debug ("get_new_opnctx -> failed\n");
   return opnctx;
 }
 
 
-/* Find the OPNCTX for handle HD.  */
+/* Find the OPNCTX object with the rendezvous id RVID.  */
 static opnctx_t
-find_and_lock_opnctx (HANDLE hd)
+find_and_lock_opnctx (LONG rvid)
 {
   opnctx_t result = NULL;
   int idx;
 
   EnterCriticalSection (&opnctx_table_cs);
   for (idx=0; idx < opnctx_table_size; idx++)
-    if (opnctx_table[idx].inuse && opnctx_table[idx].hd == hd)
+    if (opnctx_table[idx].inuse && opnctx_table[idx].rvid == rvid)
       {
         result = opnctx_table + idx;
         break;
       }
   LeaveCriticalSection (&opnctx_table_cs);
   if (!result)
-    SetLastError (ERROR_INVALID_HANDLE);
+    {
+      SetLastError (ERROR_INVALID_HANDLE);
+      log_debug ("find_opnctx -> invalid rendezvous id\n");
+    }
   else if (TryEnterCriticalSection (&result->critsect))
-    result->locked++;
+    {
+      result->locked++;
+      log_debug ("find_opnctx -> %p (rvid=%ld)\n", result, result->rvid);
+    }
   else
     {
       SetLastError (ERROR_BUSY);
       result = NULL;
+      log_debug ("find_opnctx -> busy\n");
     }
-  log_debug ("find_opnctx -> %p\n", result);
   return result;
 }
 
@@ -353,14 +377,10 @@ GPG_Close (DWORD opnctx_arg)
   for (idx=0; idx < opnctx_table_size; idx++)
     if (opnctx_table[idx].inuse && (opnctx_table + idx) == opnctx)
       {
-        if (opnctx->hd != INVALID_HANDLE_VALUE)
+        if (opnctx->assoc)
           {
-            if (opnctx->assoc)
-              {
-                opnctx->assoc->assoc = NULL;
-                opnctx->assoc = NULL;
-              }
-            opnctx->hd = INVALID_HANDLE_VALUE;
+            opnctx->assoc->assoc = NULL;
+            opnctx->assoc = NULL;
           }
         if (opnctx->locked)
           {
@@ -419,7 +439,7 @@ GPG_Read (DWORD opnctx_arg, void *buffer, DWORD count)
       SetLastError (ERROR_INVALID_ACCESS);
       goto leave;
     }
-  if (rctx->hd == INVALID_HANDLE_VALUE || !rctx->assoc)
+  if (!rctx->assoc)
     {
       SetLastError (ERROR_BROKEN_PIPE);
       goto leave;
@@ -490,7 +510,7 @@ GPG_Write (DWORD opnctx_arg, const void *buffer, DWORD count)
       SetLastError (ERROR_INVALID_ACCESS);
       goto leave;
     }
-  if (wctx->hd == INVALID_HANDLE_VALUE || !wctx->assoc)
+  if (!wctx->assoc)
     {
       SetLastError (ERROR_BROKEN_PIPE);
       goto leave;
@@ -546,79 +566,78 @@ GPG_Seek (DWORD opnctx, long amount, WORD type)
 
 
 static BOOL
-set_handle (opnctx_t opnctx, HANDLE hd)
-{
-  log_debug ("  set_handle(%p, hd=%p)\n", opnctx, hd);
-  if (opnctx->hd != INVALID_HANDLE_VALUE)
-    {
-      SetLastError (ERROR_ALREADY_ASSIGNED);
-      return FALSE;
-    }
-  opnctx->hd = hd;
-  return TRUE;
-}
-
-static BOOL
-make_pipe (opnctx_t rctx, HANDLE hd)
+make_pipe (opnctx_t ctx, LONG rvid)
 {
   BOOL result = FALSE;
-  opnctx_t wctx = NULL;
+  opnctx_t peerctx = NULL;
 
-  log_debug ("  make_pipe(%p, hd=%p)\n", rctx, hd);
-  if (rctx->hd == INVALID_HANDLE_VALUE)
-    {
-      SetLastError (ERROR_NOT_READY);
-      goto leave;
-    }
-  if (rctx->assoc)
+  log_debug ("  make_pipe(%p, rvid=%ld)\n", ctx, rvid);
+  if (ctx->assoc)
     {
       SetLastError (ERROR_ALREADY_ASSIGNED);
       goto leave;
     }
-  if (!(rctx->access_code & GENERIC_READ))
-    {
-      SetLastError (ERROR_INVALID_ACCESS);
-      goto leave;
-    }
 
-  wctx = find_and_lock_opnctx (hd);
-  if (!wctx)
+  peerctx = find_and_lock_opnctx (rvid);
+  if (!peerctx)
     {
       SetLastError (ERROR_NOT_FOUND);
       goto leave;
     }
-  if (wctx == rctx)
+  if (peerctx == ctx)
     {
       SetLastError (ERROR_INVALID_TARGET_HANDLE);
       goto leave;
     }
-  if (wctx->hd == INVALID_HANDLE_VALUE)
-    {
-      SetLastError (ERROR_NOT_READY);
-      goto leave;
-    }
-  if (wctx->assoc)
+  if (peerctx->assoc)
     {
       SetLastError (ERROR_ALREADY_ASSIGNED);
       goto leave;
     }
-  if (!(wctx->access_code & GENERIC_WRITE))
+
+  if ((ctx->access_code & GENERIC_READ))
+    {
+      /* Check that the peer is a write end.  */
+      if (!(peerctx->access_code & GENERIC_WRITE))
+        {
+          SetLastError (ERROR_INVALID_ACCESS);
+          goto leave;
+        }
+      peerctx->space_available = CreateEvent (NULL, FALSE, FALSE, NULL);
+      peerctx->data_available = CreateEvent (NULL, FALSE, FALSE, NULL);
+      
+      ctx->assoc = peerctx;
+      peerctx->assoc = ctx;
+      ctx->is_write = 0;
+      peerctx->is_write = 1;
+      result = TRUE;
+    }
+  else if ((ctx->access_code & GENERIC_WRITE))
+    {
+      /* Check that the peer is a read end.  */
+      if (!(peerctx->access_code & GENERIC_READ))
+        {
+          SetLastError (ERROR_INVALID_ACCESS);
+          goto leave;
+        }
+      ctx->space_available = CreateEvent (NULL, FALSE, FALSE, NULL);
+      ctx->data_available = CreateEvent (NULL, FALSE, FALSE, NULL);
+      
+      ctx->assoc = peerctx;
+      peerctx->assoc = ctx;
+      ctx->is_write = 1;
+      peerctx->is_write = 0;
+      result = TRUE;
+    }
+  else
     {
       SetLastError (ERROR_INVALID_ACCESS);
       goto leave;
     }
-  wctx->space_available = CreateEvent (NULL, FALSE, FALSE, NULL);
-  wctx->data_available = CreateEvent (NULL, FALSE, FALSE, NULL);
-  
-  rctx->assoc = wctx;
-  wctx->assoc = rctx;
-  rctx->is_write = 0;
-  wctx->is_write = 1;
-  result = TRUE;
 
  leave:
-  if (wctx)
-    unlock_opnctx (wctx);
+  if (peerctx)
+    unlock_opnctx (peerctx);
   return result;
 }
 
@@ -629,6 +648,7 @@ GPG_IOControl (DWORD opnctx_arg, DWORD code, void *inbuf, DWORD inbuflen,
 {
   opnctx_t opnctx = (opnctx_t)opnctx_arg;
   BOOL result = FALSE;
+  LONG rvid;
 
   log_debug ("GPG_IOControl(%p, %d)\n", (void*)opnctx, code);
   if (!validate_and_lock_opnctx (opnctx, LOCK_TRY))
@@ -636,25 +656,28 @@ GPG_IOControl (DWORD opnctx_arg, DWORD code, void *inbuf, DWORD inbuflen,
 
   switch (code)
     {
-    case GPGCEDEV_IOCTL_SET_HANDLE:
-      if (!opnctx || !inbuf || inbuflen < sizeof (HANDLE) 
-          || outbuf || outbuflen || actualoutlen )
+    case GPGCEDEV_IOCTL_GET_RVID:
+      if (!opnctx || inbuf || inbuflen
+          || !outbuf || outbuflen  < sizeof (LONG))
         {
           SetLastError (ERROR_INVALID_PARAMETER);
           goto leave;
         }
-      if (set_handle (opnctx, *(HANDLE*)inbuf))
-        result = TRUE;
+      memcpy (outbuf, &opnctx->rvid, sizeof (LONG));
+      if (actualoutlen)
+        *actualoutlen = sizeof (LONG);
+      result = TRUE;
       break;
 
     case GPGCEDEV_IOCTL_MAKE_PIPE:
-      if (!opnctx || !inbuf || inbuflen < sizeof (HANDLE) 
+      if (!opnctx || !inbuf || inbuflen < sizeof (LONG) 
           || outbuf || outbuflen || actualoutlen )
         {
           SetLastError (ERROR_INVALID_PARAMETER);
           goto leave;
         }
-      if (make_pipe (opnctx, *(HANDLE*)inbuf))
+      memcpy (&rvid, inbuf, sizeof (LONG));
+      if (make_pipe (opnctx, rvid))
         result = TRUE;
       break;
 

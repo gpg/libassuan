@@ -1,13 +1,15 @@
+2010-03-22  Werner Koch  <wk@g10code.com>
+
+	* configure.ac (CC_FOR_BUILD): Add test.
+
+2010-03-17  Werner Koch  <wk@g10code.com>
+
+	* tests/ChangeLog: New.  Move all relevant entries to there.
+
 2010-02-25  Werner Koch  <wk@g10code.com>
 
 	* m4/libtool.m4 (_LT_CHECK_MAGIC_METHOD): Fix for non x86 mingw
 	targets.
-
-2010-02-24  Werner Koch  <wk@g10code.com>
-
-	* tests/ce-server.c: New.
-
-	* tests/ce-createpipe.c [W32CE]: New.
 
 2010-02-11  Werner Koch  <wk@g10code.com>
 
@@ -16,10 +18,6 @@
 2010-02-04  Werner Koch  <wk@g10code.com>
 
 	* configure.ac (AC_TYPE_UINT16_T): New.
-
-2010-01-27  Werner Koch  <wk@g10code.com>
-
-	* tests/common.h (SOCKET2HANDLE, HANDLE2SOCKET): New.
 
 2010-01-26  Werner Koch  <wk@g10code.com>
 
@@ -49,16 +47,6 @@
 
 	* configure.ac: Bump version to 2.0.0.
 
-2009-11-05  Marcus Brinkmann  <marcus@g10code.de>
-
-	* tests/fdpassing.c (main): Call assuan_pipe_connect instead
-	of assuan_pipe_connect_ext.
-
-2009-11-04  Werner Koch  <wk@g10code.com>
-
-	* tests/fdpassing.c (register_commands): Add NULL arg to
-	assuan_register_command.
-
 2009-10-16  Marcus Brinkmann  <marcus@g10code.de>
 
 	* autogen.sh: Remove --with-pth-prefix from configure invocation.
@@ -74,7 +62,6 @@
 
 2009-09-19  Marcus Brinkmann  <marcus@g10code.de>
 
-	* tests/fdpassing.c: Update to new API.
 	* configure.ac: Check for stdint.h and inttypes.h.  Invoke
 	AC_TYPE_UINTPTR_T.
 
@@ -101,17 +88,10 @@
 	(AC_CONFIG_FILES): Add src/versioninfo.rc.
 	* ltmain.sh, m4/libtool.m4, m4/ltoptions.m4, m4/ltsugar.m4,
 	m4/ltversion.m4, m4/lt~obsolete.m4: New files from libtool 2.2.6.
-	* tests/Makefile.am (AM_CFLAGS, LDADD): Add gpg-error.
-	* tests/fdpassing.c: Change error values to gpg-error ones.
 
 2009-01-22  Werner Koch  <wk@g10code.com>
 
 	* configure.ac: Check for nanoleep only in libc.
-
-2008-11-03  Marcus Brinkmann  <marcus@g10code.de>
-
-	* tests/fdpassing.c (register_commands): Add missing initializer
-	to silence gcc -W warning.
 
 2008-05-25  Werner Koch  <wk@g10code.com>
 
@@ -130,7 +110,7 @@
 2007-08-24  Werner Koch  <wk@g10code.com>
 
 	Released 1.0.3.
-	
+
 	Switched license of the library code back to LGPLv2.1.  See NEWS.
 
 	* COPYING.LIB: Replaced by LPGLv2.1
@@ -138,7 +118,7 @@
 2007-07-05  Werner Koch  <wk@g10code.com>
 
 	Released 1.0.2.
-	
+
 	Relicensed to LGPLv3.
 
 	* COPYING: Replaced by GPLv3.
@@ -162,13 +142,13 @@
 
 2007-05-30  Werner Koch  <wk@g10code.com>
 
-	* autogen.sh <--build-w32>: Modernize. 
+	* autogen.sh <--build-w32>: Modernize.
 
 2007-05-29  Werner Koch  <wk@g10code.com>
 
 	* configure.ac: Require automake 1.10 and autoconf 2.61.
 	(AM_PROG_CC_C_O): New.  Error out if no C-89 cc is installed.
-	(gl_HEADER_SYS_SOCKET): Explicitly add this for documentation. 
+	(gl_HEADER_SYS_SOCKET): Explicitly add this for documentation.
 
 2007-05-24  Werner Koch  <wk@g10code.com>
 
@@ -202,8 +182,6 @@
 
 	Released 0.9.3.
 
-	* tests/Makefile.am (LDADD): Add NETLIBS.
-
 	* configure.ac: Check for cmsghdr.
 	(USE_DESCRIPTOR_PASSING): Define it then.
 
@@ -214,28 +192,14 @@
 2006-10-04  Werner Koch  <wk@g10code.com>
 
 	Released 0.9.2.
-	
+
 2006-10-04  Werner Koch  <wk@g10code.com>
 
 	Released 0.9.1.
-	
+
 	* configure.ac (AB_INIT): New.
 
 	* m4/autobuild.m4: New.
-
-2006-09-19  Werner Koch  <wk@g10code.com>
-
-	* tests/fdpassing.c: Reverted Marcus changes.
-	(client): New arg FNAME to replace hardwired file name.
-	(main): Pass motd to client.
-	* tests/Makefile.am (AM_CPPFLAGS): Removed.
-	(EXTRA_DIST): Add motd.
-
-2006-09-19  Marcus Brinkmann  <marcus@g10code.de>
-
-	* tests/fdpassing.c (MOTD): New macro.
-	* tests/Makefile.am (AM_CPPFLAGS): New variable.
-	* tests/motd: New file.
 
 2006-09-14  Werner Koch  <wk@g10code.com>
 
@@ -292,7 +256,7 @@
 
 2004-09-27  Werner Koch  <wk@g10code.com>
 
-	* config.sub, config.guess: Updated. 
+	* config.sub, config.guess: Updated.
 
 2004-06-23  Marcus Brinkmann  <marcus@g10code.de>
 
@@ -398,7 +362,7 @@
 	* tests: New directory.
 
 
- Copyright 2003, 2004, 2005, 2006, 2007 Free Software Foundation, Inc.
+ Copyright 2003, 2004, 2005, 2006, 2007, 2010 Free Software Foundation, Inc.
 
  This file is free software; as a special exception the author gives
  unlimited permission to copy and/or distribute it, with or without
@@ -407,5 +371,3 @@
  This file is distributed in the hope that it will be useful, but
  WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
  implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-

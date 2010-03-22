@@ -175,7 +175,7 @@ pipe_connect (assuan_context_t ctx,
   if (_assuan_pipe (ctx, wp, 0) < 0)
     {
       _assuan_close (ctx, rp[0]);
-      _assuan_close (ctx, rp[1]);
+      _assuan_close_inheritable (ctx, rp[1]);
       return _assuan_error (ctx, gpg_err_code_from_syserror ());
     }
   
@@ -197,8 +197,8 @@ pipe_connect (assuan_context_t ctx,
     }
 
   /* Close the stdin/stdout child fds in the parent.  */
-  _assuan_close (ctx, rp[1]);
-  _assuan_close (ctx, wp[0]);
+  _assuan_close_inheritable (ctx, rp[1]);
+  _assuan_close_inheritable (ctx, wp[0]);
 
   ctx->engine.release = _assuan_client_release;
   ctx->engine.readfnc = _assuan_simple_read;
@@ -393,7 +393,7 @@ socketpair_connect (assuan_context_t ctx,
    environment variables are set. To let the caller detect whether the
    child or the parent continues, the child returns "client" or
    "server" in *ARGV (but it is sufficient to check only the first
-   character).  */
+   character).  This feature is only available on POSIX platforms.  */
 gpg_error_t
 assuan_pipe_connect (assuan_context_t ctx,
 		     const char *name, const char *argv[],

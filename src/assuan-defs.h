@@ -230,6 +230,7 @@ void _assuan_free (assuan_context_t ctx, void *ptr);
 void _assuan_usleep (assuan_context_t ctx, unsigned int usec);
 int _assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx);
 int _assuan_close (assuan_context_t ctx, assuan_fd_t fd);
+int _assuan_close_inheritable (assuan_context_t ctx, assuan_fd_t fd);
 ssize_t _assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer,
 		      size_t size);
 ssize_t _assuan_write (assuan_context_t ctx, assuan_fd_t fd, const void *buffer,

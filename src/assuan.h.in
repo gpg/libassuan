@@ -1,4 +1,4 @@
-/* assuan.h - Definitions for the Assuan IPC library
+/* assuan.h - Definitions for the Assuan IPC library             -*- c -*-
    Copyright (C) 2001, 2002, 2003, 2005, 2007, 2008, 2009,
                  2010  Free Software Foundation, Inc.
 
@@ -16,6 +16,8 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with this program; if not, see <http://www.gnu.org/licenses/>.
+
+   @configure_input@
  */
 
 #ifndef ASSUAN_H
@@ -639,13 +641,7 @@ int __assuan_socketpair (assuan_context_t ctx, int _namespace, int style,
 extern struct assuan_system_hooks _assuan_system_pth;
 #define ASSUAN_SYSTEM_PTH &_assuan_system_pth
 
-#ifdef __MINGW32CE__
-/* FIXME: Include this code only if build for this platform.  */
-DWORD _assuan_w32ce_create_pipe (HANDLE *read_hd, HANDLE *write_hd,
-                                 LPSECURITY_ATTRIBUTES sec_attr, DWORD size);
-#define CreatePipe(a,b,c,d) _assuan_w32ce_create_pipe ((a),(b),(c),(d))
-
-#endif /*__MINGW32CE__*/
+@include:w32ce-add@
 
 #ifdef __cplusplus
 }

@@ -49,7 +49,7 @@ reader_thread (void *arg)
 	  log_error ("reader: ReadFile failed: rc=%d\n", (int)GetLastError ());
 	  break;
 	}
-      log_info ("reader: red %d bytes\n", (int)nread);
+      log_info ("reader: read %d bytes\n", (int)nread);
       log_printhex ("got: ", buffer, nread);
     }
 
@@ -117,7 +117,7 @@ run_test (void)
   switch (WaitForMultipleObjects (2, threads, FALSE, INFINITE))
     {
     case WAIT_OBJECT_0:
-      log_info ("reader thread finished firstt\n");
+      log_info ("reader thread finished first\n");
       break;
     case WAIT_OBJECT_0 + 1:
       log_info ("writer thread finished first\n");
