@@ -1,3 +1,7 @@
+2010-03-23  Werner Koch  <wk@g10code.com>
+
+	* assuan-error.c (_assuan_w32_strerror) [W32CE]: Print only the code.
+
 2010-03-22  Werner Koch  <wk@g10code.com>
 
 	* Makefile.am (mkheader, assuan.h): Build header file.

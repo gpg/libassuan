@@ -48,7 +48,7 @@
    The caller sends this IOCTL to the read or the write handle.  The
    required inbuf parameter is address of a variable holding the
    rendezvous id of the pipe's other end.  There is one possible
-   problem with eocdde: If a pipe is kept in non-rendezvous state
+   problem with the code: If a pipe is kept in non-rendezvous state
    until after the rendezvous ids overflow, it is possible that the
    wrong end will be used.  However this is not a realistic scenario.  */
 #define GPGCEDEV_IOCTL_MAKE_PIPE \
