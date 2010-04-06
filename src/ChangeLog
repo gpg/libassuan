@@ -1,3 +1,20 @@
+2010-04-06  Werner Koch  <wk@g10code.com>
+
+	* posix-includes.inc.h, w32-includes.inc.h: New.
+	* posix-types.inc.h, w32-types.inc.h: New.
+	* posix-fd-t.inc.h, w32-fd-t.inc.h, w32ce-fd-t.inc.h: New.
+	* posix-sock-nonce.inc.h, w32-sock-nonce.inc.h: New.
+	* mkheader.c (write_special): Support them.
+	* Makefile.am (common_sources, assuan.h): Ditto
+	(parts_of_assuan_h): New.
+
+	* w32-sys-pth-impl.h: Use gpg_err_set_errno.
+
+	* assuan.h.in (_ASSUAN_SYSTEM_PTH_IMPL): Factor code out to ..
+	* posix-sys-pth-impl.h, w32-sys-pth-impl.h: New
+	* mkheader.c (write_special): Support them.
+	* Makefile.am (common_sources, assuan.h): Ditto
+
 2010-03-23  Werner Koch  <wk@g10code.com>
 
 	* assuan-error.c (_assuan_w32_strerror) [W32CE]: Print only the code.

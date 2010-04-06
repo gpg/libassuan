@@ -41,8 +41,16 @@ CLEANFILES = mkheader assuan.h
 
 BUILT_SOURCES = assuan.h
 
+parts_of_assuan_h = \
+	posix-includes.inc.h   w32-includes.inc.h \
+	posix-types.inc.h      w32-types.inc.h \
+	posix-fd-t.inc.h       w32-fd-t.inc.h  w32ce-fd-t.inc.h \
+	posix-sock-nonce.inc.h w32-sock-nonce.inc.h \
+	posix-sys-pth-impl.h   w32-sys-pth-impl.h \
+        w32ce-add.h 
+
 common_sources = \
-	assuan.h.in w32ce-add.h \
+	assuan.h.in $(parts_of_assuan_h) \
 	assuan-defs.h \
 	assuan.c context.c system.c \
 	debug.c debug.h conversion.c sysutils.c \
@@ -130,6 +138,6 @@ endif
 mkheader: mkheader.c Makefile
 	$(CC_FOR_BUILD) -I. -I$(srcdir) -o $@ $(srcdir)/mkheader.c
 
-assuan.h: assuan.h.in mkheader w32ce-add.h
+assuan.h: assuan.h.in mkheader $(parts_of_assuan_h)
 	./mkheader $(host_os) $(srcdir)/assuan.h.in >$@
 

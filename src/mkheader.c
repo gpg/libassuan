@@ -26,7 +26,7 @@ static char *srcdir;
 
 /* Include the file NAME form the source directory.  The included file
    is not further expanded.  It may have comments indicated by a
-   double hash masrk at the begin of a line.  */
+   double hash mark at the begin of a line.  */
 static void
 include_file (const char *fname, int lnr, const char *name)
 {
@@ -54,7 +54,10 @@ include_file (const char *fname, int lnr, const char *name)
   while (fgets (line, LINESIZE, fp))
     {
       if (line[0] == '#' && line[1] == '#')
-        ;
+        {
+          if (!strncmp (line+2, "EOF##", 5))
+            break; /* Forced EOF.  */
+        }
       else
         fputs (line, stdout);
     }
@@ -72,7 +75,44 @@ include_file (const char *fname, int lnr, const char *name)
 static int
 write_special (const char *fname, int lnr, const char *tag)
 {
-  if (!strcmp (tag, "include:w32ce-add"))
+  if (!strcmp (tag, "include:includes"))
+    {
+      if (strstr (host_os, "mingw32"))
+        include_file (fname, lnr, "w32-includes.inc.h");
+      else
+        include_file (fname, lnr, "posix-includes.inc.h");
+    }
+  else if (!strcmp (tag, "include:types"))
+    {
+      if (strstr (host_os, "mingw32"))
+        include_file (fname, lnr, "w32-types.inc.h");
+      else
+        include_file (fname, lnr, "posix-types.inc.h");
+    }
+  else if (!strcmp (tag, "include:fd-t"))
+    {
+      if (!strcmp (host_os, "mingw32ce"))
+        include_file (fname, lnr, "w32ce-fd-t.inc.h");
+      else if (strstr (host_os, "mingw32"))
+        include_file (fname, lnr, "w32-fd-t.inc.h");
+      else
+        include_file (fname, lnr, "posix-fd-t.inc.h");
+    }
+  else if (!strcmp (tag, "include:sock-nonce"))
+    {
+      if (strstr (host_os, "mingw32"))
+        include_file (fname, lnr, "w32-sock-nonce.inc.h");
+      else
+        include_file (fname, lnr, "posix-sock-nonce.inc.h");
+    }
+  else if (!strcmp (tag, "include:sys-pth-impl"))
+    {
+      if (strstr (host_os, "mingw32"))
+        include_file (fname, lnr, "w32-sys-pth-impl.h");
+      else
+        include_file (fname, lnr, "posix-sys-pth-impl.h");
+    }
+  else if (!strcmp (tag, "include:w32ce-add"))
     {
       if (!strcmp (host_os, "mingw32ce"))
         include_file (fname, lnr, "w32ce-add.h");
@@ -157,16 +197,17 @@ main (int argc, char **argv)
           s = strrchr (fname, '/');
           printf ("Do not edit.  Generated from %s by %s for %s.", 
                   s? s+1 : fname, PGM, host_os);
+          fputs (p2, stdout);
+          putchar ('\n');
         }
       else if (!write_special (fname, lnr, p1))
         {
           putchar ('@');
           fputs (p1, stdout);
           putchar ('@');
+          fputs (p2, stdout);
+          putchar ('\n');
         }
-      
-      fputs (p2, stdout);
-      putchar ('\n');
     }
 
   if (ferror (fp))
@@ -177,7 +218,7 @@ main (int argc, char **argv)
     }
 
   fputs ("/*\n"
-         "Local Variables:\n"
+         "Loc" "al Variables:\n"
          "buffer-read-only: t\n"
          "End:\n"
          "*/\n", stdout);

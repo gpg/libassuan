@@ -29,18 +29,10 @@
 #include <stdarg.h>
 
 #ifndef _ASSUAN_NO_SOCKET_WRAPPER
-#ifdef _WIN32
-#include <ws2tcpip.h> 
-#else
-#include <sys/socket.h>
-#endif
+@include:includes@
 #endif /*!_ASSUAN_NO_SOCKET_WRAPPER*/
 
-#ifdef _WIN32
-typedef void *assuan_msghdr_t;
-#else
-typedef struct msghdr *assuan_msghdr_t;
-#endif
+@include:types@
 
 #include <gpg-error.h>
 
@@ -79,70 +71,11 @@ extern "C"
 
 struct assuan_context_s;
 typedef struct assuan_context_s *assuan_context_t;
-
-/* Because we use system handles and not libc low level file
-   descriptors on W32, we need to declare them as HANDLE (which
-   actually is a plain pointer).  This is required to eventually
-   support 64 bit Windows systems.  */
-#ifdef _WIN32
-typedef void *assuan_fd_t;
-#define ASSUAN_INVALID_FD ((void*)(-1))
-#define ASSUAN_INVALID_PID ((pid_t) -1)
-static inline assuan_fd_t
-assuan_fd_from_posix_fd (int fd)
-{
-#ifdef __MINGW32CE__
-    return (assuan_fd_t)(fd);
-#else
-  if (fd < 0)
-    return ASSUAN_INVALID_FD;
-  else
-    return (assuan_fd_t) _get_osfhandle (fd);
-#endif
-}
-#else
-typedef int assuan_fd_t;
-#define ASSUAN_INVALID_FD (-1)
-#define ASSUAN_INVALID_PID ((pid_t) -1)
-static inline assuan_fd_t
-assuan_fd_from_posix_fd (int fd)
-{
-  return fd;
-}
-#endif
+@include:fd-t@
 
 assuan_fd_t assuan_fdopen (int fd);
 
-
-/* Assuan features an emulation of Unix domain sockets based on a
-   local TCP connections.  To implement access permissions based on
-   file permissions a nonce is used which is expected by the server as
-   the first bytes received.  This structure is used by the server to
-   save the nonce created initially by bind.  On POSIX systems this is
-   a dummy operation. */  
-struct assuan_sock_nonce_s
-{
-  size_t length;
-#ifdef _WIN32
-  char nonce[16];
-#endif
-};
-typedef struct assuan_sock_nonce_s assuan_sock_nonce_t;
-
-/* Define the Unix domain socket structure for Windows.  */
-#if defined(_WIN32) && !defined(_ASSUAN_NO_SOCKET_WRAPPER)
-#ifndef AF_LOCAL
-#define AF_LOCAL AF_UNIX
-#endif
-#define EADDRINUSE WSAEADDRINUSE
-struct sockaddr_un
-{
-  short          sun_family;
-  unsigned short sun_port;
-  struct         in_addr sun_addr;
-  char           sun_path[108-2-4]; 
-};
-#endif
+@include:sock-nonce@
 
 
 /* Global interface.  */
@@ -533,88 +466,6 @@ int __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 int __assuan_socketpair (assuan_context_t ctx, int _namespace, int style,
 			 int protocol, assuan_fd_t filedes[2]);
 
-#ifdef _WIN32
-#define _ASSUAN_SYSTEM_PTH_IMPL						\
-  static int _assuan_pth_recvmsg (assuan_context_t ctx, assuan_fd_t fd, \
-				  assuan_msghdr_t msg, int flags)	\
-  {									\
-    (void) ctx;								\
-    errno = ENOSYS;							\
-    return -1;								\
-  }									\
-  static int _assuan_pth_sendmsg (assuan_context_t ctx, assuan_fd_t fd, \
-				  const assuan_msghdr_t msg, int flags) \
-  {									\
-    (void) ctx;								\
-    errno = ENOSYS;							\
-    return -1;								\
-  }
-#else
-#define _ASSUAN_SYSTEM_PTH_IMPL						\
-  static int _assuan_pth_recvmsg (assuan_context_t ctx, assuan_fd_t fd, \
-				  assuan_msghdr_t msg, int flags)	\
-  {									\
-    /* Pth does not provide a recvmsg function.  We implement it.  */	\
-    int ret;								\
-    int fdmode;								\
-									\
-    (void) ctx;								\
-    fdmode = pth_fdmode (fd, PTH_FDMODE_POLL);				\
-    if (fdmode == PTH_FDMODE_ERROR)					\
-      {									\
-        errno = EBADF;							\
-        return -1;							\
-      }									\
-    if (fdmode == PTH_FDMODE_BLOCK)					\
-      {									\
-        fd_set fds;							\
-									\
-	FD_ZERO (&fds);							\
-	FD_SET (fd, &fds);						\
-	while ((ret = pth_select (fd + 1, &fds, NULL, NULL, NULL)) < 0	\
-	       && errno == EINTR)					\
-	  ;								\
-	if (ret < 0)							\
-	  return -1;							\
-      }									\
-    									\
-    while ((ret = recvmsg (fd, msg, flags)) == -1 && errno == EINTR)	\
-      ;									\
-    return ret;								\
-  }									\
-  static int _assuan_pth_sendmsg (assuan_context_t ctx, assuan_fd_t fd, \
-				  const assuan_msghdr_t msg, int flags) \
-  {									\
-    /* Pth does not provide a sendmsg function.  We implement it.  */	\
-    int ret;								\
-    int fdmode;								\
-									\
-    (void) ctx;								\
-    fdmode = pth_fdmode (fd, PTH_FDMODE_POLL);				\
-    if (fdmode == PTH_FDMODE_ERROR)					\
-      {									\
-        errno = EBADF;							\
-	return -1;							\
-      }									\
-    if (fdmode == PTH_FDMODE_BLOCK)					\
-      {									\
-        fd_set fds;							\
-									\
-	FD_ZERO (&fds);							\
-	FD_SET (fd, &fds);						\
-	while ((ret = pth_select (fd + 1, NULL, &fds, NULL, NULL)) < 0	\
-	       && errno == EINTR)					\
-	  ;								\
-	if (ret < 0)							\
-	  return -1;							\
-	}								\
-									\
-    while ((ret = sendmsg (fd, msg, flags)) == -1 && errno == EINTR)	\
-      ;									\
-    return ret;								\
-  }
-#endif
-
 
 #define ASSUAN_SYSTEM_PTH_IMPL						\
   static void _assuan_pth_usleep (assuan_context_t ctx, unsigned int usec) \
@@ -625,7 +476,7 @@ int __assuan_socketpair (assuan_context_t ctx, int _namespace, int style,
   static ssize_t _assuan_pth_write (assuan_context_t ctx, assuan_fd_t fd, \
 				 const void *buffer, size_t size)	\
   { (void) ctx; return pth_write (fd, buffer, size); }			\
-  _ASSUAN_SYSTEM_PTH_IMPL						\
+@include:sys-pth-impl@
   static pid_t _assuan_pth_waitpid (assuan_context_t ctx, pid_t pid,     \
 				   int nowait, int *status, int options) \
   { (void) ctx;                                                         \
