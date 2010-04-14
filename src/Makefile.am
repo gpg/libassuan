@@ -18,7 +18,7 @@
 ## Process this file with automake to produce Makefile.in
 
 EXTRA_DIST = libassuan-config.in libassuan.m4 libassuan.vers \
-             versioninfo.rc.in libassuan.def mkheader.c
+             versioninfo.rc.in libassuan.def mkheader.c gpgcedev.def
 INCLUDES = -I.. -I$(top_srcdir)/include
 
 bin_SCRIPTS = libassuan-config
