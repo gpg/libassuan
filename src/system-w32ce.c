@@ -301,6 +301,11 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
 		    gpg_err_set_errno (EPIPE);
 		    break;
 
+                  case ERROR_PIPE_NOT_CONNECTED:
+                  case ERROR_BUSY:
+		    gpg_err_set_errno (EAGAIN);
+		    break;
+
                   default:
 		    gpg_err_set_errno (EIO); 
                   }
@@ -357,6 +362,11 @@ __assuan_write (assuan_context_t ctx, assuan_fd_t fd, const void *buffer,
             case ERROR_NO_DATA:
 	      gpg_err_set_errno (EPIPE);
 	      break;
+
+            case ERROR_PIPE_NOT_CONNECTED:
+            case ERROR_BUSY:
+              gpg_err_set_errno (EAGAIN);
+              break;
 	      
             default:
 	      gpg_err_set_errno (EIO);
@@ -505,9 +515,12 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
      Because an RVID of 0 is an invalid value and HANDLES will never
      have this value either, we test for this as well.  */
 
-  /* FIXME: CHECKOUT WHAT TO DO WITH STDERR HERE.  WE NEED TO DEFINE
-     WHETHER THE FD_CHILD_LIST HAS HANDLES OR RENDEZVOUS IDS.  */
-
+  /* FIXME: As long as we can't decide whether a handle is a real
+     handler or an rendezvous id we can't do anything with the
+     FD_CHILD_LIST.  We can't do much with stderr either, thus we
+     better don't pass stderr to the child at all.  If we would do so
+     and it is not a rendezvous id the client would run into
+     problems.  */
   fd = assuan_fd_from_posix_fd (fileno (stderr));
   fdp = fd_child_list;
   if (fdp)
@@ -517,7 +530,7 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
     }
   if (!fdp || *fdp == ASSUAN_INVALID_FD)
     fd_err_isnull = 1;
-  fd_err = fd;
+  fd_err = ASSUAN_INVALID_FD;
 
   if (build_w32_commandline (ctx, argv, fd_in, fd_out, fd_err, fd_err_isnull,
                              &cmdline))

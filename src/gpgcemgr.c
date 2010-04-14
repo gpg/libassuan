@@ -1,4 +1,4 @@
-/* gpgcempg.c - Manager fopr GPG CE devices
+/* gpgcempr.c - Manager for GPG CE devices
    Copyright (C) 2010 Free Software Foundation, Inc.
 
    This file is part of Assuan.

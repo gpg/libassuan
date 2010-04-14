@@ -190,8 +190,8 @@ pipe_connect (assuan_context_t ctx,
     {
       rc = gpg_err_code_from_syserror ();
       _assuan_close (ctx, rp[0]);
-      _assuan_close (ctx, rp[1]);
-      _assuan_close (ctx, wp[0]);
+      _assuan_close_inheritable (ctx, rp[1]);
+      _assuan_close_inheritable (ctx, wp[0]);
       _assuan_close (ctx, wp[1]);
       return _assuan_error (ctx, rc);
     }

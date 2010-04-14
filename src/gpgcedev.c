@@ -169,6 +169,11 @@ get_new_opnctx (void)
   opnctx = opnctx_table + idx;
   opnctx->assoc = NULL;
   opnctx->rvid = create_rendezvous_id ();
+  opnctx->is_write = 0;
+  opnctx->access_code = 0;
+  opnctx->share_mode = 0;
+  InitializeCriticalSection (&opnctx->critsect);
+  opnctx->locked = 0;
   opnctx->buffer_size = 512;
   opnctx->buffer = malloc (opnctx->buffer_size);
   if (!opnctx->buffer)
@@ -182,7 +187,6 @@ get_new_opnctx (void)
   opnctx->space_available = INVALID_HANDLE_VALUE;
 
   opnctx->inuse = 1;
-  InitializeCriticalSection (&opnctx->critsect);
   EnterCriticalSection (&opnctx->critsect);
   opnctx->locked = 1;
   
@@ -437,11 +441,12 @@ GPG_Read (DWORD opnctx_arg, void *buffer, DWORD count)
   if (rctx->is_write)
     {
       SetLastError (ERROR_INVALID_ACCESS);
+      log_debug ("GPG_Read(%p) -> invalid access\n", (void*)rctx);
       goto leave;
     }
   if (!rctx->assoc)
     {
-      SetLastError (ERROR_BROKEN_PIPE);
+      SetLastError (ERROR_PIPE_NOT_CONNECTED);
       goto leave;
     }
 
@@ -508,11 +513,12 @@ GPG_Write (DWORD opnctx_arg, const void *buffer, DWORD count)
   if (!wctx->is_write)
     {
       SetLastError (ERROR_INVALID_ACCESS);
+      log_debug ("GPG_Write(%p) -> invalid access\n", (void*)wctx);
       goto leave;
     }
   if (!wctx->assoc)
     {
-      SetLastError (ERROR_BROKEN_PIPE);
+      SetLastError (ERROR_PIPE_NOT_CONNECTED);
       goto leave;
     }
   if (!count)
@@ -601,6 +607,7 @@ make_pipe (opnctx_t ctx, LONG rvid)
       if (!(peerctx->access_code & GENERIC_WRITE))
         {
           SetLastError (ERROR_INVALID_ACCESS);
+          log_debug ("  make_pipe(%p) write end -> invalid access\n", ctx);
           goto leave;
         }
       peerctx->space_available = CreateEvent (NULL, FALSE, FALSE, NULL);
@@ -618,6 +625,7 @@ make_pipe (opnctx_t ctx, LONG rvid)
       if (!(peerctx->access_code & GENERIC_READ))
         {
           SetLastError (ERROR_INVALID_ACCESS);
+          log_debug ("  make_pipe(%p) read_end -> invalid access\n", ctx);
           goto leave;
         }
       ctx->space_available = CreateEvent (NULL, FALSE, FALSE, NULL);
@@ -632,6 +640,7 @@ make_pipe (opnctx_t ctx, LONG rvid)
   else
     {
       SetLastError (ERROR_INVALID_ACCESS);
+      log_debug ("  make_pipe(%p) no_access -> invalid access\n", ctx);
       goto leave;
     }
 

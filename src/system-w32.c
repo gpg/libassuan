@@ -402,7 +402,8 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 
   /* Note: We inherit all handles flagged as inheritable.  This seems
      to be a security flaw but there seems to be no way of selecting
-     handles to inherit. */
+     handles to inherit.  A fix for this would be to use a helper
+     process like we have in gpgme.  */
   /*   _assuan_log_printf ("CreateProcess, path=`%s' cmdline=`%s'\n", */
   /*                       name, cmdline); */
   if (!CreateProcess (name,                 /* Program to start.  */

@@ -2,6 +2,20 @@
 
 	* Makefile.am (EXTRA_DIST): Add gpgcedev.def.
 
+2010-04-13  Werner Koch  <wk@g10code.com>
+
+	* gpgcedev.c (get_new_opnctx): Always clear IS_WRITE.
+
+2010-04-08  Werner Koch  <wk@g10code.com>
+
+	* gpgcedev.c (GPG_Read, GPG_Write): If the context is not
+	associated return ERROR_PIPE_NOT_CONNECTED.
+	* system-w32ce.c (__assuan_read, __assuan_write): Return EAGAIN for
+	ERROR_PIPE_NOT_CONNECTED.
+
+	* assuan-pipe-connect.c (pipe_connect): Use
+	_assuan_close_inheritable also in the spawn error case.
+
 2010-04-06  Werner Koch  <wk@g10code.com>
 
 	* posix-includes.inc.h, w32-includes.inc.h: New.

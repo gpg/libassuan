@@ -175,7 +175,7 @@ _assuan_close (assuan_context_t ctx, assuan_fd_t fd)
 int
 _assuan_close_inheritable (assuan_context_t ctx, assuan_fd_t fd)
 {
-  TRACE1 (ctx, ASSUAN_LOG_SYSIO, "_assuan_close", ctx,
+  TRACE1 (ctx, ASSUAN_LOG_SYSIO, "_assuan_close_inheritable", ctx,
 	  "fd=0x%x", fd);
 
 #ifdef HAVE_W32CE_SYSTEM
