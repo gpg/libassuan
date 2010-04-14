@@ -133,6 +133,9 @@ libgpgcedev_la_LDFLAGS = $(no_undefined) -export-symbols $(srcdir)/gpgcedev.def
 libgpgcedev_la_DEPENDENCIES = gpgcedev.def
 gpgcemgr_SOURCES = gpgcemgr.c
 gpgcemgr_CPPFLAGS = $(AM_CPPFLAGS)
+install-exec-hook:
+	mv -f $(DESTDIR)$(bindir)/libgpgcedev-0.dll \
+              $(DESTDIR)$(bindir)/gpgcedev.dll
 endif
 
 mkheader: mkheader.c Makefile
@@ -140,4 +143,5 @@ mkheader: mkheader.c Makefile
 
 assuan.h: assuan.h.in mkheader $(parts_of_assuan_h)
 	./mkheader $(host_os) $(srcdir)/assuan.h.in >$@
+
 
