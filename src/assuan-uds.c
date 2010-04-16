@@ -116,7 +116,9 @@ uds_reader (assuan_context_t ctx, void *buf, size_t buflen)
 		    "unexpected ancillary data received");
           else
             {
-              int fd = *((int*)CMSG_DATA (cmptr));
+              int fd;
+
+	      memcpy (&fd, CMSG_DATA (cmptr), sizeof (fd));
 
               if (ctx->uds.pendingfdscount >= DIM (ctx->uds.pendingfds))
                 {
@@ -208,7 +210,8 @@ uds_sendfd (assuan_context_t ctx, assuan_fd_t fd)
   cmptr->cmsg_len = CMSG_LEN(sizeof(int));
   cmptr->cmsg_level = SOL_SOCKET;
   cmptr->cmsg_type = SCM_RIGHTS;
-  *((int*)CMSG_DATA (cmptr)) = fd;
+
+  memcpy (CMSG_DATA (cmptr), &fd, sizeof (fd));
 
   len = _assuan_sendmsg (ctx, ctx->outbound.fd, &msg, 0);
   if (len < 0)
