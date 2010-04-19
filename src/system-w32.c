@@ -162,40 +162,63 @@ __assuan_close (assuan_context_t ctx, assuan_fd_t fd)
 
 
 
+/* Return true if HD refers to a socket.  */
+static int
+is_socket (HANDLE hd)
+{
+  /* We need to figure out whether we are working on a socket or on a
+     handle.  A trivial way would be to check for the return code of
+     recv and see if it is WSAENOTSOCK.  However the recv may block
+     after the server process died and thus the destroy_reader will
+     hang.  Another option is to use getsockopt to test whether it is
+     a socket.  The bug here is that once a socket with a certain
+     values has been opened, closed and later a CreatePipe returned
+     the same value (i.e. handle), getsockopt still believes it is a
+     socket.  What we do now is to use a combination of GetFileType
+     and GetNamedPipeInfo.  The specs say that the latter may be used
+     on anonymous pipes as well.  Note that there are claims that
+     since winsocket version 2 ReadFile may be used on a socket but
+     only if it is supported by the service provider.  Tests on a
+     stock XP using a local TCP socket show that it does not work.  */
+  DWORD dummyflags, dummyoutsize, dummyinsize, dummyinst;
+  if (GetFileType (hd) == FILE_TYPE_PIPE
+      && !GetNamedPipeInfo (hd, &dummyflags, &dummyoutsize,
+                            &dummyinsize, &dummyinst))
+    return 1; /* Function failed; thus we assume it is a socket.  */
+  else
+    return 0; /* Success; this is not a socket.  */
+}
+
+
 static ssize_t
 __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
 {
-  /* Due to the peculiarities of the W32 API we can't use read for a
-     network socket and thus we try to use recv first and fallback to
-     read if recv detects that it is not a network socket.  */
   int res;
-
-  res = recv (HANDLE2SOCKET (fd), buffer, size, 0);
+  int ec = 0;
+  
+  if (is_socket (fd))
+    {
+      res = recv (HANDLE2SOCKET (fd), buffer, size, 0);
+      if (res == -1)
+        ec = WSAGetLastError ();
+    }
+  else
+    {
+       DWORD nread = 0;
+       if (!ReadFile (fd, buffer, size, &nread, NULL))
+         {
+           res = -1;
+           ec = GetLastError ();
+         }
+      else 
+        res = nread;
+    }
   if (res == -1)
     {
-      switch (WSAGetLastError ())
+      switch (ec)
         {
         case WSAENOTSOCK:
-          {
-            DWORD nread = 0;
-            
-            res = ReadFile (fd, buffer, size, &nread, NULL);
-            if (! res)
-              {
-                switch (GetLastError ())
-                  {
-                  case ERROR_BROKEN_PIPE:
-		    gpg_err_set_errno (EPIPE);
-		    break;
-
-                  default:
-		    gpg_err_set_errno (EIO); 
-                  }
-                res = -1;
-              }
-            else
-              res = (int) nread;
-          }
+	  gpg_err_set_errno (EBADF);
           break;
           
         case WSAEWOULDBLOCK:
@@ -220,34 +243,49 @@ static ssize_t
 __assuan_write (assuan_context_t ctx, assuan_fd_t fd, const void *buffer,
 		size_t size)
 {
-  /* Due to the peculiarities of the W32 API we can't use write for a
-     network socket and thus we try to use send first and fallback to
-     write if send detects that it is not a network socket.  */
   int res;
-
-  res = send (HANDLE2SOCKET (fd), buffer, size, 0);
-  if (res == -1 && WSAGetLastError () == WSAENOTSOCK)
+  int ec = 0;
+  
+  if (is_socket (fd))
+    {
+      res = send (HANDLE2SOCKET (fd), buffer, size, 0);
+      if (res == -1)
+        ec = WSAGetLastError ();
+    }
+  else
     {
       DWORD nwrite;
 
-      res = WriteFile (fd, buffer, size, &nwrite, NULL);
-      if (! res)
+      if (!WriteFile (fd, buffer, size, &nwrite, NULL))
         {
-          switch (GetLastError ())
-            {
-            case ERROR_BROKEN_PIPE: 
-            case ERROR_NO_DATA:
-	      gpg_err_set_errno (EPIPE);
-	      break;
-	      
-            default:
-	      gpg_err_set_errno (EIO);
-	      break;
-            }
           res = -1;
+          ec = GetLastError ();
         }
-      else
-        res = (int) nwrite;
+      else 
+        res = (int)nwrite;
+    }
+  if (res == -1)
+    {
+      switch (ec)
+        {
+        case WSAENOTSOCK:
+	  gpg_err_set_errno (EBADF);
+          break;
+          
+        case WSAEWOULDBLOCK:
+	  gpg_err_set_errno (EAGAIN);
+	  break;
+
+        case ERROR_BROKEN_PIPE:
+        case ERROR_NO_DATA:
+	  gpg_err_set_errno (EPIPE);
+	  break;
+
+        default:
+	  gpg_err_set_errno (EIO);
+	  break;
+        }
+
     }
   return res;
 }
