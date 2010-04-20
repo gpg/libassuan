@@ -1,3 +1,7 @@
+2010-04-20  Werner Koch  <wk@g10code.com>
+
+	* configure.ac: Change wording of the no-funopen warning.
+
 2010-03-22  Werner Koch  <wk@g10code.com>
 
 	* configure.ac (CC_FOR_BUILD): Add test.

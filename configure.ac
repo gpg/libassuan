@@ -307,7 +307,8 @@ if test $ac_cv_func_funopen != yes; then
         AC_MSG_WARN([
 ***
 *** No implementation of fopencookie or funopen available.
-*** The assuan_get_data_fp feature won't work.
+*** The assuan_get_data_fp function won't work; see the
+*** manual for details.  GnuPG does not require this feature.
 ***])
     fi
 fi
