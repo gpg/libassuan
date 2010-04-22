@@ -112,7 +112,18 @@ assuan_accept (assuan_context_t ctx)
   else if (p)
     rc = assuan_write_line (ctx, p);
   else
-    rc = assuan_write_line (ctx, "OK Pleased to meet you");
+    {
+      static char const okstr[] = "OK Pleased to meet you";
+      pid_t apid = assuan_get_pid (ctx);
+      if (apid != ASSUAN_INVALID_PID)
+        {
+          char tmpbuf[50];
+          snprintf (tmpbuf, sizeof tmpbuf, "%s, process %i", okstr, (int)apid);
+          rc = assuan_write_line (ctx, tmpbuf);
+        }
+      else
+        rc = assuan_write_line (ctx, okstr);
+    }
   if (rc)
     return rc;
     
