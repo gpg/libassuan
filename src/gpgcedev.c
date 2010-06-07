@@ -54,6 +54,25 @@
 #define GPGCEDEV_IOCTL_MAKE_PIPE \
   CTL_CODE (FILE_DEVICE_STREAMS, 2049, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
+struct pipeimpl_s
+{
+  CRITICAL_SECTION critsect;  /* Lock for all members.  */
+
+  int refcnt;
+  char *buffer;       
+  size_t buffer_size;
+  size_t buffer_len;  /* The valid length of the bufer.  */
+  size_t buffer_pos;  /* The actual read position.  */
+
+#define PIPE_FLAG_NO_READER 1
+#define PIPE_FLAG_NO_WRITER 2
+  int flags;
+
+  HANDLE space_available; /* Set if space is available.  */
+  HANDLE data_available;  /* Set if data is available.  */ 
+};
+typedef struct pipeimpl_s *pipeimpl_t;
+
 
 /* An object to store information pertaining to an open-context.  */
 struct opnctx_s;
@@ -61,27 +80,12 @@ typedef struct opnctx_s *opnctx_t;
 struct opnctx_s
 {
   int inuse;        /* True if this object has valid data.  */
-  opnctx_t assoc;   /* This context has been associated with this
-                       other context; i.e. a pipe has been
-                       established.  */
-  int is_write;     /* True if this is the write end of the pipe.  */
   LONG rvid;        /* The unique rendezvous identifier.  */
   DWORD access_code;/* Value from OpenFile.  */
   DWORD share_mode; /* Value from OpenFile.  */
-  CRITICAL_SECTION critsect;  /* Lock for all operations.  */
-  int locked;       /* True if we are in a critical section.  */
 
-  /* The malloced buffer and its size.  We use a buffer for each
-     handle which allows us eventually implement a system to
-     distribute data to several handles.  Not sure whether this is
-     really needed but as a side effect it makes the code easier. */
-  char *buffer;       
-  size_t buffer_size;
-  size_t buffer_len;  /* The valid length of the bufer.  */
-  size_t buffer_pos;  /* The actual read or write position.  */
-
-  HANDLE space_available; /* Set if space is available.  */
-  HANDLE data_available;  /* Set if data is available.  */
+  /* The state shared by all users.  */
+  pipeimpl_t pipeimpl;
 };
 
 /* A malloced table of open-context and the number of allocated slots.  */
@@ -136,18 +140,78 @@ create_rendezvous_id (void)
 
 
 
+pipeimpl_t
+pipeimpl_new (void)
+{
+  pipeimpl_t pimpl;
+
+  pimpl = malloc (sizeof (*pimpl));
+  if (!pimpl)
+    return NULL;
+
+  InitializeCriticalSection (&pimpl->critsect);
+  pimpl->refcnt = 1;
+  pimpl->buffer_size = 512;
+  pimpl->buffer = malloc (pimpl->buffer_size);
+  pimpl->buffer_len = 0;
+  pimpl->buffer_pos = 0;
+  pimpl->flags = 0;
+  pimpl->space_available = CreateEvent (NULL, FALSE, FALSE, NULL);
+  pimpl->data_available = CreateEvent (NULL, FALSE, FALSE, NULL);
+
+  return pimpl;
+}
+
+
+/* PIMPL must be locked.  It is unlocked at exit.  */
+void
+pipeimpl_unref (pipeimpl_t pimpl)
+{
+  int release = 0;
+
+  log_debug ("pipeimpl_unref (%p): dereference\n", pimpl);
+
+  if (--pimpl->refcnt == 0)
+    release = 1;
+  LeaveCriticalSection (&pimpl->critsect);
+
+  if (! release)
+    return;
+
+  log_debug ("pipeimpl_unref (%p): release\n", pimpl);
+
+  DeleteCriticalSection (&pimpl->critsect);
+  if (pimpl->buffer)
+    {
+      free (pimpl->buffer);
+      pimpl->buffer = NULL;
+      pimpl->buffer_size = 0;
+    }
+  if (pimpl->space_available != INVALID_HANDLE_VALUE)
+    {
+      CloseHandle (pimpl->space_available);
+      pimpl->space_available = INVALID_HANDLE_VALUE;
+    }
+  if (pimpl->data_available != INVALID_HANDLE_VALUE)
+    {
+      CloseHandle (pimpl->data_available);
+      pimpl->data_available = INVALID_HANDLE_VALUE;
+    }
+}
+
+
+
 /* Return a new opnctx handle and mark it as used.  Returns NULL and
-   sets LastError on memory failure etc.  On success the context is
-   locked.  */
+   sets LastError on memory failure etc.  opnctx_table_cs must be
+   locked on entry and is locked on exit.  */
 static opnctx_t
-get_new_opnctx (void)
+allocate_opnctx (void)
 {
   opnctx_t opnctx = NULL;
   int idx;
 
-  EnterCriticalSection (&opnctx_table_cs);
-  for (idx=0; idx < opnctx_table_size; idx++)
-    if (!opnctx_table[idx].inuse)
+  for (idx = 0; idx < opnctx_table_size; idx++)
+    if (! opnctx_table[idx].inuse)
       break;
   if (idx == opnctx_table_size)
     {
@@ -159,127 +223,89 @@ get_new_opnctx (void)
       newtbl = calloc (newsize, sizeof *newtbl);
       if (!newtbl)
         goto leave;
-      for (idx=0; idx < opnctx_table_size; idx++)
-        newtbl[idx] = opnctx_table[idx];
+      memcpy (newtbl, opnctx_table, opnctx_table_size * sizeof (*newtbl));
       free (opnctx_table);
       opnctx_table = newtbl;
       idx = opnctx_table_size;
       opnctx_table_size = newsize;
     }
-  opnctx = opnctx_table + idx;
-  opnctx->assoc = NULL;
-  opnctx->rvid = create_rendezvous_id ();
-  opnctx->is_write = 0;
+  opnctx = &opnctx_table[idx];
+  opnctx->inuse = 1;
+  opnctx->rvid = 0;
   opnctx->access_code = 0;
   opnctx->share_mode = 0;
-  InitializeCriticalSection (&opnctx->critsect);
-  opnctx->locked = 0;
-  opnctx->buffer_size = 512;
-  opnctx->buffer = malloc (opnctx->buffer_size);
-  if (!opnctx->buffer)
-    {
-      opnctx = NULL;
-      goto leave;
-    }
-  opnctx->buffer_len = 0;
-  opnctx->buffer_pos = 0;
-  opnctx->data_available = INVALID_HANDLE_VALUE;
-  opnctx->space_available = INVALID_HANDLE_VALUE;
+  opnctx->pipeimpl = 0;
 
-  opnctx->inuse = 1;
-  EnterCriticalSection (&opnctx->critsect);
-  opnctx->locked = 1;
-  
  leave:
-  LeaveCriticalSection (&opnctx_table_cs);
-  if (opnctx)
-    log_debug ("get_new_opnctx -> %p (rvid=%ld)\n", opnctx, opnctx->rvid);
-  else
-    log_debug ("get_new_opnctx -> failed\n");
   return opnctx;
 }
 
 
-/* Find the OPNCTX object with the rendezvous id RVID.  */
-static opnctx_t
-find_and_lock_opnctx (LONG rvid)
+/* Verify context CTX, returns NULL if not valid and the pointer to
+   the context if valid.  opnctx_table_cs must be locked on entry and
+   is locked on exit.  */
+opnctx_t
+verify_opnctx (opnctx_t ctx)
 {
-  opnctx_t result = NULL;
-  int idx;
-
-  EnterCriticalSection (&opnctx_table_cs);
-  for (idx=0; idx < opnctx_table_size; idx++)
-    if (opnctx_table[idx].inuse && opnctx_table[idx].rvid == rvid)
-      {
-        result = opnctx_table + idx;
-        break;
-      }
-  LeaveCriticalSection (&opnctx_table_cs);
-  if (!result)
+  int idx = ctx - opnctx_table;
+  if (idx < 0 || idx >= opnctx_table_size)
     {
       SetLastError (ERROR_INVALID_HANDLE);
-      log_debug ("find_opnctx -> invalid rendezvous id\n");
+      return NULL;
     }
-  else if (TryEnterCriticalSection (&result->critsect))
+  if (! opnctx_table[idx].inuse)
     {
-      result->locked++;
-      log_debug ("find_opnctx -> %p (rvid=%ld)\n", result, result->rvid);
+      SetLastError (ERROR_INVALID_HANDLE);
+      return NULL;
     }
-  else
-    {
-      SetLastError (ERROR_BUSY);
-      result = NULL;
-      log_debug ("find_opnctx -> busy\n");
-    }
-  return result;
+  return &opnctx_table[idx];
 }
 
 
-/* Check that OPNCTX is valid.  Returns TRUE if it is valid or FALSE
-   if it is a bad or closed contect.  In the latter case SetLastError
-   is called.  In the former case a lock is taken and unlock_opnctx
-   needs to be called.  If WAIT is false the fucntion only tries to
-   acquire a lock. */
-static BOOL
-validate_and_lock_opnctx (opnctx_t opnctx, int wait)
+/* Verify access CODE for context CTX, returning a reference to the
+   locked pipe implementation.  opnctx_table_cs must be locked on
+   entry and is locked on exit.  */
+pipeimpl_t
+access_opnctx (opnctx_t ctx, DWORD code)
 {
-  BOOL result = FALSE;
   int idx;
 
   EnterCriticalSection (&opnctx_table_cs);
-  for (idx=0; idx < opnctx_table_size; idx++)
-    if (opnctx_table[idx].inuse && (opnctx_table + idx) == opnctx)
-      {
-        result = TRUE;
-        break;
-      }
+  idx = ctx - opnctx_table;
+  if (idx < 0 || idx >= opnctx_table_size || ! opnctx_table[idx].inuse)
+    {
+      SetLastError (ERROR_INVALID_HANDLE);
+      LeaveCriticalSection (&opnctx_table_cs);
+      return NULL;
+    }
+  ctx = &opnctx_table[idx];
+
+  if (!(ctx->access_code & code))
+    {
+      SetLastError (ERROR_INVALID_ACCESS);
+      LeaveCriticalSection (&opnctx_table_cs);
+      return NULL;
+    }
+
+  if (! ctx->pipeimpl)
+    {
+      ctx->pipeimpl = pipeimpl_new ();
+      if (! ctx->pipeimpl)
+	{
+	  log_debug ("  access_opnctx (ctx=0x%p): error: can't create pipe\n",
+		     ctx);
+	  LeaveCriticalSection (&opnctx_table_cs);
+	  return NULL;
+	}
+      log_debug ("  access_opnctx (ctx=0x%p): created pipe 0x%p\n",
+		 ctx, ctx->pipeimpl);
+    }
+	  
+  EnterCriticalSection (&ctx->pipeimpl->critsect);
+  ctx->pipeimpl->refcnt++;
   LeaveCriticalSection (&opnctx_table_cs);
-
-  if (!result)
-    SetLastError (ERROR_INVALID_HANDLE);
-  else if (wait)
-    {
-      EnterCriticalSection (&opnctx->critsect);
-      opnctx->locked++;
-    }
-  else if (TryEnterCriticalSection (&opnctx->critsect))
-    opnctx->locked++;
-  else
-    {
-      SetLastError (ERROR_BUSY);
-      result = FALSE;
-    }
-  return result;
+  return ctx->pipeimpl;
 }
-
-
-static void
-unlock_opnctx (opnctx_t opnctx)
-{
-  opnctx->locked--;
-  LeaveCriticalSection (&opnctx->critsect);
-}
-
 
 
 
@@ -314,7 +340,7 @@ GPG_Init (LPCTSTR active_key, DWORD bus_context)
   (void)bus_context;
   
   tmpbuf = wchar_to_utf8 (active_key);
-  log_debug ("GPG_Init (%s)\n", tmpbuf);
+  log_debug ("GPG_Init (devctx=0x%p, %s)\n", DEVCTX_VALUE, tmpbuf);
   free (tmpbuf);
 
   /* We don't need any global data.  However, we need to return
@@ -328,7 +354,7 @@ GPG_Init (LPCTSTR active_key, DWORD bus_context)
 BOOL
 GPG_Deinit (DWORD devctx)
 {
-  log_debug ("GPG_Deinit (%p)\n", (void*)devctx);
+  log_debug ("GPG_Deinit (devctx=0x%p)\n", (void*)devctx);
   if (devctx != DEVCTX_VALUE)
     {
       SetLastError (ERROR_INVALID_PARAMETER);
@@ -349,20 +375,32 @@ GPG_Open (DWORD devctx, DWORD access_code, DWORD share_mode)
 {
   opnctx_t opnctx;
 
-  log_debug ("GPG_Open(devctx=%p)\n", (void*)devctx);
+  log_debug ("GPG_Open (devctx=%p)\n", (void*)devctx);
   if (devctx != DEVCTX_VALUE)
     {
+      log_debug ("GPG_Open (devctx=%p): error: devctx mismatch (expected 0x%p)\n",
+		 (void*) devctx);
       SetLastError (ERROR_INVALID_PARAMETER);
       return 0; /* Error.  */
     }
 
-  opnctx = get_new_opnctx ();
+  EnterCriticalSection (&opnctx_table_cs);
+  opnctx = allocate_opnctx ();
   if (!opnctx)
-    return 0;
+    {
+      log_debug ("GPG_Open (devctx=%p): error: could not allocate context\n",
+		 (void*) devctx);
+      goto leave;
+    }
+
   opnctx->access_code = access_code;
   opnctx->share_mode = share_mode;
 
-  unlock_opnctx (opnctx);
+  log_debug ("GPG_Open (devctx=%p): success: created context 0x%p\n",
+	     (void*) devctx, opnctx);
+
+ leave:
+  LeaveCriticalSection (&opnctx_table_cs);
   return (DWORD)opnctx;
 }
 
@@ -373,50 +411,45 @@ GPG_Close (DWORD opnctx_arg)
 {
   opnctx_t opnctx = (opnctx_t)opnctx_arg;
   BOOL result = FALSE;
-  int idx;
 
-  log_debug ("GPG_Close(%p)\n", (void*)opnctx);
+  log_debug ("GPG_Close (ctx=0x%p)\n", (void*)opnctx);
 
   EnterCriticalSection (&opnctx_table_cs);
-  for (idx=0; idx < opnctx_table_size; idx++)
-    if (opnctx_table[idx].inuse && (opnctx_table + idx) == opnctx)
-      {
-        if (opnctx->assoc)
-          {
-            opnctx->assoc->assoc = NULL;
-            opnctx->assoc = NULL;
-          }
-        if (opnctx->locked)
-          {
-            /* FIXME: Check earlier or use close only in locked state
-               or use PReClose.  */
-            log_debug ("GPG_Close while still locked\n");
-          }
-        DeleteCriticalSection (&opnctx->critsect);
-        if (opnctx->buffer)
-          {
-            free (opnctx->buffer);
-            opnctx->buffer = NULL;
-            opnctx->buffer_size = 0;
-          }
-        if (opnctx->space_available != INVALID_HANDLE_VALUE)
-          {
-            CloseHandle (opnctx->space_available);
-            opnctx->space_available = INVALID_HANDLE_VALUE;
-          }
-        if (opnctx->data_available != INVALID_HANDLE_VALUE)
-          {
-            CloseHandle (opnctx->data_available);
-            opnctx->data_available = INVALID_HANDLE_VALUE;
-          }
-        opnctx->inuse = 0;
-        result = TRUE;
-        break;
-      }
-  LeaveCriticalSection (&opnctx_table_cs);
+  opnctx = verify_opnctx (opnctx);
+  if (!opnctx)
+    {
+      log_debug ("GPG_Close (ctx=0x%p): could not find context\n", (void*)opnctx);
+      goto leave;
+    }
 
-  if (!result)
-    SetLastError (ERROR_INVALID_HANDLE);
+  if (opnctx->pipeimpl)
+    {
+      pipeimpl_t pimpl = opnctx->pipeimpl;
+      EnterCriticalSection (&pimpl->critsect);
+      /* This needs to be adjusted if there can be multiple
+	 reader/writers.  */
+      if (opnctx->access_code & GENERIC_READ)
+	{
+	  pimpl->flags |= PIPE_FLAG_NO_READER;
+	  SetEvent (pimpl->space_available);
+	}
+      else if (opnctx->access_code & GENERIC_WRITE)
+	{
+	  pimpl->flags |= PIPE_FLAG_NO_WRITER;
+	  SetEvent (pimpl->data_available);
+	}
+      pipeimpl_unref (pimpl);
+      opnctx->pipeimpl = 0;
+    }
+  opnctx->access_code = 0;
+  opnctx->share_mode = 0;
+  opnctx->rvid = 0;
+  opnctx->inuse = 0;
+  result = TRUE;
+  log_debug ("GPG_Close (ctx=0x%p): success\n", (void*)opnctx);
+
+ leave:
+  LeaveCriticalSection (&opnctx_table_cs);
   return result;
 }
 
@@ -425,72 +458,67 @@ GPG_Close (DWORD opnctx_arg)
 DWORD
 GPG_Read (DWORD opnctx_arg, void *buffer, DWORD count)
 {
-  opnctx_t rctx = (opnctx_t)opnctx_arg;
-  opnctx_t wctx;
-  int result = -1;
+  opnctx_t ctx = (opnctx_t)opnctx_arg;
+  pipeimpl_t pimpl;
   const char *src;
   char *dst;
+  int result = -1;
 
-  log_debug ("GPG_Read(%p, count=%d)\n", (void*)rctx, count);
+  log_debug ("GPG_Read (ctx=0x%p, buffer=0x%p, count=%d)\n",
+	     (void*)ctx, buffer, count);
 
-  /* We use the write end's buffer, thus there is no need to wait for
-     our (read end) lock.  */
-  if (!validate_and_lock_opnctx (rctx, LOCK_TRY))
-    return -1; /* Error.  */
-
-  if (rctx->is_write)
+  pimpl = access_opnctx (ctx, GENERIC_READ);
+  if (!pimpl)
     {
-      SetLastError (ERROR_INVALID_ACCESS);
-      log_debug ("GPG_Read(%p) -> invalid access\n", (void*)rctx);
-      goto leave;
-    }
-  if (!rctx->assoc)
-    {
-      SetLastError (ERROR_PIPE_NOT_CONNECTED);
-      goto leave;
+      log_debug ("GPG_Read (ctx=0x%p): error: could not access context\n",
+		 (void*)ctx);
+      return -1;
     }
 
-  /* Read from the corresponding write buffer.  */
  retry:
-  wctx = rctx->assoc;
-  if (!validate_and_lock_opnctx (wctx, LOCK_WAIT))
-    goto leave;
-
-  if (wctx->buffer_pos == wctx->buffer_len)
+  if (pimpl->buffer_pos == pimpl->buffer_len)
     {
-      unlock_opnctx (wctx);
-      log_debug ("%s:%d: WFSO(data_available)\n",  __func__, __LINE__);
-      WaitForSingleObject (wctx->data_available, INFINITE);
-      log_debug ("%s:%d: WFSO ... woke up\n",  __func__, __LINE__);
+      HANDLE data_available = pimpl->data_available;
+
+      /* Check for end of file.  */
+      if (pimpl->flags & PIPE_FLAG_NO_WRITER)
+	{
+	  log_debug ("GPG_Read (ctx=0x%p): success: EOF\n", (void*)ctx);
+	  result = 0;
+	  goto leave;
+	}
+
+      LeaveCriticalSection (&pimpl->critsect);
+      log_debug ("GPG_Read (ctx=0x%p): waiting: data_available\n", (void*)ctx);
+      WaitForSingleObject (data_available, INFINITE);
+      log_debug ("GPG_Read (ctx=0x%p): resuming: data_available\n", (void*)ctx);
+      EnterCriticalSection (&pimpl->critsect);
       goto retry;
     }
   
   dst = buffer;
-  src = wctx->buffer + wctx->buffer_pos;
-  while (count > 0 && wctx->buffer_pos < wctx->buffer_len)
+  src = pimpl->buffer + pimpl->buffer_pos;
+  while (count > 0 && pimpl->buffer_pos < pimpl->buffer_len)
     {
       *dst++ = *src++;
       count--;
-      wctx->buffer_pos++;
+      pimpl->buffer_pos++;
     }
   result = (dst - (char*)buffer);
-  if (wctx->buffer_pos == wctx->buffer_len)
-    wctx->buffer_pos = wctx->buffer_len = 0;
+  if (pimpl->buffer_pos == pimpl->buffer_len)
+    pimpl->buffer_pos = pimpl->buffer_len = 0;
   
   /* Now there should be some space available.  Signal the write end.
      Even if COUNT was passed as NULL and no space is available,
      signaling must be done.  */
-  if (!SetEvent (wctx->space_available))
-    {
-      log_debug ("%s:%d: SetEvent(space_available) failed: rc=%d\n",
-                 __func__, __LINE__, (int)GetLastError ());
-      unlock_opnctx (wctx);
-      goto leave;
-    }
-  unlock_opnctx (wctx);
+  if (!SetEvent (pimpl->space_available))
+    log_debug ("GPG_Read (ctx=0x%p): warning: SetEvent(space_available) failed: rc=%d\n",
+	       (void*) ctx, (int)GetLastError ());
+
+  log_debug ("GPG_Read (ctx=0x%p): success: result=%d\n", (void*)ctx, result);
 
  leave:
-  unlock_opnctx (rctx);
+  pipeimpl_unref (pimpl);
   return result;
 }
 
@@ -499,64 +527,72 @@ GPG_Read (DWORD opnctx_arg, void *buffer, DWORD count)
 DWORD
 GPG_Write (DWORD opnctx_arg, const void *buffer, DWORD count)
 {
-  opnctx_t wctx = (opnctx_t)opnctx_arg;
+  opnctx_t ctx = (opnctx_t)opnctx_arg;
+  pipeimpl_t pimpl;
   int result = -1;
   const char *src;
   char *dst;
   size_t nwritten = 0;
 
-  log_debug ("GPG_Write(%p, count=%d)\n", (void*)wctx, count);
- retry:
-  if (!validate_and_lock_opnctx (wctx, LOCK_WAIT))
-    return -1; /* Error.  */
+  log_debug ("GPG_Write (ctx=0x%p, buffer=0x%p, count=%d)\n", (void*)ctx,
+	     buffer, count);
 
-  if (!wctx->is_write)
+  pimpl = access_opnctx (ctx, GENERIC_WRITE);
+  if (!pimpl)
     {
-      SetLastError (ERROR_INVALID_ACCESS);
-      log_debug ("GPG_Write(%p) -> invalid access\n", (void*)wctx);
-      goto leave;
+      log_debug ("GPG_Write (ctx=0x%p): error: could not access context\n",
+		 (void*)ctx);
+      return -1;
     }
-  if (!wctx->assoc)
-    {
-      SetLastError (ERROR_PIPE_NOT_CONNECTED);
-      goto leave;
-    }
+
   if (!count)
     {
+      log_debug ("GPG_Write (ctx=0x%p): success\n", (void*)ctx);
       result = 0;
       goto leave;
     }
 
+ retry:
+  /* Check for broken pipe.  */
+  if (pimpl->flags & PIPE_FLAG_NO_READER)
+    {
+      log_debug ("GPG_Write (ctx=0x%p): error: broken pipe\n", (void*)ctx);
+      SetLastError (ERROR_BROKEN_PIPE);
+      goto leave;
+    }
+
   /* Write to our buffer.  */
-  if (wctx->buffer_len == wctx->buffer_size)
+  if (pimpl->buffer_len == pimpl->buffer_size)
     {
       /* Buffer is full.  */
-      unlock_opnctx (wctx);
-      log_debug ("%s:%d: WFSO(space_available)\n",  __func__, __LINE__);
-      WaitForSingleObject (wctx->space_available, INFINITE);
-      log_debug ("%s:%d: WFSO ... woke up\n",  __func__, __LINE__);
+      HANDLE space_available = pimpl->space_available;
+      LeaveCriticalSection (&pimpl->critsect);
+      log_debug ("GPG_Write (ctx=0x%p): waiting: space_available\n", (void*)ctx);
+      WaitForSingleObject (space_available, INFINITE);
+      log_debug ("GPG_Write (ctx=0x%p): resuming: space_available\n", (void*)ctx);
+      EnterCriticalSection (&pimpl->critsect);
       goto retry;
     }
 
   src = buffer;
-  dst = wctx->buffer + wctx->buffer_len;
-  while (count > 0 && wctx->buffer_len < wctx->buffer_size)
+  dst = pimpl->buffer + pimpl->buffer_len;
+  while (count > 0 && pimpl->buffer_len < pimpl->buffer_size)
     {
       *dst++ = *src++;
       count--;
-      wctx->buffer_len++;
+      pimpl->buffer_len++;
       nwritten++;
-    }
-  if (!SetEvent (wctx->data_available))
-    {
-      log_debug ("%s:%d: SetEvent(data_available) failed: rc=%d\n",
-                 __func__, __LINE__, (int)GetLastError ());
-      goto leave;
     }
   result = nwritten;
 
+  if (!SetEvent (pimpl->data_available))
+    log_debug ("GPG_Write (ctx=0x%p): warning: SetEvent(data_available) failed: rc=%d\n",
+	       (void*) ctx, (int)GetLastError ());
+
+  log_debug ("GPG_Write (ctx=0x%p): success: result=%d\n", (void*)ctx, result);
+
  leave:
-  unlock_opnctx (wctx);
+  pipeimpl_unref (pimpl);
   return result;
 }
 
@@ -571,34 +607,40 @@ GPG_Seek (DWORD opnctx, long amount, WORD type)
 
 
 
+/* opnctx_table_s is locked on entering and on exit.  */
 static BOOL
 make_pipe (opnctx_t ctx, LONG rvid)
 {
-  BOOL result = FALSE;
   opnctx_t peerctx = NULL;
+  int idx;
 
-  log_debug ("  make_pipe(%p, rvid=%ld)\n", ctx, rvid);
-  if (ctx->assoc)
+  log_debug ("  make_pipe (ctx=0x%p, rvid=%08lx)\n", ctx, rvid);
+
+  if (ctx->pipeimpl)
     {
+      log_debug ("  make_pipe (ctx=0x%p): error: already assigned\n",  ctx);
       SetLastError (ERROR_ALREADY_ASSIGNED);
-      goto leave;
+      return FALSE;
     }
 
-  peerctx = find_and_lock_opnctx (rvid);
-  if (!peerctx)
+  for (idx = 0; idx < opnctx_table_size; idx++)
+    if (opnctx_table[idx].inuse && opnctx_table[idx].rvid == rvid)
+      {
+        peerctx = &opnctx_table[idx];
+        break;
+      }
+  if (! peerctx)
     {
+      log_debug ("  make_pipe (ctx=0x%p): error: not found\n",  ctx);
       SetLastError (ERROR_NOT_FOUND);
-      goto leave;
+      return FALSE;
     }
+
   if (peerctx == ctx)
     {
+      log_debug ("  make_pipe (ctx=0x%p): error: target and source identical\n",  ctx);
       SetLastError (ERROR_INVALID_TARGET_HANDLE);
-      goto leave;
-    }
-  if (peerctx->assoc)
-    {
-      SetLastError (ERROR_ALREADY_ASSIGNED);
-      goto leave;
+      return FALSE;
     }
 
   if ((ctx->access_code & GENERIC_READ))
@@ -607,17 +649,9 @@ make_pipe (opnctx_t ctx, LONG rvid)
       if (!(peerctx->access_code & GENERIC_WRITE))
         {
           SetLastError (ERROR_INVALID_ACCESS);
-          log_debug ("  make_pipe(%p) write end -> invalid access\n", ctx);
-          goto leave;
+      log_debug ("  make_pipe (ctx=0x%p): error: peer is not writer\n",  ctx);
+          return FALSE;
         }
-      peerctx->space_available = CreateEvent (NULL, FALSE, FALSE, NULL);
-      peerctx->data_available = CreateEvent (NULL, FALSE, FALSE, NULL);
-      
-      ctx->assoc = peerctx;
-      peerctx->assoc = ctx;
-      ctx->is_write = 0;
-      peerctx->is_write = 1;
-      result = TRUE;
     }
   else if ((ctx->access_code & GENERIC_WRITE))
     {
@@ -625,29 +659,39 @@ make_pipe (opnctx_t ctx, LONG rvid)
       if (!(peerctx->access_code & GENERIC_READ))
         {
           SetLastError (ERROR_INVALID_ACCESS);
-          log_debug ("  make_pipe(%p) read_end -> invalid access\n", ctx);
-          goto leave;
+	  log_debug ("  make_pipe (ctx=0x%p): error: peer is not reader\n",  ctx);
+          return FALSE;
         }
-      ctx->space_available = CreateEvent (NULL, FALSE, FALSE, NULL);
-      ctx->data_available = CreateEvent (NULL, FALSE, FALSE, NULL);
-      
-      ctx->assoc = peerctx;
-      peerctx->assoc = ctx;
-      ctx->is_write = 1;
-      peerctx->is_write = 0;
-      result = TRUE;
     }
   else
     {
       SetLastError (ERROR_INVALID_ACCESS);
-      log_debug ("  make_pipe(%p) no_access -> invalid access\n", ctx);
-      goto leave;
+      log_debug ("  make_pipe (ctx=0x%p): error: invalid access\n",  ctx);
+      return FALSE;
     }
 
- leave:
-  if (peerctx)
-    unlock_opnctx (peerctx);
-  return result;
+  /* Make sure the peer has a pipe implementation to be shared.  If
+     not yet, create one.  */
+  if (! peerctx->pipeimpl)
+    {
+      peerctx->pipeimpl = pipeimpl_new ();
+      if (! peerctx->pipeimpl)
+	{
+	  log_debug ("  make_pipe (ctx=0x%p): error: can't create pipe\n",
+		     ctx);
+	  return FALSE;
+	}
+      log_debug ("  make_pipe (ctx=0x%p): created pipe 0x%p\n",
+		 ctx, peerctx->pipeimpl);
+    }
+  EnterCriticalSection (&peerctx->pipeimpl->critsect);
+  peerctx->pipeimpl->refcnt++;
+  ctx->pipeimpl = peerctx->pipeimpl;
+  LeaveCriticalSection (&peerctx->pipeimpl->critsect);
+  log_debug ("  make_pipe (ctx=0x%p): success: combined with peer ctx=0x%p (pipe 0x%p)\n",
+	     ctx, peerctx, peerctx->pipeimpl);
+
+  return TRUE;
 }
 
 
@@ -659,19 +703,34 @@ GPG_IOControl (DWORD opnctx_arg, DWORD code, void *inbuf, DWORD inbuflen,
   BOOL result = FALSE;
   LONG rvid;
 
-  log_debug ("GPG_IOControl(%p, %d)\n", (void*)opnctx, code);
-  if (!validate_and_lock_opnctx (opnctx, LOCK_TRY))
-    return FALSE;
+  log_debug ("GPG_IOControl (ctx=0x%p, %08x)\n", (void*)opnctx, code);
+
+  EnterCriticalSection (&opnctx_table_cs);
+  opnctx = verify_opnctx (opnctx);
+  if (!opnctx)
+    {
+      log_debug ("GPG_IOControl (ctx=0x%p): error: could not access context\n", 
+		 (void*)opnctx);
+      goto leave;
+    }
 
   switch (code)
     {
     case GPGCEDEV_IOCTL_GET_RVID:
-      if (!opnctx || inbuf || inbuflen
-          || !outbuf || outbuflen  < sizeof (LONG))
+      log_debug ("GPG_IOControl (ctx=0x%p): code: GET_RVID\n", (void*)opnctx);
+      if (inbuf || inbuflen || !outbuf || outbuflen < sizeof (LONG))
         {
+	  log_debug ("GPG_IOControl (ctx=0x%p): error: invalid parameter\n", 
+		     (void*)opnctx);
           SetLastError (ERROR_INVALID_PARAMETER);
           goto leave;
         }
+
+      if (! opnctx->rvid) 
+	opnctx->rvid = create_rendezvous_id ();
+      log_debug ("GPG_IOControl (ctx=0x%p): returning rvid: %08lx\n", 
+		 (void*)opnctx, opnctx->rvid);
+
       memcpy (outbuf, &opnctx->rvid, sizeof (LONG));
       if (actualoutlen)
         *actualoutlen = sizeof (LONG);
@@ -679,28 +738,38 @@ GPG_IOControl (DWORD opnctx_arg, DWORD code, void *inbuf, DWORD inbuflen,
       break;
 
     case GPGCEDEV_IOCTL_MAKE_PIPE:
-      if (!opnctx || !inbuf || inbuflen < sizeof (LONG) 
-          || outbuf || outbuflen || actualoutlen )
+      log_debug ("GPG_IOControl (ctx=0x%p): code: MAKE_PIPE\n", (void*)opnctx);
+      if (!inbuf || inbuflen < sizeof (LONG) 
+          || outbuf || outbuflen || actualoutlen)
         {
+	  log_debug ("GPG_IOControl (ctx=0x%p): error: invalid parameter\n", 
+		     (void*)opnctx);
           SetLastError (ERROR_INVALID_PARAMETER);
           goto leave;
         }
       memcpy (&rvid, inbuf, sizeof (LONG));
+      log_debug ("GPG_IOControl (ctx=0x%p): requesting to finish pipe for rvid: %08lx\n", 
+		 (void*)opnctx, rvid);
       if (make_pipe (opnctx, rvid))
         result = TRUE;
       break;
 
     case IOCTL_PSL_NOTIFY:
+      log_debug ("GPG_IOControl (ctx=0x%p): code: NOTIFY\n", (void*)opnctx);
       /* Unexpected process termination.  */
       break;
 
     default:
+      log_debug ("GPG_IOControl (ctx=0x%p): code: (unknown)\n", (void*)opnctx);
       SetLastError (ERROR_INVALID_PARAMETER);
       break;
     }
 
+  log_debug ("GPG_IOControl (ctx=0x%p): success: result=%d\n", (void*)opnctx,
+	     result);
+
  leave:
-  unlock_opnctx (opnctx);
+  LeaveCriticalSection (&opnctx_table_cs);
   return result;
 }
 

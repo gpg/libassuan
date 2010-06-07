@@ -1,3 +1,32 @@
+2010-06-07  Marcus Brinkmann  <marcus@g10code.de>
+
+	* gpgcedev.c: This rewrite does away with troublesome race
+	conditions (close vs everything else, for example) by simplifying
+	the locking model.  It also handles EOF, EPIPE, but still assumes
+	that there is always only ever one reader and writer.  Also, no
+	need to treat ERROR_PIPE_NOT_CONNECTED and ERROR_BUSY as EAGAIN
+	anymore.
+	(struct pipeimpl_s, pipeimpl_t): New types.
+	(PIPE_FLAG_NO_READER, PIPE_FLAG, NO_WRITER): New macros.
+	(struct opnctx_s): Remove everything that's now in struct
+	pipeimpl_s.  Remove also assoc and locked.  Add pipeimpl field.
+	(pipeimpl_new, pipeimpl_unref, allocate_opnctx, verify_opnctx,
+	access_opnctx): New functions.
+	(get_new_opnctx, find_and_lock_opnctx, validate_and_lock_opnctx,
+	unlock_opnctx): Removed.
+	(GPG_Init, GPG_Deinit): Improve debugging output.
+	(GPG_Open): Improve debugging output, use allocate_opnctx instead
+	of get_new_opnctx.
+	(GPG_Close): Improve debugging output.  Rewrite to use reference
+	counting.  Also check if reader or writer is closed and set flags
+	for triggering EOF or EPIPE.
+	(GPG_Read): Improve debugging output.  Rewrite using pipeimpl.
+	Check for EOF.
+	(GPG_Write): Improve debugging output.  Rewrite using pipeimpl.
+	Check for EPIPE.
+	(make_pipe): Rewrite using pipeimpl.
+	(GPG_IOControl): Improve debugging output.
+
 2010-04-22  Werner Koch  <wk@g10code.com>
 
 	* assuan-listen.c (assuan_accept): Show the PID with the default
