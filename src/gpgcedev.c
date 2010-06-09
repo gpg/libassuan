@@ -54,6 +54,17 @@
 #define GPGCEDEV_IOCTL_MAKE_PIPE \
   CTL_CODE (FILE_DEVICE_STREAMS, 2049, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
+/* The IOCTL used to unblock a blocking thread.
+
+   The caller sends this IOCTL to the read or the write handle.  No
+   parameter is required.  The effect is that a reader or writer
+   blocked on the same handle is unblocked (and will return
+   ERROR_BUSY).  Note that the operation can be repeated, if so
+   desired.  The state of the pipe itself will not be affected in any
+   way.  */
+#define GPGCEDEV_IOCTL_UNBLOCK \
+  CTL_CODE (FILE_DEVICE_STREAMS, 2050, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
 struct pipeimpl_s
 {
   CRITICAL_SECTION critsect;  /* Lock for all members.  */
@@ -66,6 +77,8 @@ struct pipeimpl_s
 
 #define PIPE_FLAG_NO_READER 1
 #define PIPE_FLAG_NO_WRITER 2
+#define PIPE_FLAG_UNBLOCK_READER 4
+#define PIPE_FLAG_UNBLOCK_WRITER 8
   int flags;
 
   HANDLE space_available; /* Set if space is available.  */
@@ -488,6 +501,16 @@ GPG_Read (DWORD opnctx_arg, void *buffer, DWORD count)
 	  goto leave;
 	}
 
+      /* Check for request to unblock once.  */
+      if (pimpl->flags & PIPE_FLAG_UNBLOCK_READER)
+	{
+	  log_debug ("GPG_Read (ctx=0x%p): success: EBUSY (due to unblock request)\n", (void*)ctx);
+	  pimpl->flags &= ~PIPE_FLAG_UNBLOCK_READER;
+	  SetLastError (ERROR_BUSY);
+	  result = -1;
+	  goto leave;
+	}
+
       LeaveCriticalSection (&pimpl->critsect);
       log_debug ("GPG_Read (ctx=0x%p): waiting: data_available\n", (void*)ctx);
       WaitForSingleObject (data_available, INFINITE);
@@ -558,6 +581,16 @@ GPG_Write (DWORD opnctx_arg, const void *buffer, DWORD count)
     {
       log_debug ("GPG_Write (ctx=0x%p): error: broken pipe\n", (void*)ctx);
       SetLastError (ERROR_BROKEN_PIPE);
+      goto leave;
+    }
+
+  /* Check for request to unblock once.  */
+  if (pimpl->flags & PIPE_FLAG_UNBLOCK_WRITER)
+    {
+      log_debug ("GPG_Write (ctx=0x%p): success: EBUSY (due to unblock request)\n", (void*)ctx);
+      pimpl->flags &= ~PIPE_FLAG_UNBLOCK_WRITER;
+      SetLastError (ERROR_BUSY);
+      result = -1;
       goto leave;
     }
 
@@ -695,6 +728,30 @@ make_pipe (opnctx_t ctx, LONG rvid)
 }
 
 
+/* opnctx_table_s is locked on entering and on exit.  */
+static BOOL
+unblock_call (opnctx_t ctx)
+{
+  /* If there is no pipe object, no thread can be blocked.  */
+  if (!ctx->pipeimpl)
+    return TRUE;
+
+  EnterCriticalSection (&ctx->pipeimpl->critsect);
+  if (ctx->access_code & GENERIC_READ)
+    {
+      ctx->pipeimpl->flags |= PIPE_FLAG_UNBLOCK_READER;
+      SetEvent (ctx->pipeimpl->data_available);
+    }
+  else if (ctx->access_code & GENERIC_WRITE)
+    {
+      ctx->pipeimpl->flags |= PIPE_FLAG_UNBLOCK_WRITER;
+      SetEvent (ctx->pipeimpl->space_available);
+    }
+  LeaveCriticalSection (&ctx->pipeimpl->critsect);
+
+  return TRUE;
+}
+
 BOOL
 GPG_IOControl (DWORD opnctx_arg, DWORD code, void *inbuf, DWORD inbuflen,
                void *outbuf, DWORD outbuflen, DWORD *actualoutlen)
@@ -751,6 +808,20 @@ GPG_IOControl (DWORD opnctx_arg, DWORD code, void *inbuf, DWORD inbuflen,
       log_debug ("GPG_IOControl (ctx=0x%p): requesting to finish pipe for rvid: %08lx\n", 
 		 (void*)opnctx, rvid);
       if (make_pipe (opnctx, rvid))
+        result = TRUE;
+      break;
+
+    case GPGCEDEV_IOCTL_UNBLOCK:
+      log_debug ("GPG_IOControl (ctx=0x%p): code: UNBLOCK\n", (void*)opnctx);
+      if (inbuf || inbuflen || outbuf || outbuflen || actualoutlen)
+        {
+	  log_debug ("GPG_IOControl (ctx=0x%p): error: invalid parameter\n", 
+		     (void*)opnctx);
+          SetLastError (ERROR_INVALID_PARAMETER);
+          goto leave;
+        }
+      
+      if (unblock_call (opnctx))
         result = TRUE;
       break;
 

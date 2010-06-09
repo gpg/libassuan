@@ -1,3 +1,13 @@
+2010-06-09  Marcus Brinkmann  <marcus@g10code.de>
+
+	* gpgcedev.c (GPGCEDEV_IOCTL_UNBLOCK): New ioctl.
+	(PIPE_FLAG_UNBLOCK_READER, PIPE_FLAG_UNBLOCK_WRITER): New flags.
+	(GPG_Read): Check if PIPE_FLAG_UNBLOCK_READER is set and return
+	ERROR_BUSY in that case.
+	(GPG_Write): Likewise for PIPE_FLAG_UNBLOCK_WRITER.
+	(unblock_call): New function.
+	(GPG_IOControl): Implement GPGCEDEV_IOCTL_UNBLOCK.
+
 2010-06-07  Marcus Brinkmann  <marcus@g10code.de>
 
 	* gpgcedev.c: This rewrite does away with troublesome race
