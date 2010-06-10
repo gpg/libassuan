@@ -159,7 +159,10 @@ _assuan_w32ce_finish_pipe (int rvid, int write_end)
   HANDLE hd;
 
   if (!rvid)
-    return INVALID_HANDLE_VALUE;
+    {
+      SetLastError (ERROR_INVALID_HANDLE);
+      return INVALID_HANDLE_VALUE;
+    }
 
   hd = CreateFile (L"GPG1:", write_end? GENERIC_WRITE : GENERIC_READ,
                    FILE_SHARE_READ | FILE_SHARE_WRITE,
@@ -259,9 +262,13 @@ int
 __assuan_close (assuan_context_t ctx, assuan_fd_t fd)
 {
   int rc = closesocket (HANDLE2SOCKET(fd));
+  int err = WSAGetLastError ();
+
+  /* Note that gpg_err_set_errno on Windows CE overwrites
+     WSAGetLastError() (via SetLastError()).  */
   if (rc)
-    gpg_err_set_errno ( _assuan_sock_wsa2errno (WSAGetLastError ()) );
-  if (rc && WSAGetLastError () == WSAENOTSOCK)
+    gpg_err_set_errno (_assuan_sock_wsa2errno (err));
+  if (rc && err == WSAENOTSOCK)
     {
       rc = CloseHandle (fd);
       if (rc)
