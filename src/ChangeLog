@@ -1,3 +1,11 @@
+2010-06-10  Marcus Brinkmann  <marcus@g10code.de>
+
+	* w32ce-add.h (ASSUAN_STDIN, ASSUAN_STDOUT): Define magic handle values.
+	* system-w32ce.c (__assuan_read, __assuan_write): Handle magic
+	handle values differently.
+	
+	* system-w32ce.c (_assuan_w32ce_finish_pipe): Return error on RVID 0.
+
 2010-06-09  Marcus Brinkmann  <marcus@g10code.de>
 
 	* gpgcedev.c (GPGCEDEV_IOCTL_UNBLOCK): New ioctl.

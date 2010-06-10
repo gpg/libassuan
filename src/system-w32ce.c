@@ -158,6 +158,9 @@ _assuan_w32ce_finish_pipe (int rvid, int write_end)
 {
   HANDLE hd;
 
+  if (!rvid)
+    return INVALID_HANDLE_VALUE;
+
   hd = CreateFile (L"GPG1:", write_end? GENERIC_WRITE : GENERIC_READ,
                    FILE_SHARE_READ | FILE_SHARE_WRITE,
                    NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL,NULL);
@@ -281,6 +284,28 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
   TRACE_BEG3 (ctx, ASSUAN_LOG_SYSIO, "__assuan_read", ctx,
 	      "fd=0x%x, buffer=%p, size=%i", fd, buffer, size);
 
+#ifdef HAVE_W32CE_SYSTEM
+  /* This is a bit of a hack to support stdin over ssh.  Note that
+     fread buffers fully while getchar is line buffered.  Weird, but
+     that's the way it is.  ASSUAN_STDIN and ASSUAN_STDOUT are
+     special handle values that shouldn't occur in the wild.  */
+  if (fd == ASSUAN_STDIN)
+    {
+      int i = 0;
+      int chr;
+      while (i < size)
+	{
+	  chr = getchar();
+	  if (chr == EOF)
+	    break;
+	  ((char*)buffer)[i++] = (char) chr;
+	  if (chr == '\n')
+	    break;
+	}
+      return TRACE_SYSRES (i);
+    }
+#endif
+
   res = recv (HANDLE2SOCKET (fd), buffer, size, 0);
   if (res == -1)
     {
@@ -345,6 +370,18 @@ __assuan_write (assuan_context_t ctx, assuan_fd_t fd, const void *buffer,
 
   TRACE_BEG3 (ctx, ASSUAN_LOG_SYSIO, "__assuan_write", ctx,
 	      "fd=0x%x, buffer=%p, size=%i", fd, buffer, size);
+
+#ifdef HAVE_W32CE_SYSTEM
+  /* This is a bit of a hack to support stdout over ssh.  Note that
+     fread buffers fully while getchar is line buffered.  Weird, but
+     that's the way it is.  ASSUAN_STDIN and ASSUAN_STDOUT are
+     special handle values that shouldn't occur in the wild.  */
+  if (fd == ASSUAN_STDOUT)
+    {
+      res = fwrite (buffer, 1, size, stdout);
+      return TRACE_SYSRES (res);
+    }
+#endif
 
   res = send ((int)fd, buffer, size, 0);
   if (res == -1 && WSAGetLastError () == WSAENOTSOCK)

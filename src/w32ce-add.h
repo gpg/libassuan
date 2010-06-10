@@ -26,3 +26,8 @@ DWORD _assuan_w32ce_create_pipe (HANDLE *read_hd, HANDLE *write_hd,
                                  LPSECURITY_ATTRIBUTES sec_attr, DWORD size);
 #define CreatePipe(a,b,c,d) _assuan_w32ce_create_pipe ((a),(b),(c),(d))
 
+/* Magic handle values.  Let's hope those never occur legitimately as
+   handles or sockets.  (Sockets are numbered sequentially from 0,
+   while handles seem aligned to wordsize.  */
+#define ASSUAN_STDIN (void*)0x7ffffffd
+#define ASSUAN_STDOUT (void*)0x7fffffff
