@@ -102,7 +102,176 @@ deinstall (void)
 }
 
 
+/* Kudos to Scott Seligman <scott@scottandmichelle.net> for his work
+   on the reverse engineering.  */
+struct htc_sensor_s
+{
+  SHORT   tilt_x;         // From -1000 to 1000 (about), 0 is flat
+  SHORT   tilt_y;         // From -1000 to 1000 (about), 0 is flat
+  SHORT   tilt_z;         // From -1000 to 1000 (about)
+  DWORD   angle_x;        // 0 .. 359
+  DWORD   angle_y;        // From 0 to 359
+  DWORD   orientation;    // 0.. 5?
+  DWORD   unknown;        // Handle?
+};
+typedef struct htc_sensor_s *htc_sensor_t;
 
+static HANDLE (WINAPI *HTCSensorOpen) (DWORD);
+static void   (WINAPI *HTCSensorClose) (HANDLE);
+static DWORD  (WINAPI *HTCSensorGetDataOutput) (HANDLE, htc_sensor_t);
+
+static int
+load_sensor_api (void)
+{
+  static HMODULE dll_hd;
+
+  if (dll_hd)
+    return 0;
+
+  dll_hd = LoadLibrary (L"HTCSensorSDK.dll");
+  if (!dll_hd)
+    {
+      fprintf (stderr, PGM": error loading sensor DLL: rc=%d\n",
+               (int)GetLastError ());
+      return 1;
+    }
+
+  HTCSensorOpen = (void*)GetProcAddress (dll_hd, L"HTCSensorOpen");
+  if (HTCSensorOpen)
+    HTCSensorClose = (void*)GetProcAddress (dll_hd, L"HTCSensorClose");
+  if (HTCSensorClose)
+    HTCSensorGetDataOutput = (void*)
+      GetProcAddress (dll_hd, L"HTCSensorGetDataOutput");
+  if (!HTCSensorGetDataOutput)
+    {
+      fprintf (stderr, PGM": error loading function from sensor DLL: rc=%d\n",
+               (int)GetLastError ());
+      CloseHandle (dll_hd);
+      return 1;
+    }
+  return 0;
+}
+
+
+static int 
+gravity (void)
+{
+  int rc;
+  HANDLE sensor;
+  struct htc_sensor_s lastdata;
+  struct htc_sensor_s data;
+
+  rc = load_sensor_api ();
+  if (rc)
+    return rc;
+
+  sensor = HTCSensorOpen (1 /* tilt sensor */);
+  if (!sensor  || sensor == INVALID_HANDLE_VALUE)
+    {
+      fprintf (stderr, PGM": error opening gravity sensor: rc=%d\n",
+               (int)GetLastError ());
+      HTCSensorClose (sensor);
+      return 1;
+    }
+
+  memset (&lastdata, 0, sizeof lastdata);
+  while (HTCSensorGetDataOutput (sensor, &data))
+    {
+      if (lastdata.tilt_x/10 != data.tilt_x/10
+          || lastdata.tilt_y/10 != data.tilt_y/10
+          || lastdata.tilt_z/10 != data.tilt_z/10
+          || lastdata.angle_x/5 != data.angle_x/5
+          || lastdata.angle_y/5 != data.angle_y/5
+          || lastdata.orientation != data.orientation)
+        {
+          lastdata = data;
+          printf ("tilt: x=%-5d y=%-5d z=%-5d  "
+                  "angle: x=%-3d y=%-3d  "
+                  "ori: %d\n",
+                  (int)data.tilt_x, (int)data.tilt_y, (int)data.tilt_z,
+                  (int)data.angle_x, (int)data.angle_y,
+                  (int)data.orientation);
+        }
+      Sleep (200);
+    }
+  fprintf (stderr, PGM": reading sensor data failed: rc=%d\n",
+           (int)GetLastError ());
+  HTCSensorClose (sensor);
+  return 0;
+}
+
+
+
+/* No GPD1 device on the HTC Touch Pro 2.  */
+# if 0
+static int
+gps_raw (void)
+{
+  HANDLE hd;
+  char buffer[1000];
+  unsigned long nread;
+  int count;
+
+  hd = CreateFile (L"GPD1:", GENERIC_READ, FILE_SHARE_READ,
+                   NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+  if (hd == INVALID_HANDLE_VALUE)
+    {
+      fprintf (stderr, PGM": can't open `GPD1': rc=%d\n",
+               (int)GetLastError ());
+      return 1;
+    }
+  fprintf (stderr, PGM": GPS device successfully opened\n");
+
+  for (count=0; count < 100; count++)
+    {
+      if (!ReadFile (hd, buffer, sizeof buffer-1, &nread, NULL))
+        {
+          fprintf (stderr, PGM": error reading `GPD1': rc=%d\n",
+                   (int)GetLastError ());
+          CloseHandle (hd);
+          return 1;
+        }
+      buffer[nread-1] = 0;
+      fputs (buffer, stdout);
+    }
+
+  CloseHandle (hd);
+  return 0;
+}
+#endif
+
+/* Untested samples for CE6.  */
+#if 0
+static int
+gps (void)
+{
+  HANDLE hd;
+  GPS_POSITION pos;
+
+  hd = GPSOpenDevice (NULL, NULL, NULL, 0);
+  if (hd == INVALID_HANDLE_VALUE)
+    {
+      fprintf (stderr, PGM": GPSOpenDevice failed: rc=%d\n",
+               (int)GetLastError ());
+      return 1;
+    }
+  fprintf (stderr, PGM": GPS device successfully opened\n");
+
+  if (GPSGetPosition (hd, &pos, 2000, 0))
+    {
+      fprintf (stderr, PGM": GPSGetPosition failed: rc=%d\n",
+               (int)GetLastError ());
+      GPSCloseDevice (hd);
+      return 1;
+    }
+
+
+  GPSCloseDevice (hd);
+  return 0;
+}
+#endif
+
+
 int
 main (int argc, char **argv)
 {
@@ -125,6 +294,10 @@ main (int argc, char **argv)
       else
         fprintf (stderr, PGM": device activated\n");
     }
+  else if (argc > 1 && !strcmp (argv[1], "--gravity"))
+    result = gravity ();
+  /* else if (argc > 1 && !strcmp (argv[1], "--gps")) */
+  /*   result = gps (); */
   else
     {
       fprintf (stderr, "usage: " PGM " --register|--deactivate|--activate\n");

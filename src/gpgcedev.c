@@ -25,7 +25,7 @@
 #include <winioctl.h>
 
 #define ENABLE_DEBUG
-#warning Cancel and caller process termination not handled.
+#warning Cancel not handled.
 
 
 /* Missing IOCTLs in the current mingw32ce.  */
@@ -826,8 +826,15 @@ GPG_IOControl (DWORD opnctx_arg, DWORD code, void *inbuf, DWORD inbuflen,
       break;
 
     case IOCTL_PSL_NOTIFY:
+      /* This notification is received if the application's main
+         thread exits and the application has other threads running
+         and the application has open handles for this device.  What
+         we do is to unblock them all simialr to an explicit unblock
+         call.  */
       log_debug ("GPG_IOControl (ctx=0x%p): code: NOTIFY\n", (void*)opnctx);
-      /* Unexpected process termination.  */
+
+      if (unblock_call (opnctx))
+        result = TRUE;
       break;
 
     default:

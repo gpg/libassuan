@@ -1,3 +1,7 @@
+2010-06-28  Werner Koch  <wk@g10code.com>
+
+	* gpgcedev.c (GPG_IOControl) <IOCTL_PSL_NOTIFY>: Unblock threads.
+
 2010-06-11  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan-handler.c (std_handler_input,
@@ -14,7 +18,7 @@
 	* w32ce-add.h (ASSUAN_STDIN, ASSUAN_STDOUT): Define magic handle values.
 	* system-w32ce.c (__assuan_read, __assuan_write): Handle magic
 	handle values differently.
-	
+
 	* system-w32ce.c (_assuan_w32ce_finish_pipe): Return error on RVID 0.
 
 2010-06-09  Marcus Brinkmann  <marcus@g10code.de>
