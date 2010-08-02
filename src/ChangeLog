@@ -1,3 +1,10 @@
+2010-08-03  Marcus Brinkmann  <marcus@g10code.de>
+
+	* gpgcedev.c: Use index (between 1 and table size) into
+	opnctx_table as public context identifiers, instead using pointers
+	into the table directly (which are not stable under table resize).
+	(OPNCTX_TO_IDX, OPNCTX_FROM_IDX, OPNCTX_VALID_IDX_P): New macros.
+
 2010-06-28  Werner Koch  <wk@g10code.com>
 
 	* gpgcedev.c (GPG_IOControl) <IOCTL_PSL_NOTIFY>: Unblock threads.

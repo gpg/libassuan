@@ -104,6 +104,10 @@ struct opnctx_s
 /* A malloced table of open-context and the number of allocated slots.  */
 static opnctx_t opnctx_table;
 static size_t   opnctx_table_size;
+/* The macros make sure that 0 is never a valid openctx_arg.  */
+#define OPNCTX_TO_IDX(ctx_arg) (((ctx_arg) - opnctx_table) + 1)
+#define OPNCTX_FROM_IDX(idx) (&opnctx_table[(idx) - 1])
+#define OPNCTX_VALID_IDX_P(idx) ((idx) > 0 && (idx) <= opnctx_table_size)
 
 /* A criticial section object used to protect the OPNCTX_TABLE.  */
 static CRITICAL_SECTION opnctx_table_cs;
@@ -216,7 +220,9 @@ pipeimpl_unref (pipeimpl_t pimpl)
 
 /* Return a new opnctx handle and mark it as used.  Returns NULL and
    sets LastError on memory failure etc.  opnctx_table_cs must be
-   locked on entry and is locked on exit.  */
+   locked on entry and is locked on exit.  Note that the returned
+   pointer is only valid as long as opnctx_table_cs stays locked, as
+   it is not stable under table reallocation.  */
 static opnctx_t
 allocate_opnctx (void)
 {
@@ -256,44 +262,48 @@ allocate_opnctx (void)
 
 /* Verify context CTX, returns NULL if not valid and the pointer to
    the context if valid.  opnctx_table_cs must be locked on entry and
-   is locked on exit.  */
+   is locked on exit.  Note that the returned pointer is only valid as
+   long as opnctx_table_cs remains locked.  */
 opnctx_t
-verify_opnctx (opnctx_t ctx)
+verify_opnctx (DWORD ctx_arg)
 {
-  int idx = ctx - opnctx_table;
-  if (idx < 0 || idx >= opnctx_table_size)
+  opnctx_t ctx;
+
+  if (! OPNCTX_VALID_IDX_P (ctx_arg))
     {
       SetLastError (ERROR_INVALID_HANDLE);
       return NULL;
     }
-  if (! opnctx_table[idx].inuse)
+  ctx = OPNCTX_FROM_IDX (ctx_arg);
+
+  if (! ctx->inuse)
     {
       SetLastError (ERROR_INVALID_HANDLE);
       return NULL;
     }
-  return &opnctx_table[idx];
+  return ctx;
 }
 
 
-/* Verify access CODE for context CTX, returning a reference to the
-   locked pipe implementation.  opnctx_table_cs must be locked on
-   entry and is locked on exit.  */
+/* Verify access CODE for context CTX_ARG, returning a reference to
+   the locked pipe implementation.  opnctx_table_cs must be unlocked
+   on entry and is unlocked on exit.  */
 pipeimpl_t
-access_opnctx (opnctx_t ctx, DWORD code)
+access_opnctx (DWORD ctx_arg, DWORD code)
 {
-  int idx;
+  opnctx_t ctx;
+  pipeimpl_t pimpl;
 
   EnterCriticalSection (&opnctx_table_cs);
-  idx = ctx - opnctx_table;
-  if (idx < 0 || idx >= opnctx_table_size || ! opnctx_table[idx].inuse)
+  ctx = verify_opnctx (ctx_arg);
+  if (! ctx)
     {
-      SetLastError (ERROR_INVALID_HANDLE);
+      /* Error is set by verify_opnctx.  */
       LeaveCriticalSection (&opnctx_table_cs);
       return NULL;
     }
-  ctx = &opnctx_table[idx];
 
-  if (!(ctx->access_code & code))
+  if (! (ctx->access_code & code))
     {
       SetLastError (ERROR_INVALID_ACCESS);
       LeaveCriticalSection (&opnctx_table_cs);
@@ -305,19 +315,20 @@ access_opnctx (opnctx_t ctx, DWORD code)
       ctx->pipeimpl = pipeimpl_new ();
       if (! ctx->pipeimpl)
 	{
-	  log_debug ("  access_opnctx (ctx=0x%p): error: can't create pipe\n",
-		     ctx);
+	  log_debug ("  access_opnctx (ctx=%i): error: can't create pipe\n",
+		     ctx_arg);
 	  LeaveCriticalSection (&opnctx_table_cs);
 	  return NULL;
 	}
-      log_debug ("  access_opnctx (ctx=0x%p): created pipe 0x%p\n",
-		 ctx, ctx->pipeimpl);
+      log_debug ("  access_opnctx (ctx=%i): created pipe 0x%p\n",
+		 ctx_arg, ctx->pipeimpl);
     }
-	  
-  EnterCriticalSection (&ctx->pipeimpl->critsect);
-  ctx->pipeimpl->refcnt++;
+  pimpl = ctx->pipeimpl;
+
+  EnterCriticalSection (&pimpl->critsect);
+  pimpl->refcnt++;
   LeaveCriticalSection (&opnctx_table_cs);
-  return ctx->pipeimpl;
+  return pimpl;
 }
 
 
@@ -387,6 +398,7 @@ DWORD
 GPG_Open (DWORD devctx, DWORD access_code, DWORD share_mode)
 {
   opnctx_t opnctx;
+  DWORD ctx_arg = 0;
 
   log_debug ("GPG_Open (devctx=%p)\n", (void*)devctx);
   if (devctx != DEVCTX_VALUE)
@@ -409,12 +421,14 @@ GPG_Open (DWORD devctx, DWORD access_code, DWORD share_mode)
   opnctx->access_code = access_code;
   opnctx->share_mode = share_mode;
 
-  log_debug ("GPG_Open (devctx=%p): success: created context 0x%p\n",
-	     (void*) devctx, opnctx);
+  ctx_arg = OPNCTX_TO_IDX (opnctx);
+
+  log_debug ("GPG_Open (devctx=%p): success: created context %i\n",
+	     (void*) devctx, ctx_arg);
 
  leave:
   LeaveCriticalSection (&opnctx_table_cs);
-  return (DWORD)opnctx;
+  return ctx_arg;
 }
 
 
@@ -422,16 +436,16 @@ GPG_Open (DWORD devctx, DWORD access_code, DWORD share_mode)
 BOOL
 GPG_Close (DWORD opnctx_arg)
 {
-  opnctx_t opnctx = (opnctx_t)opnctx_arg;
+  opnctx_t opnctx;
   BOOL result = FALSE;
 
-  log_debug ("GPG_Close (ctx=0x%p)\n", (void*)opnctx);
+  log_debug ("GPG_Close (ctx=%i)\n", opnctx_arg);
 
   EnterCriticalSection (&opnctx_table_cs);
-  opnctx = verify_opnctx (opnctx);
+  opnctx = verify_opnctx (opnctx_arg);
   if (!opnctx)
     {
-      log_debug ("GPG_Close (ctx=0x%p): could not find context\n", (void*)opnctx);
+      log_debug ("GPG_Close (ctx=%i): could not find context\n", opnctx_arg);
       goto leave;
     }
 
@@ -459,7 +473,7 @@ GPG_Close (DWORD opnctx_arg)
   opnctx->rvid = 0;
   opnctx->inuse = 0;
   result = TRUE;
-  log_debug ("GPG_Close (ctx=0x%p): success\n", (void*)opnctx);
+  log_debug ("GPG_Close (ctx=%i): success\n", opnctx_arg);
 
  leave:
   LeaveCriticalSection (&opnctx_table_cs);
@@ -471,20 +485,19 @@ GPG_Close (DWORD opnctx_arg)
 DWORD
 GPG_Read (DWORD opnctx_arg, void *buffer, DWORD count)
 {
-  opnctx_t ctx = (opnctx_t)opnctx_arg;
   pipeimpl_t pimpl;
   const char *src;
   char *dst;
   int result = -1;
 
-  log_debug ("GPG_Read (ctx=0x%p, buffer=0x%p, count=%d)\n",
-	     (void*)ctx, buffer, count);
+  log_debug ("GPG_Read (ctx=%i, buffer=0x%p, count=%d)\n",
+	     opnctx_arg, buffer, count);
 
-  pimpl = access_opnctx (ctx, GENERIC_READ);
+  pimpl = access_opnctx (opnctx_arg, GENERIC_READ);
   if (!pimpl)
     {
-      log_debug ("GPG_Read (ctx=0x%p): error: could not access context\n",
-		 (void*)ctx);
+      log_debug ("GPG_Read (ctx=%i): error: could not access context\n",
+		 opnctx_arg);
       return -1;
     }
 
@@ -496,7 +509,7 @@ GPG_Read (DWORD opnctx_arg, void *buffer, DWORD count)
       /* Check for end of file.  */
       if (pimpl->flags & PIPE_FLAG_NO_WRITER)
 	{
-	  log_debug ("GPG_Read (ctx=0x%p): success: EOF\n", (void*)ctx);
+	  log_debug ("GPG_Read (ctx=%i): success: EOF\n", opnctx_arg);
 	  result = 0;
 	  goto leave;
 	}
@@ -504,7 +517,7 @@ GPG_Read (DWORD opnctx_arg, void *buffer, DWORD count)
       /* Check for request to unblock once.  */
       if (pimpl->flags & PIPE_FLAG_UNBLOCK_READER)
 	{
-	  log_debug ("GPG_Read (ctx=0x%p): success: EBUSY (due to unblock request)\n", (void*)ctx);
+	  log_debug ("GPG_Read (ctx=%i): success: EBUSY (due to unblock request)\n", opnctx_arg);
 	  pimpl->flags &= ~PIPE_FLAG_UNBLOCK_READER;
 	  SetLastError (ERROR_BUSY);
 	  result = -1;
@@ -512,9 +525,9 @@ GPG_Read (DWORD opnctx_arg, void *buffer, DWORD count)
 	}
 
       LeaveCriticalSection (&pimpl->critsect);
-      log_debug ("GPG_Read (ctx=0x%p): waiting: data_available\n", (void*)ctx);
+      log_debug ("GPG_Read (ctx=%i): waiting: data_available\n", opnctx_arg);
       WaitForSingleObject (data_available, INFINITE);
-      log_debug ("GPG_Read (ctx=0x%p): resuming: data_available\n", (void*)ctx);
+      log_debug ("GPG_Read (ctx=%i): resuming: data_available\n", opnctx_arg);
       EnterCriticalSection (&pimpl->critsect);
       goto retry;
     }
@@ -535,10 +548,10 @@ GPG_Read (DWORD opnctx_arg, void *buffer, DWORD count)
      Even if COUNT was passed as NULL and no space is available,
      signaling must be done.  */
   if (!SetEvent (pimpl->space_available))
-    log_debug ("GPG_Read (ctx=0x%p): warning: SetEvent(space_available) failed: rc=%d\n",
-	       (void*) ctx, (int)GetLastError ());
+    log_debug ("GPG_Read (ctx=%i): warning: SetEvent(space_available) failed: rc=%d\n",
+	       opnctx_arg, (int)GetLastError ());
 
-  log_debug ("GPG_Read (ctx=0x%p): success: result=%d\n", (void*)ctx, result);
+  log_debug ("GPG_Read (ctx=%i): success: result=%d\n", opnctx_arg, result);
 
  leave:
   pipeimpl_unref (pimpl);
@@ -550,27 +563,26 @@ GPG_Read (DWORD opnctx_arg, void *buffer, DWORD count)
 DWORD
 GPG_Write (DWORD opnctx_arg, const void *buffer, DWORD count)
 {
-  opnctx_t ctx = (opnctx_t)opnctx_arg;
   pipeimpl_t pimpl;
   int result = -1;
   const char *src;
   char *dst;
   size_t nwritten = 0;
 
-  log_debug ("GPG_Write (ctx=0x%p, buffer=0x%p, count=%d)\n", (void*)ctx,
+  log_debug ("GPG_Write (ctx=%i, buffer=0x%p, count=%d)\n", opnctx_arg,
 	     buffer, count);
 
-  pimpl = access_opnctx (ctx, GENERIC_WRITE);
+  pimpl = access_opnctx (opnctx_arg, GENERIC_WRITE);
   if (!pimpl)
     {
-      log_debug ("GPG_Write (ctx=0x%p): error: could not access context\n",
-		 (void*)ctx);
+      log_debug ("GPG_Write (ctx=%i): error: could not access context\n",
+		 opnctx_arg);
       return -1;
     }
 
   if (!count)
     {
-      log_debug ("GPG_Write (ctx=0x%p): success\n", (void*)ctx);
+      log_debug ("GPG_Write (ctx=%i): success\n", opnctx_arg);
       result = 0;
       goto leave;
     }
@@ -579,7 +591,7 @@ GPG_Write (DWORD opnctx_arg, const void *buffer, DWORD count)
   /* Check for broken pipe.  */
   if (pimpl->flags & PIPE_FLAG_NO_READER)
     {
-      log_debug ("GPG_Write (ctx=0x%p): error: broken pipe\n", (void*)ctx);
+      log_debug ("GPG_Write (ctx=%i): error: broken pipe\n", opnctx_arg);
       SetLastError (ERROR_BROKEN_PIPE);
       goto leave;
     }
@@ -587,7 +599,7 @@ GPG_Write (DWORD opnctx_arg, const void *buffer, DWORD count)
   /* Check for request to unblock once.  */
   if (pimpl->flags & PIPE_FLAG_UNBLOCK_WRITER)
     {
-      log_debug ("GPG_Write (ctx=0x%p): success: EBUSY (due to unblock request)\n", (void*)ctx);
+      log_debug ("GPG_Write (ctx=%i): success: EBUSY (due to unblock request)\n", opnctx_arg);
       pimpl->flags &= ~PIPE_FLAG_UNBLOCK_WRITER;
       SetLastError (ERROR_BUSY);
       result = -1;
@@ -600,9 +612,9 @@ GPG_Write (DWORD opnctx_arg, const void *buffer, DWORD count)
       /* Buffer is full.  */
       HANDLE space_available = pimpl->space_available;
       LeaveCriticalSection (&pimpl->critsect);
-      log_debug ("GPG_Write (ctx=0x%p): waiting: space_available\n", (void*)ctx);
+      log_debug ("GPG_Write (ctx=%i): waiting: space_available\n", opnctx_arg);
       WaitForSingleObject (space_available, INFINITE);
-      log_debug ("GPG_Write (ctx=0x%p): resuming: space_available\n", (void*)ctx);
+      log_debug ("GPG_Write (ctx=%i): resuming: space_available\n", opnctx_arg);
       EnterCriticalSection (&pimpl->critsect);
       goto retry;
     }
@@ -619,10 +631,10 @@ GPG_Write (DWORD opnctx_arg, const void *buffer, DWORD count)
   result = nwritten;
 
   if (!SetEvent (pimpl->data_available))
-    log_debug ("GPG_Write (ctx=0x%p): warning: SetEvent(data_available) failed: rc=%d\n",
-	       (void*) ctx, (int)GetLastError ());
+    log_debug ("GPG_Write (ctx=%i): warning: SetEvent(data_available) failed: rc=%d\n",
+	       opnctx_arg, (int)GetLastError ());
 
-  log_debug ("GPG_Write (ctx=0x%p): success: result=%d\n", (void*)ctx, result);
+  log_debug ("GPG_Write (ctx=%i): success: result=%d\n", opnctx_arg, result);
 
  leave:
   pipeimpl_unref (pimpl);
@@ -632,7 +644,7 @@ GPG_Write (DWORD opnctx_arg, const void *buffer, DWORD count)
 
 
 DWORD
-GPG_Seek (DWORD opnctx, long amount, WORD type)
+GPG_Seek (DWORD opnctx_arg, long amount, WORD type)
 {
   SetLastError (ERROR_SEEK_ON_DEVICE);
   return -1; /* Error.  */
@@ -644,14 +656,15 @@ GPG_Seek (DWORD opnctx, long amount, WORD type)
 static BOOL
 make_pipe (opnctx_t ctx, LONG rvid)
 {
+  DWORD ctx_arg = OPNCTX_TO_IDX (ctx);
   opnctx_t peerctx = NULL;
   int idx;
 
-  log_debug ("  make_pipe (ctx=0x%p, rvid=%08lx)\n", ctx, rvid);
+  log_debug ("  make_pipe (ctx=%i, rvid=%08lx)\n", ctx_arg, rvid);
 
   if (ctx->pipeimpl)
     {
-      log_debug ("  make_pipe (ctx=0x%p): error: already assigned\n",  ctx);
+      log_debug ("  make_pipe (ctx=%i): error: already assigned\n", ctx_arg);
       SetLastError (ERROR_ALREADY_ASSIGNED);
       return FALSE;
     }
@@ -664,14 +677,14 @@ make_pipe (opnctx_t ctx, LONG rvid)
       }
   if (! peerctx)
     {
-      log_debug ("  make_pipe (ctx=0x%p): error: not found\n",  ctx);
+      log_debug ("  make_pipe (ctx=%i): error: not found\n", ctx_arg);
       SetLastError (ERROR_NOT_FOUND);
       return FALSE;
     }
 
   if (peerctx == ctx)
     {
-      log_debug ("  make_pipe (ctx=0x%p): error: target and source identical\n",  ctx);
+      log_debug ("  make_pipe (ctx=%i): error: target and source identical\n", ctx_arg);
       SetLastError (ERROR_INVALID_TARGET_HANDLE);
       return FALSE;
     }
@@ -682,7 +695,7 @@ make_pipe (opnctx_t ctx, LONG rvid)
       if (!(peerctx->access_code & GENERIC_WRITE))
         {
           SetLastError (ERROR_INVALID_ACCESS);
-      log_debug ("  make_pipe (ctx=0x%p): error: peer is not writer\n",  ctx);
+	  log_debug ("  make_pipe (ctx=%i): error: peer is not writer\n", ctx_arg);
           return FALSE;
         }
     }
@@ -692,14 +705,14 @@ make_pipe (opnctx_t ctx, LONG rvid)
       if (!(peerctx->access_code & GENERIC_READ))
         {
           SetLastError (ERROR_INVALID_ACCESS);
-	  log_debug ("  make_pipe (ctx=0x%p): error: peer is not reader\n",  ctx);
+	  log_debug ("  make_pipe (ctx=%i): error: peer is not reader\n", ctx_arg);
           return FALSE;
         }
     }
   else
     {
       SetLastError (ERROR_INVALID_ACCESS);
-      log_debug ("  make_pipe (ctx=0x%p): error: invalid access\n",  ctx);
+      log_debug ("  make_pipe (ctx=%i): error: invalid access\n", ctx_arg);
       return FALSE;
     }
 
@@ -710,19 +723,19 @@ make_pipe (opnctx_t ctx, LONG rvid)
       peerctx->pipeimpl = pipeimpl_new ();
       if (! peerctx->pipeimpl)
 	{
-	  log_debug ("  make_pipe (ctx=0x%p): error: can't create pipe\n",
-		     ctx);
+	  log_debug ("  make_pipe (ctx=%i): error: can't create pipe\n",
+		     ctx_arg);
 	  return FALSE;
 	}
-      log_debug ("  make_pipe (ctx=0x%p): created pipe 0x%p\n",
-		 ctx, peerctx->pipeimpl);
+      log_debug ("  make_pipe (ctx=%i): created pipe 0x%p\n",
+		 ctx_arg, peerctx->pipeimpl);
     }
   EnterCriticalSection (&peerctx->pipeimpl->critsect);
   peerctx->pipeimpl->refcnt++;
   ctx->pipeimpl = peerctx->pipeimpl;
   LeaveCriticalSection (&peerctx->pipeimpl->critsect);
-  log_debug ("  make_pipe (ctx=0x%p): success: combined with peer ctx=0x%p (pipe 0x%p)\n",
-	     ctx, peerctx, peerctx->pipeimpl);
+  log_debug ("  make_pipe (ctx=%i): success: combined with peer ctx=%i (pipe 0x%p)\n",
+	     ctx_arg, OPNCTX_TO_IDX (peerctx), peerctx->pipeimpl);
 
   return TRUE;
 }
@@ -756,37 +769,37 @@ BOOL
 GPG_IOControl (DWORD opnctx_arg, DWORD code, void *inbuf, DWORD inbuflen,
                void *outbuf, DWORD outbuflen, DWORD *actualoutlen)
 {
-  opnctx_t opnctx = (opnctx_t)opnctx_arg;
+  opnctx_t opnctx;
   BOOL result = FALSE;
   LONG rvid;
 
-  log_debug ("GPG_IOControl (ctx=0x%p, %08x)\n", (void*)opnctx, code);
+  log_debug ("GPG_IOControl (ctx=%i, %08x)\n", opnctx_arg, code);
 
   EnterCriticalSection (&opnctx_table_cs);
-  opnctx = verify_opnctx (opnctx);
+  opnctx = verify_opnctx (opnctx_arg);
   if (!opnctx)
     {
-      log_debug ("GPG_IOControl (ctx=0x%p): error: could not access context\n", 
-		 (void*)opnctx);
+      log_debug ("GPG_IOControl (ctx=%i): error: could not access context\n", 
+		 opnctx_arg);
       goto leave;
     }
 
   switch (code)
     {
     case GPGCEDEV_IOCTL_GET_RVID:
-      log_debug ("GPG_IOControl (ctx=0x%p): code: GET_RVID\n", (void*)opnctx);
+      log_debug ("GPG_IOControl (ctx=%i): code: GET_RVID\n", opnctx_arg);
       if (inbuf || inbuflen || !outbuf || outbuflen < sizeof (LONG))
         {
-	  log_debug ("GPG_IOControl (ctx=0x%p): error: invalid parameter\n", 
-		     (void*)opnctx);
+	  log_debug ("GPG_IOControl (ctx=%i): error: invalid parameter\n", 
+		     opnctx_arg);
           SetLastError (ERROR_INVALID_PARAMETER);
           goto leave;
         }
 
       if (! opnctx->rvid) 
 	opnctx->rvid = create_rendezvous_id ();
-      log_debug ("GPG_IOControl (ctx=0x%p): returning rvid: %08lx\n", 
-		 (void*)opnctx, opnctx->rvid);
+      log_debug ("GPG_IOControl (ctx=%i): returning rvid: %08lx\n",
+		 opnctx_arg, opnctx->rvid);
 
       memcpy (outbuf, &opnctx->rvid, sizeof (LONG));
       if (actualoutlen)
@@ -795,28 +808,28 @@ GPG_IOControl (DWORD opnctx_arg, DWORD code, void *inbuf, DWORD inbuflen,
       break;
 
     case GPGCEDEV_IOCTL_MAKE_PIPE:
-      log_debug ("GPG_IOControl (ctx=0x%p): code: MAKE_PIPE\n", (void*)opnctx);
+      log_debug ("GPG_IOControl (ctx=%i): code: MAKE_PIPE\n", opnctx_arg);
       if (!inbuf || inbuflen < sizeof (LONG) 
           || outbuf || outbuflen || actualoutlen)
         {
-	  log_debug ("GPG_IOControl (ctx=0x%p): error: invalid parameter\n", 
-		     (void*)opnctx);
+	  log_debug ("GPG_IOControl (ctx=%i): error: invalid parameter\n", 
+		     opnctx_arg);
           SetLastError (ERROR_INVALID_PARAMETER);
           goto leave;
         }
       memcpy (&rvid, inbuf, sizeof (LONG));
-      log_debug ("GPG_IOControl (ctx=0x%p): requesting to finish pipe for rvid: %08lx\n", 
-		 (void*)opnctx, rvid);
+      log_debug ("GPG_IOControl (ctx=%i): requesting to finish pipe for rvid: %08lx\n", 
+		 opnctx_arg, rvid);
       if (make_pipe (opnctx, rvid))
         result = TRUE;
       break;
 
     case GPGCEDEV_IOCTL_UNBLOCK:
-      log_debug ("GPG_IOControl (ctx=0x%p): code: UNBLOCK\n", (void*)opnctx);
+      log_debug ("GPG_IOControl (ctx=%i): code: UNBLOCK\n", opnctx_arg);
       if (inbuf || inbuflen || outbuf || outbuflen || actualoutlen)
         {
-	  log_debug ("GPG_IOControl (ctx=0x%p): error: invalid parameter\n", 
-		     (void*)opnctx);
+	  log_debug ("GPG_IOControl (ctx=%i): error: invalid parameter\n", 
+		     opnctx_arg);
           SetLastError (ERROR_INVALID_PARAMETER);
           goto leave;
         }
@@ -831,19 +844,19 @@ GPG_IOControl (DWORD opnctx_arg, DWORD code, void *inbuf, DWORD inbuflen,
          and the application has open handles for this device.  What
          we do is to unblock them all simialr to an explicit unblock
          call.  */
-      log_debug ("GPG_IOControl (ctx=0x%p): code: NOTIFY\n", (void*)opnctx);
+      log_debug ("GPG_IOControl (ctx=%i): code: NOTIFY\n", opnctx_arg);
 
       if (unblock_call (opnctx))
         result = TRUE;
       break;
 
     default:
-      log_debug ("GPG_IOControl (ctx=0x%p): code: (unknown)\n", (void*)opnctx);
+      log_debug ("GPG_IOControl (ctx=%i): code: (unknown)\n", opnctx_arg);
       SetLastError (ERROR_INVALID_PARAMETER);
       break;
     }
 
-  log_debug ("GPG_IOControl (ctx=0x%p): success: result=%d\n", (void*)opnctx,
+  log_debug ("GPG_IOControl (ctx=%i): success: result=%d\n", opnctx_arg,
 	     result);
 
  leave:
