@@ -1,5 +1,15 @@
 2010-08-03  Marcus Brinkmann  <marcus@g10code.de>
 
+	* gpgcedev.c (GPGCEDEV_IOCTL_ASSIGN_RVID): New call ASSIGN_RVID.
+	(PIPE_FLAG_HALT_MONITOR): New flag.
+	(struct pipeimpl_s): New members monitor_proc, monitor_access.
+	(pipeimpl_new): Initialize them.
+	(assert_pipeimpl): New function.
+	(access_opnctx, make_pipe): Use it.
+	(make_pipe): If there is a monitor, halt it.
+	(monitor, assign_rvid): New functions.
+	(GPG_IOControl): Handle GPGCEDEV_IOCTL_ASSIGN_RVID.
+
 	* gpgcedev.c: Use index (between 1 and table size) into
 	opnctx_table as public context identifiers, instead using pointers
 	into the table directly (which are not stable under table resize).

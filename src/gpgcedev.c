@@ -65,6 +65,15 @@
 #define GPGCEDEV_IOCTL_UNBLOCK \
   CTL_CODE (FILE_DEVICE_STREAMS, 2050, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
+/* The IOCTL to assign a rendezvous id to a process.
+
+   The required inbuf parameters are the rendezvous ID to assign and
+   the process ID of the process receiving the RVID.  The handle on
+   which this is called is not really used at all!  */
+#define GPGCEDEV_IOCTL_ASSIGN_RVID \
+  CTL_CODE (FILE_DEVICE_STREAMS, 2051, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+
 struct pipeimpl_s
 {
   CRITICAL_SECTION critsect;  /* Lock for all members.  */
@@ -79,10 +88,15 @@ struct pipeimpl_s
 #define PIPE_FLAG_NO_WRITER 2
 #define PIPE_FLAG_UNBLOCK_READER 4
 #define PIPE_FLAG_UNBLOCK_WRITER 8
+#define PIPE_FLAG_HALT_MONITOR 16
   int flags;
 
   HANDLE space_available; /* Set if space is available.  */
   HANDLE data_available;  /* Set if data is available.  */ 
+
+  /* For the monitor thread started by ASSIGN_RVID.  */
+  HANDLE monitor_proc;
+  int monitor_access;
 };
 typedef struct pipeimpl_s *pipeimpl_t;
 
@@ -175,7 +189,8 @@ pipeimpl_new (void)
   pimpl->flags = 0;
   pimpl->space_available = CreateEvent (NULL, FALSE, FALSE, NULL);
   pimpl->data_available = CreateEvent (NULL, FALSE, FALSE, NULL);
-
+  pimpl->monitor_proc = INVALID_HANDLE_VALUE;
+  pimpl->monitor_access = 0;
   return pimpl;
 }
 
@@ -285,6 +300,27 @@ verify_opnctx (DWORD ctx_arg)
 }
 
 
+static pipeimpl_t
+assert_pipeimpl (opnctx_t ctx)
+{
+  DWORD ctx_arg = OPNCTX_TO_IDX (ctx);
+
+  if (! ctx->pipeimpl)
+    {
+      ctx->pipeimpl = pipeimpl_new ();
+      if (! ctx->pipeimpl)
+	{
+	  log_debug ("  assert_pipeimpl (ctx=%i): error: can't create pipe\n",
+		     ctx_arg);
+	  return NULL;
+	}
+      log_debug ("  assert_pipeimpl (ctx=%i): created pipe 0x%p\n",
+		 ctx_arg, ctx->pipeimpl);
+    }
+  return ctx->pipeimpl;
+}
+
+
 /* Verify access CODE for context CTX_ARG, returning a reference to
    the locked pipe implementation.  opnctx_table_cs must be unlocked
    on entry and is unlocked on exit.  */
@@ -310,20 +346,12 @@ access_opnctx (DWORD ctx_arg, DWORD code)
       return NULL;
     }
 
-  if (! ctx->pipeimpl)
+  pimpl = assert_pipeimpl (ctx);
+  if (! pimpl)
     {
-      ctx->pipeimpl = pipeimpl_new ();
-      if (! ctx->pipeimpl)
-	{
-	  log_debug ("  access_opnctx (ctx=%i): error: can't create pipe\n",
-		     ctx_arg);
-	  LeaveCriticalSection (&opnctx_table_cs);
-	  return NULL;
-	}
-      log_debug ("  access_opnctx (ctx=%i): created pipe 0x%p\n",
-		 ctx_arg, ctx->pipeimpl);
+      LeaveCriticalSection (&opnctx_table_cs);
+      return NULL;
     }
-  pimpl = ctx->pipeimpl;
 
   EnterCriticalSection (&pimpl->critsect);
   pimpl->refcnt++;
@@ -403,7 +431,7 @@ GPG_Open (DWORD devctx, DWORD access_code, DWORD share_mode)
   log_debug ("GPG_Open (devctx=%p)\n", (void*)devctx);
   if (devctx != DEVCTX_VALUE)
     {
-      log_debug ("GPG_Open (devctx=%p): error: devctx mismatch (expected 0x%p)\n",
+      log_debug ("GPG_Open (devctx=%p): error: wrong devctx (expected 0x%p)\n",
 		 (void*) devctx);
       SetLastError (ERROR_INVALID_PARAMETER);
       return 0; /* Error.  */
@@ -517,7 +545,8 @@ GPG_Read (DWORD opnctx_arg, void *buffer, DWORD count)
       /* Check for request to unblock once.  */
       if (pimpl->flags & PIPE_FLAG_UNBLOCK_READER)
 	{
-	  log_debug ("GPG_Read (ctx=%i): success: EBUSY (due to unblock request)\n", opnctx_arg);
+	  log_debug ("GPG_Read (ctx=%i): success: EBUSY (due to unblock)\n",
+		     opnctx_arg);
 	  pimpl->flags &= ~PIPE_FLAG_UNBLOCK_READER;
 	  SetLastError (ERROR_BUSY);
 	  result = -1;
@@ -548,8 +577,8 @@ GPG_Read (DWORD opnctx_arg, void *buffer, DWORD count)
      Even if COUNT was passed as NULL and no space is available,
      signaling must be done.  */
   if (!SetEvent (pimpl->space_available))
-    log_debug ("GPG_Read (ctx=%i): warning: SetEvent(space_available) failed: rc=%d\n",
-	       opnctx_arg, (int)GetLastError ());
+    log_debug ("GPG_Read (ctx=%i): warning: SetEvent(space_available) "
+	       "failed: rc=%d\n", opnctx_arg, (int)GetLastError ());
 
   log_debug ("GPG_Read (ctx=%i): success: result=%d\n", opnctx_arg, result);
 
@@ -599,7 +628,8 @@ GPG_Write (DWORD opnctx_arg, const void *buffer, DWORD count)
   /* Check for request to unblock once.  */
   if (pimpl->flags & PIPE_FLAG_UNBLOCK_WRITER)
     {
-      log_debug ("GPG_Write (ctx=%i): success: EBUSY (due to unblock request)\n", opnctx_arg);
+      log_debug ("GPG_Write (ctx=%i): success: EBUSY (due to unblock)\n",
+		 opnctx_arg);
       pimpl->flags &= ~PIPE_FLAG_UNBLOCK_WRITER;
       SetLastError (ERROR_BUSY);
       result = -1;
@@ -614,7 +644,8 @@ GPG_Write (DWORD opnctx_arg, const void *buffer, DWORD count)
       LeaveCriticalSection (&pimpl->critsect);
       log_debug ("GPG_Write (ctx=%i): waiting: space_available\n", opnctx_arg);
       WaitForSingleObject (space_available, INFINITE);
-      log_debug ("GPG_Write (ctx=%i): resuming: space_available\n", opnctx_arg);
+      log_debug ("GPG_Write (ctx=%i): resuming: space_available\n",
+		 opnctx_arg);
       EnterCriticalSection (&pimpl->critsect);
       goto retry;
     }
@@ -631,8 +662,8 @@ GPG_Write (DWORD opnctx_arg, const void *buffer, DWORD count)
   result = nwritten;
 
   if (!SetEvent (pimpl->data_available))
-    log_debug ("GPG_Write (ctx=%i): warning: SetEvent(data_available) failed: rc=%d\n",
-	       opnctx_arg, (int)GetLastError ());
+    log_debug ("GPG_Write (ctx=%i): warning: SetEvent(data_available) "
+	       "failed: rc=%d\n", opnctx_arg, (int)GetLastError ());
 
   log_debug ("GPG_Write (ctx=%i): success: result=%d\n", opnctx_arg, result);
 
@@ -659,6 +690,7 @@ make_pipe (opnctx_t ctx, LONG rvid)
   DWORD ctx_arg = OPNCTX_TO_IDX (ctx);
   opnctx_t peerctx = NULL;
   int idx;
+  pipeimpl_t pimpl;
 
   log_debug ("  make_pipe (ctx=%i, rvid=%08lx)\n", ctx_arg, rvid);
 
@@ -684,7 +716,8 @@ make_pipe (opnctx_t ctx, LONG rvid)
 
   if (peerctx == ctx)
     {
-      log_debug ("  make_pipe (ctx=%i): error: target and source identical\n", ctx_arg);
+      log_debug ("  make_pipe (ctx=%i): error: target and source identical\n",
+		 ctx_arg);
       SetLastError (ERROR_INVALID_TARGET_HANDLE);
       return FALSE;
     }
@@ -695,7 +728,8 @@ make_pipe (opnctx_t ctx, LONG rvid)
       if (!(peerctx->access_code & GENERIC_WRITE))
         {
           SetLastError (ERROR_INVALID_ACCESS);
-	  log_debug ("  make_pipe (ctx=%i): error: peer is not writer\n", ctx_arg);
+	  log_debug ("  make_pipe (ctx=%i): error: peer is not writer\n",
+		     ctx_arg);
           return FALSE;
         }
     }
@@ -705,7 +739,8 @@ make_pipe (opnctx_t ctx, LONG rvid)
       if (!(peerctx->access_code & GENERIC_READ))
         {
           SetLastError (ERROR_INVALID_ACCESS);
-	  log_debug ("  make_pipe (ctx=%i): error: peer is not reader\n", ctx_arg);
+	  log_debug ("  make_pipe (ctx=%i): error: peer is not reader\n",
+		     ctx_arg);
           return FALSE;
         }
     }
@@ -718,24 +753,30 @@ make_pipe (opnctx_t ctx, LONG rvid)
 
   /* Make sure the peer has a pipe implementation to be shared.  If
      not yet, create one.  */
-  if (! peerctx->pipeimpl)
+  pimpl = assert_pipeimpl (peerctx);
+  if (! pimpl)
+    return FALSE;
+
+  EnterCriticalSection (&pimpl->critsect);
+  pimpl->refcnt++;
+  if (pimpl->monitor_proc != INVALID_HANDLE_VALUE)
     {
-      peerctx->pipeimpl = pipeimpl_new ();
-      if (! peerctx->pipeimpl)
-	{
-	  log_debug ("  make_pipe (ctx=%i): error: can't create pipe\n",
-		     ctx_arg);
-	  return FALSE;
-	}
-      log_debug ("  make_pipe (ctx=%i): created pipe 0x%p\n",
-		 ctx_arg, peerctx->pipeimpl);
+      /* If there is a monitor to the pipe, then it's now about time
+	 to ask it to go away.  */
+      log_debug ("  make_pipe (ctx=%i): waking up monitor for pipe 0x%p\n",
+		 ctx_arg, pimpl);
+      pimpl->flags |= PIPE_FLAG_HALT_MONITOR;
+      if (pimpl->monitor_access & GENERIC_READ)
+	SetEvent (pimpl->data_available);
+      else
+	SetEvent (pimpl->space_available);
     }
-  EnterCriticalSection (&peerctx->pipeimpl->critsect);
-  peerctx->pipeimpl->refcnt++;
-  ctx->pipeimpl = peerctx->pipeimpl;
-  LeaveCriticalSection (&peerctx->pipeimpl->critsect);
-  log_debug ("  make_pipe (ctx=%i): success: combined with peer ctx=%i (pipe 0x%p)\n",
-	     ctx_arg, OPNCTX_TO_IDX (peerctx), peerctx->pipeimpl);
+  LeaveCriticalSection (&pimpl->critsect);
+
+  ctx->pipeimpl = pimpl;
+
+  log_debug ("  make_pipe (ctx=%i): success: combined with peer ctx=%i "
+	     "(pipe 0x%p)\n", ctx_arg, OPNCTX_TO_IDX (peerctx), pimpl);
 
   return TRUE;
 }
@@ -765,6 +806,158 @@ unblock_call (opnctx_t ctx)
   return TRUE;
 }
 
+
+static DWORD CALLBACK 
+monitor (void *arg)
+{
+  pipeimpl_t pimpl = (pipeimpl_t) arg;
+  HANDLE handles[2];
+
+  log_debug ("starting monitor (pimpl=0x%p)\n", pimpl);
+  
+  EnterCriticalSection (&pimpl->critsect);
+  /* Putting proc first in the array is convenient, as this is a hard
+     break-out condition (and thus takes precedence in WFMO).  The
+     reader/writer event is a soft condition, which also requires a
+     flag to be set.  */
+  handles[0] = pimpl->monitor_proc;
+  if (pimpl->monitor_access & GENERIC_READ)
+    handles[1] = pimpl->data_available;
+  else
+    handles[1] = pimpl->space_available;
+
+ retry:
+  /* First check if the peer has not gone away.  If it has, we are done.  */
+  if (pimpl->flags & PIPE_FLAG_HALT_MONITOR)
+    {
+      log_debug ("monitor (pimpl=0x%p): done: monitored process taking over\n",
+		 pimpl);
+    }    
+  else
+    {
+      DWORD res;
+
+      LeaveCriticalSection (&pimpl->critsect);
+      log_debug ("monitor (pimpl=0x%p): waiting\n", pimpl);
+      res = WaitForMultipleObjects (2, handles, FALSE, INFINITE);
+      log_debug ("monitor (pimpl=0x%p): resuming\n", pimpl);
+      EnterCriticalSection (&pimpl->critsect);
+
+      if (res == WAIT_FAILED)
+	{
+	  log_debug ("monitor (pimpl=0x%p): WFMO failed: %i\n",
+		     pimpl, GetLastError ());
+	}
+      else if (res == WAIT_OBJECT_0)
+	{
+	  log_debug ("monitor (pimpl=0x%p): done: monitored process died\n",
+		     pimpl);
+	}	  
+      else if (res == WAIT_OBJECT_0 + 1)
+	goto retry;
+      else
+	{
+	  log_debug ("monitor (pimpl=0x%p): unexpected result of WFMO: %i\n",
+		     pimpl, res);
+	}
+    }
+
+  log_debug ("ending monitor (pimpl=0x%p)\n", pimpl);
+  CloseHandle (pimpl->monitor_proc);
+  pimpl->monitor_proc = INVALID_HANDLE_VALUE;
+  pimpl->monitor_access = 0;
+  pimpl->flags &= ~PIPE_FLAG_HALT_MONITOR;
+  pipeimpl_unref (pimpl);
+
+  return 0;
+}
+
+
+/* opnctx_table_s is locked on entering and on exit.  */
+static BOOL
+assign_rvid (opnctx_t ctx, DWORD rvid, DWORD pid)
+{
+  DWORD ctx_arg = OPNCTX_TO_IDX (ctx);
+  int idx;
+  opnctx_t peerctx;
+  HANDLE monitor_hnd;
+  HANDLE proc;
+  pipeimpl_t pimpl;
+
+  log_debug ("  assign_rvid (ctx=%i, rvid=%08lx, pid=%08lx)\n",
+	     ctx_arg, rvid, pid);
+
+  for (idx = 0; idx < opnctx_table_size; idx++)
+    if (opnctx_table[idx].inuse && opnctx_table[idx].rvid == rvid)
+      {
+        peerctx = &opnctx_table[idx];
+        break;
+      }
+  if (! peerctx)
+    {
+      log_debug ("  assign_rvid (ctx=%i): error: not found\n", ctx_arg);
+      SetLastError (ERROR_NOT_FOUND);
+      return FALSE;
+    }
+  
+  if (peerctx->pipeimpl
+      && peerctx->pipeimpl->monitor_proc != INVALID_HANDLE_VALUE)
+    {
+      log_debug ("  assign_rvid (ctx=%i): error: rvid already assigned\n",
+		 ctx_arg);
+      SetLastError (ERROR_ALREADY_ASSIGNED);
+      return FALSE;
+    }
+
+  proc = OpenProcess (0, FALSE, pid);
+  if (proc == NULL)
+    {
+      log_debug ("  assign_rvid (ctx=%i): error: process not found\n",
+		 ctx_arg);
+      return FALSE;
+    }
+
+  /* Acquire a reference to the pipe.  We don't want accesss to be
+     checked.  */
+  pimpl = assert_pipeimpl (peerctx);
+  if (! pimpl)
+    {
+      CloseHandle (proc);
+      return FALSE;
+    }
+
+  EnterCriticalSection (&pimpl->critsect);
+  pimpl->refcnt++;
+
+  /* The monitor shadows the peer, so it takes its access.  Our access
+     is the opposite of that of the peer.  */
+  pimpl->monitor_proc = proc;
+  if (peerctx->access_code == GENERIC_READ)
+    pimpl->monitor_access = GENERIC_WRITE;
+  else
+    pimpl->monitor_access = GENERIC_READ;
+
+  monitor_hnd = CreateThread (NULL, 0, monitor, pimpl, 0, NULL);
+  if (monitor_hnd == INVALID_HANDLE_VALUE)
+    {
+      pimpl->monitor_access = 0;
+      pimpl->monitor_proc = INVALID_HANDLE_VALUE;
+      LeaveCriticalSection (&pimpl->critsect);
+
+      CloseHandle (proc);
+      log_debug ("  assign_rvid (ctx=%i): error: can not create monitor\n",
+		 ctx_arg);
+      return FALSE;
+    }
+  CloseHandle (monitor_hnd);
+
+  /* Consume the pimpl reference.  */
+  LeaveCriticalSection (&pimpl->critsect);
+
+  return TRUE;
+}
+
+
 BOOL
 GPG_IOControl (DWORD opnctx_arg, DWORD code, void *inbuf, DWORD inbuflen,
                void *outbuf, DWORD outbuflen, DWORD *actualoutlen)
@@ -772,6 +965,7 @@ GPG_IOControl (DWORD opnctx_arg, DWORD code, void *inbuf, DWORD inbuflen,
   opnctx_t opnctx;
   BOOL result = FALSE;
   LONG rvid;
+  LONG pid;
 
   log_debug ("GPG_IOControl (ctx=%i, %08x)\n", opnctx_arg, code);
 
@@ -818,7 +1012,7 @@ GPG_IOControl (DWORD opnctx_arg, DWORD code, void *inbuf, DWORD inbuflen,
           goto leave;
         }
       memcpy (&rvid, inbuf, sizeof (LONG));
-      log_debug ("GPG_IOControl (ctx=%i): requesting to finish pipe for rvid: %08lx\n", 
+      log_debug ("GPG_IOControl (ctx=%i): make pipe for rvid: %08lx\n", 
 		 opnctx_arg, rvid);
       if (make_pipe (opnctx, rvid))
         result = TRUE;
@@ -835,6 +1029,24 @@ GPG_IOControl (DWORD opnctx_arg, DWORD code, void *inbuf, DWORD inbuflen,
         }
       
       if (unblock_call (opnctx))
+        result = TRUE;
+      break;
+
+    case GPGCEDEV_IOCTL_ASSIGN_RVID:
+      log_debug ("GPG_IOControl (ctx=%i): code: ASSIGN_RVID\n", opnctx_arg);
+      if (!inbuf || inbuflen < 2 * sizeof (DWORD)
+          || outbuf || outbuflen || actualoutlen)
+        {
+	  log_debug ("GPG_IOControl (ctx=%i): error: invalid parameter\n", 
+		     opnctx_arg);
+          SetLastError (ERROR_INVALID_PARAMETER);
+          goto leave;
+        }
+      memcpy (&rvid, inbuf, sizeof (DWORD));
+      memcpy (&pid, ((char *) inbuf) + sizeof (DWORD), sizeof (DWORD));
+      log_debug ("GPG_IOControl (ctx=%i): assign rvid %08lx to pid %08lx\n", 
+		 opnctx_arg, rvid, pid);
+      if (assign_rvid (opnctx, rvid, pid))
         result = TRUE;
       break;
 
@@ -879,7 +1091,6 @@ GPG_PowerDown (DWORD devctx)
 }
 
 
-
 
 /* Entry point called by the DLL loader.  */
 int WINAPI
@@ -909,4 +1120,3 @@ DllMain (HINSTANCE hinst, DWORD reason, LPVOID reserved)
   
   return TRUE;
 }
-
