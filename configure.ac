@@ -25,7 +25,7 @@ min_automake_version="1.10"
 # Set my_issvn to "yes" for non-released code.  Remember to run an
 # "svn up" and "autogen.sh" right before creating a distribution.
 m4_define([my_version], [2.0.1])
-m4_define([my_issvn], [yes])
+m4_define([my_issvn], [no])
 
 m4_define([svn_revision], m4_esyscmd([printf "%d" $( (svn info 2>/dev/null \
             || echo 'Revision: 0')|sed -n '/^Revision:/ {s/[^0-9]//gp;q;}')]))
@@ -38,10 +38,8 @@ AC_INIT([libassuan], my_version[]m4_if(my_issvn,[yes],[-svn[]svn_revision]),
 #   (Interfaces added:			AGE++)
 #   (Interfaces removed/changed:	AGE=0)
 #
-LIBASSUAN_LT_CURRENT=0
-# Subtract 2 from this value if you want to make the LFS transition an
-# ABI break.  [Note to self: Remove this comment with the next regular break.]
-LIBASSUAN_LT_AGE=0
+LIBASSUAN_LT_CURRENT=1
+LIBASSUAN_LT_AGE=1
 LIBASSUAN_LT_REVISION=0
 
 # If the API is changed in an incompatible way: increment the next counter.

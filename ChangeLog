@@ -1,3 +1,9 @@
+2010-08-09  Werner Koch  <wk@g10code.com>
+
+	Release 2.0.1
+
+	* configure.ac: Set LT version to C1/A1/R0.
+
 2010-04-20  Werner Koch  <wk@g10code.com>
 
 	* configure.ac: Change wording of the no-funopen warning.
