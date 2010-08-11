@@ -195,7 +195,7 @@ assuan_client_parse_response (assuan_context_t ctx, char *line, int linelen,
 
 gpg_error_t
 _assuan_read_from_server (assuan_context_t ctx, assuan_response_t *response,
-			  int *off)
+			  int *off, int convey_comments)
 {
   gpg_error_t rc;
   char *line;
@@ -209,7 +209,7 @@ _assuan_read_from_server (assuan_context_t ctx, assuan_response_t *response,
       if (!rc)
         rc = assuan_client_parse_response (ctx, line, linelen, response, off);
     }
-  while (!rc && *response == ASSUAN_RESPONSE_COMMENT);
+  while (!rc && *response == ASSUAN_RESPONSE_COMMENT && !convey_comments);
 
   return rc;
 }
@@ -258,7 +258,8 @@ assuan_transact (assuan_context_t ctx,
     return 0; /* Don't expect a response for a comment line.  */
 
  again:
-  rc = _assuan_read_from_server (ctx, &response, &off);
+  rc = _assuan_read_from_server (ctx, &response, &off,
+                                 ctx->flags.convey_comments);
   if (rc)
     return rc; /* error reading from server */
 
@@ -283,7 +284,7 @@ assuan_transact (assuan_context_t ctx,
       if (!inquire_cb)
         {
           assuan_write_line (ctx, "END"); /* get out of inquire mode */
-          _assuan_read_from_server (ctx, &response, &off); /* dummy read */
+          _assuan_read_from_server (ctx, &response, &off, 0); /* dummy read */
           rc = _assuan_error (ctx, GPG_ERR_ASS_NO_INQUIRE_CB);
         }
       else
@@ -297,6 +298,14 @@ assuan_transact (assuan_context_t ctx,
     }
   else if (response == ASSUAN_RESPONSE_STATUS)
     {
+      if (status_cb)
+        rc = status_cb (status_cb_arg, line);
+      if (!rc)
+        goto again;
+    }
+  else if (response == ASSUAN_RESPONSE_COMMENT && ctx->flags.convey_comments)
+    {
+      line -= off; /* Send line with the comment marker.  */
       if (status_cb)
         rc = status_cb (status_cb_arg, line);
       if (!rc)

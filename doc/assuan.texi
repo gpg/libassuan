@@ -251,7 +251,7 @@ by @code{libgpg-error}.
 @item S @var{keyword} <status information depending on keyword>
 Informational output by the server, still processing the request.  A
 client may not send such lines to the server while processing an Inquiry
-command.
+command.  @var{keyword} shall start with a letter or an underscore.
 
 @item # <string>
 Comment line issued only for debugging purposes.  Totally ignored.

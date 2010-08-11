@@ -1,3 +1,17 @@
+2010-08-11  Werner Koch  <wk@g10code.com>
+
+	* assuan.h.in (ASSUAN_CONVEY_COMMENTS): New.
+	* assuan-defs.h (struct assuan_context_s): Add flags.CONVEY_COMMENTS.
+	* context.c (assuan_set_flag, assuan_get_flag): Support this flag.
+	(_assuan_read_from_server): Add arg CONVEY_COMMENTS.  Change all
+	callers.
+	* client.c (assuan_transact): Implement new flags.
+
+2010-08-09  Werner Koch  <wk@g10code.com>
+
+	* assuan-socket-connect.c (assuan_socket_connect): Fix ipv6
+	literal IP case.
+
 2010-08-03  Marcus Brinkmann  <marcus@g10code.de>
 
 	* gpgcedev.c (GPGCEDEV_IOCTL_ASSIGN_RVID): New call ASSIGN_RVID.

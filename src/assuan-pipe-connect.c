@@ -96,7 +96,7 @@ initial_handshake (assuan_context_t ctx)
   int off;
   gpg_error_t err;
   
-  err = _assuan_read_from_server (ctx, &response, &off);
+  err = _assuan_read_from_server (ctx, &response, &off, 0);
   if (err)
     TRACE1 (ctx, ASSUAN_LOG_SYSIO, "initial_handshake", ctx,
 	    "can't connect server: %s", gpg_strerror (err));

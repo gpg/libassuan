@@ -100,7 +100,7 @@ parse_portno (const char *str, uint16_t *r_port)
 
       file://<fname>
 
-        This is the same as the defualt just with an explicit schemata.
+        This is the same as the default just with an explicit schemata.
 
       assuan://<ipaddr>:<port>
       assuan://[<ip6addr>]:<port>
@@ -175,7 +175,7 @@ assuan_socket_connect (assuan_context_t ctx, const char *name,
       if (!addrstr)
         return _assuan_error (ctx, gpg_err_code_from_syserror ());
 
-      if (*addrstr == '[')
+      if (*name == '[')
         {
           strcpy (addrstr, name+1);
           p = strchr (addrstr, ']');
@@ -276,7 +276,7 @@ assuan_socket_connect (assuan_context_t ctx, const char *name,
     assuan_response_t response;
     int off;
 
-    err = _assuan_read_from_server (ctx, &response, &off);
+    err = _assuan_read_from_server (ctx, &response, &off, 0);
     if (err)
       TRACE1 (ctx, ASSUAN_LOG_SYSIO, "assuan_socket_connect", ctx,
 	      "can't connect to server: %s\n", gpg_strerror (err));

@@ -87,6 +87,7 @@ struct assuan_context_s
     unsigned int no_waitpid : 1;
     unsigned int confidential : 1;
     unsigned int no_fixsignals : 1;
+    unsigned int convey_comments : 1;
   } flags;
 
   /* If set, this is called right before logging an I/O line.  */
@@ -281,7 +282,8 @@ gpg_error_t _assuan_write_line (assuan_context_t ctx, const char *prefix,
 
 /*-- client.c --*/
 gpg_error_t _assuan_read_from_server (assuan_context_t ctx,
-				      assuan_response_t *okay, int *off);
+				      assuan_response_t *okay, int *off,
+                                      int convey_comments);
 
 /*-- assuan-error.c --*/
 
