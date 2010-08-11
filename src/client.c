@@ -228,11 +228,10 @@ _assuan_read_from_server (assuan_context_t ctx, assuan_response_t *response,
  * 
  * FIXME: Write documentation
  * 
- * Return value: 0 on success or error code.  The error code may be
- * the one one returned by the server in error lines or from the
- * callback functions.  Take care: When a callback returns an error
- * this function returns immediately with an error and thus the caller
- * will altter return an Assuan error (write erro in most cases).
+ * Return value: 0 on success or an error code.  The error code may be
+ * the one one returned by the server via error lines or from the
+ * callback functions.  Take care:  If a callback returns an error
+ * this function returns immediately with this error.
  **/
 gpg_error_t
 assuan_transact (assuan_context_t ctx,

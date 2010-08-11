@@ -822,9 +822,12 @@ process to die in @code{assuan_release}.  In certain cases this is
 not desirable.  By setting this flag, a call to @code{waitpid} will be
 suppressed and the caller is responsible to cleanup the child process.
 @item ASSUAN_CONFIDENTIAL
-Uses to return the state of the confidential logging mode.
+Use to return the state of the confidential logging mode.
 @item ASSUAN_NO_FIXSIGNALS
 Do not modify signal handler for @code{SIGPIPE}.
+@item ASSUAN_CONVEY_COMMENTS
+If enabled comment lines are passed to the status callback of the
+@code{assuan_transact}.
 @end table
 @end deftp
 @end deftypefun

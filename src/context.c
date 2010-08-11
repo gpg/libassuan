@@ -122,7 +122,7 @@ assuan_get_flag (assuan_context_t ctx, assuan_flag_t flag)
 }
 
 
-/* Same as assuan_set_flag (ctx, ASSUAN_NO_WAITPID, 1).  */
+/* Same as assuan_set_flag (ctx, ASSUAN_CONFIDENTIAL, 1).  */
 void
 assuan_begin_confidential (assuan_context_t ctx)
 {
@@ -130,7 +130,7 @@ assuan_begin_confidential (assuan_context_t ctx)
 }
 
 
-/* Same as assuan_set_flag (ctx, ASSUAN_NO_WAITPID, 0).  */
+/* Same as assuan_set_flag (ctx, ASSUAN_CONFIDENTIAL, 0).  */
 void
 assuan_end_confidential (assuan_context_t ctx)
 {
