@@ -96,6 +96,19 @@ esac
 
 AM_CONDITIONAL(HAVE_LD_VERSION_SCRIPT, test "$have_ld_version_script" = "yes")
 
+AH_TOP([
+#ifndef _ASSUAN_CONFIG_H_INCLUDED
+#define _ASSUAN_CONFIG_H_INCLUDED
+
+/* Enable gpg-error's strerror macro under W32CE.  */
+#define GPG_ERR_ENABLE_ERRNO_MACROS 1
+])
+
+AH_BOTTOM([
+
+#endif /*_ASSUAN_CONFIG_H_INCLUDED*/
+])
+
 
 # Checks for programs.
 missing_dir=`cd $ac_aux_dir && pwd`
