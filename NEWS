@@ -3,9 +3,12 @@ Noteworthy changes in version 2.0.2
 
  * A new flag may now be used to convey comments via assuan_transact.
 
+ * A new flag value may now be used to disable logging.
+
  * Interface changes relative to the 2.0.1 release:
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  ASSUAN_CONVEY_COMMENTS   NEW.
+ ASSUAN_NO_LOGGING        NEW.
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -24,6 +27,7 @@ Noteworthy changes in version 2.0.1 (2010-08-09)
  assuan_free               NEW.
  _assuan_w32ce_create_pipe NEW.
  ASSUAN_LOG_CONTROL        NEW.
+ ASSUAN_NO_LOGGING         NEW.
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

@@ -84,6 +84,10 @@ assuan_set_flag (assuan_context_t ctx, assuan_flag_t flag, int value)
     case ASSUAN_CONVEY_COMMENTS:
       ctx->flags.convey_comments = value;
       break;
+
+    case ASSUAN_NO_LOGGING:
+      ctx->flags.no_logging = value;
+      break;
     }
 }
 
@@ -115,6 +119,10 @@ assuan_get_flag (assuan_context_t ctx, assuan_flag_t flag)
 
     case ASSUAN_CONVEY_COMMENTS:
       res = ctx->flags.convey_comments;
+      break;
+      
+    case ASSUAN_NO_LOGGING:
+      res = ctx->flags.no_logging;
       break;
     }
 

@@ -170,7 +170,9 @@ _assuan_log_control_channel (assuan_context_t ctx, int outbound,
 
   /* Check whether logging is enabled and do a quick check to see
      whether the callback supports our category.  */
-  if (!ctx || !ctx->log_cb 
+  if (!ctx
+      || !ctx->log_cb 
+      || ctx->flags.no_logging
       || !(*ctx->log_cb) (ctx, ctx->log_cb_data, ASSUAN_LOG_CONTROL, NULL))
     return;
 

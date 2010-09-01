@@ -88,6 +88,7 @@ struct assuan_context_s
     unsigned int confidential : 1;
     unsigned int no_fixsignals : 1;
     unsigned int convey_comments : 1;
+    unsigned int no_logging : 1;
   } flags;
 
   /* If set, this is called right before logging an I/O line.  */

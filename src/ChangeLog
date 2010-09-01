@@ -1,3 +1,10 @@
+2010-09-01  Werner Koch  <wk@g10code.com>
+
+	* assuan.h.in (ASSUAN_NO_LOGGING): New.
+	* assuan-defs.h (struct assuan_context_s): Add FLAGS.NO_LOGGING.
+	* context.c (assuan_set_flag, assuan_get_flag): Support new flag.
+	* assuan-logging.c (_assuan_log_control_channel): Implement new flag.
+
 2010-08-11  Werner Koch  <wk@g10code.com>
 
 	* assuan.h.in (ASSUAN_CONVEY_COMMENTS): New.
