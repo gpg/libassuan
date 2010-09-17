@@ -51,6 +51,9 @@
 #ifndef AF_LOCAL
 # define AF_LOCAL AF_UNIX
 #endif
+#ifndef INADDR_NONE
+#define INADDR_NONE  ((unsigned long)(-1))
+#endif /*INADDR_NONE*/
 
 #ifndef SUN_LEN
 # define SUN_LEN(ptr) ((size_t) (((struct sockaddr_un *) 0)->sun_path) \
