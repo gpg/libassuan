@@ -1,3 +1,7 @@
+2010-10-11  Werner Koch  <wk@g10code.com>
+
+	* Makefile.am (w32cetools): Move ce-server to here.
+
 2010-03-17  Werner Koch  <wk@g10code.com>
 
 	* pipeconnect.c: New.  Based on fdpassing.c

@@ -28,7 +28,7 @@ CLEANFILES =
 TESTS = pipeconnect
 
 if HAVE_W32CE_SYSTEM
-w32cetools = ce-createpipe
+w32cetools = ce-createpipe ce-server 
 endif
 
 if USE_DESCRIPTOR_PASSING
@@ -39,6 +39,6 @@ endif
 AM_CFLAGS = $(GPG_ERROR_CFLAGS)
 
 noinst_HEADERS = common.h
-noinst_PROGRAMS = $(TESTS) ce-server $(w32cetools)
+noinst_PROGRAMS = $(TESTS) $(w32cetools)
 LDADD = ../src/libassuan.la  $(NETLIBS) $(GPG_ERROR_LIBS)
 
