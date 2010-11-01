@@ -19,5 +19,6 @@
 ##
 ## This file is included by the mkheader tool.  Lines starting with
 ## a double hash mark are not copied to the destination file.
+#include <winsock2.h>
 #include <ws2tcpip.h> 
 ##EOF##

@@ -27,7 +27,9 @@
 # define WIN32_LEAN_AND_MEAN
 # include <windows.h>
 # include <wincrypt.h>
+#ifndef HAVE_W32CE_SYSTEM
 # include <io.h>
+#endif
 #else
 # include <sys/types.h>
 # include <sys/socket.h>
@@ -36,7 +38,9 @@
 #ifdef HAVE_SYS_STAT_H
 # include <sys/stat.h>
 #endif
+#ifdef HAVE_FCNTL_H
 #include <fcntl.h>
+#endif
 #include <assert.h>
 
 #include "assuan-defs.h"

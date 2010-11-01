@@ -29,7 +29,9 @@
 # include <sys/types.h>
 #endif
 #include <time.h>
+#ifdef HAVE_FCNTL_H
 #include <fcntl.h>
+#endif
 
 #include "assuan-defs.h"
 #include "debug.h"

@@ -43,7 +43,7 @@ ce_defines = -DWINCE -D_WIN32_WCE=0x502 -DUNDER_CE \
 # -Fe   Set executable output name (may be only a directory)
 CFLAGS = -nologo -W3 -fp:fast -Os $(ce_defines) \
          -DHAVE_CONFIG_H -DDLL_EXPORT -D_CRT_SECURE_NO_WARNINGS \
-	 -I. -Igpg-extra -I../libgpg-error
+	 -I. -I../../libgpg-error/src -I../../libgpg-error/src/gpg-extra
 
 LDFLAGS =
 

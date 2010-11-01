@@ -1,3 +1,14 @@
+2010-11-01  Marcus Brinkmann  <marcus.brinkmann@ruhr-uni-bochum.de>
+
+	* assuan-socket.c, assuan-uds.c, system.c, assuan-pipe-server.c,
+	assuan-pipe-connect.c [!HAVE_FCNTL_H]: Don't include fcntl.h.
+	* assuan-buffer.c [!HAVE_W32CE_SYSTEM]: Do not include process.h.
+	* assuan-socket.c [!HAVE_W32CE_SYSTEM]: Do not include io.h.
+	* w32-includes.inc.h: Include winsock2.h before ws2tcpip.h.
+	* sysutils.c (w32_read_registry): Replace goto label "leave" by
+	"out" (as leave is defined by some Windows header file).
+	* assuan-inquire.c: Likewise.
+
 2010-11-01  Werner Koch  <wk@g10code.com>
 
 	* assuan-socket.c (S_IRUSR) [W32]: Define if not defined.

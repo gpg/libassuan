@@ -37,7 +37,9 @@
 #  include <winsock2.h>
 # endif 
 # include <windows.h>
+#ifdef HAVE_FCNTL_H
 # include <fcntl.h>
+#endif
 #endif
 
 #include "assuan-defs.h"

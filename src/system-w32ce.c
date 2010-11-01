@@ -25,7 +25,6 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <time.h>
-#include <fcntl.h>
 # ifdef HAVE_WINSOCK2_H
 #  include <winsock2.h>
 # endif 

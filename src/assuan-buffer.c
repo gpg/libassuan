@@ -27,7 +27,9 @@
 #endif
 #include <assert.h>
 #ifdef HAVE_W32_SYSTEM
+#ifndef HAVE_W32CE_SYSTEM
 # include <process.h>
+#endif
 #endif
 #include "assuan-defs.h"
 

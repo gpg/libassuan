@@ -70,33 +70,33 @@ w32_read_registry (const wchar_t *dir, const wchar_t *name)
 
   nbytes = 1;
   if (RegQueryValueEx (handle, name, 0, NULL, NULL, &nbytes))
-    goto leave;
+    goto out;
   buffer = malloc ((n=nbytes+2));
   if (!buffer)
-    goto leave;
+    goto out;
   if (RegQueryValueEx (handle, name, 0, NULL, (PBYTE)buffer, &n))
     {
       free (buffer);
       buffer = NULL;
-      goto leave;
+      goto out;
     }
   
   n = WideCharToMultiByte (CP_UTF8, 0, buffer, nbytes, NULL, 0, NULL, NULL);
   if (n < 0 || (n+1) <= 0)
-    goto leave;
+    goto out;
   result = malloc (n+1);
   if (!result)
-    goto leave;
+    goto out;
   n = WideCharToMultiByte (CP_UTF8, 0, buffer, nbytes, result, n, NULL, NULL);
   if (n < 0)
     {
       free (result);
       result = NULL;
-      goto leave;
+      goto out;
     }
   result[n] = 0;
 
- leave:
+ out:
   free (buffer);
   RegCloseKey (handle);
   return result;

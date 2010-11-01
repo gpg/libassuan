@@ -168,7 +168,7 @@ assuan_inquire (assuan_context_t ctx, const char *keyword,
   strcpy (stpcpy (cmdbuf, "INQUIRE "), keyword);
   rc = assuan_write_line (ctx, cmdbuf);
   if (rc)
-    goto leave;
+    goto out;
 
   for (;;)
     {
@@ -178,7 +178,7 @@ assuan_inquire (assuan_context_t ctx, const char *keyword,
 	    rc = _assuan_read_line (ctx);
 	  while (_assuan_error_is_eagain (ctx, rc));
           if (rc)
-            goto leave;
+            goto out;
           line = (unsigned char *) ctx->inbound.line;
           linelen = ctx->inbound.linelen;
         }    
@@ -196,13 +196,13 @@ assuan_inquire (assuan_context_t ctx, const char *keyword,
           && (line[2] == 'N' || line[2] == 'n'))
         {
           rc = _assuan_error (ctx, GPG_ERR_ASS_CANCELED);
-          goto leave;
+          goto out;
         }
       if ((line[0] != 'D' && line[0] != 'd') 
           || line[1] != ' ' || nodataexpected)
         {
           rc = _assuan_error (ctx, GPG_ERR_ASS_UNEXPECTED_CMD);
-          goto leave;
+          goto out;
         }
       if (linelen < 3)
         continue;
@@ -229,7 +229,7 @@ assuan_inquire (assuan_context_t ctx, const char *keyword,
       if (mb.too_large)
         {
           rc = _assuan_error (ctx, GPG_ERR_ASS_TOO_MUCH_DATA);
-          goto leave;
+          goto out;
         }
     }
 
@@ -240,7 +240,7 @@ assuan_inquire (assuan_context_t ctx, const char *keyword,
 	rc = _assuan_error (ctx, gpg_err_code_from_syserror ());
     }
 
- leave:
+ out:
   if (!nodataexpected)
     free_membuf (ctx, &mb);
   ctx->in_inquire = 0;
@@ -281,7 +281,7 @@ _assuan_inquire_ext_cb (assuan_context_t ctx)
       && (line[2] == 'N' || line[2] == 'n'))
     {
       rc = _assuan_error (ctx, GPG_ERR_ASS_CANCELED);
-      goto leave;
+      goto out;
     }
   if ((line[0] == 'E'||line[0] == 'e')
       && (line[1] == 'N' || line[1] == 'n')
@@ -289,13 +289,13 @@ _assuan_inquire_ext_cb (assuan_context_t ctx)
       && (!line[3] || line[3] == ' '))
     {
       rc = 0;
-      goto leave;
+      goto out;
     }
 
   if ((line[0] != 'D' && line[0] != 'd') || line[1] != ' ' || mb == NULL)
     {
       rc = _assuan_error (ctx, GPG_ERR_ASS_UNEXPECTED_CMD);
-      goto leave;
+      goto out;
     }
   
   if (linelen < 3)
@@ -323,12 +323,12 @@ _assuan_inquire_ext_cb (assuan_context_t ctx)
   if (mb->too_large)
     {
       rc = _assuan_error (ctx, GPG_ERR_ASS_TOO_MUCH_DATA);
-      goto leave;
+      goto out;
     }
 
   return 0;
 
- leave:
+ out:
   {
     size_t buf_len = 0;
     unsigned char *buf = NULL;
