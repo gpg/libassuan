@@ -1,3 +1,9 @@
+2010-11-01  Werner Koch  <wk@g10code.com>
+
+	* assuan-socket.c (_assuan_sock_bind): Replace open/fdopen by
+	CreateFile for building with MSC for W32CE.
+	(utf8_to_wchar, MyCreateFile, MyDeleteFile) [W32CE]: New.
+
 2010-11-01  Marcus Brinkmann  <marcus.brinkmann@ruhr-uni-bochum.de>
 
 	* assuan-socket.c, assuan-uds.c, system.c, assuan-pipe-server.c,

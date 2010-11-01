@@ -71,6 +71,86 @@
 
 
 #ifdef HAVE_W32_SYSTEM
+
+#ifdef HAVE_W32CE_SYSTEM
+static wchar_t *
+utf8_to_wchar (const char *string)
+{
+  int n;
+  size_t nbytes;
+  wchar_t *result;
+
+  if (!string)
+    return NULL;
+
+  n = MultiByteToWideChar (CP_UTF8, 0, string, -1, NULL, 0);
+  if (n < 0)
+    return NULL;
+
+  nbytes = (size_t)(n+1) * sizeof(*result);
+  if (nbytes / sizeof(*result) != (n+1)) 
+    {
+      SetLastError (ERROR_INVALID_PARAMETER);
+      return NULL;
+    }
+  result = malloc (nbytes);
+  if (!result)
+    return NULL;
+
+  n = MultiByteToWideChar (CP_UTF8, 0, string, -1, result, n);
+  if (n < 0)
+    {
+      n = GetLastError ();
+      free (result);
+      result = NULL;
+      SetLastError (n);
+    }
+  return result;
+}
+
+static HANDLE
+MyCreateFile (LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwSharedMode,
+              LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+              DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes,
+              HANDLE hTemplateFile)
+{
+  wchar_t *filename;
+  HANDLE result;
+  int err;
+
+  filename = utf8_to_wchar (lpFileName);
+  if (!filename)
+    return INVALID_HANDLE_VALUE;
+
+  result = CreateFileW (filename, dwDesiredAccess, dwSharedMode,
+			lpSecurityAttributes, dwCreationDisposition,
+			dwFlagsAndAttributes, hTemplateFile);
+  err = GetLastError ();
+  free (filename);
+  SetLastError (err);
+  return result;
+}
+static int
+MyDeleteFile (LPCSTR lpFileName)
+{
+  wchar_t *filename;
+  int result, err;
+
+  filename = utf8_to_wchar (lpFileName);
+  if (!filename)
+    return 0;
+
+  result = DeleteFileW (filename);
+  err = GetLastError ();
+  free (filename);
+  SetLastError (err);
+  return result;
+}
+#else /*!HAVE_W32CE_SYSTEM*/
+#define MyCreateFile CreateFileA
+#define MyDeleteFile DeleteFileA
+#endif /*!HAVE_W32CE_SYSTEM*/
+
 int
 _assuan_sock_wsa2errno (int err)
 {
@@ -238,11 +318,12 @@ _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
     {
       struct sockaddr_in myaddr;
       struct sockaddr_un *unaddr;
-      int filefd;
-      FILE *fp;
+      HANDLE filehd;
       int len = sizeof myaddr;
       int rc;
       char nonce[16];
+      char tmpbuf[33+16];
+      DWORD nwritten;
 
       if (get_nonce (nonce, 16))
         return -1;
@@ -253,21 +334,17 @@ _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
       myaddr.sin_family = AF_INET;
       myaddr.sin_addr.s_addr = htonl (INADDR_LOOPBACK);
 
-      filefd = open (unaddr->sun_path, 
-                     (O_WRONLY|O_CREAT|O_EXCL|O_BINARY), 
-                     (S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP));
-      if (filefd == -1)
+      filehd = MyCreateFile (unaddr->sun_path, 
+                             GENERIC_WRITE,
+                             FILE_SHARE_READ,
+                             NULL,
+                             CREATE_NEW,
+                             FILE_ATTRIBUTE_NORMAL,
+                             NULL);
+      if (filehd == INVALID_HANDLE_VALUE)
         {
-          if (errno == EEXIST)
+          if (GetLastError () == ERROR_FILE_EXISTS)
             gpg_err_set_errno (WSAEADDRINUSE);
-          return -1;
-        }
-      fp = fdopen (filefd, "wb");
-      if (!fp)
-        { 
-          int save_e = errno;
-          close (filefd);
-          gpg_err_set_errno (save_e);
           return -1;
         }
 
@@ -278,15 +355,24 @@ _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
       if (rc)
         {
           int save_e = errno;
-          fclose (fp);
-          DeleteFile (unaddr->sun_path);
+          CloseHandle (filehd);
+          MyDeleteFile (unaddr->sun_path);
           gpg_err_set_errno (save_e);
           return rc;
         }
-      fprintf (fp, "%d\n", ntohs (myaddr.sin_port));
-      fwrite (nonce, 16, 1, fp);
-      fclose (fp);
-
+      snprintf (tmpbuf, sizeof tmpbuf, "%d\n", ntohs (myaddr.sin_port));
+      len = strlen (tmpbuf);
+      memcpy (tmpbuf+len, nonce,16);
+      len += 16;
+      
+      if (!WriteFile (filehd, tmpbuf, len, &nwritten, NULL))
+        {
+          CloseHandle (filehd);
+          MyDeleteFile (unaddr->sun_path);
+          gpg_err_set_errno (EIO);
+          return -1;
+        }
+      CloseHandle (filehd);
       return 0;
     }
   else
