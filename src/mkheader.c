@@ -82,6 +82,24 @@ write_special (const char *fname, int lnr, const char *tag)
       else
         include_file (fname, lnr, "posix-includes.inc.h");
     }
+  else if (!strcmp (tag, "include:sys/types.h"))
+    {
+      if (!strcmp (host_os, "mingw32ce"))
+        fputs ("#ifdef __MINGW32CE__\n"
+               "# include <sys/types.h>\n"
+               "#endif\n", stdout);
+      else
+        fputs ("#include <sys/types.h>\n", stdout);
+    }
+  else if (!strcmp (tag, "include:unistd.h"))
+    {
+      if (!strcmp (host_os, "mingw32ce"))
+        fputs ("#ifdef __MINGW32CE__\n"
+               "# include <unistd.h>\n"
+               "#endif\n", stdout);
+      else
+        fputs ("#include <unistd.h>\n", stdout);
+    }
   else if (!strcmp (tag, "include:types"))
     {
       if (strstr (host_os, "mingw32"))

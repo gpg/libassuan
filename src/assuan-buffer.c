@@ -22,10 +22,12 @@
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
-#include <unistd.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 #include <assert.h>
 #ifdef HAVE_W32_SYSTEM
-#include <process.h>
+# include <process.h>
 #endif
 #include "assuan-defs.h"
 

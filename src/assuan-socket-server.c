@@ -24,9 +24,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
-#include <unistd.h>
-#include <sys/types.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+#ifdef HAVE_SYS_TYPES_H
+# include <sys/types.h>
+#endif
 #ifdef HAVE_W32_SYSTEM
+# ifdef HAVE_WINSOCK2_H
+#  include <winsock2.h>
+# endif 
 # include <windows.h>
 # if HAVE_SYS_SOCKET_H
 #  include <sys/socket.h>

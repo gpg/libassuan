@@ -20,4 +20,10 @@
 ## This file is included by the mkheader tool.  Lines starting with
 ## a double hash mark are not copied to the destination file.
 typedef void *assuan_msghdr_t;
+
+#ifdef _MSC_VER
+  typedef long ssize_t;
+  typedef int  pid_t;
+#endif
+
 ##EOF##

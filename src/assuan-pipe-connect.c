@@ -29,14 +29,21 @@
 #ifndef HAVE_DOSISH_SYSTEM 
 # include <signal.h>
 #endif
-#include <unistd.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 #include <errno.h>
 #include <fcntl.h>
-#include <sys/types.h>
+#ifdef HAVE_SYS_TYPES_H
+# include <sys/types.h>
+#endif
 #ifndef HAVE_W32_SYSTEM
-#include <sys/wait.h>
+# include <sys/wait.h>
 #else
-#include <windows.h>
+# ifdef HAVE_WINSOCK2_H
+#  include <winsock2.h>
+# endif 
+# include <windows.h>
 #endif
 
 #include "assuan-defs.h"

@@ -24,8 +24,10 @@
 
 #include <stdlib.h>
 #include <errno.h>
-/* Solaris 8 needs sys/types.h before time.h.  */
-#include <sys/types.h>
+#ifdef HAVE_SYS_TYPES_H
+  /* Solaris 8 needs sys/types.h before time.h.  */
+# include <sys/types.h>
+#endif
 #include <time.h>
 #include <fcntl.h>
 

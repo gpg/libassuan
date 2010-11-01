@@ -24,16 +24,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef HAVE_W32_SYSTEM
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <wincrypt.h>
-#include <io.h>
+# define WIN32_LEAN_AND_MEAN
+# include <windows.h>
+# include <wincrypt.h>
+# include <io.h>
 #else
-#include <sys/types.h>
-#include <sys/socket.h>
+# include <sys/types.h>
+# include <sys/socket.h>
 #endif
 #include <errno.h>
-#include <sys/stat.h>
+#ifdef HAVE_SYS_STAT_H
+# include <sys/stat.h>
+#endif
 #include <fcntl.h>
 #include <assert.h>
 
@@ -53,6 +55,10 @@
 #endif
 
 #ifdef HAVE_W32_SYSTEM
+#ifndef S_IRUSR
+# define S_IRUSR 0
+# define S_IWUSR 0
+#endif
 #ifndef S_IRGRP
 # define S_IRGRP 0
 # define S_IWGRP 0

@@ -1,3 +1,31 @@
+2010-11-01  Werner Koch  <wk@g10code.com>
+
+	* assuan-socket.c (S_IRUSR) [W32]: Define if not defined.
+
+	* sysutils.c: Remove include of devload.h.
+
+	* assuan-defs.h [HAVE_WINSOCK2_H]: Include winsock2.h prior to
+	windows.h.
+	* assuan-pipe-server.c: Ditto.
+	* sysutils.c: Ditto.
+	* assuan-socket-server.c: Ditto.
+	* assuan-pipe-connect.c: Ditto.
+	* assuan-socket-connect.c: Ditto.
+	* assuan-uds.c: Ditto.
+	* assuan-logging.c: Ditto.
+	* system-w32ce.c: Ditto.
+	* assuan-io.c: Ditto.
+
+	* w32-types.inc.h [_MSC_VER]: Define ssize_t and pid_t.
+
+	* w32ce-fd-t.inc.h, w32-fd-t.inc.h, posix-fd-t.inc.h, debug.h:
+	s/inline/GPG_ERR_INLINE/.
+	* assuan.h.in: Let mkheader write the sys/types.h and unistd.h
+	include lines.
+	* mkheader.c: Change accordingly.
+
+	Guard include of sys/types.h, sys/stat.h, sys/time.h and unistd.h.
+
 2010-09-17  Werner Koch  <wk@g10code.com>
 
 	* assuan-socket-connect.c (INADDR_NONE): New replacement.  Fixes

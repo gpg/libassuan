@@ -26,13 +26,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include <unistd.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 #include <ctype.h>
 #include <errno.h>
 #ifndef HAVE_DOSISH_SYSTEM
-#  include <sys/types.h>
-#  include <sys/stat.h>
-#  include <fcntl.h>
+# include <sys/types.h>
+# include <sys/stat.h>
+# include <fcntl.h>
 #endif
 #include <assert.h>
 

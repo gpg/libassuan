@@ -23,7 +23,7 @@
 typedef void *assuan_fd_t;
 #define ASSUAN_INVALID_FD ((void*)(-1))
 #define ASSUAN_INVALID_PID ((pid_t) -1)
-static inline assuan_fd_t
+static GPG_ERR_INLINE assuan_fd_t
 assuan_fd_from_posix_fd (int fd)
 {
   return (assuan_fd_t)(fd);

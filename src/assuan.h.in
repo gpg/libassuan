@@ -24,8 +24,8 @@
 #define ASSUAN_H
 
 #include <stdio.h>
-#include <sys/types.h>
-#include <unistd.h>
+@include:sys/types.h@
+@include:unistd.h@
 #include <stdarg.h>
 
 #ifndef _ASSUAN_NO_SOCKET_WRAPPER

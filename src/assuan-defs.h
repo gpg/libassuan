@@ -21,14 +21,22 @@
 #ifndef ASSUAN_DEFS_H
 #define ASSUAN_DEFS_H
 
-#include <sys/types.h>
-#ifndef HAVE_W32_SYSTEM
-#include <sys/socket.h>
-#include <sys/un.h>
-#else
-#include <windows.h>
+#ifdef HAVE_SYS_TYPES_H
+# include <sys/types.h>
 #endif
-#include <unistd.h>
+#ifndef HAVE_W32_SYSTEM
+# include <sys/socket.h>
+# include <sys/un.h>
+#else
+# ifdef HAVE_WINSOCK2_H
+#  /* Avoid inclusion of winsock.h via windows.h. */
+#  include <winsock2.h>
+# endif
+# include <windows.h>
+#endif
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 
 #include "assuan.h"
 

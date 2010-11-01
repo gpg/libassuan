@@ -25,10 +25,12 @@
 #include <string.h>
 #include <stdarg.h>
 #ifdef HAVE_W32_SYSTEM
-#include <windows.h>
+# ifdef HAVE_WINSOCK2_H
+#  include <winsock2.h>
+# endif 
+# include <windows.h>
 # ifdef HAVE_W32CE_SYSTEM
 # include <winioctl.h>
-# include <devload.h>
 # endif /*HAVE_W32CE_SYSTEM*/
 #endif /*HAVE_W32_SYSTEM*/
 

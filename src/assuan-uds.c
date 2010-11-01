@@ -25,17 +25,24 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <errno.h>
-#include <sys/types.h>
+#ifdef HAVE_SYS_TYPES_H
+# include <sys/types.h>
+#endif
 #ifndef HAVE_W32_SYSTEM
-#include <sys/socket.h>
-#include <sys/un.h>
+# include <sys/socket.h>
+# include <sys/un.h>
 #else
-#include <windows.h>
+# ifdef HAVE_WINSOCK2_H
+#  include <winsock2.h>
+# endif 
+# include <windows.h>
 #endif
 #if HAVE_SYS_UIO_H
 #include <sys/uio.h>
 #endif
-#include <unistd.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 #include <fcntl.h>
 #include <string.h>
 #include <assert.h>
