@@ -250,7 +250,7 @@ AC_SUBST(LIBASSUAN_CONFIG_EXTRA_LIBS)
 # Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS([string.h locale.h sys/uio.h stdint.h inttypes.h \
-                  sys/types.h sys/stat.h unistd.h sys/time.h])
+                  sys/types.h sys/stat.h unistd.h sys/time.h fcntl.h])
 AC_TYPE_UINTPTR_T
 AC_TYPE_UINT16_T
 

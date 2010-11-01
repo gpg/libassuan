@@ -1,3 +1,7 @@
+2010-11-01  Marcus Brinkmann  <marcus.brinkmann@ruhr-uni-bochum.de>
+
+	* configure.ac: Check for fcntl.h.
+
 2010-11-01  Werner Koch  <wk@g10code.com>
 
 	* configure.ac: Check for sys/types.h, sys/stat.h, sys/time and
