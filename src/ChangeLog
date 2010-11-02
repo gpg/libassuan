@@ -4,7 +4,7 @@
 	CreateFile for building with MSC for W32CE.
 	(utf8_to_wchar, MyCreateFile, MyDeleteFile) [W32CE]: New.
 
-2010-11-01  Marcus Brinkmann  <marcus.brinkmann@ruhr-uni-bochum.de>
+2010-11-01  Marcus Brinkmann  <marcus@g10code.de>
 
 	* assuan-socket.c, assuan-uds.c, system.c, assuan-pipe-server.c,
 	assuan-pipe-connect.c [!HAVE_FCNTL_H]: Don't include fcntl.h.
