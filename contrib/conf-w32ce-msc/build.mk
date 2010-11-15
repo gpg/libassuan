@@ -122,6 +122,8 @@ conf_sources = \
 built_sources = \
 	assuan.h
 
+my_stdint = $(targetsrc)/libassuan/src/stdint.h
+
 copy-static-source:
 	@if [ ! -f ./assuan-defs.h ]; then \
            echo "Please cd to the src/ directory first"; \
@@ -130,6 +132,14 @@ copy-static-source:
 	cp -t $(targetsrc)/libassuan/src $(sources);
 	cd ../contrib/conf-w32ce-msc ; \
            cp -t $(targetsrc)/libassuan/src $(conf_sources)
+	@echo typedef unsigned long long uint64_t;  >$(my_stdint)
+	@echo typedef long long int64_t;	   >>$(my_stdint)
+	@echo typedef unsigned int uint32_t;	   >>$(my_stdint)
+	@echo typedef int int32_t;		   >>$(my_stdint)
+	@echo typedef unsigned short uint16_t;	   >>$(my_stdint)
+	@echo typedef short int16_t;		   >>$(my_stdint)
+	@echo typedef unsigned int uintptr_t;	   >>$(my_stdint)
+	@echo typedef int intptr_t;                >>$(my_stdint)
 
 
 copy-built-source:
@@ -152,7 +162,7 @@ all:  $(sources) $(conf_sources) $(built_sources) $(objs)
 		/NODEFAULTLIB:"oldnames.lib" /DYNAMICBASE:NO \
 	        $(objs) $(libdir)/libgpg-error-0-msc.lib \
 		coredll.lib corelibc.lib ole32.lib oleaut32.lib uuid.lib \
-		commctrl.lib /subsystem:windowsce,5.02
+		commctrl.lib ws2.lib /subsystem:windowsce,5.02
 
 # Note that we don't need to create the install directories because
 # libgpg-error must have been build and installed prior to this
@@ -161,3 +171,7 @@ install: all
 	copy /y libassuan-0-msc.dll $(bindir:/=\)
 	copy /y libassuan-0-msc.lib $(libdir:/=\)
 	copy /y assuan.h $(incdir:/=\)
+
+clean:
+	del *.obj libassuan-0-msc.lib libassuan-0-msc.dll libassuan-0-msc.exp
+
