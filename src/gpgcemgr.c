@@ -24,9 +24,10 @@
 
 #define PGM "gpgcemgr"
 
-#define GPGCEDEV_KEY_NAME L"Drivers\\GnuPG_Device"
-#define GPGCEDEV_DLL_NAME L"gpgcedev.dll"
-#define GPGCEDEV_PREFIX   L"GPG"
+#define GPGCEDEV_KEY_NAME  L"Drivers\\GnuPG_Device"
+#define GPGCEDEV_KEY_NAME2 L"Drivers\\GnuPG_Log"
+#define GPGCEDEV_DLL_NAME  L"gpgcedev.dll"
+#define GPGCEDEV_PREFIX    L"GPG"
 
 
 static int
@@ -38,7 +39,7 @@ install (void)
   if (RegCreateKeyEx (HKEY_LOCAL_MACHINE, GPGCEDEV_KEY_NAME, 0, NULL, 0,
                       KEY_WRITE, NULL, &handle, &disp))
     {
-      fprintf (stderr, PGM": error creating registry key: rc=%d\n", 
+      fprintf (stderr, PGM": error creating registry key 1: rc=%d\n", 
                (int)GetLastError ());
       return 1;
     }
@@ -53,7 +54,27 @@ install (void)
   
   RegCloseKey (handle);
 
-  fprintf (stderr, PGM": registry key created\n");
+  fprintf (stderr, PGM": registry key 1 created\n");
+
+  if (RegCreateKeyEx (HKEY_LOCAL_MACHINE, GPGCEDEV_KEY_NAME2, 0, NULL, 0,
+                      KEY_WRITE, NULL, &handle, &disp))
+    {
+      fprintf (stderr, PGM": error creating registry key 2: rc=%d\n", 
+               (int)GetLastError ());
+      return 1;
+    }
+
+  RegSetValueEx (handle, L"dll", 0, REG_SZ, 
+                 (void*)GPGCEDEV_DLL_NAME, sizeof (GPGCEDEV_DLL_NAME));
+  RegSetValueEx (handle, L"prefix", 0, REG_SZ,
+                 (void*)GPGCEDEV_PREFIX, sizeof (GPGCEDEV_PREFIX));
+
+  dw = 2;
+  RegSetValueEx (handle, L"Index", 0, REG_DWORD, (void*)&dw, sizeof dw);
+  
+  RegCloseKey (handle);
+
+  fprintf (stderr, PGM": registry key 2 created\n");
 
 
   return 0;
@@ -61,7 +82,7 @@ install (void)
 
 
 static int
-deinstall (void)
+deinstall (wchar_t *name)
 {
   int result = 0;
   HANDLE shd;
@@ -69,7 +90,7 @@ deinstall (void)
 
   memset (&dinfo, 0, sizeof dinfo);
   dinfo.dwSize = sizeof dinfo;
-  shd = FindFirstDevice (DeviceSearchByLegacyName, L"GPG1:", &dinfo);
+  shd = FindFirstDevice (DeviceSearchByLegacyName, name, &dinfo);
   if (shd == INVALID_HANDLE_VALUE)
     {
       if (GetLastError () == 18)
@@ -100,6 +121,49 @@ deinstall (void)
 
   return result;
 }
+
+
+static int
+enable_debug (int yes)
+{
+  HKEY handle;
+  DWORD disp;
+  
+  if (RegCreateKeyEx (HKEY_LOCAL_MACHINE, GPGCEDEV_KEY_NAME, 0, NULL, 0,
+                      KEY_WRITE, NULL, &handle, &disp))
+    {
+      fprintf (stderr, PGM": error creating debug registry key: rc=%d\n", 
+               (int)GetLastError ());
+      return 1;
+    }
+  
+  RegSetValueEx (handle, L"debugDriver", 0, REG_SZ, 
+                 (void*)(yes? L"1":L"0"), sizeof L"0");
+  RegCloseKey (handle);
+  return 0;
+}
+
+
+static int
+enable_log (int yes)
+{
+  HKEY handle;
+  DWORD disp;
+  
+  if (RegCreateKeyEx (HKEY_LOCAL_MACHINE, GPGCEDEV_KEY_NAME2, 0, NULL, 0,
+                      KEY_WRITE, NULL, &handle, &disp))
+    {
+      fprintf (stderr, PGM": error creating debug registry key: rc=%d\n", 
+               (int)GetLastError ());
+      return 1;
+    }
+  
+  RegSetValueEx (handle, L"enableLog", 0, REG_SZ, 
+                 (void*)(yes? L"1":L"0"), sizeof L"0");
+  RegCloseKey (handle);
+  return 0;
+}
+
 
 
 /* Kudos to Scott Seligman <scott@scottandmichelle.net> for his work
@@ -280,24 +344,111 @@ main (int argc, char **argv)
   if (argc > 1 && !strcmp (argv[1], "--register"))
     result = install ();
   else if (argc > 1 && !strcmp (argv[1], "--deactivate"))
-    result = deinstall ();
+    {
+      if (deinstall (L"GPG1:"))
+        result = 1;
+      if (deinstall (L"GPG2:"))
+        result = 1;
+    }
   else if (argc > 1 && !strcmp (argv[1], "--activate"))
     {
+      HANDLE hd;
+
       /* This is mainly for testing.  The activation is usually done
          right before the device is opened.  */
-      if (ActivateDevice (GPGCEDEV_DLL_NAME, 0) == INVALID_HANDLE_VALUE)
+      if (ActivateDevice (GPGCEDEV_KEY_NAME, 0) == INVALID_HANDLE_VALUE)
         {
-          fprintf (stderr, PGM": ActivateDevice failed: rc=%d\n",
+          fprintf (stderr, PGM": ActivateDevice 1 failed: rc=%d\n",
+                   (int)GetLastError ());
+          result = 1;
+        }
+      else if (ActivateDevice (GPGCEDEV_KEY_NAME2, 0) == INVALID_HANDLE_VALUE)
+        {
+          fprintf (stderr, PGM": ActivateDevice 2 failed: rc=%d\n",
                    (int)GetLastError ());
           result = 1;
         }
       else
-        fprintf (stderr, PGM": device activated\n");
+        {
+          fprintf (stderr, PGM": devices activated\n");
+          hd = CreateFile (L"GPG1:", GENERIC_WRITE,
+                           FILE_SHARE_READ | FILE_SHARE_WRITE,
+                           NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+          if (hd == INVALID_HANDLE_VALUE)
+            {
+              fprintf (stderr, PGM": opening `GPG1:' failed: rc=%d\n",
+                       (int)GetLastError ());
+              result = 1;
+            }
+          else
+            {
+              fprintf (stderr, PGM": device `GPG1:' seems to work\n");
+              CloseHandle (hd);
+            }
+
+          hd = CreateFile (L"GPG2:", GENERIC_WRITE,
+                           FILE_SHARE_READ | FILE_SHARE_WRITE,
+                           NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+          if (hd == INVALID_HANDLE_VALUE)
+            {
+              fprintf (stderr, PGM": opening `GPG2:' failed: rc=%d\n",
+                       (int)GetLastError ());
+              result = 1;
+            }
+          else
+            {
+              fprintf (stderr, PGM": device `GPG2:' seems to work\n");
+              CloseHandle (hd);
+            }
+          
+        }
     }
   else if (argc > 1 && !strcmp (argv[1], "--gravity"))
     result = gravity ();
   /* else if (argc > 1 && !strcmp (argv[1], "--gps")) */
   /*   result = gps (); */
+  else if (argc > 1 && !strcmp (argv[1], "--log"))
+    {
+      HANDLE hd;
+
+      hd = CreateFile (L"GPG2:", GENERIC_WRITE,
+                       FILE_SHARE_READ | FILE_SHARE_WRITE,
+                       NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+      if (hd == INVALID_HANDLE_VALUE)
+        {
+          fprintf (stderr, PGM": opening `GPG2:' failed: rc=%d\n",
+                   (int)GetLastError ());
+          result = 1;
+        }
+      else
+        {
+          char marktwain[] = "I have never let my schooling interfere"
+            " with my education.\n";
+          DWORD nwritten;
+          int i;
+
+          for (i=0; i < 5; i++) 
+            {
+              if (!WriteFile (hd, marktwain, strlen (marktwain),
+                              &nwritten, NULL))
+                {
+                  fprintf (stderr, PGM": writing `GPG2:' failed: rc=%d\n",
+                           (int)GetLastError ());
+                  result = 1;
+                }
+              Sleep (200);
+            }
+          CloseHandle (hd);
+        }
+    }
+  else if (argc > 1 && !strcmp (argv[1], "--enable-debug"))
+    result = enable_debug (1);
+  else if (argc > 1 && !strcmp (argv[1], "--disable-debug"))
+    result = enable_debug (0);
+  else if (argc > 1 && !strcmp (argv[1], "--enable-log"))
+    result = enable_log (1);
+  else if (argc > 1 && !strcmp (argv[1], "--disable-log"))
+    result = enable_log (0);
   else
     {
       fprintf (stderr, "usage: " PGM " --register|--deactivate|--activate\n");

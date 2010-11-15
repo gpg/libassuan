@@ -1,3 +1,30 @@
+2010-11-15  Werner Koch  <wk@g10code.com>
+
+	* gpgcedev.c (GPG_Init): Read debug settings.
+
+	* gpgcemgr.c (enable_debug, enable_log): New.
+	(main): Add options --enable-debug, --disable-debug, --enable-log,
+	--disable-log.
+
+2010-11-12  Werner Koch  <wk@g10code.com>
+
+	* gpgcedev.c (DEVCTX_VALUE): Rename to PIPECTX_VALUE.
+	(LOGCTX_VALUE): New.
+	(allocate_opnctx): Add arg IS_LOG.
+	(logimpl_t): New.
+	(openctx_t): Add field IS_LOG.
+	(struct logcontrol): New.
+	(enable_debug, enable_logging): New.
+	(log_debug): Make use of the ENABLE_DEBUG flag.
+	(create_log_id): New.
+	(logimpl_new, logimpl_unref, logimpl_flush, assert_logimpl): New.
+	(GPG_Init): Check for GPG2 device.
+	(GPG_Deinit): Close log stream.
+	(GPG_Open): Implement log device.
+	(GPG_Read): Return EOF for the GPG2 device
+	(GPG_Write): Implement GPG2 device.
+	(dllmain): Init logcontrol CS.
+
 2010-11-01  Werner Koch  <wk@g10code.com>
 
 	* assuan-socket.c (_assuan_sock_bind): Replace open/fdopen by

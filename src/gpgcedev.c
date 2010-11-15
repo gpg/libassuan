@@ -1,4 +1,4 @@
-/* gpgcedrv.c - WindowsCE device driver to implement a pipe.
+/* gpgcedrv.c - WindowsCE device driver to implement pipe and syslog.
    Copyright (C) 2010 Free Software Foundation, Inc.
 
    This file is part of Assuan.
@@ -20,12 +20,17 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 #include <windows.h>
 #include <devload.h>
 #include <winioctl.h>
 
-#define ENABLE_DEBUG
-#warning Cancel not handled.
+/* FIXME Cancel not handled. */
+
+#define DBGFILENAME "\\gpgcedev.dbg"
+#define LOGFILENAME L"\\gpgcedev.log"
+#define GPGCEDEV_KEY_NAME  L"Drivers\\GnuPG_Device"
+#define GPGCEDEV_KEY_NAME2 L"Drivers\\GnuPG_Log"
 
 
 /* Missing IOCTLs in the current mingw32ce.  */
@@ -74,6 +79,7 @@
   CTL_CODE (FILE_DEVICE_STREAMS, 2051, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
 
+/* An object to describe a pipe.  */
 struct pipeimpl_s
 {
   CRITICAL_SECTION critsect;  /* Lock for all members.  */
@@ -101,18 +107,39 @@ struct pipeimpl_s
 typedef struct pipeimpl_s *pipeimpl_t;
 
 
+/* An object to describe a logging context.  We can't write directly
+   to the log stream because we want to do line buffering and thus we
+   need to store data until we see LF.  */
+struct logimpl_s;
+typedef struct logimpl_s *logimpl_t;
+struct logimpl_s
+{
+  unsigned long logid; /* An identifier for a log source.  */
+  unsigned long dsec;  /* Tenth of a second since system start.   */
+  char *line;          /* Malloced line buffer.  */
+  size_t linesize;     /* Allocated size of LINE.  */
+  size_t linelen;      /* Used length of the line.  */
+  int truncated;       /* Indicates a truncated log line.  */
+};
+
+
+
 /* An object to store information pertaining to an open-context.  */
 struct opnctx_s;
 typedef struct opnctx_s *opnctx_t;
 struct opnctx_s
 {
   int inuse;        /* True if this object has valid data.  */
+  int is_log;       /* True if this describes a log device.  */
   LONG rvid;        /* The unique rendezvous identifier.  */
   DWORD access_code;/* Value from OpenFile.  */
   DWORD share_mode; /* Value from OpenFile.  */
 
-  /* The state shared by all users.  */
+  /* The state shared by all pipe users.  Only used if IS_LOG is false. */
   pipeimpl_t pipeimpl;
+
+  /* The state used to implement a log stream.  Only used if IS_LOG is true. */
+  logimpl_t logimpl;
 };
 
 /* A malloced table of open-context and the number of allocated slots.  */
@@ -126,38 +153,52 @@ static size_t   opnctx_table_size;
 /* A criticial section object used to protect the OPNCTX_TABLE.  */
 static CRITICAL_SECTION opnctx_table_cs;
 
-/* We don't need a device context thus we use the adress of the
-   critical section object for it.  */
-#define DEVCTX_VALUE ((DWORD)(&opnctx_table_cs))
 
-/* Constants used for our lock functions.  */
-#define LOCK_TRY  0
-#define LOCK_WAIT 1
+/* A global object to control the logging.  */
+struct {
+  CRITICAL_SECTION lock; /* Lock for this structure.  */
+  HANDLE filehd;         /* Handle of the log output file.  */
+  int references;        /* Number of objects references this one.  */
+} logcontrol;
+
+
+/* We don't need a device context for the pipe thus we use the adress
+   of the critical section object for it.  */
+#define PIPECTX_VALUE ((DWORD)(&opnctx_table_cs))
+
+/* The device context for the log device is the address of our
+   control structure.  */
+#define LOGCTX_VALUE ((DWORD)(&logcontrol))
+
+
+/* True if we have enabled debugging.  */
+static int enable_debug;
+
+/* True if logging has been enabled.  */
+static int enable_logging;
 
 
 
 static void
 log_debug (const char *fmt, ...)
 {
-#ifndef ENABLE_DEBUG
-  (void)fmt;
-#else
-  va_list arg_ptr;
-  FILE *fp;
-
-  fp = fopen ("\\gpgcedev.log", "a+");
-  if (!fp)
-    return;
-  va_start (arg_ptr, fmt);
-  vfprintf (fp, fmt, arg_ptr);
-  va_end (arg_ptr);
-  fclose (fp);
-#endif
+  if (enable_debug)
+    {
+      va_list arg_ptr;
+      FILE *fp;
+      
+      fp = fopen (DBGFILENAME, "a+");
+      if (!fp)
+        return;
+      va_start (arg_ptr, fmt);
+      vfprintf (fp, fmt, arg_ptr);
+      va_end (arg_ptr);
+      fclose (fp);
+    }
 }
 
 
-/* Return a new rendezvous next command id.  Command Ids are used to group
-   resources of one command.  We will never return an RVID of 0. */
+/* Return a new rendezvous id.  We will never return an RVID of 0. */
 static LONG
 create_rendezvous_id (void)
 {
@@ -167,6 +208,20 @@ create_rendezvous_id (void)
   while (!(rvid = InterlockedIncrement (&rendezvous_id)))
     ;
   return rvid;
+}
+
+/* Return a new log id.  These log ids are used to identify log lines
+   send to the same device; ie. for each CreateFile("GPG2:") a new log
+   id is assigned.  We will ever return a log id of 0. */
+static LONG
+create_log_id (void)
+{
+  static LONG log_id;
+  LONG lid;
+
+  while (!(lid = InterlockedIncrement (&log_id)))
+    ;
+  return lid;
 }
 
 
@@ -201,6 +256,9 @@ pipeimpl_unref (pipeimpl_t pimpl)
 {
   int release = 0;
 
+  if (!pimpl)
+    return;
+
   log_debug ("pipeimpl_unref (%p): dereference\n", pimpl);
 
   if (--pimpl->refcnt == 0)
@@ -232,6 +290,75 @@ pipeimpl_unref (pipeimpl_t pimpl)
 }
 
 
+
+/* Allocate a new log structure.  */
+logimpl_t
+logimpl_new (void)
+{
+  logimpl_t limpl;
+
+  limpl = calloc (1, sizeof *limpl);
+  if (!limpl)
+    return NULL;
+  limpl->logid = create_log_id ();
+  limpl->linesize = 256;
+  limpl->line = malloc (limpl->linesize);
+  if (!limpl->line)
+    {
+      free (limpl);
+      return NULL;
+    }
+
+  return limpl;
+}
+
+
+/* There is no need to lock LIMPL, thus is a dummy function.  */
+void
+logimpl_unref (logimpl_t limpl)
+{
+  (void)limpl;
+}
+
+
+/* Flush a pending log line.  */
+static void
+logimpl_flush (logimpl_t limpl)
+{
+  if (!limpl->linelen || !enable_logging)
+    return;
+
+  EnterCriticalSection (&logcontrol.lock);
+  if (logcontrol.filehd == INVALID_HANDLE_VALUE)
+    logcontrol.filehd = CreateFile (LOGFILENAME, GENERIC_WRITE,
+                                     FILE_SHARE_READ,
+                                     NULL, OPEN_ALWAYS,
+                                     FILE_ATTRIBUTE_NORMAL, NULL);
+  if (!logcontrol.filehd)
+    log_debug ("can't open log file: rc=%d\n", (int)GetLastError ());
+  else
+    {
+      char buf[50];
+      DWORD nwritten;
+
+      snprintf (buf, sizeof buf, 
+                "%06lu/%lu//", limpl->dsec % 1000000, limpl->logid);
+      if (!WriteFile (logcontrol.filehd, buf, strlen (buf), &nwritten, NULL))
+        log_debug ("error writing log file: rc=%d\n", (int)GetLastError ());
+      else if (!WriteFile (logcontrol.filehd,
+                           limpl->line, limpl->linelen, &nwritten, NULL))
+        log_debug ("error writing log file: rc=%d\n", (int)GetLastError ());
+
+      snprintf (buf, sizeof buf, "%s\n", limpl->truncated? "[...]":"");
+      if (!WriteFile (logcontrol.filehd, buf, strlen (buf), &nwritten, NULL))
+        log_debug ("error writing log file: rc=%d\n", (int)GetLastError ());
+    }
+
+  LeaveCriticalSection (&logcontrol.lock);
+  limpl->linelen = 0;
+  limpl->truncated = 0;
+}
+
 
 /* Return a new opnctx handle and mark it as used.  Returns NULL and
    sets LastError on memory failure etc.  opnctx_table_cs must be
@@ -239,7 +366,7 @@ pipeimpl_unref (pipeimpl_t pimpl)
    pointer is only valid as long as opnctx_table_cs stays locked, as
    it is not stable under table reallocation.  */
 static opnctx_t
-allocate_opnctx (void)
+allocate_opnctx (int is_log)
 {
   opnctx_t opnctx = NULL;
   int idx;
@@ -265,10 +392,12 @@ allocate_opnctx (void)
     }
   opnctx = &opnctx_table[idx];
   opnctx->inuse = 1;
+  opnctx->is_log = is_log;
   opnctx->rvid = 0;
   opnctx->access_code = 0;
   opnctx->share_mode = 0;
   opnctx->pipeimpl = 0;
+  opnctx->logimpl = 0;
 
  leave:
   return opnctx;
@@ -305,6 +434,12 @@ assert_pipeimpl (opnctx_t ctx)
 {
   DWORD ctx_arg = OPNCTX_TO_IDX (ctx);
 
+  if (ctx->is_log)
+    {
+      log_debug ("  assert_pipeimpl (ctx=%i): "
+                 "error: not valid for a log device\n", ctx_arg);
+      return NULL;
+    }
   if (! ctx->pipeimpl)
     {
       ctx->pipeimpl = pipeimpl_new ();
@@ -321,14 +456,43 @@ assert_pipeimpl (opnctx_t ctx)
 }
 
 
+static logimpl_t
+assert_logimpl (opnctx_t ctx)
+{
+  DWORD ctx_arg = OPNCTX_TO_IDX (ctx);
+
+  if (!ctx->is_log)
+    {
+      log_debug ("  assert_logimpl (ctx=%i): "
+                 "error: not valid for a pipe device\n", ctx_arg);
+      return NULL;
+    }
+  if (!ctx->logimpl)
+    {
+      ctx->logimpl = logimpl_new ();
+      if (!ctx->logimpl)
+	{
+	  log_debug ("  assert_logimpl (ctx=%i): error: can't create log\n",
+		     ctx_arg);
+	  return NULL;
+	}
+      log_debug ("  assert_logimpl (ctx=%i): created log 0x%p\n",
+		 ctx_arg, ctx->logimpl);
+    }
+  return ctx->logimpl;
+}
+
+
 /* Verify access CODE for context CTX_ARG, returning a reference to
-   the locked pipe implementation.  opnctx_table_cs must be unlocked
-   on entry and is unlocked on exit.  */
-pipeimpl_t
-access_opnctx (DWORD ctx_arg, DWORD code)
+   the locked pipe or the locked log implementation.  opnctx_table_cs
+   must be unlocked on entry and is unlocked on exit.  */
+int
+access_opnctx (DWORD ctx_arg, DWORD code, pipeimpl_t *r_pipe, logimpl_t *r_log)
 {
   opnctx_t ctx;
-  pipeimpl_t pimpl;
+
+  *r_pipe = NULL;
+  *r_log  = NULL;
 
   EnterCriticalSection (&opnctx_table_cs);
   ctx = verify_opnctx (ctx_arg);
@@ -336,27 +500,45 @@ access_opnctx (DWORD ctx_arg, DWORD code)
     {
       /* Error is set by verify_opnctx.  */
       LeaveCriticalSection (&opnctx_table_cs);
-      return NULL;
+      return -1;
     }
 
   if (! (ctx->access_code & code))
     {
       SetLastError (ERROR_INVALID_ACCESS);
       LeaveCriticalSection (&opnctx_table_cs);
-      return NULL;
+      return -1;
     }
 
-  pimpl = assert_pipeimpl (ctx);
-  if (! pimpl)
+  if (ctx->is_log)
     {
-      LeaveCriticalSection (&opnctx_table_cs);
-      return NULL;
+      logimpl_t limpl;
+
+      limpl = assert_logimpl (ctx);
+      if (!limpl)
+        {
+          LeaveCriticalSection (&opnctx_table_cs);
+          return -1;
+        }
+      *r_log = limpl;
+    }
+  else
+    {
+      pipeimpl_t pimpl;
+
+      pimpl = assert_pipeimpl (ctx);
+      if (! pimpl)
+        {
+          LeaveCriticalSection (&opnctx_table_cs);
+          return -1;
+        }
+      EnterCriticalSection (&pimpl->critsect);
+      pimpl->refcnt++;
+      *r_pipe = pimpl;
     }
 
-  EnterCriticalSection (&pimpl->critsect);
-  pimpl->refcnt++;
   LeaveCriticalSection (&opnctx_table_cs);
-  return pimpl;
+  return 0;
 }
 
 
@@ -388,16 +570,92 @@ wchar_to_utf8 (const wchar_t *string)
 DWORD
 GPG_Init (LPCTSTR active_key, DWORD bus_context)
 {
-  char *tmpbuf;
-  (void)bus_context;
-  
-  tmpbuf = wchar_to_utf8 (active_key);
-  log_debug ("GPG_Init (devctx=0x%p, %s)\n", DEVCTX_VALUE, tmpbuf);
-  free (tmpbuf);
+  static int firsttimedone;
+  HKEY handle;
+  wchar_t buffer[25];
+  DWORD buflen;
+  DWORD result;
 
-  /* We don't need any global data.  However, we need to return
-     something.  */
-  return DEVCTX_VALUE;
+  (void)bus_context;
+
+  EnterCriticalSection (&logcontrol.lock);
+  if (!firsttimedone)
+    {
+      firsttimedone++;
+      if (!RegOpenKeyEx (HKEY_LOCAL_MACHINE, GPGCEDEV_KEY_NAME,
+                         0, KEY_READ, &handle))
+        {
+          buflen = sizeof buffer;
+          if (!RegQueryValueEx (handle, L"debugDriver", 0, NULL,
+                                (PBYTE)buffer, &buflen)
+              && wcstol (buffer, NULL, 10) > 0)
+            enable_debug = 1;
+          RegCloseKey (handle);
+        }
+      if (!RegOpenKeyEx (HKEY_LOCAL_MACHINE, GPGCEDEV_KEY_NAME2,
+                         0, KEY_READ, &handle))
+        {
+          buflen = sizeof buffer;
+          if (!RegQueryValueEx (handle, L"enableLog", 0, NULL,
+                                (PBYTE)buffer, &buflen)
+              && wcstol (buffer, NULL, 10) > 0)
+            enable_logging = 1;
+          RegCloseKey (handle);
+        }
+    }
+  LeaveCriticalSection (&logcontrol.lock);
+
+  if (enable_debug)
+    {
+      char *tmpbuf;
+      tmpbuf = wchar_to_utf8 (active_key);
+      log_debug ("GPG_Init (%s)\n", tmpbuf);
+      free (tmpbuf);
+    }
+
+  if (RegOpenKeyEx (HKEY_LOCAL_MACHINE, active_key, 0, KEY_READ, &handle))
+    {
+      log_debug ("GPG_Init: error reading registry: rc=%d\n", 
+                 (int)GetLastError ());
+      return 0;
+    }
+
+  buflen = sizeof buffer;
+  if (RegQueryValueEx (handle, L"Name", 0, NULL, (PBYTE)buffer, &buflen))
+    {
+      log_debug ("GPG_Init: error reading registry value 'Name': rc=%d\n", 
+                 (int)GetLastError ());
+      result = 0;
+    }
+  else if (!wcscmp (buffer, L"GPG1:"))
+    {
+      /* This is the pipe device: We don't need any global data.
+         However, we need to return something.  */
+      log_debug ("GPG_Init: created pipe device (devctx=%p)\n", PIPECTX_VALUE);
+      result = PIPECTX_VALUE;
+    }
+  else if (!wcscmp (buffer, L"GPG2:"))
+    {
+      /* This is the log device.  Clear the object and return something.  */
+      logcontrol.filehd = INVALID_HANDLE_VALUE;
+      log_debug ("GPG_Init: created log device (devctx=%p)\n", 0);
+      result = LOGCTX_VALUE;
+    }
+  else
+    {
+      if (enable_debug)
+        {
+          char *tmpbuf;
+          tmpbuf = wchar_to_utf8 (buffer);
+          log_debug ("GPG_Init: device '%s' is not supported\n", tmpbuf);
+          free (tmpbuf);
+        }
+      SetLastError (ERROR_DEV_NOT_EXIST);
+      result = 0;
+    }
+
+  RegCloseKey (handle);
+  return result;
 }
 
 
@@ -407,29 +665,46 @@ BOOL
 GPG_Deinit (DWORD devctx)
 {
   log_debug ("GPG_Deinit (devctx=0x%p)\n", (void*)devctx);
-  if (devctx != DEVCTX_VALUE)
+  if (devctx == PIPECTX_VALUE)
+    {
+      /* No need to release resources.  */
+    }
+  else if (devctx == LOGCTX_VALUE)
+    {
+      EnterCriticalSection (&logcontrol.lock);
+      if (logcontrol.filehd != INVALID_HANDLE_VALUE)
+        {
+          CloseHandle (logcontrol.filehd);
+          logcontrol.filehd = INVALID_HANDLE_VALUE;
+        }
+      LeaveCriticalSection (&logcontrol.lock);
+    }
+  else
     {
       SetLastError (ERROR_INVALID_PARAMETER);
       return FALSE; /* Error.  */
     }
   
-  /* FIXME: Release resources.  */
-
   return TRUE; /* Success.  */
 }
 
 
 
-/* Create a new open context.  This fucntion is called due to a
+/* Create a new open context.  This function is called due to a
    CreateFile from the application.  */
 DWORD
 GPG_Open (DWORD devctx, DWORD access_code, DWORD share_mode)
 {
   opnctx_t opnctx;
   DWORD ctx_arg = 0;
+  int is_log;
 
   log_debug ("GPG_Open (devctx=%p)\n", (void*)devctx);
-  if (devctx != DEVCTX_VALUE)
+  if (devctx == PIPECTX_VALUE)
+    is_log = 0;
+  else if (devctx == LOGCTX_VALUE)
+    is_log = 1;
+  else
     {
       log_debug ("GPG_Open (devctx=%p): error: wrong devctx (expected 0x%p)\n",
 		 (void*) devctx);
@@ -438,7 +713,7 @@ GPG_Open (DWORD devctx, DWORD access_code, DWORD share_mode)
     }
 
   EnterCriticalSection (&opnctx_table_cs);
-  opnctx = allocate_opnctx ();
+  opnctx = allocate_opnctx (is_log);
   if (!opnctx)
     {
       log_debug ("GPG_Open (devctx=%p): error: could not allocate context\n",
@@ -451,8 +726,14 @@ GPG_Open (DWORD devctx, DWORD access_code, DWORD share_mode)
 
   ctx_arg = OPNCTX_TO_IDX (opnctx);
 
-  log_debug ("GPG_Open (devctx=%p): success: created context %i\n",
-	     (void*) devctx, ctx_arg);
+  log_debug ("GPG_Open (devctx=%p, is_log=%d): success: created context %i\n",
+	     (void*) devctx, is_log, ctx_arg);
+  if (is_log)
+    {
+      EnterCriticalSection (&logcontrol.lock);
+      logcontrol.references++;
+      LeaveCriticalSection (&logcontrol.lock);
+    }
 
  leave:
   LeaveCriticalSection (&opnctx_table_cs);
@@ -496,6 +777,24 @@ GPG_Close (DWORD opnctx_arg)
       pipeimpl_unref (pimpl);
       opnctx->pipeimpl = 0;
     }
+  if (opnctx->logimpl)
+    {
+      logimpl_t limpl = opnctx->logimpl;
+
+      logimpl_flush (limpl);
+      logimpl_unref (limpl);
+      free (limpl->line);
+      free (limpl);
+      opnctx->logimpl = 0;
+      EnterCriticalSection (&logcontrol.lock);
+      logcontrol.references--;
+      if (!logcontrol.references && logcontrol.filehd)
+        {
+          CloseHandle (logcontrol.filehd);
+          logcontrol.filehd = INVALID_HANDLE_VALUE;
+        }
+      LeaveCriticalSection (&logcontrol.lock);
+    }
   opnctx->access_code = 0;
   opnctx->share_mode = 0;
   opnctx->rvid = 0;
@@ -514,6 +813,7 @@ DWORD
 GPG_Read (DWORD opnctx_arg, void *buffer, DWORD count)
 {
   pipeimpl_t pimpl;
+  logimpl_t  limpl;
   const char *src;
   char *dst;
   int result = -1;
@@ -521,12 +821,18 @@ GPG_Read (DWORD opnctx_arg, void *buffer, DWORD count)
   log_debug ("GPG_Read (ctx=%i, buffer=0x%p, count=%d)\n",
 	     opnctx_arg, buffer, count);
 
-  pimpl = access_opnctx (opnctx_arg, GENERIC_READ);
-  if (!pimpl)
+  if (access_opnctx (opnctx_arg, GENERIC_READ, &pimpl, &limpl))
     {
       log_debug ("GPG_Read (ctx=%i): error: could not access context\n",
 		 opnctx_arg);
       return -1;
+    }
+
+  if (limpl)
+    {
+      /* Reading from a log stream does not make sense.  Return EOF.  */
+      result = 0;
+      goto leave;
     }
 
  retry:
@@ -584,6 +890,7 @@ GPG_Read (DWORD opnctx_arg, void *buffer, DWORD count)
 
  leave:
   pipeimpl_unref (pimpl);
+  logimpl_unref (limpl);
   return result;
 }
 
@@ -593,6 +900,7 @@ DWORD
 GPG_Write (DWORD opnctx_arg, const void *buffer, DWORD count)
 {
   pipeimpl_t pimpl;
+  logimpl_t  limpl;
   int result = -1;
   const char *src;
   char *dst;
@@ -601,8 +909,7 @@ GPG_Write (DWORD opnctx_arg, const void *buffer, DWORD count)
   log_debug ("GPG_Write (ctx=%i, buffer=0x%p, count=%d)\n", opnctx_arg,
 	     buffer, count);
 
-  pimpl = access_opnctx (opnctx_arg, GENERIC_WRITE);
-  if (!pimpl)
+  if (access_opnctx (opnctx_arg, GENERIC_WRITE, &pimpl, &limpl))
     {
       log_debug ("GPG_Write (ctx=%i): error: could not access context\n",
 		 opnctx_arg);
@@ -617,58 +924,86 @@ GPG_Write (DWORD opnctx_arg, const void *buffer, DWORD count)
     }
 
  retry:
-  /* Check for broken pipe.  */
-  if (pimpl->flags & PIPE_FLAG_NO_READER)
+  if (limpl)
     {
-      log_debug ("GPG_Write (ctx=%i): error: broken pipe\n", opnctx_arg);
-      SetLastError (ERROR_BROKEN_PIPE);
-      goto leave;
+      /* Store it in our buffer up to a LF and print complete lines.  */
+      result = count;
+      if (!limpl->linelen)
+        limpl->dsec = GetTickCount () / 100;
+      dst = limpl->line + limpl->linelen;
+      for (src = buffer; count; count--, src++)
+        {
+          if (*src == '\n')
+            {
+              logimpl_flush (limpl);
+              dst = limpl->line + limpl->linelen;
+            }
+          else if (limpl->linelen >= limpl->linesize)
+            limpl->truncated = 1;
+          else
+            {
+              *dst++ = *src;
+              limpl->linelen++;
+            }
+        }
     }
-
-  /* Check for request to unblock once.  */
-  if (pimpl->flags & PIPE_FLAG_UNBLOCK_WRITER)
+  else /* pimpl */
     {
-      log_debug ("GPG_Write (ctx=%i): success: EBUSY (due to unblock)\n",
-		 opnctx_arg);
-      pimpl->flags &= ~PIPE_FLAG_UNBLOCK_WRITER;
-      SetLastError (ERROR_BUSY);
-      result = -1;
-      goto leave;
+      /* Check for broken pipe.  */
+      if (pimpl->flags & PIPE_FLAG_NO_READER)
+        {
+          log_debug ("GPG_Write (ctx=%i): error: broken pipe\n", opnctx_arg);
+          SetLastError (ERROR_BROKEN_PIPE);
+          goto leave;
+        }
+      
+      /* Check for request to unblock once.  */
+      if (pimpl->flags & PIPE_FLAG_UNBLOCK_WRITER)
+        {
+          log_debug ("GPG_Write (ctx=%i): success: EBUSY (due to unblock)\n",
+                     opnctx_arg);
+          pimpl->flags &= ~PIPE_FLAG_UNBLOCK_WRITER;
+          SetLastError (ERROR_BUSY);
+          result = -1;
+          goto leave;
+        }
+      
+      /* Write to our buffer.  */
+      if (pimpl->buffer_len == pimpl->buffer_size)
+        {
+          /* Buffer is full.  */
+          HANDLE space_available = pimpl->space_available;
+          LeaveCriticalSection (&pimpl->critsect);
+          log_debug ("GPG_Write (ctx=%i): waiting: space_available\n",
+                     opnctx_arg);
+          WaitForSingleObject (space_available, INFINITE);
+          log_debug ("GPG_Write (ctx=%i): resuming: space_available\n",
+                     opnctx_arg);
+          EnterCriticalSection (&pimpl->critsect);
+          goto retry;
+        }
+      
+      src = buffer;
+      dst = pimpl->buffer + pimpl->buffer_len;
+      while (count > 0 && pimpl->buffer_len < pimpl->buffer_size)
+        {
+          *dst++ = *src++;
+          count--;
+          pimpl->buffer_len++;
+          nwritten++;
+        }
+      result = nwritten;
+      
+      if (!SetEvent (pimpl->data_available))
+        log_debug ("GPG_Write (ctx=%i): warning: SetEvent(data_available) "
+                   "failed: rc=%d\n", opnctx_arg, (int)GetLastError ());
     }
-
-  /* Write to our buffer.  */
-  if (pimpl->buffer_len == pimpl->buffer_size)
-    {
-      /* Buffer is full.  */
-      HANDLE space_available = pimpl->space_available;
-      LeaveCriticalSection (&pimpl->critsect);
-      log_debug ("GPG_Write (ctx=%i): waiting: space_available\n", opnctx_arg);
-      WaitForSingleObject (space_available, INFINITE);
-      log_debug ("GPG_Write (ctx=%i): resuming: space_available\n",
-		 opnctx_arg);
-      EnterCriticalSection (&pimpl->critsect);
-      goto retry;
-    }
-
-  src = buffer;
-  dst = pimpl->buffer + pimpl->buffer_len;
-  while (count > 0 && pimpl->buffer_len < pimpl->buffer_size)
-    {
-      *dst++ = *src++;
-      count--;
-      pimpl->buffer_len++;
-      nwritten++;
-    }
-  result = nwritten;
-
-  if (!SetEvent (pimpl->data_available))
-    log_debug ("GPG_Write (ctx=%i): warning: SetEvent(data_available) "
-	       "failed: rc=%d\n", opnctx_arg, (int)GetLastError ());
-
+  
   log_debug ("GPG_Write (ctx=%i): success: result=%d\n", opnctx_arg, result);
 
  leave:
   pipeimpl_unref (pimpl);
+  logimpl_unref (limpl);
   return result;
 }
 
@@ -977,6 +1312,13 @@ GPG_IOControl (DWORD opnctx_arg, DWORD code, void *inbuf, DWORD inbuflen,
 		 opnctx_arg);
       goto leave;
     }
+  if (opnctx->is_log)
+    {
+      log_debug ("GPG_IOControl (ctx=%i): error: invalid code for log device\n",
+                 opnctx_arg);
+      SetLastError (ERROR_INVALID_PARAMETER);
+      goto leave;
+    }
 
   switch (code)
     {
@@ -1081,6 +1423,7 @@ GPG_IOControl (DWORD opnctx_arg, DWORD code, void *inbuf, DWORD inbuflen,
 void
 GPG_PowerUp (DWORD devctx)
 {
+  log_debug ("GPG_PowerUp (devctx=%i)\n", devctx);
 }
 
 
@@ -1088,7 +1431,10 @@ GPG_PowerUp (DWORD devctx)
 void
 GPG_PowerDown (DWORD devctx)
 {
+  log_debug ("GPG_PowerDown (devctx=%i)\n", devctx);
 }
+
+
 
 
 
@@ -1102,6 +1448,7 @@ DllMain (HINSTANCE hinst, DWORD reason, LPVOID reserved)
     {
     case DLL_PROCESS_ATTACH:
       InitializeCriticalSection (&opnctx_table_cs);
+      InitializeCriticalSection (&logcontrol.lock);
       break;
 
     case DLL_THREAD_ATTACH:
