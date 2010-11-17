@@ -1,3 +1,15 @@
+2010-11-17  Marcus Brinkmann  <mb@g10code.com>
+
+	* gpgcedev.c (struct pipeimpl_s): Add member monitor_rvid.
+	(struct monitor_s, monitor_t): New types.
+	(monitor_table, monitor_table_size): New static variables.
+	(pipeimpl_new): Initialize monitor_rvid.
+	(allocate_monitor): New function.
+	(make_pipe): Also try the monitor_table if the opnctx_table fails.
+	(monitor): Renamed to ...
+	(monitor_main): ... this.  Remove from monitor_table when done.
+	(assign_rvid): Add to monitor table when creating monitor thread.
+
 2010-11-15  Werner Koch  <wk@g10code.com>
 
 	* gpgcedev.c (GPG_Init): Read debug settings.

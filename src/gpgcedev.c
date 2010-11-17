@@ -103,6 +103,7 @@ struct pipeimpl_s
   /* For the monitor thread started by ASSIGN_RVID.  */
   HANDLE monitor_proc;
   int monitor_access;
+  LONG monitor_rvid;
 };
 typedef struct pipeimpl_s *pipeimpl_t;
 
@@ -150,8 +151,19 @@ static size_t   opnctx_table_size;
 #define OPNCTX_FROM_IDX(idx) (&opnctx_table[(idx) - 1])
 #define OPNCTX_VALID_IDX_P(idx) ((idx) > 0 && (idx) <= opnctx_table_size)
 
-/* A criticial section object used to protect the OPNCTX_TABLE.  */
+typedef struct monitor_s *monitor_t;
+struct monitor_s
+{
+  int inuse;        /* True if this object has valid data.  */
+  pipeimpl_t pipeimpl;
+};
+static monitor_t monitor_table;
+static size_t monitor_table_size;
+
+/* A criticial section object used to protect the OPNCTX_TABLE and
+   MONITOR_TABLE.  */
 static CRITICAL_SECTION opnctx_table_cs;
+
 
 
 /* A global object to control the logging.  */
@@ -246,6 +258,7 @@ pipeimpl_new (void)
   pimpl->data_available = CreateEvent (NULL, FALSE, FALSE, NULL);
   pimpl->monitor_proc = INVALID_HANDLE_VALUE;
   pimpl->monitor_access = 0;
+  pimpl->monitor_rvid = 0;
   return pimpl;
 }
 
@@ -426,6 +439,45 @@ verify_opnctx (DWORD ctx_arg)
       return NULL;
     }
   return ctx;
+}
+
+
+/* Return a new monitor handle and mark it as used.  Returns NULL and
+   sets LastError on memory failure etc.  opnctx_table_cs must be
+   locked on entry and is locked on exit.  Note that the returned
+   pointer is only valid as long as opnctx_table_cs stays locked, as
+   it is not stable under table reallocation.  */
+static monitor_t
+allocate_monitor (void)
+{
+  monitor_t monitor = NULL;
+  int idx;
+
+  for (idx = 0; idx < monitor_table_size; idx++)
+    if (! monitor_table[idx].inuse)
+      break;
+  if (idx == monitor_table_size)
+    {
+      /* We need to increase the size of the table.  The approach we
+         take is straightforward to minimize the risk of bugs.  */
+      monitor_t newtbl;
+      size_t newsize = monitor_table_size + 16;
+
+      newtbl = calloc (newsize, sizeof *newtbl);
+      if (!newtbl)
+        goto leave;
+      memcpy (newtbl, monitor_table, monitor_table_size * sizeof (*newtbl));
+      free (monitor_table);
+      monitor_table = newtbl;
+      idx = monitor_table_size;
+      monitor_table_size = newsize;
+    }
+  monitor = &monitor_table[idx];
+  monitor->inuse = 1;
+  monitor->pipeimpl = 0;
+
+ leave:
+  return monitor;
 }
 
 
@@ -1036,61 +1088,116 @@ make_pipe (opnctx_t ctx, LONG rvid)
       return FALSE;
     }
 
+  /* GnuPG and other programs don't use the safe ASSIGN_RVID call
+     because they guarantee that the context exists during the whole
+     time the child process runs.  GPGME is more asynchronous and
+     relies on ASSIGN_RVID monitors.  So, first check for open
+     contexts, then check for monitors.  */
+
   for (idx = 0; idx < opnctx_table_size; idx++)
     if (opnctx_table[idx].inuse && opnctx_table[idx].rvid == rvid)
       {
         peerctx = &opnctx_table[idx];
         break;
       }
-  if (! peerctx)
+  if (peerctx)
     {
-      log_debug ("  make_pipe (ctx=%i): error: not found\n", ctx_arg);
-      SetLastError (ERROR_NOT_FOUND);
-      return FALSE;
-    }
-
-  if (peerctx == ctx)
-    {
-      log_debug ("  make_pipe (ctx=%i): error: target and source identical\n",
-		 ctx_arg);
-      SetLastError (ERROR_INVALID_TARGET_HANDLE);
-      return FALSE;
-    }
-
-  if ((ctx->access_code & GENERIC_READ))
-    {
-      /* Check that the peer is a write end.  */
-      if (!(peerctx->access_code & GENERIC_WRITE))
-        {
-          SetLastError (ERROR_INVALID_ACCESS);
-	  log_debug ("  make_pipe (ctx=%i): error: peer is not writer\n",
+      /* This is the GnuPG etc case, where the context is still open.
+	 It may also cover the GPGME case if GPGME is still using its
+	 own end of the pipe at the time of this call.  */
+      if (peerctx == ctx)
+	{
+	  log_debug ("  make_pipe (ctx=%i): error: target and source identical\n",
 		     ctx_arg);
-          return FALSE;
-        }
-    }
-  else if ((ctx->access_code & GENERIC_WRITE))
-    {
-      /* Check that the peer is a read end.  */
-      if (!(peerctx->access_code & GENERIC_READ))
-        {
-          SetLastError (ERROR_INVALID_ACCESS);
-	  log_debug ("  make_pipe (ctx=%i): error: peer is not reader\n",
-		     ctx_arg);
-          return FALSE;
-        }
+	  SetLastError (ERROR_INVALID_TARGET_HANDLE);
+	  return FALSE;
+	}
+
+      if ((ctx->access_code & GENERIC_READ))
+	{
+	  /* Check that the peer is a write end.  */
+	  if (!(peerctx->access_code & GENERIC_WRITE))
+	    {
+	      log_debug ("  make_pipe (ctx=%i): error: peer is not writer\n",
+			 ctx_arg);
+	      SetLastError (ERROR_INVALID_ACCESS);
+	      return FALSE;
+	    }
+	}
+      else if ((ctx->access_code & GENERIC_WRITE))
+	{
+	  /* Check that the peer is a read end.  */
+	  if (!(peerctx->access_code & GENERIC_READ))
+	    {
+	      log_debug ("  make_pipe (ctx=%i): error: peer is not reader\n",
+			 ctx_arg);
+	      SetLastError (ERROR_INVALID_ACCESS);
+	      return FALSE;
+	    }
+	}
+      else
+	{
+	  log_debug ("  make_pipe (ctx=%i): error: invalid access\n", ctx_arg);
+	  SetLastError (ERROR_INVALID_ACCESS);
+	  return FALSE;
+	}
+      
+      /* Make sure the peer has a pipe implementation to be shared.  If
+	 not yet, create one.  */
+      pimpl = assert_pipeimpl (peerctx);
+      if (! pimpl)
+	return FALSE;
     }
   else
     {
-      SetLastError (ERROR_INVALID_ACCESS);
-      log_debug ("  make_pipe (ctx=%i): error: invalid access\n", ctx_arg);
-      return FALSE;
-    }
+      /* This is the case where ASSIGN_RVID was called to create a
+	 monitor, and the pipe is already closed at the parent side.
+	 For example GPGME verify detached plain text, where GPG calls
+	 MAKE_PIPE very late.  */
+      
+      for (idx = 0; idx < monitor_table_size; idx++)
+	if (monitor_table[idx].inuse
+	    && monitor_table[idx].pipeimpl->monitor_rvid == rvid)
+	  {
+	    pimpl = monitor_table[idx].pipeimpl;
+	    break;
+	  }
+      if (idx == monitor_table_size)
+	{
+	  log_debug ("  make_pipe (ctx=%i): error: not found\n", ctx_arg);
+	  SetLastError (ERROR_NOT_FOUND);
+	  return FALSE;
+	}
 
-  /* Make sure the peer has a pipe implementation to be shared.  If
-     not yet, create one.  */
-  pimpl = assert_pipeimpl (peerctx);
-  if (! pimpl)
-    return FALSE;
+      if (ctx->access_code & GENERIC_READ)
+	{
+	  /* Check that the peer is a write end.  */
+	  if (!(pimpl->monitor_access & GENERIC_READ))
+	    {
+	      log_debug ("  make_pipe (ctx=%i): error: monitor is not reader\n",
+			 ctx_arg);
+	      SetLastError (ERROR_INVALID_ACCESS);
+	      return FALSE;
+	    }
+	}
+      else if ((ctx->access_code & GENERIC_WRITE))
+	{
+	  /* Check that the peer is a read end.  */
+	  if (!(pimpl->monitor_access & GENERIC_WRITE))
+	    {
+	      log_debug ("  make_pipe (ctx=%i): error: monitor is not writer\n",
+			 ctx_arg);
+	      SetLastError (ERROR_INVALID_ACCESS);
+	      return FALSE;
+	    }
+	}
+      else
+	{
+	  log_debug ("  make_pipe (ctx=%i): error: invalid access\n", ctx_arg);
+	  SetLastError (ERROR_INVALID_ACCESS);
+	  return FALSE;
+	}
+    }
 
   EnterCriticalSection (&pimpl->critsect);
   pimpl->refcnt++;
@@ -1110,8 +1217,16 @@ make_pipe (opnctx_t ctx, LONG rvid)
 
   ctx->pipeimpl = pimpl;
 
-  log_debug ("  make_pipe (ctx=%i): success: combined with peer ctx=%i "
-	     "(pipe 0x%p)\n", ctx_arg, OPNCTX_TO_IDX (peerctx), pimpl);
+  if (peerctx)
+    {
+      log_debug ("  make_pipe (ctx=%i): success: combined with peer ctx=%i "
+		 "(pipe 0x%p)\n", ctx_arg, OPNCTX_TO_IDX (peerctx), pimpl);
+    }
+  else
+    {
+      log_debug ("  make_pipe (ctx=%i): success: combined with "
+		 "pipe 0x%p\n", ctx_arg, OPNCTX_TO_IDX (peerctx), pimpl);
+    }
 
   return TRUE;
 }
@@ -1143,10 +1258,11 @@ unblock_call (opnctx_t ctx)
 
 
 static DWORD CALLBACK 
-monitor (void *arg)
+monitor_main (void *arg)
 {
   pipeimpl_t pimpl = (pipeimpl_t) arg;
   HANDLE handles[2];
+  int idx;
 
   log_debug ("starting monitor (pimpl=0x%p)\n", pimpl);
   
@@ -1198,9 +1314,28 @@ monitor (void *arg)
     }
 
   log_debug ("ending monitor (pimpl=0x%p)\n", pimpl);
+
+  /* Remove the monitor from the monitor table.  */
+  LeaveCriticalSection (&pimpl->critsect);
+  EnterCriticalSection (&opnctx_table_cs);
+  for (idx = 0; idx < monitor_table_size; idx++)
+    if (monitor_table[idx].inuse
+	&& monitor_table[idx].pipeimpl == pimpl)
+      {
+	monitor_table[idx].pipeimpl = NULL;
+	monitor_table[idx].inuse = 0;
+	break;
+      }
+  if (idx == monitor_table_size)
+    log_debug ("can not find monitor in table (pimpl=0x%p)\n", pimpl);
+  LeaveCriticalSection (&opnctx_table_cs);
+  EnterCriticalSection (&pimpl->critsect);
+
+  /* Now do the rest of the cleanup.  */
   CloseHandle (pimpl->monitor_proc);
   pimpl->monitor_proc = INVALID_HANDLE_VALUE;
   pimpl->monitor_access = 0;
+  pimpl->monitor_rvid = 0;
   pimpl->flags &= ~PIPE_FLAG_HALT_MONITOR;
   pipeimpl_unref (pimpl);
 
@@ -1218,6 +1353,7 @@ assign_rvid (opnctx_t ctx, DWORD rvid, DWORD pid)
   HANDLE monitor_hnd;
   HANDLE proc;
   pipeimpl_t pimpl;
+  monitor_t monitor;
 
   log_debug ("  assign_rvid (ctx=%i, rvid=%08lx, pid=%08lx)\n",
 	     ctx_arg, rvid, pid);
@@ -1261,6 +1397,16 @@ assign_rvid (opnctx_t ctx, DWORD rvid, DWORD pid)
       return FALSE;
     }
 
+  monitor = allocate_monitor ();
+  if (!monitor)
+    {
+      log_debug ("  assign_rvid (ctx=%i): error: could not allocate monitor\n",
+		 ctx_arg);
+      CloseHandle (proc);
+      return FALSE;
+    }
+  monitor->pipeimpl = pimpl;
+
   EnterCriticalSection (&pimpl->critsect);
   pimpl->refcnt++;
 
@@ -1271,13 +1417,17 @@ assign_rvid (opnctx_t ctx, DWORD rvid, DWORD pid)
     pimpl->monitor_access = GENERIC_WRITE;
   else
     pimpl->monitor_access = GENERIC_READ;
+  pimpl->monitor_rvid = rvid;
 
-  monitor_hnd = CreateThread (NULL, 0, monitor, pimpl, 0, NULL);
+  monitor_hnd = CreateThread (NULL, 0, monitor_main, pimpl, 0, NULL);
   if (monitor_hnd == INVALID_HANDLE_VALUE)
     {
       pimpl->monitor_access = 0;
       pimpl->monitor_proc = INVALID_HANDLE_VALUE;
       LeaveCriticalSection (&pimpl->critsect);
+
+      monitor->pipeimpl = NULL;
+      monitor->inuse = 0;
 
       CloseHandle (proc);
       log_debug ("  assign_rvid (ctx=%i): error: can not create monitor\n",
