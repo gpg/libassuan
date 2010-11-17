@@ -1,5 +1,8 @@
 2010-11-17  Marcus Brinkmann  <mb@g10code.com>
 
+	* vasprintf.c (int_vasprintf) [HAVE_W32CE_SYSTEM && _MSC_VER]:
+	Just use a fixed size buffer, as va_copy is not easy to fake.
+
 	* gpgcedev.c (struct pipeimpl_s): Add member monitor_rvid.
 	(struct monitor_s, monitor_t): New types.
 	(monitor_table, monitor_table_size): New static variables.
