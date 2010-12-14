@@ -1,3 +1,8 @@
+2010-12-14  Werner Koch  <wk@g10code.com>
+
+	* gpgcemgr.c (wchar_to_utf8, utf8_to_wchar, set_show_registry): New.
+	(main): Add commands --gpgme-log and --gnupg-log.
+
 2010-11-17  Marcus Brinkmann  <mb@g10code.com>
 
 	* vasprintf.c (int_vasprintf) [HAVE_W32CE_SYSTEM && _MSC_VER]:

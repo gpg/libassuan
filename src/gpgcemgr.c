@@ -30,17 +30,67 @@
 #define GPGCEDEV_PREFIX    L"GPG"
 
 
+static char *
+wchar_to_utf8 (const wchar_t *string)
+{
+  int n;
+  size_t length = wcslen (string);
+  char *result;
+
+  n = WideCharToMultiByte (CP_UTF8, 0, string, length, NULL, 0, NULL, NULL);
+  if (n < 0 || (n+1) <= 0)
+    abort ();
+
+  result = malloc (n+1);
+  if (!result)
+    abort ();
+  n = WideCharToMultiByte (CP_ACP, 0, string, length, result, n, NULL, NULL);
+  if (n < 0)
+    abort ();
+  
+  result[n] = 0;
+  return result;
+}
+
+
+static wchar_t *
+utf8_to_wchar (const char *string)
+{
+  int n;
+  size_t nbytes;
+  wchar_t *result;
+
+  if (!string)
+    abort ();
+
+  n = MultiByteToWideChar (CP_UTF8, 0, string, -1, NULL, 0);
+  if (n < 0)
+    abort ();
+  nbytes = (size_t)(n+1) * sizeof(*result);
+  if (nbytes / sizeof(*result) != (n+1)) 
+    abort ();
+  result = malloc (nbytes);
+  if (!result)
+    abort ();
+
+  n = MultiByteToWideChar (CP_UTF8, 0, string, -1, result, n);
+  if (n < 0)
+    abort ();
+  return result;
+}
+
+
 static int
 install (void)
 {
   HKEY handle;
   DWORD disp, dw;
+  int rc;
   
-  if (RegCreateKeyEx (HKEY_LOCAL_MACHINE, GPGCEDEV_KEY_NAME, 0, NULL, 0,
-                      KEY_WRITE, NULL, &handle, &disp))
+  if ((rc=RegCreateKeyEx (HKEY_LOCAL_MACHINE, GPGCEDEV_KEY_NAME, 0, NULL, 0,
+                          KEY_WRITE, NULL, &handle, &disp)))
     {
-      fprintf (stderr, PGM": error creating registry key 1: rc=%d\n", 
-               (int)GetLastError ());
+      fprintf (stderr, PGM": error creating registry key 1: rc=%d\n", rc);
       return 1;
     }
 
@@ -56,11 +106,10 @@ install (void)
 
   fprintf (stderr, PGM": registry key 1 created\n");
 
-  if (RegCreateKeyEx (HKEY_LOCAL_MACHINE, GPGCEDEV_KEY_NAME2, 0, NULL, 0,
-                      KEY_WRITE, NULL, &handle, &disp))
+  if ((rc=RegCreateKeyEx (HKEY_LOCAL_MACHINE, GPGCEDEV_KEY_NAME2, 0, NULL, 0,
+                          KEY_WRITE, NULL, &handle, &disp)))
     {
-      fprintf (stderr, PGM": error creating registry key 2: rc=%d\n", 
-               (int)GetLastError ());
+      fprintf (stderr, PGM": error creating registry key 2: rc=%d\n", rc);
       return 1;
     }
 
@@ -128,12 +177,12 @@ enable_debug (int yes)
 {
   HKEY handle;
   DWORD disp;
+  int rc;
   
-  if (RegCreateKeyEx (HKEY_LOCAL_MACHINE, GPGCEDEV_KEY_NAME, 0, NULL, 0,
-                      KEY_WRITE, NULL, &handle, &disp))
+  if ((rc=RegCreateKeyEx (HKEY_LOCAL_MACHINE, GPGCEDEV_KEY_NAME, 0, NULL, 0,
+                          KEY_WRITE, NULL, &handle, &disp)))
     {
-      fprintf (stderr, PGM": error creating debug registry key: rc=%d\n", 
-               (int)GetLastError ());
+      fprintf (stderr, PGM": error creating debug registry key: rc=%d\n", rc);
       return 1;
     }
   
@@ -149,12 +198,12 @@ enable_log (int yes)
 {
   HKEY handle;
   DWORD disp;
+  int rc;
   
-  if (RegCreateKeyEx (HKEY_LOCAL_MACHINE, GPGCEDEV_KEY_NAME2, 0, NULL, 0,
-                      KEY_WRITE, NULL, &handle, &disp))
+  if ((rc=RegCreateKeyEx (HKEY_LOCAL_MACHINE, GPGCEDEV_KEY_NAME2, 0, NULL, 0,
+                          KEY_WRITE, NULL, &handle, &disp)))
     {
-      fprintf (stderr, PGM": error creating debug registry key: rc=%d\n", 
-               (int)GetLastError ());
+      fprintf (stderr, PGM": error creating debug registry key: rc=%d\n", rc);
       return 1;
     }
   
@@ -335,6 +384,79 @@ gps (void)
 }
 #endif
 
+
+static void
+set_show_registry (const wchar_t *key, const wchar_t *name, const char *value)
+{
+  HKEY handle;
+  DWORD disp, nbytes, n1, type;
+  int rc;
+  
+  if ((rc=RegCreateKeyEx (HKEY_LOCAL_MACHINE, key, 0, NULL, 0,
+                          KEY_WRITE, NULL, &handle, &disp)))
+    {
+      fprintf (stderr, PGM": error creating registry key: rc=%d\n", rc);
+      return;
+    }
+
+  if (value && !stricmp (value, "none"))
+    {
+      if ((rc=RegDeleteValue (handle, name)))
+        fprintf (stderr, PGM": error deleting registry value: rc=%d\n", rc);
+    }
+  else if (value)
+    {
+      wchar_t *tmp = utf8_to_wchar (value);
+      if ((rc=RegSetValueEx (handle, name, 0, REG_SZ, 
+                             (void*)tmp, wcslen (tmp)*sizeof(wchar_t))))
+        fprintf (stderr, PGM": error setting registry value: rc=%d\n", rc);
+      free (tmp);
+    }
+  else
+    {
+      nbytes = 2;
+      if ((rc=RegQueryValueEx (handle, name, 0, NULL, NULL, &nbytes)))
+        {
+          if (rc == ERROR_FILE_NOT_FOUND)
+            fprintf (stderr, PGM": registry value not set\n"); 
+          else
+            fprintf (stderr, PGM": error reading registry value: rc=%d\n", rc); 
+        }
+      else
+        {
+          char *result = malloc ((n1=nbytes+2));
+          if (!result)
+            fprintf (stderr, PGM": malloc failed: rc=%d\n", 
+                     (int)GetLastError ());
+          else if ((rc=RegQueryValueEx (handle, name, 0, &type,
+                                         (void*)result, &n1)))
+            {
+              fprintf (stderr, PGM": error reading registry value (2): "
+                       "rc=%d\n", rc);
+              free (result);
+            }
+          else
+            {
+              result[nbytes] = 0;   /* Make sure it is a string.  */
+              result[nbytes+1] = 0; 
+              if (type == REG_SZ)
+                {
+                  wchar_t *tmp = (void*)result;
+                  result = wchar_to_utf8 (tmp);
+                  free (tmp);
+                  printf ("%s\n", result);
+                }
+              else
+                fprintf (stderr, PGM": registry value is not a string\n");
+              free (result);
+            }
+        }
+    }
+  
+  RegCloseKey (handle);
+}
+
+
 
 int
 main (int argc, char **argv)
@@ -427,7 +549,7 @@ main (int argc, char **argv)
           DWORD nwritten;
           int i;
 
-          for (i=0; i < 5; i++) 
+          for (i=0; i < 3; i++) 
             {
               if (!WriteFile (hd, marktwain, strlen (marktwain),
                               &nwritten, NULL))
@@ -449,9 +571,30 @@ main (int argc, char **argv)
     result = enable_log (1);
   else if (argc > 1 && !strcmp (argv[1], "--disable-log"))
     result = enable_log (0);
-  else
+  else if (argc > 1 && !strcmp (argv[1], "--gpgme-log"))
+    set_show_registry (L"Software\\GNU\\gpgme", L"debug", 
+                                argc > 2? argv[2] : NULL); 
+  else if (argc > 1 && !strcmp (argv[1], "--gnupg-log"))
+    set_show_registry (L"Software\\GNU\\GnuPG", L"DefaultLogFile", 
+                                argc > 2? argv[2] : NULL);
+ else
     {
-      fprintf (stderr, "usage: " PGM " --register|--deactivate|--activate\n");
+      fprintf (stderr,
+               "usage: " PGM " COMMAND\n"
+               "Commands are:\n"
+               "  --register        Register the GPGCEDEV device\n"
+               "  --deactivate      Deactivate the GPGCEDEV device\n"
+               "  --activate        Activate the GPGCEDEV devive\n"
+               "  --enable-debug    Enable debugging of GPGCEDEV device\n"
+               "  --disable-debug   Disable debugging of GPGCEDEV device\n"
+               "  --gravity         Show output of the gravity sensor\n"
+               "  --enable-log      Enable logging via \"GPG2:\"\n"
+               "  --disable-log     Disable logging via \"GPG2:\"\n"
+               "  --log             Write a test string to \"GPG2:\"\n"
+               "  --gpgme-log [ARG] Show or set GPGME log output\n"
+               "  --gnupg-log [ARG] Show or set GnuPG default log file\n"
+               "                    (No ARG shows, \"none\" disables)\n"
+               );
       result = 1;
     }
 

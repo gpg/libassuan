@@ -116,7 +116,7 @@ parse_portno (const char *str, uint16_t *r_port)
       assuan://[<ip6addr>]:<port>
          
         Connect using TCP to PORT of the server with the numerical
-        IPADDR.  Not that the '[' and ']' are literal characters.
+        IPADDR.  Note that '[' and ']' are literal characters.
 
   */
 gpg_error_t

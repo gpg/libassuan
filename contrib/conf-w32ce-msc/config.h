@@ -179,6 +179,10 @@
 /* snprintf is not part of oldnames.lib thus we redefine it here. */
 #define snprintf _snprintf
 
+/* We also need to define these functions.  */
+#define strdup _strdup
+#define strcasecmp _stricmp
+
 
 #endif /*_ASSUAN_CONFIG_H_INCLUDED*/
 

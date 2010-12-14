@@ -1464,8 +1464,8 @@ GPG_IOControl (DWORD opnctx_arg, DWORD code, void *inbuf, DWORD inbuflen,
     }
   if (opnctx->is_log)
     {
-      log_debug ("GPG_IOControl (ctx=%i): error: invalid code for log device\n",
-                 opnctx_arg);
+      log_debug ("GPG_IOControl (ctx=%i): error: invalid code %u"
+                 " for log device\n", opnctx_arg, (unsigned int)code);
       SetLastError (ERROR_INVALID_PARAMETER);
       goto leave;
     }
