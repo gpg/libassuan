@@ -251,11 +251,32 @@ pipeimpl_new (void)
   pimpl->refcnt = 1;
   pimpl->buffer_size = 512;
   pimpl->buffer = malloc (pimpl->buffer_size);
+  if (!pimpl->buffer)
+    {
+      DeleteCriticalSection (&pimpl->critsect);
+      free (pimpl);
+      return NULL;
+    }
   pimpl->buffer_len = 0;
   pimpl->buffer_pos = 0;
   pimpl->flags = 0;
   pimpl->space_available = CreateEvent (NULL, FALSE, FALSE, NULL);
+  if (!pimpl->space_available)
+    {
+      free (pimpl->buffer);
+      DeleteCriticalSection (&pimpl->critsect);
+      free (pimpl);
+      return NULL;
+    }
   pimpl->data_available = CreateEvent (NULL, FALSE, FALSE, NULL);
+  if (!pimpl->data_available)
+    {
+      CloseHandle (pimpl->space_available);
+      free (pimpl->buffer);
+      DeleteCriticalSection (&pimpl->critsect);
+      free (pimpl);
+      return NULL;
+    }
   pimpl->monitor_proc = INVALID_HANDLE_VALUE;
   pimpl->monitor_access = 0;
   pimpl->monitor_rvid = 0;

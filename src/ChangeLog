@@ -1,3 +1,8 @@
+2010-12-20  Werner Koch  <wk@g10code.com>
+
+	* gpgcedev.c (pipeimpl_new): Check malloc and CreateEvent return
+	codes.
+
 2010-12-14  Werner Koch  <wk@g10code.com>
 
 	* gpgcemgr.c (wchar_to_utf8, utf8_to_wchar, set_show_registry): New.
