@@ -29,7 +29,11 @@ m4_define([my_issvn], [yes])
 
 m4_define([svn_revision], m4_esyscmd([printf "%d" $( (svn info 2>/dev/null \
             || echo 'Revision: 0')|sed -n '/^Revision:/ {s/[^0-9]//gp;q;}')]))
-AC_INIT([libassuan], my_version[]m4_if(my_issvn,[yes],[-svn[]svn_revision]),
+m4_define([git_revision], m4_esyscmd([git branch -v 2>/dev/null \
+          | awk '/^\* / {printf "%s",$3}']))
+AC_INIT([libassuan],
+        [my_version[]m4_if(my_issvn,[yes],
+        [m4_if(git_revision,[],[-svn[]svn_revision],[-git[]git_revision])])],
         [bug-libassuan@gnupg.org])
 
 # LT Version numbers, remember to change them just *before* a release.
@@ -50,7 +54,7 @@ AC_SUBST(LIBASSUAN_LT_CURRENT)
 AC_SUBST(LIBASSUAN_LT_AGE)
 AC_SUBST(LIBASSUAN_LT_REVISION)
 
-BUILD_REVISION=svn_revision
+BUILD_REVISION=m4_if(git_revision,[],[svn_revision],[git_revision])
 PACKAGE=$PACKAGE_NAME
 VERSION=$PACKAGE_VERSION
 

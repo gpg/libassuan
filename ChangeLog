@@ -1,3 +1,7 @@
+2010-12-23  Werner Koch  <wk@g10code.com>
+
+	* configure.ac: Add a git commit identifier to the version.
+
 2010-11-01  Marcus Brinkmann  <marcus@g10code.de>
 
 	* configure.ac: Check for fcntl.h.
