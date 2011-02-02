@@ -1,3 +1,26 @@
+2011-02-02  Marcus Brinkmann  <marcus.brinkmann@ruhr-uni-bochum.de>
+
+	* assuan-defs.h (_assuan_socket, _assuan_connect): New prototypes.
+	* assuan.h.in (ASSUAN_SYSTEM_HOOKS_VERSION): Bumped to 2.
+	(struct assuan_system_hooks): Add socket and connect members.
+	(__assuan_socket, __assuan_connect): New prototypes.
+	(_ASSUAN_SYSTEM_PTH_IMPL): Add socket and connect members.  *
+	assuan-socket-connect.c (assuan_socket_connect): Call
+	_assuan_socket and _assuan_connect instead _assuan_sock_new and
+	_assuan_sock_connect.
+	(libassuan.def, libassuan.vers): Add __assuan_socket and
+	__assuan_connect.
+	* system.c (_assuan_system_hooks_copy): Initialize destination
+	from system hooks, so we don't get any NULL pointers if there is a
+	version mismatch.  Support version 2 of the system hook structure.
+	(_assuan_socket, _assuan_connect): New functions.
+	* system-posix.c (__assuan_socket, __assuan_connect): New functions.
+	(_assuan_system_hooks): Add __assuan_socketm, __assuan_connect.
+	* system-w32.c (__assuan_socket, __assuan_connect): New functions.
+	(_assuan_system_hooks): Add __assuan_socketm, __assuan_connect.
+	* system-w32ce.c (__assuan_socket, __assuan_connect): New functions.
+	(_assuan_system_hooks): Add __assuan_socketm, __assuan_connect.
+	
 2010-12-20  Werner Koch  <wk@g10code.com>
 
 	* gpgcedev.c (pipeimpl_new): Check malloc and CreateEvent return

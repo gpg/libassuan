@@ -7,10 +7,15 @@ Noteworthy changes in version 2.0.2
 
  * The gpgcedev.c driver now provides a log device.
 
+ * It is now possible to overwrite socket and connect functions in
+   struct assuan_system_hooks.
+
  * Interface changes relative to the 2.0.1 release:
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  ASSUAN_CONVEY_COMMENTS   NEW.
  ASSUAN_NO_LOGGING        NEW.
+ assuan_system_hooks_t	  CHANGED: Added socket and connect members.
+ ASSUAN_SYSTEM_HOOKS_VERSION  CHANGED: Bumped to 2.
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

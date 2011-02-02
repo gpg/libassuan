@@ -20,6 +20,12 @@
 # Please remember to add new functions also to libassuan.def
 #-----------------------------------------------------------
 
+LIBASSUAN_1.1 {
+  global:
+    __assuan_socket;
+    __assuan_connect;
+};
+
 LIBASSUAN_1.0 {
   global:
     assuan_accept;

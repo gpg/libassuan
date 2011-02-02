@@ -202,7 +202,7 @@ void assuan_set_io_monitor (assuan_context_t ctx,
 			    assuan_io_monitor_t io_monitor, void *hook_data);
 
 
-#define ASSUAN_SYSTEM_HOOKS_VERSION 1
+#define ASSUAN_SYSTEM_HOOKS_VERSION 2
 #define ASSUAN_SPAWN_DETACHED 128
 struct assuan_system_hooks
 {
@@ -245,6 +245,8 @@ struct assuan_system_hooks
 		    int action, int *status, int options);
   int (*socketpair) (assuan_context_t ctx, int _namespace, int style,
 		     int protocol, assuan_fd_t filedes[2]);
+  int (*socket) (assuan_context_t ctx, int namespace, int style, int protocol);
+  int (*connect) (assuan_context_t ctx, int sock, struct sockaddr *addr, socklen_t length);
 };
 typedef struct assuan_system_hooks *assuan_system_hooks_t;
 
@@ -470,6 +472,8 @@ int __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 		    void *atforkvalue, unsigned int flags);
 int __assuan_socketpair (assuan_context_t ctx, int _namespace, int style,
 			 int protocol, assuan_fd_t filedes[2]);
+int __assuan_socket (assuan_context_t ctx, int namespace, int style, int protocol);
+int __assuan_connect (assuan_context_t ctx, int sock, struct sockaddr *addr, socklen_t length);
 
 
 #define ASSUAN_SYSTEM_PTH_IMPL						\
@@ -492,7 +496,8 @@ int __assuan_socketpair (assuan_context_t ctx, int _namespace, int style,
     { ASSUAN_SYSTEM_HOOKS_VERSION, _assuan_pth_usleep, __assuan_pipe,	\
       __assuan_close, _assuan_pth_read, _assuan_pth_write,		\
       _assuan_pth_recvmsg, _assuan_pth_sendmsg,				\
-      __assuan_spawn, _assuan_pth_waitpid, __assuan_socketpair }
+      __assuan_spawn, _assuan_pth_waitpid, __assuan_socketpair,		\
+      __assuan_socket, __assuan_connect }
 
 extern struct assuan_system_hooks _assuan_system_pth;
 #define ASSUAN_SYSTEM_PTH &_assuan_system_pth

@@ -101,6 +101,8 @@ EXPORTS
     assuan_free                         @80
     _assuan_w32ce_prepare_pipe          @81
     _assuan_w32ce_finish_pipe           @82
+    __assuan_socket			@83
+    __assuan_connect			@84
 
 ; END
 

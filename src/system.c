@@ -108,8 +108,10 @@ _assuan_system_hooks_copy (assuan_system_hooks_t dst,
 			   assuan_system_hooks_t src)
 
 {
-  memset (dst, '\0', sizeof (*dst));
-
+  /* Reset the defaults.  */
+  if (dst != &_assuan_system_hooks)
+    memcpy (dst, &_assuan_system_hooks, sizeof (*dst));
+      
   dst->version = ASSUAN_SYSTEM_HOOKS_VERSION;
   if (src->version >= 1)
     {
@@ -124,7 +126,12 @@ _assuan_system_hooks_copy (assuan_system_hooks_t dst,
       dst->waitpid = src->waitpid;
       dst->socketpair = src->socketpair;
     }
-  if (src->version > 1)
+  if (src->version >= 2)
+    {
+      dst->socket = src->socket;
+      dst->connect = src->connect;
+    }
+  if (src->version > 2)
     /* FIXME.  Application uses newer version of the library.  What to
        do?  */
     ;
@@ -383,5 +390,31 @@ _assuan_socketpair (assuan_context_t ctx, int namespace, int style,
     TRACE_LOG2 ("filedes = { 0x%x, 0x%x }", filedes[0], filedes[1]);
 
   return TRACE_SYSERR (res);
+}
+
+
+
+int
+_assuan_socket (assuan_context_t ctx, int namespace, int style, int protocol)
+{
+  int res;
+  TRACE_BEG3 (ctx, ASSUAN_LOG_SYSIO, "_assuan_socket", ctx,
+	      "namespace=%i,style=%i,protocol=%i",
+	      namespace, style, protocol);
+  
+  res = (ctx->system.socket) (ctx, namespace, style, protocol);
+  return TRACE_SYSRES (res);
+}
+
+
+int
+_assuan_connect (assuan_context_t ctx, int sock, struct sockaddr *addr, socklen_t length)
+{
+  int res;
+  TRACE_BEG3 (ctx, ASSUAN_LOG_SYSIO, "_assuan_connect", ctx,
+	      "socket=%i,addr=%p,length=%i", sock, addr, length);
+  
+  res = (ctx->system.connect) (ctx, sock, addr, length);
+  return TRACE_SYSRES (res);
 }
 

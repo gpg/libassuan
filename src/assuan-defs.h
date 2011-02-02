@@ -259,6 +259,9 @@ pid_t  _assuan_waitpid (assuan_context_t ctx, pid_t pid, int nowait,
 			int *status, int options);
 int _assuan_socketpair (assuan_context_t ctx, int namespace, int style,
 			int protocol, assuan_fd_t filedes[2]);
+int _assuan_socket (assuan_context_t ctx, int namespace, int style, int protocol);
+int _assuan_connect (assuan_context_t ctx, int sock, struct sockaddr *addr,
+		     socklen_t length);
 
 extern struct assuan_system_hooks _assuan_system_hooks;
 
