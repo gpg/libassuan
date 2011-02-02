@@ -472,7 +472,7 @@ int __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 		    void *atforkvalue, unsigned int flags);
 int __assuan_socketpair (assuan_context_t ctx, int _namespace, int style,
 			 int protocol, assuan_fd_t filedes[2]);
-int __assuan_socket (assuan_context_t ctx, int namespace, int style, int protocol);
+int __assuan_socket (assuan_context_t ctx, int _namespace, int style, int protocol);
 int __assuan_connect (assuan_context_t ctx, int sock, struct sockaddr *addr, socklen_t length);
 
 
