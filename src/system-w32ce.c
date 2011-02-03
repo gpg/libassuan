@@ -663,7 +663,12 @@ __assuan_socketpair (assuan_context_t ctx, int namespace, int style,
 int
 __assuan_socket (assuan_context_t ctx, int namespace, int style, int protocol)
 {
-  return _assuan_sock_new (ctx, namespace, style, protocol);
+  int res;
+
+  res = socket (domain, type, proto);
+  if (res == -1)
+    gpg_err_set_errno (_assuan_sock_wsa2errno (WSAGetLastError ()));
+  return res;
 }
 
 
@@ -671,7 +676,12 @@ int
 __assuan_connect (assuan_context_t ctx, int sock, struct sockaddr *addr,
 		  socklen_t length)
 {
-  return _assuan_sock_connect (ctx, sock, addr, length);
+  int res;
+
+  res = connect (sock, addr, length);
+  if (res < 0)
+    gpg_err_set_errno (_assuan_sock_wsa2errno (WSAGetLastError ()));
+  return res;
 }
 
 

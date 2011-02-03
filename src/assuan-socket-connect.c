@@ -251,7 +251,7 @@ assuan_socket_connect (assuan_context_t ctx, const char *name,
         return err;
     }
   
-  fd = _assuan_socket (ctx, pf, SOCK_STREAM, 0);
+  fd = _assuan_sock_new (ctx, pf, SOCK_STREAM, 0);
   if (fd == ASSUAN_INVALID_FD)
     {
       err = _assuan_error (ctx, gpg_err_code_from_syserror ());
@@ -260,7 +260,7 @@ assuan_socket_connect (assuan_context_t ctx, const char *name,
       return err;
     }
 
-  if (_assuan_connect (ctx, fd, srvr_addr, len) == -1)
+  if (_assuan_sock_connect (ctx, fd, srvr_addr, len) == -1)
     {
       TRACE2 (ctx, ASSUAN_LOG_SYSIO, "assuan_socket_connect", ctx,
 	      "can't connect to `%s': %s\n", name, strerror (errno));

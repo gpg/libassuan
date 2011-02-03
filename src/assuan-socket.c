@@ -245,12 +245,10 @@ _assuan_sock_new (assuan_context_t ctx, int domain, int type, int proto)
   assuan_fd_t res;
   if (domain == AF_UNIX || domain == AF_LOCAL)
     domain = AF_INET;
-  res = SOCKET2HANDLE(socket (domain, type, proto));
-  if (res == ASSUAN_INVALID_FD)
-    gpg_err_set_errno (_assuan_sock_wsa2errno (WSAGetLastError ()));
+  res = SOCKET2HANDLE(_assuan_socket (ctx, domain, type, proto));
   return res;
 #else
-  return socket (domain, type, proto);
+  return _assuan_socket (ctx, domain, type, proto);
 #endif
 }
 
@@ -281,8 +279,8 @@ _assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
       unaddr->sun_port = myaddr.sin_port;
       unaddr->sun_addr.s_addr = myaddr.sin_addr.s_addr;
   
-      ret = connect (HANDLE2SOCKET(sockfd), 
-                     (struct sockaddr *)&myaddr, sizeof myaddr);
+      ret = _assuan_connect (ctx, HANDLE2SOCKET(sockfd), 
+			    (struct sockaddr *)&myaddr, sizeof myaddr);
       if (!ret)
         {
           /* Send the nonce. */
@@ -298,13 +296,11 @@ _assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
   else
     {
       int res;
-      res = connect (HANDLE2SOCKET (sockfd), addr, addrlen);
-      if (res < 0)
-	gpg_err_set_errno (_assuan_sock_wsa2errno (WSAGetLastError ()));
+      res = _assuan_connect (ctx, HANDLE2SOCKET (sockfd), addr, addrlen);
       return res;
     }      
 #else
-  return connect (sockfd, addr, addrlen);
+  return _assuan_connect (ctx, sockfd, addr, addrlen);
 #endif
 }
 

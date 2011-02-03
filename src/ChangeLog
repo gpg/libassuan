@@ -1,3 +1,15 @@
+2011-02-03  Marcus Brinkmann  <marcus@g10code.com>
+
+	* assuan-socket.c (_assuan_sock_new): Call _assuan_socket instead
+	of socket.
+	(_assuan_sock_connect): Call _assuan_connect instead of connect.
+	* assuan-socket-connect.c (assuan_socket_connect): Call
+	_assuan_sock_new and _assuan_sock_connect instead of
+	_assuan_socket and assuan_connect.
+	* src/system-w32.c, src/system-w32ce.c (__assuan_socket): Call
+	socket instead of _assuan_sock_new.
+	(__assuan_connect): Call connect instead of _assuan_sock_connect.
+
 2011-02-02  Marcus Brinkmann  <mb@g10code.com>
 
 	* assuan.h.in: Replace namespace by _namespace.
