@@ -58,14 +58,6 @@
 #define _assuan_error(ctx, errcode) gpg_err_make ((ctx)->err_source, errcode)
 
 
-struct cmdtbl_s
-{
-  const char *name;
-  assuan_handler_t handler;
-  const char *helpstr;
-};
-
-
 
 /* The context we use with most functions. */
 struct assuan_context_s
@@ -196,7 +188,7 @@ struct assuan_context_s
   gpg_error_t (*accept_handler)(assuan_context_t);
   void (*finish_handler)(assuan_context_t);
 
-  struct cmdtbl_s *cmdtbl;
+  assuan_command_t cmdtbl;
   size_t cmdtbl_used; /* used entries */
   size_t cmdtbl_size; /* allocated size of table */
   
@@ -211,6 +203,9 @@ struct assuan_context_s
   gpg_error_t  (*option_handler_fnc)(assuan_context_t,const char*, const char*);
   assuan_handler_t input_notify_fnc;
   assuan_handler_t output_notify_fnc;
+
+  /* This function is called right before a command handler is called. */
+  gpg_error_t (*pre_cmd_notify_fnc)(assuan_context_t, assuan_command_t);
 
   /* This function is called right after a command has been processed.
      It may be used to command related cleanup.  */

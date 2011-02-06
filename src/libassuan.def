@@ -103,6 +103,7 @@ EXPORTS
     _assuan_w32ce_finish_pipe           @82
     __assuan_socket			@83
     __assuan_connect			@84
+    assuan_register_pre_cmd_notify	@85
 
 ; END
 

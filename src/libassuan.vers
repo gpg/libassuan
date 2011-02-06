@@ -24,6 +24,7 @@ LIBASSUAN_1.1 {
   global:
     __assuan_socket;
     __assuan_connect;
+    assuan_register_pre_cmd_notify;
 };
 
 LIBASSUAN_1.0 {
