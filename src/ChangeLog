@@ -1,3 +1,9 @@
+2011-02-24  Ben Kibbey  <bjk@luxsci.net>
+
+	* assuan-handler.c (assuan_register_pre_cmd_notify): New callback.
+	* assuan.h (assuan_command_t): Register command object.
+	(pre_cmd_notify_fnc): New prototype.
+
 2011-02-03  Marcus Brinkmann  <marcus@g10code.com>
 
 	* assuan-socket.c (_assuan_sock_new): Call _assuan_socket instead
@@ -37,7 +43,7 @@
 	(_assuan_system_hooks): Add __assuan_socketm, __assuan_connect.
 	* system-w32ce.c (__assuan_socket, __assuan_connect): New functions.
 	(_assuan_system_hooks): Add __assuan_socketm, __assuan_connect.
-	
+
 2010-12-20  Werner Koch  <wk@g10code.com>
 
 	* gpgcedev.c (pipeimpl_new): Check malloc and CreateEvent return

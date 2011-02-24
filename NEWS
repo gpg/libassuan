@@ -16,6 +16,7 @@ Noteworthy changes in version 2.0.2
  ASSUAN_NO_LOGGING        NEW.
  assuan_system_hooks_t	  CHANGED: Added socket and connect members.
  ASSUAN_SYSTEM_HOOKS_VERSION  CHANGED: Bumped to 2.
+ assuan_register_pre_cmd_notify  NEW.
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -246,7 +247,7 @@ Noteworthy changes in version 0.9.0 (2006-09-14)
    printing of the full data, a new environment variable
    ASSUAN_FULL_LOGGING may be set to any value.
 
- * Removed the assuan_domain_* functions. 
+ * Removed the assuan_domain_* functions.
 
  * New functions assuan_pipe_connect_ext and assuan_socket_connect_ext
    to allow connections on a socketpair and to pass descriptors.
@@ -321,7 +322,7 @@ Noteworthy changes in version 0.6.2 (2003-12-18)
    assuan_get_assuan_log_context is not anymore declared as user
    overridable.
 
- * Documentation cleanups. 
+ * Documentation cleanups.
 
 Noteworthy changes in version 0.6.1 (2003-11-17)
 ------------------------------------------------
@@ -338,7 +339,7 @@ Noteworthy changes in version 0.6.0 (2003-08-06)
  * Initial release as a standalone library.
 
 
- Copyright 2003, 2004, 2006, 2007 Free Software Foundation, Inc.
+ Copyright 2003, 2004, 2006, 2007, 2011 Free Software Foundation, Inc.
 
  This file is free software; as a special exception the author gives
  unlimited permission to copy and/or distribute it, with or without
