@@ -1,3 +1,9 @@
+2011-02-28  Ben Kibbey  <bjk@luxsci.net>
+
+	* assuan-handler.c (assuan_register_pre_cmd_notify): Pass command
+	string as second argument.
+	* assuan.h (assuan_command_t): Move back to assuan-defs.h.
+
 2011-02-24  Ben Kibbey  <bjk@luxsci.net>
 
 	* assuan-handler.c (assuan_register_pre_cmd_notify): New callback.

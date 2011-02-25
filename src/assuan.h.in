@@ -273,22 +273,13 @@ void assuan_set_log_stream (assuan_context_t ctx, FILE *fp);
 
 typedef gpg_error_t (*assuan_handler_t) (assuan_context_t, char *);
 
-struct _assuan_command_s
-{
-  const char *name;
-  assuan_handler_t handler;
-  const char *helpstr;
-};
-
-typedef struct _assuan_command_s *assuan_command_t;
-
 /*-- assuan-handler.c --*/
 gpg_error_t assuan_register_command (assuan_context_t ctx,
 				     const char *cmd_string,
 				     assuan_handler_t handler,
                                      const char *help_string);
 gpg_error_t assuan_register_pre_cmd_notify (assuan_context_t ctx,
-					     gpg_error_t (*fnc)(assuan_context_t, assuan_command_t));
+					     gpg_error_t (*fnc)(assuan_context_t, const char *cmd));
 gpg_error_t assuan_register_post_cmd_notify (assuan_context_t ctx,
 					     void (*fnc)(assuan_context_t,
                                                          gpg_error_t));

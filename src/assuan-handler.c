@@ -400,7 +400,7 @@ assuan_register_command (assuan_context_t ctx, const char *cmd_name,
     }
   else if (ctx->cmdtbl_used >= ctx->cmdtbl_size)
     {
-      struct _assuan_command_s *x;
+      struct cmdtbl_s *x;
 
       x = _assuan_realloc (ctx, ctx->cmdtbl, (ctx->cmdtbl_size+10) * sizeof *x);
       if (!x)
@@ -429,7 +429,7 @@ assuan_get_command_name (assuan_context_t ctx)
 gpg_error_t
 assuan_register_pre_cmd_notify (assuan_context_t ctx,
                                  gpg_error_t (*fnc)(assuan_context_t,
-				   assuan_command_t))
+				   const char *cmd))
 {
   if (!ctx)
     return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
@@ -602,7 +602,7 @@ dispatch_command (assuan_context_t ctx, char *line, int linelen)
   linelen -= shift;
 
   if (ctx->pre_cmd_notify_fnc) {
-    err = ctx->pre_cmd_notify_fnc(ctx, &ctx->cmdtbl[i]);
+    err = ctx->pre_cmd_notify_fnc(ctx, ctx->cmdtbl[i].name);
 
     if (err)
       return PROCESS_DONE(ctx, err);
