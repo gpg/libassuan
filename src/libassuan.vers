@@ -20,13 +20,6 @@
 # Please remember to add new functions also to libassuan.def
 #-----------------------------------------------------------
 
-LIBASSUAN_1.1 {
-  global:
-    __assuan_socket;
-    __assuan_connect;
-    assuan_register_pre_cmd_notify;
-};
-
 LIBASSUAN_1.0 {
   global:
     assuan_accept;
@@ -72,6 +65,7 @@ LIBASSUAN_1.0 {
     assuan_register_input_notify;
     assuan_register_option_handler;
     assuan_register_output_notify;
+    assuan_register_pre_cmd_notify;
     assuan_register_post_cmd_notify;
     assuan_register_reset_notify;
     assuan_release;
@@ -111,6 +105,8 @@ LIBASSUAN_1.0 {
     __assuan_socketpair;
     __assuan_spawn;
     __assuan_usleep;
+    __assuan_socket;
+    __assuan_connect;
 
   local:
     *;
