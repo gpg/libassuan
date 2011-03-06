@@ -1,3 +1,9 @@
+2011-03-06  Ben Kibbey <bjk@luxsci.net>
+
+	* assuan-socket-connect.c (assuan_socket_connect_fd): Finalize a
+	context connection from an already connected socket descriptor.
+	* assuan.h.in (assuan_socket_connect_fd): New prototype.
+
 2011-03-05  Ben Kibbey <bjk@luxsci.net>
 
 	* assuan-handler.c (assuan_register_command): Let an existing command

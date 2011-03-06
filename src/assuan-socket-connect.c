@@ -97,6 +97,69 @@ parse_portno (const char *str, uint16_t *r_port)
 }
 
 
+static gpg_error_t
+_assuan_connect_finalize(assuan_context_t ctx, int fd, unsigned int flags)
+{
+  gpg_error_t err;
+
+  ctx->engine.release = _assuan_client_release;
+  ctx->engine.readfnc = _assuan_simple_read;
+  ctx->engine.writefnc = _assuan_simple_write;
+  ctx->engine.sendfd = NULL;
+  ctx->engine.receivefd = NULL;
+  ctx->finish_handler = _assuan_client_finish;
+  ctx->inbound.fd = fd;
+  ctx->outbound.fd = fd;
+  ctx->max_accepts = -1;
+
+  if (flags & ASSUAN_SOCKET_CONNECT_FDPASSING)
+    _assuan_init_uds_io (ctx);
+
+  /* initial handshake */
+  {
+    assuan_response_t response;
+    int off;
+
+    err = _assuan_read_from_server (ctx, &response, &off, 0);
+    if (err)
+      TRACE1 (ctx, ASSUAN_LOG_SYSIO, "assuan_socket_connect", ctx,
+	      "can't connect to server: %s\n", gpg_strerror (err));
+    else if (response != ASSUAN_RESPONSE_OK)
+      {
+	char *sname = _assuan_encode_c_string (ctx, ctx->inbound.line);
+	if (sname)
+	  {
+	    TRACE1 (ctx, ASSUAN_LOG_SYSIO, "assuan_socket_connect", ctx,
+		    "can't connect to server: %s", sname);
+	    _assuan_free (ctx, sname);
+	  }
+	err = _assuan_error (ctx, GPG_ERR_ASS_CONNECT_FAILED);
+      }
+  }
+
+  return err;
+}
+
+
+/* Attach an existing connected file descriptor FD to an allocated handle CTX
+ * and initialize the connection.
+ */
+gpg_error_t
+assuan_socket_connect_fd (assuan_context_t ctx, int fd, unsigned int flags)
+{
+  gpg_error_t err;
+
+  if (!ctx || fd < 0)
+    return GPG_ERR_INV_ARG;
+
+  err = _assuan_connect_finalize(ctx, fd, flags);
+
+  if (err)
+    _assuan_reset (ctx);
+
+  return err;
+}
+
 
 /* Make a connection to the Unix domain socket NAME and return a new
    Assuan context in CTX.  SERVER_PID is currently not used but may
@@ -268,41 +331,8 @@ assuan_socket_connect (assuan_context_t ctx, const char *name,
       return _assuan_error (ctx, GPG_ERR_ASS_CONNECT_FAILED);
     }
  
-  ctx->engine.release = _assuan_client_release;
-  ctx->engine.readfnc = _assuan_simple_read;
-  ctx->engine.writefnc = _assuan_simple_write;
-  ctx->engine.sendfd = NULL;
-  ctx->engine.receivefd = NULL;
-  ctx->finish_handler = _assuan_client_finish;
-  ctx->inbound.fd = fd;
-  ctx->outbound.fd = fd;
-  ctx->max_accepts = -1;
+  err = _assuan_connect_finalize(ctx, fd, flags);
 
-  if (flags & ASSUAN_SOCKET_CONNECT_FDPASSING)
-    _assuan_init_uds_io (ctx);
-
-  /* initial handshake */
-  {
-    assuan_response_t response;
-    int off;
-
-    err = _assuan_read_from_server (ctx, &response, &off, 0);
-    if (err)
-      TRACE1 (ctx, ASSUAN_LOG_SYSIO, "assuan_socket_connect", ctx,
-	      "can't connect to server: %s\n", gpg_strerror (err));
-    else if (response != ASSUAN_RESPONSE_OK)
-      {
-	char *sname = _assuan_encode_c_string (ctx, ctx->inbound.line);
-	if (sname)
-	  {
-	    TRACE1 (ctx, ASSUAN_LOG_SYSIO, "assuan_socket_connect", ctx,
-		    "can't connect to server: %s", sname);
-	    _assuan_free (ctx, sname);
-	  }
-	err = _assuan_error (ctx, GPG_ERR_ASS_CONNECT_FAILED);
-      }
-  }
-  
   if (err)
     _assuan_reset (ctx);
 

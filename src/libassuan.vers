@@ -99,6 +99,7 @@ LIBASSUAN_1.0 {
     assuan_write_line;
     assuan_write_status;
     assuan_free;
+    assuan_socket_connect_fd;
 
     __assuan_close;
     __assuan_pipe;
