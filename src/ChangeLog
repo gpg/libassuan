@@ -1,3 +1,8 @@
+2011-03-05  Ben Kibbey <bjk@luxsci.net>
+
+	* assuan-handler.c (assuan_register_command): Let an existing command
+	be updated to the new values.
+
 2011-02-28  Werner Koch  <wk@g10code.com>
 
 	* libassuan.vers: Fold LIBASSUAN_1.1 block into LIBASSUAN_1.0.

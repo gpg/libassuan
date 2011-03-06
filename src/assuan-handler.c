@@ -365,7 +365,7 @@ gpg_error_t
 assuan_register_command (assuan_context_t ctx, const char *cmd_name,
                          assuan_handler_t handler, const char *help_string)
 {
-  int i;
+  int i, cmd_index = -1;
   const char *s;
 
   if (cmd_name && !*cmd_name)
@@ -409,10 +409,21 @@ assuan_register_command (assuan_context_t ctx, const char *cmd_name,
       ctx->cmdtbl_size += 50;
     }
 
-  ctx->cmdtbl[ctx->cmdtbl_used].name = cmd_name;
-  ctx->cmdtbl[ctx->cmdtbl_used].handler = handler;
-  ctx->cmdtbl[ctx->cmdtbl_used].helpstr = help_string;
-  ctx->cmdtbl_used++;
+  for (i=0; i<ctx->cmdtbl_used; i++)
+    {
+      if (!strcasecmp(ctx->cmdtbl[i].name, cmd_name))
+        {
+	  cmd_index = i;
+	  break;
+	}
+    }
+
+  if (cmd_index == -1)
+    cmd_index = ctx->cmdtbl_used++;
+
+  ctx->cmdtbl[cmd_index].name = cmd_name;
+  ctx->cmdtbl[cmd_index].handler = handler;
+  ctx->cmdtbl[cmd_index].helpstr = help_string;
   return 0;
 }
 
