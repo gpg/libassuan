@@ -1,4 +1,4 @@
-/* assuan-handler.c - dispatch commands 
+/* assuan-handler.c - dispatch commands
    Copyright (C) 2001, 2002, 2003, 2007, 2009 Free Software Foundation, Inc.
 
    This file is part of Assuan.
@@ -53,7 +53,7 @@ std_handler_nop (assuan_context_t ctx, char *line)
 {
   return PROCESS_DONE (ctx, 0); /* okay */
 }
-  
+
 static gpg_error_t
 std_handler_cancel (assuan_context_t ctx, char *line)
 {
@@ -115,7 +115,7 @@ std_handler_option (assuan_context_t ctx, char *line)
     return PROCESS_DONE (ctx, ctx->option_handler_fnc (ctx, key, value));
   return PROCESS_DONE (ctx, 0);
 }
-  
+
 static gpg_error_t
 std_handler_bye (assuan_context_t ctx, char *line)
 {
@@ -128,13 +128,13 @@ std_handler_bye (assuan_context_t ctx, char *line)
   ctx->process_complete = 1;
   return PROCESS_DONE (ctx, 0);
 }
-  
+
 static gpg_error_t
 std_handler_auth (assuan_context_t ctx, char *line)
 {
   return PROCESS_DONE (ctx, set_error (ctx, GPG_ERR_NOT_IMPLEMENTED, NULL));
 }
-  
+
 static gpg_error_t
 std_handler_reset (assuan_context_t ctx, char *line)
 {
@@ -150,7 +150,7 @@ std_handler_reset (assuan_context_t ctx, char *line)
     }
   return PROCESS_DONE (ctx, err);
 }
-  
+
 static gpg_error_t
 std_handler_help (assuan_context_t ctx, char *line)
 {
@@ -168,7 +168,7 @@ std_handler_help (assuan_context_t ctx, char *line)
       for (i = 0; i < ctx->cmdtbl_used; i++)
         {
           n = strlen (ctx->cmdtbl[i].name);
-          helpstr = ctx->cmdtbl[i].helpstr; 
+          helpstr = ctx->cmdtbl[i].helpstr;
           if (helpstr
               && !strncmp (ctx->cmdtbl[i].name, helpstr, n)
               && (!helpstr[n] || helpstr[n] == '\n' || helpstr[n] == ' ')
@@ -191,7 +191,7 @@ std_handler_help (assuan_context_t ctx, char *line)
       line[n] = c;
       if (!ctx->cmdtbl[i].name)
         return PROCESS_DONE (ctx, set_error (ctx,GPG_ERR_UNKNOWN_COMMAND,NULL));
-      helpstr = ctx->cmdtbl[i].helpstr; 
+      helpstr = ctx->cmdtbl[i].helpstr;
       if (!helpstr)
         return PROCESS_DONE (ctx, set_error (ctx, GPG_ERR_NOT_FOUND, NULL));
       do
@@ -295,7 +295,7 @@ std_handler_output (assuan_context_t ctx, char *line)
 {
   gpg_error_t rc;
   assuan_fd_t fd, oldfd;
-  
+
   rc = assuan_command_parse_fd (ctx, line, &fd);
   if (rc)
     return PROCESS_DONE (ctx, rc);
@@ -340,7 +340,7 @@ static struct {
   { "RESET",  std_handler_reset, 1 },
   { "END",    std_handler_end, 1 },
   { "HELP",   std_handler_help, 1 },
-              
+
   { "INPUT",  std_handler_input, 0 },
   { "OUTPUT", std_handler_output, 0 },
   { NULL, NULL, 0 }
@@ -354,11 +354,11 @@ static struct {
  * @handler: The handler function to be called or NULL to use a default
  *           handler.
  * HELPSTRING
- * 
+ *
  * Register a handler to be used for a given command.  Note that
  * several default handlers are already regsitered with a new context.
  * This function however allows to override them.
- * 
+ *
  * Return value: 0 on success or an error code
  **/
 gpg_error_t
@@ -389,7 +389,7 @@ assuan_register_command (assuan_context_t ctx, const char *cmd_name,
       if (!handler)
         handler = dummy_handler; /* Last resort is the dummy handler. */
     }
-  
+
   if (!ctx->cmdtbl)
     {
       ctx->cmdtbl_size = 50;
@@ -411,7 +411,7 @@ assuan_register_command (assuan_context_t ctx, const char *cmd_name,
 
   for (i=0; i<ctx->cmdtbl_used; i++)
     {
-      if (!strcasecmp(ctx->cmdtbl[i].name, cmd_name))
+      if (!my_strcasecmp (cmd_name, ctx->cmdtbl[i].name))
         {
 	  cmd_index = i;
 	  break;
@@ -530,7 +530,7 @@ _assuan_register_std_commands (assuan_context_t ctx)
           if (rc)
             return rc;
         }
-    } 
+    }
   return 0;
 }
 
@@ -585,8 +585,8 @@ dispatch_command (assuan_context_t ctx, char *line, int linelen)
     ;
   if (p==line)
     return PROCESS_DONE
-      (ctx, set_error (ctx, GPG_ERR_ASS_SYNTAX, "leading white-space")); 
-  if (*p) 
+      (ctx, set_error (ctx, GPG_ERR_ASS_SYNTAX, "leading white-space"));
+  if (*p)
     { /* Skip over leading WS after the keyword */
       *p++ = 0;
       while ( *p == ' ' || *p == '\t')
@@ -652,26 +652,26 @@ assuan_process_done (assuan_context_t ctx, gpg_error_t rc)
       if (!rc && ctx->outbound.data.error)
 	rc = ctx->outbound.data.error;
     }
-  
+
   /* Error handling.  */
   if (!rc)
     {
       if (ctx->process_complete)
 	{
 	  /* No error checking because the peer may have already
-	     disconnect. */ 
+	     disconnect. */
 	  assuan_write_line (ctx, "OK closing connection");
 	  ctx->finish_handler (ctx);
 	}
       else
 	rc = assuan_write_line (ctx, ctx->okay_line ? ctx->okay_line : "OK");
     }
-  else 
+  else
     {
       char errline[300];
       const char *text = ctx->err_no == rc ? ctx->err_str : NULL;
       char ebuf[50];
-	  
+
       gpg_strerror_r (rc, ebuf, sizeof (ebuf));
       sprintf (errline, "ERR %d %.50s <%.30s>%s%.100s",
 	       rc, ebuf, gpg_strsource (rc),
@@ -679,10 +679,10 @@ assuan_process_done (assuan_context_t ctx, gpg_error_t rc)
 
       rc = assuan_write_line (ctx, errline);
     }
-  
+
   if (ctx->post_cmd_notify_fnc)
     ctx->post_cmd_notify_fnc (ctx, rc);
-  
+
   ctx->flags.confidential = 0;
   if (ctx->okay_line)
     {
@@ -816,11 +816,11 @@ process_request (assuan_context_t ctx)
 /**
  * assuan_process:
  * @ctx: assuan context
- * 
+ *
  * This function is used to handle the assuan protocol after a
  * connection has been established using assuan_accept().  This is the
  * main protocol handler.
- * 
+ *
  * Return value: 0 on success or an error code if the assuan operation
  * failed.  Note, that no error is returned for operational errors.
  **/
@@ -844,18 +844,18 @@ assuan_process (assuan_context_t ctx)
  * @what: 0 for read fds, 1 for write fds
  * @fdarray: Caller supplied array to store the FDs
  * @fdarraysize: size of that array
- * 
+ *
  * Return all active filedescriptors for the given context.  This
  * function can be used to select on the fds and call
  * assuan_process_next() if there is an active one.  The first fd in
  * the array is the one used for the command connection.
  *
  * Note, that write FDs are not yet supported.
- * 
+ *
  * Return value: number of FDs active and put into @fdarray or -1 on
  * error which is most likely a too small fdarray.
  **/
-int 
+int
 assuan_get_active_fds (assuan_context_t ctx, int what,
                        assuan_fd_t *fdarray, int fdarraysize)
 {
@@ -917,14 +917,14 @@ assuan_get_data_fp (assuan_context_t ctx)
 #if defined (HAVE_FOPENCOOKIE) || defined (HAVE_FUNOPEN)
   if (ctx->outbound.data.fp)
     return ctx->outbound.data.fp;
-  
+
 #ifdef HAVE_FUNOPEN
   ctx->outbound.data.fp = funopen (ctx, 0, fun1_cookie_write,
 				   0, _assuan_cookie_write_flush);
 #else
   ctx->outbound.data.fp = funopen (ctx, 0, fun2_cookie_write,
 				   0, _assuan_cookie_write_flush);
-#endif                                   
+#endif
 
   ctx->outbound.data.error = 0;
   return ctx->outbound.data.fp;

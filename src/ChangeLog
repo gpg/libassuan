@@ -1,3 +1,7 @@
+2011-03-09  Werner Koch  <wk@g10code.com>
+
+	* assuan-handler.c (assuan_register_command): Use my_strcasecmp.
+
 2011-03-06  Ben Kibbey <bjk@luxsci.net>
 
 	* assuan-socket-connect.c (assuan_socket_connect_fd): Finalize a
