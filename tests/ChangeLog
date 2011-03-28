@@ -1,3 +1,7 @@
+2011-03-28  Werner Koch  <wk@g10code.com>
+
+	* ce-server.c: Include sys/select.h if needed.  Fixes bug#1328.
+
 2010-10-11  Werner Koch  <wk@g10code.com>
 
 	* Makefile.am (w32cetools): Move ce-server to here.
@@ -68,4 +72,3 @@
  This file is distributed in the hope that it will be useful, but
  WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
  implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-

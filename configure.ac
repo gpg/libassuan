@@ -1,6 +1,6 @@
 # configure.ac - for libassuan
 # Copyright (C) 2001-2003, 2006, 2007, 2009 Free Software Foundation, Inc.
-# 
+#
 # This file is part of Assuan.
 #
 # Assuan is free software; you can redistribute it and/or modify it
@@ -164,9 +164,9 @@ if test "$GCC" = yes; then
 fi
 
 
-# 
+#
 # Options depending on the host OS.
-# 
+#
 have_dosish_system=no
 have_w32_system=no
 have_w32ce_system=no
@@ -194,7 +194,7 @@ esac
 
 if test "$have_dosish_system" = yes; then
    AC_DEFINE(HAVE_DOSISH_SYSTEM,1,
-             [Defined if we run on some of the PCDOS like systems 
+             [Defined if we run on some of the PCDOS like systems
               (DOS, Windoze. OS/2) with special properties like
               no file modes])
 fi
@@ -207,7 +207,7 @@ if test "$have_w32_system" = yes; then
     fi
     BUILD_TIMESTAMP=`date --iso-8601=minutes`
     AC_SUBST(BUILD_TIMESTAMP)
-    changequote(,)dnl 
+    changequote(,)dnl
     BUILD_FILEVERSION=`echo "$VERSION" | sed 's/\([0-9.]*\).*/\1./;s/\./,/g'`
     changequote([,])dnl
     case "$VERSION" in
@@ -254,7 +254,8 @@ AC_SUBST(LIBASSUAN_CONFIG_EXTRA_LIBS)
 # Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS([string.h locale.h sys/uio.h stdint.h inttypes.h \
-                  sys/types.h sys/stat.h unistd.h sys/time.h fcntl.h])
+                  sys/types.h sys/stat.h unistd.h sys/time.h fcntl.h \
+                  sys/select.h ])
 AC_TYPE_UINTPTR_T
 AC_TYPE_UINT16_T
 
@@ -344,14 +345,14 @@ AC_REPLACE_FUNCS(vasprintf)
 #
 AC_MSG_CHECKING(for SO_PEERCRED)
 AC_CACHE_VAL(assuan_cv_sys_so_peercred,
-      [AC_TRY_COMPILE([#include <sys/socket.h>], 
-         [struct ucred cr; 
+      [AC_TRY_COMPILE([#include <sys/socket.h>],
+         [struct ucred cr;
           int cl = sizeof cr;
           getsockopt (1, SOL_SOCKET, SO_PEERCRED, &cr, &cl);],
           assuan_cv_sys_so_peercred=yes,
           assuan_cv_sys_so_peercred=no)
        ])
-AC_MSG_RESULT($assuan_cv_sys_so_peercred) 
+AC_MSG_RESULT($assuan_cv_sys_so_peercred)
 if test $assuan_cv_sys_so_peercred = yes; then
   AC_DEFINE(HAVE_SO_PEERCRED, 1,
             [Defined if SO_PEERCRED is supported (Linux specific)])

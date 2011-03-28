@@ -1,3 +1,8 @@
+2011-03-28  Werner Koch  <wk@g10code.com>
+
+	* configure.ac (AC_CHECK_HEADERS): Check for sys/select.h which is
+	needed by one test utility.
+
 2010-12-23  Werner Koch  <wk@g10code.com>
 
 	* configure.ac: Add a git commit identifier to the version.

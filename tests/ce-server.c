@@ -35,6 +35,9 @@
 # include <sys/socket.h>
 # include <netinet/in.h>
 # include <arpa/inet.h>
+# ifdef HAVE_SYS_SELECT_H
+#  include <sys/select.h>
+# else
 #endif
 #include <errno.h>
 
@@ -69,8 +72,8 @@ typedef struct fdinfo_s *fdinfo_t;
 struct state_s
 {
   /* The current working directory - access using get_cwd().  */
-  char *cwd;  
-  
+  char *cwd;
+
   /* If valid, a socket in listening state created by the dataport
      command.  */
   assuan_fd_t dataport_listen_fd;
@@ -113,7 +116,7 @@ my_read (assuan_fd_t fd, void *buffer, size_t size)
         case WSAENOTSOCK:
           {
             DWORD nread = 0;
-            
+
             res = ReadFile (fd, buffer, size, &nread, NULL);
             if (!res)
               {
@@ -124,7 +127,7 @@ my_read (assuan_fd_t fd, void *buffer, size_t size)
 		    break;
 
                   default:
-		    gpg_err_set_errno (EIO); 
+		    gpg_err_set_errno (EIO);
                   }
                 res = -1;
               }
@@ -132,7 +135,7 @@ my_read (assuan_fd_t fd, void *buffer, size_t size)
               res = (int) nread;
           }
           break;
-          
+
         case WSAEWOULDBLOCK:
 	  gpg_err_set_errno (EAGAIN);
 	  break;
@@ -174,17 +177,17 @@ my_writen (assuan_fd_t fd, const char *buffer, size_t length)
       if (nwritten == -1 && WSAGetLastError () == WSAENOTSOCK)
         {
           DWORD nwrite;
-          
+
           nwritten = WriteFile (fd, buffer, length, &nwrite, NULL);
           if (!nwritten)
             {
               switch (GetLastError ())
                 {
-                case ERROR_BROKEN_PIPE: 
+                case ERROR_BROKEN_PIPE:
                 case ERROR_NO_DATA:
                   gpg_err_set_errno (EPIPE);
                   break;
-                  
+
                 default:
                   gpg_err_set_errno (EIO);
                   break;
@@ -211,7 +214,7 @@ my_writen (assuan_fd_t fd, const char *buffer, size_t length)
 
 
 
-static state_t 
+static state_t
 new_state (void)
 {
   state_t state = xcalloc (1, sizeof *state);
@@ -220,8 +223,8 @@ new_state (void)
   state->dataport_fd = ASSUAN_INVALID_FD;
   return state;
 }
-  
-static void 
+
+static void
 release_state (state_t state)
 {
   fdinfo_t fi, fi2;
@@ -285,7 +288,7 @@ wchar_to_utf8 (const wchar_t *string)
   n = WideCharToMultiByte (CP_ACP, 0, string, length, result, n, NULL, NULL);
   if (n < 0)
     log_fatal ("WideCharToMultiByte failed\n");
-  
+
   result[n] = 0;
   return result;
 }
@@ -303,14 +306,14 @@ utf8_to_wchar (const char *string)
     log_fatal ("MultiByteToWideChar failed\n");
 
   nbytes = (size_t)(n+1) * sizeof(*result);
-  if (nbytes / sizeof(*result) != (n+1)) 
+  if (nbytes / sizeof(*result) != (n+1))
     log_fatal ("utf8_to_wchar: integer overflow\n");
   result = xmalloc (nbytes);
   n = MultiByteToWideChar (CP_UTF8, 0, string, length, result, n);
   if (n < 0)
     log_fatal ("MultiByteToWideChar failed\n");
   result[n] = 0;
-  
+
   return result;
 }
 #endif /*HAVE_W32CE_SYSTEM*/
@@ -320,7 +323,7 @@ static char *
 gnu_getcwd (void)
 {
   size_t size = 100;
-  
+
   while (1)
     {
       char *buffer = xmalloc (size);
@@ -435,7 +438,7 @@ output_notify (assuan_context_t ctx, char *line)
 
 
 
-static const char hlp_echo[] = 
+static const char hlp_echo[] =
   "ECHO <line>\n"
   "\n"
   "Print LINE as data lines.\n";
@@ -451,7 +454,7 @@ cmd_echo (assuan_context_t ctx, char *line)
 
 
 
-static const char hlp_cat[] = 
+static const char hlp_cat[] =
   "CAT [<filename>]\n"
   "\n"
   "Copy the content of FILENAME to the descriptor set by the OUTPUT\n"
@@ -526,7 +529,7 @@ cmd_cat (assuan_context_t ctx, char *line)
           else
             nread = n;
         }
-      
+
 
       if (fd_out != ASSUAN_INVALID_FD)
         {
@@ -560,7 +563,7 @@ leave:
 }
 
 
-static const char hlp_pwd[] = 
+static const char hlp_pwd[] =
   "PWD\n"
   "\n"
   "Print the curent working directory of this session.\n";
@@ -570,7 +573,7 @@ cmd_pwd (assuan_context_t ctx, char *line)
   state_t state = assuan_get_pointer (ctx);
   gpg_error_t err;
   const char *string;
-  
+
   string = get_cwd (state);
   err = assuan_send_data (ctx, string, strlen (string));
 
@@ -578,7 +581,7 @@ cmd_pwd (assuan_context_t ctx, char *line)
 }
 
 
-static const char hlp_cd[] = 
+static const char hlp_cd[] =
   "CD [dir]\n"
   "\n"
   "Change the curretn directory of the session.\n";
@@ -605,7 +608,7 @@ cmd_cd (assuan_context_t ctx, char *line)
         newdir = xstrdup (line);
       else
         newdir = xstrconcat (get_cwd (state), "/", line, NULL);
-      
+
       while (strlen(newdir) > 1 && line[strlen(newdir)-1] == '/')
         line[strlen(newdir)-1] = 0;
       xfree (state->cwd);
@@ -620,7 +623,7 @@ cmd_cd (assuan_context_t ctx, char *line)
 
 
 #ifdef HAVE_W32CE_SYSTEM
-static const char hlp_ls[] = 
+static const char hlp_ls[] =
   "LS [<pattern>]\n"
   "\n"
   "List the files described by PATTERN.\n";
@@ -661,7 +664,7 @@ cmd_ls (assuan_context_t ctx, char *line)
       DWORD attr = fi.dwFileAttributes;
 
       fname = wchar_to_utf8 (fi.cFileName);
-      snprintf (buf, sizeof buf, 
+      snprintf (buf, sizeof buf,
                 "%c%c%c%c%c%c%c%c%c%c%c%c%c %7lu%c %s\n",
                 (attr & FILE_ATTRIBUTE_DIRECTORY)
                 ? ((attr & FILE_ATTRIBUTE_DEVICE)? 'c':'d'):'-',
@@ -693,7 +696,7 @@ cmd_ls (assuan_context_t ctx, char *line)
   else
     {
       log_info ("FindNextFile returned %d\n", GetLastError ());
-      err = gpg_error_from_syserror (); 
+      err = gpg_error_from_syserror ();
     }
   FindClose (hd);
 
@@ -704,7 +707,7 @@ cmd_ls (assuan_context_t ctx, char *line)
 
 
 #ifdef HAVE_W32CE_SYSTEM
-static const char hlp_run[] = 
+static const char hlp_run[] =
   "RUN <filename> [<args>]\n"
   "\n"
   "Run the program in FILENAME with the arguments ARGS.\n"
@@ -829,16 +832,16 @@ cmd_run (assuan_context_t ctx, char *line)
       goto leave;
     }
 
-  log_info ("CreateProcess ready: hProcess=%p hThread=%p" 
-            " dwProcessID=%d dwThreadId=%d\n", 
+  log_info ("CreateProcess ready: hProcess=%p hThread=%p"
+            " dwProcessID=%d dwThreadId=%d\n",
             pi.hProcess, pi.hThread,
             (int) pi.dwProcessId, (int) pi.dwThreadId);
 
   ResumeThread (pi.hThread);
-  CloseHandle (pi.hThread); 
+  CloseHandle (pi.hThread);
 
   code = WaitForSingleObject (pi.hProcess, INFINITE);
-  switch (code) 
+  switch (code)
     {
       case WAIT_FAILED:
         err = gpg_error_from_syserror ();;
@@ -863,7 +866,7 @@ cmd_run (assuan_context_t ctx, char *line)
             err = 0;
           }
         break;
-        
+
       default:
         err = gpg_error_from_syserror ();;
         log_error ("WaitForSingleObject returned unexpected "
@@ -871,7 +874,7 @@ cmd_run (assuan_context_t ctx, char *line)
         break;
     }
   CloseHandle (pi.hProcess);
-  
+
  leave:
   for (idx=0; idx < 3; idx++)
     {
@@ -901,7 +904,7 @@ cmd_run (assuan_context_t ctx, char *line)
 
 
 
-static const char hlp_newdataport[] = 
+static const char hlp_newdataport[] =
   "NEWDATAPORT\n"
   "\n"
   "Create a new dataport.  The server creates a listening socket and\n"
@@ -963,7 +966,7 @@ cmd_newdataport (assuan_context_t ctx, char *line)
       log_error ("listen() failed: %s\n", strerror (errno));
       goto leave;
     }
-  
+
   if (listen (HANDLE2SOCKET (state->dataport_listen_fd), 1))
     {
       err = gpg_error_from_syserror ();
@@ -1088,7 +1091,7 @@ cmd_dataport (assuan_context_t ctx, char *line)
 
 
 
-static const char hlp_getinfo[] = 
+static const char hlp_getinfo[] =
   "GETINFO <what>\n"
   "\n"
   "Multipurpose function to return a variety of information.\n"
@@ -1138,7 +1141,7 @@ cmd_getinfo (assuan_context_t ctx, char *line)
 
 
 
-static const char hlp_shutdown[] = 
+static const char hlp_shutdown[] =
   "SHUTDOWN\n"
   "\n"
   "Shutdown the server process\n";
@@ -1182,7 +1185,7 @@ register_commands (assuan_context_t ctx)
 
   for (i=0; table[i].name; i++)
     {
-      rc = assuan_register_command (ctx, table[i].name, 
+      rc = assuan_register_command (ctx, table[i].name,
                                     table[i].handler, table[i].help);
       if (rc)
         return rc;
@@ -1225,7 +1228,7 @@ server (void)
   if (server_fd == ASSUAN_INVALID_FD)
     log_fatal ("socket() failed: %s\n", strerror (errno));
 
-  if (setsockopt (HANDLE2SOCKET (server_fd), 
+  if (setsockopt (HANDLE2SOCKET (server_fd),
                   SOL_SOCKET, SO_REUSEADDR, (void*)&one, sizeof one))
     log_error ("setsockopt(SO_REUSEADDR) failed: %s\n", strerror (errno));
 
@@ -1234,7 +1237,7 @@ server (void)
   name.sin_addr.s_addr = htonl (INADDR_ANY);
   if (assuan_sock_bind (server_fd, (struct sockaddr *) &name, sizeof name))
     log_fatal ("bind() failed: %s\n", strerror (errno));
-  if (assuan_sock_get_nonce ((struct sockaddr*)&name, sizeof name, 
+  if (assuan_sock_get_nonce ((struct sockaddr*)&name, sizeof name,
                              &server_nonce))
     log_fatal ("assuan_sock_get_nonce failed: %s\n", strerror (errno));
 
@@ -1264,9 +1267,9 @@ server (void)
   assuan_register_input_notify (ctx, input_notify);
   assuan_register_output_notify (ctx, output_notify);
 
-  
+
   state = new_state ();
-  
+
   assuan_set_pointer (ctx, state);
 
   while (!shutdown_pending)
@@ -1280,7 +1283,7 @@ server (void)
             log_error ("assuan_accept failed: %s\n", gpg_strerror (err));
           break;
         }
-      
+
       log_info ("client connected.  Client's pid is %ld\n",
                 (long)assuan_get_pid (ctx));
       do
@@ -1346,7 +1349,7 @@ server (void)
       if (err)
         log_error ("assuan_process failed: %s\n", gpg_strerror (err));
     }
-  
+
   assuan_sock_close (server_fd);
   assuan_release (ctx);
   release_state (state);
@@ -1356,12 +1359,12 @@ server (void)
 
 
 
-/* 
- 
+/*
+
      M A I N
 
 */
-int 
+int
 main (int argc, char **argv)
 {
   gpg_error_t err;
@@ -1413,4 +1416,3 @@ main (int argc, char **argv)
 
   return errorcount ? 1 : 0;
 }
-
