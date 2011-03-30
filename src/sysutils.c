@@ -27,7 +27,7 @@
 #ifdef HAVE_W32_SYSTEM
 # ifdef HAVE_WINSOCK2_H
 #  include <winsock2.h>
-# endif 
+# endif
 # include <windows.h>
 # ifdef HAVE_W32CE_SYSTEM
 # include <winioctl.h>
@@ -42,11 +42,11 @@
 const char *
 _assuan_sysutils_blurb (void)
 {
-  static const char blurb[] = 
+  static const char blurb[] =
     "\n\n"
-    "This is Libassuan - The GnuPG IPC Library\n"
+    "This is Libassuan " PACKAGE_VERSION " - The GnuPG IPC Library\n"
     "Copyright 2000, 2002, 2003, 2004, 2007, 2008, 2009,\n"
-    "          2010 Free Software Foundation, Inc.\n"
+    "          2010, 2011 Free Software Foundation, Inc.\n"
     "\n\n";
   return blurb;
 }
@@ -64,7 +64,7 @@ w32_read_registry (const wchar_t *dir, const wchar_t *name)
   DWORD n, nbytes;
   wchar_t *buffer = NULL;
   char *result = NULL;
-  
+
   if (RegOpenKeyEx (HKEY_LOCAL_MACHINE, dir, 0, KEY_READ, &handle))
     return NULL; /* No need for a RegClose, so return immediately. */
 
@@ -80,7 +80,7 @@ w32_read_registry (const wchar_t *dir, const wchar_t *name)
       buffer = NULL;
       goto out;
     }
-  
+
   n = WideCharToMultiByte (CP_UTF8, 0, buffer, nbytes, NULL, 0, NULL, NULL);
   if (n < 0 || (n+1) <= 0)
     goto out;
@@ -134,4 +134,3 @@ _assuan_getenv (const char *name)
     return NULL;
 }
 #endif /*HAVE_W32CE_SYSTEM*/
-
