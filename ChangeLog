@@ -1,5 +1,8 @@
 2011-04-06  Werner Koch  <wk@g10code.com>
 
+	* autogen.sh: Check the git setup.  Add option --build-w64.
+	* configure.ac (HAVE_W64_SYSTEM): Define.
+
 	* m4/gpg-error.m4: Update from current libgpg-error repo.
 
 2011-03-28  Werner Koch  <wk@g10code.com>

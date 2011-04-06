@@ -169,12 +169,17 @@ fi
 #
 have_dosish_system=no
 have_w32_system=no
+have_w64_system=no
 have_w32ce_system=no
 case "${host}" in
     *-linux*)
         if test "$GCC" = yes; then
           CFLAGS="$CFLAGS -fPIC -DPIC"
         fi
+        ;;
+    x86_64-*mingw32*)
+        have_w32_system=yes
+        have_w64_system=yes
         ;;
     *-mingw32ce*)
         have_dosish_system=yes
@@ -202,6 +207,10 @@ dnl AM_CONDITIONAL(HAVE_DOSISH_SYSTEM, test "$have_dosish_system" = yes)
 
 if test "$have_w32_system" = yes; then
     AC_DEFINE(HAVE_W32_SYSTEM,1,[Defined if we run on a W32 API based system])
+    if test "$have_w64_system" = yes; then
+      AC_DEFINE(HAVE_W64_SYSTEM,1,
+                [Defined if we run on a 64 bit W32 API based system])
+    fi
     if test "$have_w32ce_system" = yes; then
        AC_DEFINE(HAVE_W32CE_SYSTEM,1,[Defined if we run on WindowsCE])
     fi
@@ -222,6 +231,7 @@ AC_SUBST(BUILD_TIMESTAMP)
 AC_SUBST(BUILD_FILEVERSION)
 AM_CONDITIONAL(HAVE_W32_SYSTEM, test "$have_w32_system" = yes)
 AM_CONDITIONAL(HAVE_W32CE_SYSTEM, test "$have_w32ce_system" = yes)
+AM_CONDITIONAL(HAVE_W64_SYSTEM, test "$have_w64_system" = yes)
 
 
 # Check for network libraries.  They are needed for tests.
