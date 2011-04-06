@@ -1,3 +1,7 @@
+2011-04-06  Werner Koch  <wk@g10code.com>
+
+	* m4/gpg-error.m4: Update from current libgpg-error repo.
+
 2011-03-28  Werner Koch  <wk@g10code.com>
 
 	* configure.ac (AC_CHECK_HEADERS): Check for sys/select.h which is
