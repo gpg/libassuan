@@ -18,6 +18,7 @@ lib="@LIBASSUAN_CONFIG_LIB@"
 extralibs="@LIBASSUAN_CONFIG_EXTRA_LIBS@ $gpg_error_libs"
 cflags="@LIBASSUAN_CONFIG_CFLAGS@ $gpg_error_cflags"
 api_version="@LIBASSUAN_CONFIG_API_VERSION@"
+my_host="@LIBASSUAN_CONFIG_HOST@"
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 includes=""
@@ -27,6 +28,7 @@ echo_libs=no
 echo_cflags=no
 echo_prefix=no
 echo_exec_prefix=no
+echo_host=no
 
 
 usage()
@@ -39,6 +41,7 @@ Options:
 	[--version]
 	[--libs]
 	[--cflags]
+        [--host]
 EOF
 	exit $1
 }
@@ -79,6 +82,9 @@ while test $# -gt 0; do
     --libs)
       echo_libs=yes
       ;;
+    --host)
+      echo_host=yes
+      ;;
     *)
       usage 1 1>&2
       ;;
@@ -98,6 +104,9 @@ if test "$echo_api_version" = "yes"; then
     echo $api_version
 fi
 
+if test "$echo_host" = "yes"; then
+    echo "$my_host"
+fi
 
 if test "$echo_cflags" = "yes"; then
     if test "@includedir@" != "/usr/include" ; then

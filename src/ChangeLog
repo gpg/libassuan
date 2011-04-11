@@ -1,3 +1,8 @@
+2011-04-06  Werner Koch  <wk@g10code.com>
+
+	* libassuan-config.in: Add option --host.
+	* libassuan.m4: Remove cruft.  Add check for correct HOST.
+
 2011-03-30  Werner Koch  <wk@g10code.com>
 
 	* sysutils.c (_assuan_sysutils_blurb): Add version string.
