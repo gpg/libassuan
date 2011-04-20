@@ -1,3 +1,7 @@
+2011-04-20  Werner Koch  <wk@g10code.com>
+
+	* Makefile.am (EXTRA_DIST): s/README.SVN/README.GIT/
+
 2011-04-06  Werner Koch  <wk@g10code.com>
 
 	* autogen.sh: Check the git setup.  Add option --build-w64.

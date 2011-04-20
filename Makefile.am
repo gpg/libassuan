@@ -21,7 +21,7 @@
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = dist-bzip2 no-dist-gzip
 
-EXTRA_DIST = config.rpath autogen.sh README.SVN
+EXTRA_DIST = config.rpath autogen.sh README.GIT
 
 SUBDIRS = m4 src doc tests
 
@@ -30,5 +30,5 @@ dist-hook:
 	echo "$(VERSION)" > $(distdir)/VERSION
 
 
-stowinstall: 
+stowinstall:
 	$(MAKE) $(AM_MAKEFLAGS) install prefix=/usr/local/stow/libassuan
