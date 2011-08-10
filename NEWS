@@ -1,10 +1,13 @@
 Noteworthy changes in version 2.0.3 (unreleased)
 ------------------------------------------------
 
- * ...
+ * Interface changes relative to the 2.0.2 release:
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ ASSUAN_FORCE_CLOSE       NEW.
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-Noteworthy changes in version 2.0.2 (2010-06-16)
+Noteworthy changes in version 2.0.2 (2011-06-16)
 ------------------------------------------------
 
  * A new flag may now be used to convey comments via assuan_transact.

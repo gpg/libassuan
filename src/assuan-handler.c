@@ -635,6 +635,9 @@ assuan_process_done (assuan_context_t ctx, gpg_error_t rc)
   if (!ctx->in_command)
     return _assuan_error (ctx, GPG_ERR_ASS_GENERAL);
 
+  if (ctx->flags.force_close)
+    ctx->process_complete = 1;
+
   ctx->in_command = 0;
 
   /* Check for data write errors.  */
@@ -673,12 +676,18 @@ assuan_process_done (assuan_context_t ctx, gpg_error_t rc)
       const char *text = ctx->err_no == rc ? ctx->err_str : NULL;
       char ebuf[50];
 
+      if (ctx->flags.force_close)
+        text = "[closing connection]";
+
       gpg_strerror_r (rc, ebuf, sizeof (ebuf));
-      sprintf (errline, "ERR %d %.50s <%.30s>%s%.100s",
-	       rc, ebuf, gpg_strsource (rc),
-	       text? " - ":"", text?text:"");
+      snprintf (errline, sizeof errline, "ERR %d %.50s <%.30s>%s%.100s",
+                rc, ebuf, gpg_strsource (rc),
+                text? " - ":"", text?text:"");
 
       rc = assuan_write_line (ctx, errline);
+
+      if (ctx->flags.force_close)
+        ctx->finish_handler (ctx);
     }
 
   if (ctx->post_cmd_notify_fnc)

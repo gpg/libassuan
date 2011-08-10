@@ -40,7 +40,7 @@
 
 #include "assuan.h"
 
-#if __GNUC__ > 2 
+#if __GNUC__ > 2
 # define ASSUAN_GCC_A_PURE  __attribute__ ((__pure__))
 #else
 # define ASSUAN_GCC_A_PURE
@@ -97,6 +97,7 @@ struct assuan_context_s
     unsigned int no_fixsignals : 1;
     unsigned int convey_comments : 1;
     unsigned int no_logging : 1;
+    unsigned int force_close : 1;
   } flags;
 
   /* If set, this is called right before logging an I/O line.  */
@@ -199,7 +200,7 @@ struct assuan_context_s
   struct cmdtbl_s *cmdtbl;
   size_t cmdtbl_used; /* used entries */
   size_t cmdtbl_size; /* allocated size of table */
-  
+
   /* The name of the command currently processed by a command handler.
      This is a pointer into CMDTBL.  NULL if not in a command
      handler.  */

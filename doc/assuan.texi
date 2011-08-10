@@ -378,7 +378,7 @@ to set the error source to a different value than the default
 assuan_set_gpg_err_source} early.
 
 
-@c 
+@c
 @c           P R E P A R A T I O N
 @c
 @node Preparation
@@ -386,7 +386,7 @@ assuan_set_gpg_err_source} early.
 
 To use @sc{Assuan}, you have to perform some changes to your
 sources and the build system.  The necessary changes are small and
-explained in the following sections. 
+explained in the following sections.
 
 
 @menu
@@ -411,7 +411,7 @@ file, like this:
 The name space of @code{libassuan} is @code{assuan_*} for function
 and type names and @code{ASSUAN*} for other symbols.  In addition the
 same name prefixes with one prepended underscore are reserved for
-internal use and should never be used by an application. 
+internal use and should never be used by an application.
 
 Because @code{libassuan} makes use of the GPG Error library, using
 @code{libassuan} will also use the @code{GPG_ERR_*} name space
@@ -519,7 +519,7 @@ across contexts.
 @end itemize
 
 
-@c 
+@c
 @c     G E N E R A L I T I E S
 @c
 @node Generalities
@@ -694,7 +694,7 @@ The default log handler can be configured by the following functions:
 
 @deftypefun void assuan_set_assuan_log_prefix (@w{const char *@var{text}})
 Set the prefix to be used at the start of a line emitted by assuan
-on the log stream to @var{text}.  The default is the empty string. 
+on the log stream to @var{text}.  The default is the empty string.
 @end deftypefun
 
 
@@ -816,7 +816,7 @@ The flags are all named and collected in an @code{enum} for better readability.
 Currently only one flag is defined:
 
 @table @code
-@item ASSUAN_NO_WAITPID 
+@item ASSUAN_NO_WAITPID
 When using a pipe server, by default Libassuan will wait for the forked
 process to die in @code{assuan_release}.  In certain cases this is
 not desirable.  By setting this flag, a call to @code{waitpid} will be
@@ -828,13 +828,18 @@ Do not modify signal handler for @code{SIGPIPE}.
 @item ASSUAN_CONVEY_COMMENTS
 If enabled comment lines are passed to the status callback of the
 @code{assuan_transact}.
+@item ASSUAN_FORCE_CLOSE
+Setting this flag forces the next command to assume that the
+connection has been closed.  This breaks the command processing loop
+and may be used as an implicit BYE command.  @var{value} is ignored
+and thus it is not possible to clear this flag.
 @end table
 @end deftp
 @end deftypefun
 
 @deftypefun int assuan_get_flag (@w{assuan_context_t @var{ctx}}, @w{assuan_flag_t @var{flag}})
-Return the value of @var{flag} in context @var{ctx}. 
-@end deftypefun 
+Return the value of @var{flag} in context @var{ctx}.
+@end deftypefun
 
 
 @deftypefun void assuan_begin_confidential (@w{assuan_context_t @var{ctx}})
@@ -999,7 +1004,7 @@ function shall not be used for sending data (@code{D}) lines.  This
 function returns @code{0} on success or an error value.
 @end deftypefun
 
-@noindent 
+@noindent
 To actually send bulk data lines a specialized function is available:
 
 @deftypefun gpg_error_t assuan_send_data (@w{assuan_context_t @var{ctx}}, @w{const void *@var{buffer}}, @w{size_t @var{length}})
@@ -1047,7 +1052,7 @@ context @var{ctx} with the hook value @var{hook_data}.
 @end deftypefun
 
 
-@c 
+@c
 @c     C L I E N T   C O D E
 @c
 @node Client code
@@ -1173,7 +1178,7 @@ trigger is sent (e.g. using @code{assuan_write_line ("INPUT FD")}.
 @end deftypefun
 
 
-@c 
+@c
 @c     S E R V E R   C O D E
 @c
 @node Server code
@@ -1187,14 +1192,14 @@ commented example.
 The list of the implemented server commands is defined by a table like:
 
 @smallexample
-  static struct @{ 
+  static struct @{
     const char *name;
     int (*handler) (assuan_context_t, char *line);
   @} command_table[] = @{
     @{ "FOO", cmd_foo @},
     @{ "BAR", cmd_bar @},
-    @{ "INPUT", NULL @}, 
-    @{ "OUTPUT", NULL @}, 
+    @{ "INPUT", NULL @},
+    @{ "OUTPUT", NULL @},
     @{ NULL @}@};
 @end smallexample
 
@@ -1301,7 +1306,7 @@ Windows but it does not harm to use it on other systems as well.
 
 @noindent
 After error checking, the implemented assuan commands are registered with
-the server.  
+the server.
 
 @example
   for (i = 0; command_table[i].name; i++)
@@ -1315,7 +1320,7 @@ the server.
           assuan_release (ctx);
           return;
         @}
-    @} 
+    @}
 @end example
 
 @deftp {Data type} {gpg_error_t (*assuan_handler_t) (@w{assuan_context_t @var{ctx}}, @w{char *@var{line}})}
@@ -1429,7 +1434,7 @@ clients requests.
           fprintf (stderr, "accept problem: %s\n", gpg_strerror (rc));
           break;
         @}
-      
+
       rc = assuan_process (ctx);
       if (rc)
         @{
@@ -1559,7 +1564,7 @@ event loop.
 When bulk data FDs become ready, you can simply perform the
 corresponding read or write operations.  When the inbound status FD
 becomes ready, you can receive the next server line with
-assuan_read_line().  
+assuan_read_line().
 
 @item
 You should close and unregister the bulk data FDs when you wrote all
@@ -1936,7 +1941,7 @@ port number and a random nonce to this file.
         @w{assuan_sock_nonce_t *@var{nonce}})
 
 This is used by the server after a bind to return the random nonce.  To
-keep the code readable this may also be used on POSIX system. 
+keep the code readable this may also be used on POSIX system.
 @end deftypefun
 
 @deftypefun int assuan_sock_check_nonce ( @

@@ -1,3 +1,11 @@
+2011-08-10  Werner Koch  <wk@g10code.com>
+
+	* assuan.h.in (ASSUAN_FORCE_CLOSE): New.
+	* assuan-defs.h (assuan_context_s): Add flags.FORCE_CLOSE.
+	* context.c (assuan_set_flag, assuan_get_flag): Set/get the flag.
+	* assuan-handler.c (assuan_process_done): Close connection if
+	requested.
+
 2011-04-06  Werner Koch  <wk@g10code.com>
 
 	* libassuan-config.in: Add option --host.

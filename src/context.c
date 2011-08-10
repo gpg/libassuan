@@ -88,6 +88,10 @@ assuan_set_flag (assuan_context_t ctx, assuan_flag_t flag, int value)
     case ASSUAN_NO_LOGGING:
       ctx->flags.no_logging = value;
       break;
+
+    case ASSUAN_FORCE_CLOSE:
+      ctx->flags.force_close = 1;
+      break;
     }
 }
 
@@ -120,9 +124,13 @@ assuan_get_flag (assuan_context_t ctx, assuan_flag_t flag)
     case ASSUAN_CONVEY_COMMENTS:
       res = ctx->flags.convey_comments;
       break;
-      
+
     case ASSUAN_NO_LOGGING:
       res = ctx->flags.no_logging;
+      break;
+
+    case ASSUAN_FORCE_CLOSE:
+      res = ctx->flags.force_close;
       break;
     }
 
@@ -183,7 +191,7 @@ assuan_set_error (assuan_context_t ctx, gpg_error_t err, const char *text)
   TRACE4 (ctx, ASSUAN_LOG_CTX, "assuan_set_error", ctx,
 	  "err=%i (%s,%s),text=%s", err, gpg_strsource (err),
 	  gpg_strerror (err), text);
-  
+
   ctx->err_no = err;
   ctx->err_str = text;
   return err;
