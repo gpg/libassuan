@@ -1,3 +1,12 @@
+2011-08-10  Werner Koch  <wk@g10code.com>
+
+	* configure.ac: Use http://bugs.gnupg.org as bug reporting
+	address.  Fix new autoconf warnings.
+
+	Update libtool to version 2.4.
+
+	* config.guess, config.sub: Update to version 2011-06-03.
+
 2011-06-16  Marcus Brinkmann  <marcus@g10code.com>
 
 	Release 2.0.2

@@ -24,17 +24,17 @@ min_automake_version="1.10"
 # Remember to change the version number immediately *after* a release.
 # Set my_issvn to "yes" for non-released code.  Remember to run an
 # "svn up" and "autogen.sh" right before creating a distribution.
-m4_define([my_version], [2.0.2])
+m4_define([my_version], [2.0.3])
 m4_define([my_issvn], [yes])
 
 m4_define([svn_revision], m4_esyscmd([printf "%d" $( (svn info 2>/dev/null \
             || echo 'Revision: 0')|sed -n '/^Revision:/ {s/[^0-9]//gp;q;}')]))
 m4_define([git_revision], m4_esyscmd([git branch -v 2>/dev/null \
           | awk '/^\* / {printf "%s",$3}']))
-AC_INIT([libassuan],
-        [my_version[]m4_if(my_issvn,[yes],
-        [m4_if(git_revision,[],[-svn[]svn_revision],[-git[]git_revision])])],
-        [bug-libassuan@gnupg.org])
+m4_define([my_full_version], [my_version[]m4_if(my_issvn,[yes],
+          [m4_if(git_revision,[],[-svn[]svn_revision],[-git[]git_revision])])])
+
+AC_INIT([libassuan],[my_full_version],[http://bugs.gnupg.org])
 
 # LT Version numbers, remember to change them just *before* a release.
 #   (Code changed:			REVISION++)
@@ -155,7 +155,7 @@ if test "$GCC" = yes; then
     AC_MSG_CHECKING([if gcc supports -Wpointer-arith])
     _gcc_cflags_save=$CFLAGS
     CFLAGS="-Wpointer-arith"
-    AC_COMPILE_IFELSE(AC_LANG_PROGRAM([]),_gcc_wopt=yes,_gcc_wopt=no)
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],_gcc_wopt=yes,_gcc_wopt=no)
     AC_MSG_RESULT($_gcc_wopt)
     CFLAGS=$_gcc_cflags_save;
     if test x"$_gcc_wopt" = xyes ; then
