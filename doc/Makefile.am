@@ -18,7 +18,7 @@
 
 ## Process this file with automake to produce Makefile.in
 
-EXTRA_DIST = README.apichanges
+EXTRA_DIST = README.apichanges HACKING
 
 info_TEXINFOS = assuan.texi
 

@@ -21,13 +21,31 @@
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = dist-bzip2 no-dist-gzip
 
-EXTRA_DIST = config.rpath autogen.sh README.GIT
+EXTRA_DIST = config.rpath autogen.sh README.GIT                  	\
+             ChangeLog-2011 doc/ChangeLog-2011 src/ChangeLog-2011 	\
+             tests/ChangeLog-2011 contrib/ChangeLog-2011     		\
+             build-aux/gitlog-to-changelog build-aux/git-log-footer	\
+             build-aux/git-log-fix
 
 SUBDIRS = m4 src doc tests
 
 
-dist-hook:
+dist-hook: gen-ChangeLog
 	echo "$(VERSION)" > $(distdir)/VERSION
+
+
+gen_start_date = 2011-12-01T00:00:00
+.PHONY: gen-ChangeLog
+gen-ChangeLog:
+	if test -d $(top_srcdir)/.git; then				\
+	  (cd $(top_srcdir) &&                      			\
+	    ./build-aux/gitlog-to-changelog				\
+	    --amend=build-aux/git-log-fix				\
+	    --since=$(gen_start_date) ) > $(distdir)/cl-t;		\
+          cat $(top_srcdir)/build-aux/git-log-footer >> $(distdir)/cl-t;\
+	  rm -f $(distdir)/ChangeLog;					\
+	  mv $(distdir)/cl-t $(distdir)/ChangeLog;			\
+	fi
 
 
 stowinstall:
