@@ -33,10 +33,10 @@ Boston, MA 02111-1307, USA.  */
 #define va_copy(d, s) (*(d) = *(s))
 #elif defined (MUST_COPY_VA_BYVAL)
 #define va_copy(d, s) ((d) = (s))
-#else 
+#else
 #define va_copy(d, s) memcpy ((d), (s), sizeof (va_list))
-#endif 
-#endif 
+#endif
+#endif
 
 
 #ifdef TEST
@@ -175,6 +175,7 @@ _assuan_asprintf (char **buf, const char *fmt, ...)
 
 #define asprintf  _assuan_asprintf
 #define vasprintf _assuan_vasprintf
+static int any_failed;
 
 void
 checkit (const char* format, ...)
@@ -187,7 +188,10 @@ checkit (const char* format, ...)
   if (strlen (result) < global_total_width)
     printf ("PASS: ");
   else
-    printf ("FAIL: ");
+    {
+      any_failed = 1;
+      printf ("FAIL: ");
+    }
   printf ("%d %s\n", global_total_width, result);
 }
 
@@ -201,5 +205,7 @@ main (void)
   checkit ("%s", "jjjjjjjjjiiiiiiiiiiiiiiioooooooooooooooooppppppppppppaa\n\
 777777777777777777333333333333366666666666622222222222777777777777733333");
   checkit ("%f%s%d%s", 1.0, "foo", 77, "asdjffffffffffffffiiiiiiiiiiixxxxx");
+  checkit ("%2$f%4$s%3$d%1$s", "asdjffffffffffffffiiiiiiiiiiixxxxx", 1.0, 77, "foo");
+  return any_failed;
 }
 #endif /* TEST */
