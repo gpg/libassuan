@@ -1,6 +1,8 @@
 Noteworthy changes in version 2.0.3 (unreleased)
 ------------------------------------------------
 
+ * Make assuan_get_pid work correctly for pipe server.
+
  * Interface changes relative to the 2.0.2 release:
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  ASSUAN_FORCE_CLOSE       NEW.

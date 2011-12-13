@@ -1,5 +1,6 @@
-/* assuan-pipe-connect.c - Establish a pipe connection (client) 
-   Copyright (C) 2001-2003, 2005-2007, 2009 Free Software Foundation, Inc.
+/* assuan-pipe-connect.c - Establish a pipe connection (client)
+   Copyright (C) 2001, 2002, 2003, 2005, 2006, 2007, 2009, 2010,
+                 2011 Free Software Foundation, Inc.
 
    This file is part of Assuan.
 
@@ -26,7 +27,7 @@
 #include <string.h>
 /* On Windows systems signal.h is not needed and even not supported on
    WindowsCE. */
-#ifndef HAVE_DOSISH_SYSTEM 
+#ifndef HAVE_DOSISH_SYSTEM
 # include <signal.h>
 #endif
 #ifdef HAVE_UNISTD_H
@@ -44,7 +45,7 @@
 #else
 # ifdef HAVE_WINSOCK2_H
 #  include <winsock2.h>
-# endif 
+# endif
 # include <windows.h>
 #endif
 
@@ -79,9 +80,9 @@ fix_signals (void)
   static int fixed_signals;
 
   if (!fixed_signals)
-    { 
+    {
       struct sigaction act;
-        
+
       sigaction (SIGPIPE, NULL, &act);
       if (act.sa_handler == SIG_DFL)
 	{
@@ -104,7 +105,7 @@ initial_handshake (assuan_context_t ctx)
   assuan_response_t response;
   int off;
   gpg_error_t err;
-  
+
   err = _assuan_read_from_server (ctx, &response, &off, 0);
   if (err)
     TRACE1 (ctx, ASSUAN_LOG_SYSIO, "initial_handshake", ctx,
@@ -124,6 +125,7 @@ struct at_pipe_fork
 {
   void (*user_atfork) (void *opaque, int reserved);
   void *user_atforkvalue;
+  pid_t parent_pid;
 };
 
 
@@ -131,19 +133,19 @@ static void
 at_pipe_fork_cb (void *opaque, int reserved)
 {
   struct at_pipe_fork *atp = opaque;
-          
+
   if (atp->user_atfork)
     atp->user_atfork (atp->user_atforkvalue, reserved);
 
 #ifndef HAVE_W32_SYSTEM
   {
     char mypidstr[50];
-    
+
     /* We store our parents pid in the environment so that the execed
        assuan server is able to read the actual pid of the client.
        The server can't use getppid because it might have been double
        forked before the assuan server has been initialized. */
-    sprintf (mypidstr, "%lu", (unsigned long) getpid ());
+    sprintf (mypidstr, "%lu", (unsigned long) atp->parent_pid);
     setenv ("_assuan_pipe_connect_pid", mypidstr, 1);
 
     /* Make sure that we never pass a connection fd variable when
@@ -171,6 +173,7 @@ pipe_connect (assuan_context_t ctx,
 
   atp.user_atfork = atfork;
   atp.user_atforkvalue = atforkvalue;
+  atp.parent_pid = getpid ();
 
   if (!ctx || !name || !argv || !argv[0])
     return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
@@ -180,14 +183,14 @@ pipe_connect (assuan_context_t ctx,
 
   if (_assuan_pipe (ctx, rp, 1) < 0)
     return _assuan_error (ctx, gpg_err_code_from_syserror ());
-  
+
   if (_assuan_pipe (ctx, wp, 0) < 0)
     {
       _assuan_close (ctx, rp[0]);
       _assuan_close_inheritable (ctx, rp[1]);
       return _assuan_error (ctx, gpg_err_code_from_syserror ());
     }
-  
+
   spawn_flags = 0;
   if (flags & ASSUAN_PIPE_CONNECT_DETACHED)
     spawn_flags |= ASSUAN_SPAWN_DETACHED;
@@ -238,6 +241,7 @@ struct at_socketpair_fork
   assuan_fd_t peer_fd;
   void (*user_atfork) (void *opaque, int reserved);
   void *user_atforkvalue;
+  pid_t parent_pid;
 };
 
 
@@ -245,19 +249,19 @@ static void
 at_socketpair_fork_cb (void *opaque, int reserved)
 {
   struct at_socketpair_fork *atp = opaque;
-          
+
   if (atp->user_atfork)
     atp->user_atfork (atp->user_atforkvalue, reserved);
 
 #ifndef HAVE_W32_SYSTEM
   {
     char mypidstr[50];
-    
+
     /* We store our parents pid in the environment so that the execed
        assuan server is able to read the actual pid of the client.
        The server can't use getppid because it might have been double
        forked before the assuan server has been initialized. */
-    sprintf (mypidstr, "%lu", (unsigned long) getpid ());
+    sprintf (mypidstr, "%lu", (unsigned long) atp->parent_pid);
     setenv ("_assuan_pipe_connect_pid", mypidstr, 1);
 
     /* Now set the environment variable used to convey the
@@ -295,6 +299,7 @@ socketpair_connect (assuan_context_t ctx,
 
   atp.user_atfork = atfork;
   atp.user_atforkvalue = atforkvalue;
+  atp.parent_pid = getpid ();
 
   if (!ctx
       || (name && (!argv || !argv[0]))
@@ -315,7 +320,7 @@ socketpair_connect (assuan_context_t ctx,
   child_fds[1] = ASSUAN_INVALID_FD;
   if (fd_child_list)
     memcpy (&child_fds[1], fd_child_list, (child_fds_cnt + 1) * sizeof (int));
-  
+
   if (_assuan_socketpair (ctx, AF_LOCAL, SOCK_STREAM, 0, fds))
     {
       TRACE_LOG1 ("socketpair failed: %s", strerror (errno));
@@ -362,10 +367,10 @@ socketpair_connect (assuan_context_t ctx,
   ctx->engine.release = _assuan_client_release;
   ctx->finish_handler = _assuan_client_finish;
   ctx->max_accepts = 1;
-  ctx->inbound.fd  = fds[0]; 
-  ctx->outbound.fd = fds[0]; 
+  ctx->inbound.fd  = fds[0];
+  ctx->outbound.fd = fds[0];
   _assuan_init_uds_io (ctx);
-  
+
   err = initial_handshake (ctx);
   if (err)
     _assuan_reset (ctx);
