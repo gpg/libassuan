@@ -1,4 +1,4 @@
-Noteworthy changes in version 2.0.3 (unreleased)
+Noteworthy changes in version 2.0.3 (2011-12-20)
 ------------------------------------------------
 
  * Make assuan_get_pid work correctly for pipe server.
