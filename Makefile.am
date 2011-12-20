@@ -1,5 +1,5 @@
 # Assuan top level Makefile
-# Copyright (C) 2001, 2002, 2003, 2007 Free Software Foundation, Inc.
+# Copyright (C) 2001, 2002, 2003, 2007, 2011 Free Software Foundation, Inc.
 #
 # This file is part of Assuan.
 #
@@ -40,7 +40,7 @@ gen-ChangeLog:
 	if test -d $(top_srcdir)/.git; then				\
 	  (cd $(top_srcdir) &&                      			\
 	    ./build-aux/gitlog-to-changelog				\
-	    --amend=build-aux/git-log-fix				\
+	    --amend=build-aux/git-log-fix  --tear-off			\
 	    --since=$(gen_start_date) ) > $(distdir)/cl-t;		\
           cat $(top_srcdir)/build-aux/git-log-footer >> $(distdir)/cl-t;\
 	  rm -f $(distdir)/ChangeLog;					\
