@@ -105,6 +105,11 @@ EXPORTS
     __assuan_connect			@84
     assuan_register_pre_cmd_notify	@85
     assuan_socket_connect_fd		@86
+    __assuan_read			@87
+    __assuan_write			@88
+    __assuan_recvmsg			@89
+    __assuan_sendmsg			@90
+    __assuan_waitpid			@91
 
 ; END
 

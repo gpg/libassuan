@@ -482,6 +482,11 @@ int __assuan_socketpair (assuan_context_t ctx, int _namespace, int style,
 			 int protocol, assuan_fd_t filedes[2]);
 int __assuan_socket (assuan_context_t ctx, int _namespace, int style, int protocol);
 int __assuan_connect (assuan_context_t ctx, int sock, struct sockaddr *addr, socklen_t length);
+ssize_t __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size);
+ssize_t __assuan_write (assuan_context_t ctx, assuan_fd_t fd, const void *buffer, size_t size);
+int __assuan_recvmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg, int flags);
+int __assuan_sendmsg (assuan_context_t ctx, assuan_fd_t fd, const assuan_msghdr_t msg, int flags);
+pid_t __assuan_waitpid (assuan_context_t ctx, pid_t pid, int nowait, int *status, int options);
 
 
 #define ASSUAN_SYSTEM_PTH_IMPL						\
@@ -515,21 +520,29 @@ extern struct assuan_system_hooks _assuan_system_pth;
   { (void) ctx; npth_usleep (usec); }					\
   static ssize_t _assuan_npth_read (assuan_context_t ctx, assuan_fd_t fd, \
 				    void *buffer, size_t size)		\
-  { (void) ctx; return npth_read (fd, buffer, size); }			\
+  { ssize_t res; (void) ctx; npth_unprotect();				\
+    res = __assuan_read (ctx, fd, buffer, size);			\
+    npth_protect(); return res; }					\
   static ssize_t _assuan_npth_write (assuan_context_t ctx, assuan_fd_t fd, \
 				     const void *buffer, size_t size)	\
-  { (void) ctx; return npth_write (fd, buffer, size); }			\
+  { ssize_t res; (void) ctx; npth_unprotect();				\
+    res = __assuan_write (ctx, fd, buffer, size);			\
+    npth_protect(); return res; }					\
   static int _assuan_npth_recvmsg (assuan_context_t ctx, assuan_fd_t fd, \
 				  assuan_msghdr_t msg, int flags)	\
-  { (void) ctx; return npth_recvmsg (fd, msg, flags); }			\
+  { int res; (void) ctx; npth_unprotect();				\
+    res = __assuan_recvmsg (ctx, fd, msg, flags);			\
+    npth_protect(); return res; }					\
   static int _assuan_npth_sendmsg (assuan_context_t ctx, assuan_fd_t fd, \
 				  const assuan_msghdr_t msg, int flags) \
-  { (void) ctx; return npth_sendmsg (fd, msg, flags); }			\
+  { int res; (void) ctx; npth_unprotect();				\
+    res = __assuan_sendmsg (ctx, fd, msg, flags);			\
+    npth_protect(); return res; }					\
   static pid_t _assuan_npth_waitpid (assuan_context_t ctx, pid_t pid,	\
 				     int nowait, int *status, int options) \
-  { (void) ctx;								\
-    if (!nowait) return npth_waitpid (pid, status, options);		\
-    else return 0; }							\
+  { pid_t res; (void) ctx; npth_unprotect();				\
+    res = __assuan_waitpid (ctx, pid, nowait, status, options);		\
+    npth_protect(); return res; }					\
 									\
   struct assuan_system_hooks _assuan_system_npth =			\
     { ASSUAN_SYSTEM_HOOKS_VERSION, _assuan_npth_usleep, __assuan_pipe,	\

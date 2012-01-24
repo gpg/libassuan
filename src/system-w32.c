@@ -190,7 +190,7 @@ is_socket (HANDLE hd)
 }
 
 
-static ssize_t
+ssize_t
 __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
 {
   int res;
@@ -239,7 +239,7 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
 
 
 
-static ssize_t
+ssize_t
 __assuan_write (assuan_context_t ctx, assuan_fd_t fd, const void *buffer,
 		size_t size)
 {
@@ -292,7 +292,7 @@ __assuan_write (assuan_context_t ctx, assuan_fd_t fd, const void *buffer,
 
 
 
-static int
+int
 __assuan_recvmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
 		  int flags)
 {
@@ -303,7 +303,7 @@ __assuan_recvmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
 
 
 
-static int
+int
 __assuan_sendmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
 		  int flags)
 {
@@ -496,7 +496,7 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 
 /* FIXME: Add some sort of waitpid function that covers GPGME and
    gpg-agent's use of assuan.  */
-static pid_t 
+pid_t
 __assuan_waitpid (assuan_context_t ctx, pid_t pid, int nowait,
 		  int *status, int options)
 {
