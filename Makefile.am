@@ -21,11 +21,13 @@
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = dist-bzip2 no-dist-gzip
 
+# (A suitable gitlog-to-changelog script can be found in GnuPG master.)
+GITLOG_TO_CHANGELOG=gitlog-to-changelog
+
 EXTRA_DIST = config.rpath autogen.sh README.GIT                  	\
              ChangeLog-2011 doc/ChangeLog-2011 src/ChangeLog-2011 	\
              tests/ChangeLog-2011 contrib/ChangeLog-2011     		\
-             build-aux/gitlog-to-changelog build-aux/git-log-footer	\
-             build-aux/git-log-fix
+             build-aux/git-log-footer build-aux/git-log-fix
 
 SUBDIRS = m4 src doc tests
 
@@ -37,9 +39,10 @@ dist-hook: gen-ChangeLog
 gen_start_date = 2011-12-01T00:00:00
 .PHONY: gen-ChangeLog
 gen-ChangeLog:
+	set -e;                         				\
 	if test -d $(top_srcdir)/.git; then				\
 	  (cd $(top_srcdir) &&                      			\
-	    ./build-aux/gitlog-to-changelog				\
+	    $(GITLOG_TO_CHANGELOG) --append-dot --tear-off		\
 	    --amend=build-aux/git-log-fix  --tear-off			\
 	    --since=$(gen_start_date) ) > $(distdir)/cl-t;		\
           cat $(top_srcdir)/build-aux/git-log-footer >> $(distdir)/cl-t;\
