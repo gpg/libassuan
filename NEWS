@@ -1,3 +1,19 @@
+Noteworthy changes in version 2.1.0 (unreleased)
+------------------------------------------------
+
+ * Support for the nPth library.
+
+ * Interface changes relative to the 2.0.3 release:
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ ASSUAN_SYSTEM_NPTH_IMPL  NEW macro.
+ ASSUAN_SYSTEM_NPTH       NEW macro.
+ __assuan_read            NEW (private).
+ __assuan_write           NEW (private).
+ __assuan_recvmsg         NEW (private).
+ __assuan_sendmsg         NEW (private).
+ __assuan_waitpid         NEW (private).
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Noteworthy changes in version 2.0.3 (2011-12-20)
 ------------------------------------------------
 

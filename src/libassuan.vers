@@ -108,6 +108,11 @@ LIBASSUAN_1.0 {
     __assuan_usleep;
     __assuan_socket;
     __assuan_connect;
+    __assuan_read;
+    __assuan_write;
+    __assuan_recvmsg;
+    __assuan_sendmsg;
+    __assuan_waitpid;
 
   local:
     *;

@@ -62,17 +62,17 @@ __assuan_usleep (assuan_context_t ctx, unsigned int usec)
   {
     struct timespec req;
     struct timespec rem;
-      
+
     req.tv_sec = 0;
     req.tv_nsec = usec * 1000;
-  
+
     while (nanosleep (&req, &rem) < 0 && errno == EINTR)
       req = rem;
   }
 #else
   {
     struct timeval tv;
-  
+
     tv.tv_sec  = usec / 1000000;
     tv.tv_usec = usec % 1000000;
     select (0, NULL, NULL, NULL, &tv);
@@ -101,7 +101,7 @@ __assuan_close (assuan_context_t ctx, assuan_fd_t fd)
 
 
 
-static ssize_t
+ssize_t
 __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
 {
   return read (fd, buffer, size);
@@ -109,7 +109,7 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
 
 
 
-static ssize_t
+ssize_t
 __assuan_write (assuan_context_t ctx, assuan_fd_t fd, const void *buffer,
 		size_t size)
 {
@@ -118,7 +118,7 @@ __assuan_write (assuan_context_t ctx, assuan_fd_t fd, const void *buffer,
 
 
 
-static int
+int
 __assuan_recvmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
 		  int flags)
 {
@@ -133,7 +133,7 @@ __assuan_recvmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
 
 
 
-static int
+int
 __assuan_sendmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
 		  int flags)
 {
@@ -154,7 +154,7 @@ writen (int fd, const char *buffer, size_t length)
   while (length)
     {
       int nwritten = write (fd, buffer, length);
-      
+
       if (nwritten < 0)
         {
           if (errno == EINTR)
@@ -201,7 +201,7 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 		  "can't open `/dev/null': %s", strerror (errno));
 	  _exit (4);
 	}
-      
+
       /* Dup handles to stdin/stdout. */
       if (fd_out != STDOUT_FILENO)
 	{
@@ -213,7 +213,7 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 	      _exit (4);
 	    }
 	}
-      
+
       if (fd_in != STDIN_FILENO)
 	{
 	  if (dup2 (fd_in == ASSUAN_INVALID_FD ? fdnul : fd_in,
@@ -224,7 +224,7 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 	      _exit (4);
 	    }
 	}
-      
+
       /* Dup stderr to /dev/null unless it is in the list of FDs to be
 	 passed to the child. */
       fdp = fd_child_list;
@@ -243,7 +243,7 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 	    }
 	}
       close (fdnul);
-      
+
       /* Close all files which will not be duped and are not in the
 	 fd_child_list. */
       n = sysconf (_SC_OPEN_MAX);
@@ -259,24 +259,24 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 	      while (*fdp != -1 && *fdp != i)
 		fdp++;
 	    }
-	  
+
 	  if (!(fdp && *fdp != -1))
 	    close (i);
 	}
       gpg_err_set_errno (0);
-      
+
       if (! name)
 	{
 	  /* No name and no args given, thus we don't do an exec
 	     but continue the forked process.  */
 	  *argv = "server";
-	  
+
 	  /* FIXME: Cleanup.  */
 	  return 0;
 	}
-      
-      execv (name, (char *const *) argv); 
-      
+
+      execv (name, (char *const *) argv);
+
       /* oops - use the pipe to tell the parent about it */
       snprintf (errbuf, sizeof(errbuf)-1,
 		"ERR %d can't exec `%s': %.50s\n",
@@ -289,7 +289,7 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 
   if (! name)
     *argv = "client";
-  
+
   *r_pid = pid;
 
   return 0;
@@ -299,7 +299,7 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 
 /* FIXME: Add some sort of waitpid function that covers GPGME and
    gpg-agent's use of assuan.  */
-static pid_t 
+pid_t
 __assuan_waitpid (assuan_context_t ctx, pid_t pid, int nowait,
 		  int *status, int options)
 {
@@ -307,7 +307,7 @@ __assuan_waitpid (assuan_context_t ctx, pid_t pid, int nowait,
      NOWAIT in POSIX systems just means the caller already did the
      waitpid for this child.  */
   if (! nowait)
-    return waitpid (pid, NULL, 0); 
+    return waitpid (pid, NULL, 0);
   return 0;
 }
 

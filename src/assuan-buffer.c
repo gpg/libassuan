@@ -46,7 +46,7 @@ writen (assuan_context_t ctx, const char *buffer, size_t length)
   while (length)
     {
       ssize_t nwritten = ctx->engine.writefnc (ctx, buffer, length);
-      
+
       if (nwritten < 0)
         {
           if (errno == EINTR)
@@ -202,7 +202,7 @@ _assuan_read_line (assuan_context_t ctx)
 					  ctx->inbound.linelen);
       if (monitor_result & ASSUAN_IO_MONITOR_IGNORE)
         ctx->inbound.linelen = 0;
-      
+
       if ( !(monitor_result & ASSUAN_IO_MONITOR_NOLOG))
         _assuan_log_control_channel (ctx, 0, NULL,
                                      ctx->inbound.line, ctx->inbound.linelen,
@@ -211,11 +211,11 @@ _assuan_read_line (assuan_context_t ctx)
     }
   else
     {
-      _assuan_log_control_channel (ctx, 0, "invalid line", 
+      _assuan_log_control_channel (ctx, 0, "invalid line",
                                    NULL, 0, NULL, 0);
       *line = 0;
       ctx->inbound.linelen = 0;
-      return _assuan_error (ctx, ctx->inbound.eof 
+      return _assuan_error (ctx, ctx->inbound.eof
 			    ? GPG_ERR_ASS_INCOMPLETE_LINE
 			    : GPG_ERR_ASS_LINE_TOO_LONG);
     }
@@ -261,7 +261,7 @@ assuan_pending_line (assuan_context_t ctx)
 }
 
 
-gpg_error_t 
+gpg_error_t
 _assuan_write_line (assuan_context_t ctx, const char *prefix,
                     const char *line, size_t len)
 {
@@ -272,7 +272,7 @@ _assuan_write_line (assuan_context_t ctx, const char *prefix,
   /* Make sure that the line is short enough. */
   if (len + prefixlen + 2 > ASSUAN_LINELENGTH)
     {
-      _assuan_log_control_channel (ctx, 1, 
+      _assuan_log_control_channel (ctx, 1,
                                    "supplied line too long - truncated",
                                    NULL, 0, NULL, 0);
       if (prefixlen > 5)
@@ -313,7 +313,7 @@ _assuan_write_line (assuan_context_t ctx, const char *prefix,
 }
 
 
-gpg_error_t 
+gpg_error_t
 assuan_write_line (assuan_context_t ctx, const char *line)
 {
   size_t len;
@@ -364,7 +364,7 @@ _assuan_cookie_write_data (void *cookie, const char *buffer, size_t orig_size)
           *line++ = ' ';
           linelen += 2;
         }
-      
+
       /* Copy data, keep space for the CRLF and to escape one character. */
       while (size && linelen < LINELENGTH-2-2)
         {
@@ -382,8 +382,8 @@ _assuan_cookie_write_data (void *cookie, const char *buffer, size_t orig_size)
             }
           size--;
         }
-      
-      
+
+
       monitor_result = 0;
       if (ctx->io_monitor)
 	monitor_result = ctx->io_monitor (ctx, ctx->io_monitor_data, 1,
@@ -414,7 +414,7 @@ _assuan_cookie_write_data (void *cookie, const char *buffer, size_t orig_size)
 }
 
 
-/* Write out any buffered data 
+/* Write out any buffered data
    This function is used for GNU's custom streams */
 int
 _assuan_cookie_write_flush (void *cookie)
@@ -435,7 +435,7 @@ _assuan_cookie_write_flush (void *cookie)
   if (ctx->io_monitor)
     monitor_result = ctx->io_monitor (ctx, ctx->io_monitor_data, 1,
 				      ctx->outbound.data.line, linelen);
-  
+
   if (linelen)
     {
       if (!(monitor_result & ASSUAN_IO_MONITOR_NOLOG))
@@ -461,7 +461,7 @@ _assuan_cookie_write_flush (void *cookie)
  * @ctx: An assuan context
  * @buffer: Data to send or NULL to flush
  * @length: length of the data to send/
- * 
+ *
  * This function may be used by the server or the client to send data
  * lines.  The data will be escaped as required by the Assuan protocol
  * and may get buffered until a line is full.  To force sending the
@@ -470,10 +470,10 @@ _assuan_cookie_write_flush (void *cookie)
  * also send the terminating "END" command to terminate the reponse on
  * a INQUIRE response.  However, when assuan_transact() is used, this
  * function takes care of sending END itself.
- * 
+ *
  * If BUFFER is NULL and LENGTH is 1 and we are a client, a "CAN" is
  * send instead of an "END".
- * 
+ *
  * Return value: 0 on success or an error code
  **/
 
