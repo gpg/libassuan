@@ -22,6 +22,10 @@ Ben Kibbey  <bjk@luxsci.net>  Assigns Past and Future Changes For GnuPG.
  - Fixes and new features
 
 
+DCO:
+
+
+
 Libassuan was orginally part of NewPG, a temporary fork of GnuPG, and
 later split of into a separate library.
 
