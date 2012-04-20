@@ -49,12 +49,20 @@ dummy_handler (assuan_context_t ctx, char *line)
 }
 
 
+static const char std_help_nop[] =
+  "NOP\n"
+  "\n"
+  "No operation.  Returns OK without any action.";
 static gpg_error_t
 std_handler_nop (assuan_context_t ctx, char *line)
 {
   return PROCESS_DONE (ctx, 0); /* okay */
 }
 
+static const char std_help_cancel[] =
+  "CANCEL\n"
+  "\n"
+  "Run the server's cancel handler if one has been registered.";
 static gpg_error_t
 std_handler_cancel (assuan_context_t ctx, char *line)
 {
@@ -64,6 +72,14 @@ std_handler_cancel (assuan_context_t ctx, char *line)
   return PROCESS_DONE (ctx, set_error (ctx, GPG_ERR_NOT_IMPLEMENTED, NULL));
 }
 
+static const char std_help_option[] =
+  "OPTION <NAME> [ [=] <VALUE> ]\n"
+  "\n"
+  "Set option <NAME> to configure server operation.  Leading and\n"
+  "trailing spaces around <NAME> and <VALUE> are allowed but should be\n"
+  "ignored.  For compatibility reasons, <NAME> may be prefixed with two\n"
+  "dashes.  The use of the equal sign is optional but suggested if\n"
+  "<VALUE> is given.";
 static gpg_error_t
 std_handler_option (assuan_context_t ctx, char *line)
 {
@@ -117,6 +133,10 @@ std_handler_option (assuan_context_t ctx, char *line)
   return PROCESS_DONE (ctx, 0);
 }
 
+static const char std_help_bye[] =
+  "BYE\n"
+  "\n"
+  "Close the connection.  The server will reply with OK.";
 static gpg_error_t
 std_handler_bye (assuan_context_t ctx, char *line)
 {
@@ -130,12 +150,21 @@ std_handler_bye (assuan_context_t ctx, char *line)
   return PROCESS_DONE (ctx, 0);
 }
 
+static const char std_help_auth[] =
+  "AUTH\n"
+  "\n"
+  "Reserved for future extensions.";
 static gpg_error_t
 std_handler_auth (assuan_context_t ctx, char *line)
 {
   return PROCESS_DONE (ctx, set_error (ctx, GPG_ERR_NOT_IMPLEMENTED, NULL));
 }
 
+static const char std_help_reset[] =
+  "RESET\n"
+  "\n"
+  "Reset the connection but not any existing authentication.  The server\n"
+  "should release all resources associated with the connection.";
 static gpg_error_t
 std_handler_reset (assuan_context_t ctx, char *line)
 {
@@ -152,6 +181,12 @@ std_handler_reset (assuan_context_t ctx, char *line)
   return PROCESS_DONE (ctx, err);
 }
 
+static const char std_help_help[] =
+  "HELP [<COMMAND>]\n"
+  "\n"
+  "Lists all commands that the server understands as comment lines on\n"
+  "the status channel.  If <COMMAND> is given, list detailed help for\n"
+  "that command.";
 static gpg_error_t
 std_handler_help (assuan_context_t ctx, char *line)
 {
@@ -211,7 +246,10 @@ std_handler_help (assuan_context_t ctx, char *line)
   return PROCESS_DONE (ctx, 0);
 }
 
-
+static const char std_help_end[] =
+  "END\n"
+  "\n"
+  "Used by a client to mark the end of raw data.";
 static gpg_error_t
 std_handler_end (assuan_context_t ctx, char *line)
 {
@@ -255,7 +293,13 @@ assuan_command_parse_fd (assuan_context_t ctx, char *line, assuan_fd_t *rfd)
 }
 
 
-/* Format is INPUT FD=<n> */
+static const char std_help_input[] =
+  "INPUT FD[=<N>]\n"
+  "\n"
+  "Used by a client to pass an input file descriptor to the server.\n"
+  "The server opens <N> as a local file descriptor.  Without <N>, the\n"
+  "server opens the file descriptor just sent by the client using\n"
+  "assuan_sendfd.";
 static gpg_error_t
 std_handler_input (assuan_context_t ctx, char *line)
 {
@@ -290,7 +334,13 @@ std_handler_input (assuan_context_t ctx, char *line)
 }
 
 
-/* Format is OUTPUT FD=<n> */
+static const char std_help_output[] =
+  "OUTPUT FD[=<N>]\n"
+  "\n"
+  "Used by a client to pass an output file descriptor to the server.\n"
+  "The server opens <N> as a local file descriptor.  Without <N>, the\n"
+  "server opens the file descriptor just sent by the client using\n"
+  "assuan_sendfd.";
 static gpg_error_t
 std_handler_output (assuan_context_t ctx, char *line)
 {
@@ -331,21 +381,21 @@ std_handler_output (assuan_context_t ctx, char *line)
 static struct {
   const char *name;
   gpg_error_t (*handler)(assuan_context_t, char *line);
+  const char *help;
   int always; /* always initialize this command */
 } std_cmd_table[] = {
-  { "NOP",    std_handler_nop, 1 },
-  { "CANCEL", std_handler_cancel, 1 },
-  { "OPTION", std_handler_option, 1 },
-  { "BYE",    std_handler_bye, 1 },
-  { "AUTH",   std_handler_auth, 1 },
-  { "RESET",  std_handler_reset, 1 },
-  { "END",    std_handler_end, 1 },
-  { "HELP",   std_handler_help, 1 },
+  { "NOP",    std_handler_nop, std_help_nop, 1 },
+  { "CANCEL", std_handler_cancel, std_help_cancel, 1 },
+  { "OPTION", std_handler_option, std_help_option, 1 },
+  { "BYE",    std_handler_bye, std_help_bye, 1 },
+  { "AUTH",   std_handler_auth, std_help_auth, 1 },
+  { "RESET",  std_handler_reset, std_help_reset, 1 },
+  { "END",    std_handler_end, std_help_end, 1 },
+  { "HELP",   std_handler_help, std_help_help, 1 },
 
-  { "INPUT",  std_handler_input, 0 },
-  { "OUTPUT", std_handler_output, 0 },
-  { NULL, NULL, 0 }
-};
+  { "INPUT",  std_handler_input, std_help_input, 0 },
+  { "OUTPUT", std_handler_output, std_help_output, 0 },
+  { } };
 
 
 /**
