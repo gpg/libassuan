@@ -741,6 +741,7 @@ GPGME and an application using GPGME, the context is very extensive
 and covers utilitary information like memory allocation callbacks as
 well as specific information associated with client/server operations.
 
+@anchor{function assuan_new}
 @deftypefun gpg_error_t assuan_new (@w{assuan_context_t *@var{ctx_p}})
 The function @code{assuan_new} creates a new context, using the global
 default memory allocation, log handler and @code{libgpg-error} source.
@@ -1230,16 +1231,24 @@ command_handler (int fd)
   int i;
   assuan_context_t ctx;
 
+  rc = assuan_new (&ctx);
+  if (rc)
+    @{
+      fprintf (stderr, "server context creation failed: %s\n",
+               gpg_strerror(rc));
+      return;
+    @}
+
   if (fd == -1)
     @{
       assuan_fd_t filedes[2];
 
-      filedes[0] = assuan_fd_from_posix (0);
-      filedes[1] = assuan_fd_from_posix (1);
-      rc = assuan_init_pipe_server (&ctx, filedes);
+      filedes[0] = assuan_fd_from_posix_fd (0);
+      filedes[1] = assuan_fd_from_posix_fd (1);
+      rc = assuan_init_pipe_server (ctx, filedes);
     @}
   else
-    rc = assuan_init_socket_server (&ctx, fd, ASSUAN_SOCKET_SERVER_ACCEPTED);
+    rc = assuan_init_socket_server (ctx, fd, ASSUAN_SOCKET_SERVER_ACCEPTED);
   if (rc)
     @{
       fprintf (stderr, "server init failed: %s\n", gpg_strerror (rc));
@@ -1248,13 +1257,16 @@ command_handler (int fd)
 @end example
 
 @noindent
-This is the first part of the command handler.  In case this is called
-as a pipe based server, @var{fd} will be based as @var{fd} and the
-code assumes that the server's @code{stdin} and @code{stdout} file
-handles are connected to a pipe.  The initialization is thus done
-using the function:
+This is the first part of the command handler.  We start of by
+allocating a new Assuan context with @code{assuan_new}.
+@xref{function assuan_new}.
 
-@deftypefun gpg_error_t assuan_init_pipe_server (@w{assuan_context_t *@var{r_ctx}}, @w{assuan_fd_t @var{filedes}[2]})
+In case this is called as a pipe based server, @var{fd} will be based
+as @var{fd} and the code assumes that the server's @code{stdin} and
+@code{stdout} file handles are connected to a pipe.  The
+initialization is thus done using the function:
+
+@deftypefun gpg_error_t assuan_init_pipe_server (@w{assuan_context_t @var{ctx}}, @w{assuan_fd_t @var{filedes}[2]})
 
 The function takes the two file descriptors from @var{filedes} and
 returns a new Assuan context at @var{r_ctx}.  As usual, a return value
@@ -1270,15 +1282,11 @@ by the client to connect to such a server, automagically sets this
 variable.
 @end deftypefun
 
-@noindent
-If a file descriptor has been passed, the assuan context gets
-initialized by the function:
+@deftypefun gpg_error_t assuan_init_socket_server (@w{assuan_context_t @var{ctx}}, @w{assuan_fd_t @var{fd}}, @w{unsigned int @var{flags}})
 
-@deftypefun gpg_error_t assuan_init_socket_server (@w{assuan_context_t *@var{r_ctx}}, @w{assuan_fd_t @var{fd}}, @w{unsigned int @var{flags}})
-
-The function takes the file descriptor @var{fd} which is expected to be
-associated with a socket and returns a new Assuan context at
-@var{r_ctx}. The following bits are currently defined for @var{flags}:
+The function takes the file descriptor @var{fd} which is expected to
+be associated with a socket and an Assuan context @var{ctx}. The
+following bits are currently defined for @var{flags}:
 
 @table @code
 @item ASSUAN_SOCKET_SERVER_FDPASSING
@@ -1291,8 +1299,7 @@ bit as it allows better control of the connection state.
 @end table
 
 As usual, a return value of @code{0} indicates success and a failure
-is indicated by a returning an error value.  In case of error,
-@code{NULL} will be stored at @var{r_ctx}.
+is indicated by a returning an error value.
 @end deftypefun
 
 @noindent
