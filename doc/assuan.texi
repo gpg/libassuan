@@ -336,8 +336,8 @@ Reset the connection but not any existing authentication.  The server
 should release all resources associated with the connection.
 
 @item END
-Used by a client to mark the end of raw data.  The server may send END
-to indicate a partial end of data.
+Used by a client to mark the end of raw data.  The server may send
+@code{END} to indicate a partial end of data.
 
 @item HELP
 Lists all commands that the server understands as comment lines on the
