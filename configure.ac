@@ -367,9 +367,35 @@ AC_CACHE_VAL(assuan_cv_sys_so_peercred,
           assuan_cv_sys_so_peercred=no)
        ])
 AC_MSG_RESULT($assuan_cv_sys_so_peercred)
+
 if test $assuan_cv_sys_so_peercred = yes; then
   AC_DEFINE(HAVE_SO_PEERCRED, 1,
             [Defined if SO_PEERCRED is supported (Linux specific)])
+else
+  #
+  # Check for the getsockopt LOCAL_PEEREID (NetBSD)
+  #
+  AC_MSG_CHECKING(for LOCAL_PEEREID)
+  AC_CACHE_VAL(assuan_cv_sys_so_local_peereid,
+      [AC_TRY_COMPILE([#include <sys/socket.>
+         #include <sys/un.h>],
+         [struct unpcbid unp;
+          int unpl = sizeof unp;
+          getsockopt (1, SOL_SOCKET, LOCAL_PEEREID, &unp, &unpl);],
+          assuan_cv_sys_so_local_peereid=yes,
+          assuan_cv_sys_so_local_peereid=no)
+       ])
+  AC_MSG_RESULT($assuan_cv_sys_so_local_peereid)
+
+  if test $assuan_cv_sys_so_local_peereid = yes; then
+    AC_DEFINE(HAVE_LOCAL_PEEREID, 1,
+              [Defined if LOCAL_PEEREID is supported (NetBSD specific)])
+  else
+    #
+    # FreeBSD
+    #
+    AC_CHECK_FUNCS([getpeereid])
+  fi
 fi
 
 

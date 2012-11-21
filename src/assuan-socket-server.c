@@ -74,6 +74,27 @@ accept_connection_bottom (assuan_context_t ctx)
            ctx->pid = cr.pid;
       }
   }
+#elif defined(HAVE_LOCAL_PEEREID)
+  {
+    struct unpcbid unp;
+    socklen_t unpl = sizeof unp;
+
+    if (getsockopt(fd, 0, LOCAL_PEEREID, &unp, &unpl) != -1)
+      {
+	ctx->peercred.pid = unp.unp_pid;
+	ctx->peercred.uid = unp.unp_euid;
+	ctx->peercred.gid = unp.unp_egid;
+	ctx->peercred_valid = 1;
+      }
+  }
+#elif defined(HAVE_GETPEEREID)
+  {
+    if (getpeereid(fd, &ctx->peercred.uid, &ctx->peercred.gid) != -1)
+      {
+	ctx->peercred.pid = ASSUAN_INVALID_PID;
+	ctx->peercred_valid = 1;
+      }
+  }
 #endif
 
   ctx->inbound.fd = fd;
