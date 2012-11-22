@@ -30,6 +30,9 @@
 #ifdef HAVE_SYS_TYPES_H
 # include <sys/types.h>
 #endif
+#ifdef HAVE_UCRED_H
+#include <ucred.h>
+#endif
 #ifdef HAVE_W32_SYSTEM
 # ifdef HAVE_WINSOCK2_H
 #  include <winsock2.h>
@@ -58,7 +61,7 @@ accept_connection_bottom (assuan_context_t ctx)
   ctx->peercred_valid = 0;
 #ifdef HAVE_SO_PEERCRED
   {
-    struct ucred cr; 
+    struct ucred cr;
     socklen_t cl = sizeof cr;
 
     if ( !getsockopt (fd, SOL_SOCKET, SO_PEERCRED, &cr, &cl))
@@ -70,16 +73,29 @@ accept_connection_bottom (assuan_context_t ctx)
 
          /* This overrides any already set PID if the function returns
             a valid one. */
-         if (cr.pid != ASSUAN_INVALID_PID && cr.pid) 
+         if (cr.pid != ASSUAN_INVALID_PID && cr.pid)
            ctx->pid = cr.pid;
       }
   }
-#elif defined(HAVE_LOCAL_PEEREID)
+#elif defined (HAVE_GETPEERUCRED)
+  {
+    ucred_t *ucred = NULL;
+
+    if (getpeerucred (fd, &ucred) != -1)
+      {
+        ctx->peercred.uid = ucred_geteuid (ucred);
+        ctx->peercred.gid = ucred_getegid (ucred);
+	ctx->peercred.pid = ucred_getpid (ucred);
+	ctx->peercred_valid = 1;
+	ucred_free (ucred);
+      }
+  }
+#elif defined (HAVE_LOCAL_PEEREID)
   {
     struct unpcbid unp;
     socklen_t unpl = sizeof unp;
 
-    if (getsockopt(fd, 0, LOCAL_PEEREID, &unp, &unpl) != -1)
+    if (getsockopt (fd, 0, LOCAL_PEEREID, &unp, &unpl) != -1)
       {
 	ctx->peercred.pid = unp.unp_pid;
 	ctx->peercred.uid = unp.unp_euid;
@@ -89,7 +105,7 @@ accept_connection_bottom (assuan_context_t ctx)
   }
 #elif defined(HAVE_GETPEEREID)
   {
-    if (getpeereid(fd, &ctx->peercred.uid, &ctx->peercred.gid) != -1)
+    if (getpeereid (fd, &ctx->peercred.uid, &ctx->peercred.gid) != -1)
       {
 	ctx->peercred.pid = ASSUAN_INVALID_PID;
 	ctx->peercred_valid = 1;

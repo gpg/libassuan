@@ -391,10 +391,12 @@ else
     AC_DEFINE(HAVE_LOCAL_PEEREID, 1,
               [Defined if LOCAL_PEEREID is supported (NetBSD specific)])
   else
-    #
-    # FreeBSD
-    #
-    AC_CHECK_FUNCS([getpeereid])
+    # (Open)Solaris
+    AC_CHECK_FUNCS([getpeerucred], AC_CHECK_HEADERS([ucred.h]))
+    if test $ac_cv_func_getpeerucred != yes; then
+        # FreeBSD
+        AC_CHECK_FUNCS([getpeereid])
+    fi
   fi
 fi
 
