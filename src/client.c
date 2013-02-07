@@ -79,7 +79,7 @@ assuan_client_read_response (assuan_context_t ctx,
   *line_r = NULL;
   *linelen_r = 0;
 
-  do 
+  do
     {
       do
 	{
@@ -90,7 +90,7 @@ assuan_client_read_response (assuan_context_t ctx,
         return rc;
       line = ctx->inbound.line;
       linelen = ctx->inbound.linelen;
-    }    
+    }
   while (!linelen);
 
   /* For data lines, we deescape immediately.  The user will never
@@ -137,14 +137,14 @@ assuan_client_parse_response (assuan_context_t ctx, char *line, int linelen,
       *off = 2;
     }
   else if (linelen >= 1
-           && line[0] == 'S' 
+           && line[0] == 'S'
            && (line[1] == '\0' || line[1] == ' '))
     {
       *response = ASSUAN_RESPONSE_STATUS;
       *off = 1;
       while (line[*off] == ' ')
         ++*off;
-    }  
+    }
   else if (linelen >= 2
            && line[0] == 'O' && line[1] == 'K'
            && (line[2] == '\0' || line[2] == ' '))
@@ -162,11 +162,11 @@ assuan_client_parse_response (assuan_context_t ctx, char *line, int linelen,
       *off = 3;
       while (line[*off] == ' ')
         ++*off;
-    }  
+    }
   else if (linelen >= 7
            && line[0] == 'I' && line[1] == 'N' && line[2] == 'Q'
            && line[3] == 'U' && line[4] == 'I' && line[5] == 'R'
-           && line[6] == 'E' 
+           && line[6] == 'E'
            && (line[7] == '\0' || line[7] == ' '))
     {
       *response = ASSUAN_RESPONSE_INQUIRE;
@@ -225,9 +225,9 @@ _assuan_read_from_server (assuan_context_t ctx, assuan_response_t *response,
  * @inquire_cb_arg: first argument passed to @inquire_cb
  * @status_cb: Callback function for a status response
  * @status_cb_arg: first argument passed to @status_cb
- * 
+ *
  * FIXME: Write documentation
- * 
+ *
  * Return value: 0 on success or an error code.  The error code may be
  * the one one returned by the server via error lines or from the
  * callback functions.  Take care:  If a callback returns an error
@@ -271,7 +271,7 @@ assuan_transact (assuan_context_t ctx,
     {
       if (!data_cb)
         rc = _assuan_error (ctx, GPG_ERR_ASS_NO_DATA_CB);
-      else 
+      else
         {
           rc = data_cb (data_cb_arg, line, linelen);
           if (!rc)
@@ -291,6 +291,15 @@ assuan_transact (assuan_context_t ctx,
           rc = inquire_cb (inquire_cb_arg, line);
           if (!rc)
             rc = assuan_send_data (ctx, NULL, 0); /* flush and send END */
+          else
+            { /* Flush and send CAN.  */
+              /* Note that in this error case we don't want to return
+                 an error code from sending the cancel.  The dummy
+                 read is to remove the response from the server which
+                 we are not interested in.  */
+              assuan_send_data (ctx, NULL, 1);
+              _assuan_read_from_server (ctx, &response, &off, 0);
+            }
           if (!rc)
             goto again;
         }
@@ -314,7 +323,7 @@ assuan_transact (assuan_context_t ctx,
     {
       if (!data_cb)
         rc = _assuan_error (ctx, GPG_ERR_ASS_NO_DATA_CB);
-      else 
+      else
         {
           rc = data_cb (data_cb_arg, NULL, 0);
           if (!rc)
