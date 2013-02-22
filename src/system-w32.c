@@ -26,7 +26,6 @@
 #include <errno.h>
 #include <time.h>
 #include <fcntl.h>
-#include <windows.h>
 
 #include "assuan-defs.h"
 #include "debug.h"
@@ -39,7 +38,7 @@ assuan_fdopen (int fd)
   assuan_fd_t ifd = (assuan_fd_t) _get_osfhandle (fd);
   assuan_fd_t ofd;
 
-  if (! DuplicateHandle(GetCurrentProcess(), ifd, 
+  if (! DuplicateHandle(GetCurrentProcess(), ifd,
 			GetCurrentProcess(), &ofd, 0,
 			TRUE, DUPLICATE_SAME_ACCESS))
     {
@@ -195,7 +194,7 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
 {
   int res;
   int ec = 0;
-  
+
   if (is_socket (fd))
     {
       res = recv (HANDLE2SOCKET (fd), buffer, size, 0);
@@ -210,7 +209,7 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
            res = -1;
            ec = GetLastError ();
          }
-      else 
+      else
         res = nread;
     }
   if (res == -1)
@@ -220,7 +219,7 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
         case WSAENOTSOCK:
 	  gpg_err_set_errno (EBADF);
           break;
-          
+
         case WSAEWOULDBLOCK:
 	  gpg_err_set_errno (EAGAIN);
 	  break;
@@ -245,7 +244,7 @@ __assuan_write (assuan_context_t ctx, assuan_fd_t fd, const void *buffer,
 {
   int res;
   int ec = 0;
-  
+
   if (is_socket (fd))
     {
       res = send (HANDLE2SOCKET (fd), buffer, size, 0);
@@ -261,7 +260,7 @@ __assuan_write (assuan_context_t ctx, assuan_fd_t fd, const void *buffer,
           res = -1;
           ec = GetLastError ();
         }
-      else 
+      else
         res = (int)nwrite;
     }
   if (res == -1)
@@ -271,7 +270,7 @@ __assuan_write (assuan_context_t ctx, assuan_fd_t fd, const void *buffer,
         case WSAENOTSOCK:
 	  gpg_err_set_errno (EBADF);
           break;
-          
+
         case WSAEWOULDBLOCK:
 	  gpg_err_set_errno (EAGAIN);
 	  break;
@@ -339,7 +338,7 @@ build_w32_commandline (assuan_context_t ctx, const char * const *argv,
   if (! buf)
     return -1;
 
-  for (i = 0; argv[i]; i++) 
+  for (i = 0; argv[i]; i++)
     {
       if (i)
         p = stpcpy (p, " ");
@@ -375,7 +374,7 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 		void *atforkvalue, unsigned int flags)
 {
   SECURITY_ATTRIBUTES sec_attr;
-  PROCESS_INFORMATION pi = 
+  PROCESS_INFORMATION pi =
     {
       NULL,      /* Returns process handle.  */
       0,         /* Returns primary thread handle.  */
@@ -403,7 +402,7 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
   memset (&sec_attr, 0, sizeof sec_attr);
   sec_attr.nLength = sizeof sec_attr;
   sec_attr.bInheritHandle = FALSE;
-  
+
   memset (&si, 0, sizeof si);
   si.cb = sizeof (si);
   si.dwFlags = STARTF_USESTDHANDLES;
@@ -474,7 +473,7 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
     CloseHandle (nullfd);
 
   ResumeThread (pi.hThread);
-  CloseHandle (pi.hThread); 
+  CloseHandle (pi.hThread);
 
   /*   _assuan_log_printf ("CreateProcess ready: hProcess=%p hThread=%p" */
   /*                       " dwProcessID=%d dwThreadId=%d\n", */
@@ -555,5 +554,5 @@ struct assuan_system_hooks _assuan_system_hooks =
     __assuan_waitpid,
     __assuan_socketpair,
     __assuan_socket,
-    __assuan_connect    
+    __assuan_connect
   };
