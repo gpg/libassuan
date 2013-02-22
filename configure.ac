@@ -240,13 +240,10 @@ changequote([,])dnl
 BUILD_FILEVERSION="${BUILD_FILEVERSION}mym4_revision_dec"
 AC_SUBST(BUILD_FILEVERSION)
 
-if test "$have_w32_system" = yes; then
-    dnl We know that we have a decent date(1)
-    BUILD_TIMESTAMP=`date --iso-8601=minutes`
-else
-    BUILD_TIMESTAMP=`date`
-fi
+BUILD_TIMESTAMP=`date -u +%Y-%m-%dT%H:%M+0000 2>/dev/null || date`
 AC_SUBST(BUILD_TIMESTAMP)
+AC_DEFINE_UNQUOTED(BUILD_TIMESTAMP, "$BUILD_TIMESTAMP",
+                   [The time this package was configured for a build])
 
 
 
