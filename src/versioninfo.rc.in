@@ -1,6 +1,6 @@
 /* versioninfo.rc.in - for assuan
  *    Copyright (C) 2005 g10 Code GmbH
- * 
+ *
  * This file is free software; as a special exception the author gives
  * unlimited permission to copy and/or distribute it, with or without
  * modifications, as long as this notice is preserved.
@@ -9,7 +9,7 @@
  * WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
  * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
- 
+
 /* This file is processed by configure to create versioninfo.rc */
 
 #line __LINE__ "versioninfo.rc.in"
@@ -39,7 +39,7 @@ BEGIN
             VALUE "FileDescription", "Assuan - GnuPG IPC\0"
             VALUE "FileVersion", "@LIBASSUAN_LT_CURRENT@.@LIBASSUAN_LT_AGE@.@LIBASSUAN_LT_REVISION@.@BUILD_REVISION@\0"
             VALUE "InternalName", "libassuan\0"
-            VALUE "LegalCopyright", "Copyright © 2003-2009 g10 Code GmbH\0"
+            VALUE "LegalCopyright", "Copyright © 2003-2013 g10 Code GmbH\0"
             VALUE "LegalTrademarks", "\0"
             VALUE "OriginalFilename", "libassuan.dll\0"
             VALUE "PrivateBuild", "\0"
