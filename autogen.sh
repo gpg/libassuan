@@ -102,11 +102,12 @@ if [ "$myhost" = "w32" ]; then
         64)
           w32root="$w64root"
           [ -z "$w32root" ] && w32root="$HOME/w64root"
-          toolprefixes="amd64-mingw32msvc"
+          toolprefixes="$amd64_toolprefixes amd64-mingw32msvc"
           ;;
         *)
           [ -z "$w32root" ] && w32root="$HOME/w32root"
-          toolprefixes="i586-mingw32msvc i386-mingw32msvc"
+          toolprefixes="$w32_toolprefixes i586-mingw32msvc"
+          toolprefixes="$toolprefixes i386-mingw32msvc mingw32"
           ;;
     esac
     echo "Using $w32root as standard install directory" >&2
