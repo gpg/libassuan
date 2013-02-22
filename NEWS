@@ -1,7 +1,9 @@
-Noteworthy changes in version 2.1.0 (unreleased)
+Noteworthy changes in version 2.1.0 (2013-02-22)
 ------------------------------------------------
 
  * Support for the nPth library.
+
+ * Add assuan_check_version and two version macros.
 
  * Interface changes relative to the 2.0.3 release:
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -12,7 +14,11 @@ Noteworthy changes in version 2.1.0 (unreleased)
  __assuan_recvmsg         NEW (private).
  __assuan_sendmsg         NEW (private).
  __assuan_waitpid         NEW (private).
+ ASSUAN_VERSION           NEW macro.
+ ASSUAN_VERSION_NUMBER    NEW macro.
+ assuan_check_version     NEW.
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 Noteworthy changes in version 2.0.3 (2011-12-20)
 ------------------------------------------------
@@ -366,7 +372,8 @@ Noteworthy changes in version 0.6.0 (2003-08-06)
  * Initial release as a standalone library.
 
 
- Copyright 2003, 2004, 2006, 2007, 2011 Free Software Foundation, Inc.
+ Copyright 2003, 2004, 2006, 2007, 2011,
+           2013 Free Software Foundation, Inc.
 
  This file is free software; as a special exception the author gives
  unlimited permission to copy and/or distribute it, with or without

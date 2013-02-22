@@ -55,8 +55,8 @@ AC_INIT([libassuan],[mym4_full_version],[http://bugs.gnupg.org])
 #   (Interfaces added:			AGE++)
 #   (Interfaces removed/changed:	AGE=0)
 #
-LIBASSUAN_LT_CURRENT=3
-LIBASSUAN_LT_AGE=3
+LIBASSUAN_LT_CURRENT=4
+LIBASSUAN_LT_AGE=4
 LIBASSUAN_LT_REVISION=0
 
 # If the API is changed in an incompatible way: increment the next counter.
