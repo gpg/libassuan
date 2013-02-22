@@ -18,17 +18,17 @@
 
 ## Process this file with automake to produce Makefile.in
 
-TESTS_ENVIRONMENT = 
+TESTS_ENVIRONMENT =
 
 EXTRA_DIST = motd ce-createpipe.c
 
-BUILT_SOURCES = 
-CLEANFILES = 
+BUILT_SOURCES =
+CLEANFILES =
 
-TESTS = pipeconnect
+TESTS = version pipeconnect
 
 if HAVE_W32CE_SYSTEM
-w32cetools = ce-createpipe ce-server 
+w32cetools = ce-createpipe ce-server
 endif
 
 if USE_DESCRIPTOR_PASSING

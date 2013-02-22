@@ -4,7 +4,7 @@
  * This file is free software; as a special exception the author gives
  * unlimited permission to copy and/or distribute it, with or without
  * modifications, as long as this notice is preserved.
- * 
+ *
  * This file is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
  * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
@@ -22,7 +22,8 @@
 
 static const char *host_os;
 static char *srcdir;
-
+static const char *hdr_version;
+static const char *hdr_version_number;
 
 /* Include the file NAME form the source directory.  The included file
    is not further expanded.  It may have comments indicated by a
@@ -46,7 +47,7 @@ include_file (const char *fname, int lnr, const char *name)
   fp = fopen (incfname, "r");
   if (!fp)
     {
-      fprintf (stderr, "%s:%d: error including `%s': %s\n", 
+      fprintf (stderr, "%s:%d: error including `%s': %s\n",
                fname, lnr, incfname, strerror (errno));
       exit (1);
     }
@@ -63,7 +64,7 @@ include_file (const char *fname, int lnr, const char *name)
     }
   if (ferror (fp))
     {
-      fprintf (stderr, "%s:%d: error reading `%s': %s\n", 
+      fprintf (stderr, "%s:%d: error reading `%s': %s\n",
                fname, lnr, incfname, strerror (errno));
       exit (1);
     }
@@ -135,6 +136,18 @@ write_special (const char *fname, int lnr, const char *tag)
       if (!strcmp (host_os, "mingw32ce"))
         include_file (fname, lnr, "w32ce-add.h");
     }
+  else if (!strcmp (tag, "version"))
+    {
+      putchar ('\"');
+      fputs (hdr_version, stdout);
+      putchar ('\"');
+      putchar ('\n');
+    }
+  else if (!strcmp (tag, "version-number"))
+    {
+      fputs (hdr_version_number, stdout);
+      putchar ('\n');
+    }
   else
     return 0; /* Unknown tag.  */
 
@@ -142,7 +155,7 @@ write_special (const char *fname, int lnr, const char *tag)
 }
 
 
-int 
+int
 main (int argc, char **argv)
 {
   FILE *fp;
@@ -155,14 +168,17 @@ main (int argc, char **argv)
     {
       argc--; argv++;
     }
- 
-  if (argc != 2)
+
+  if (argc != 4)
     {
-      fputs ("usage: " PGM " host_os template.h\n", stderr);
+      fputs ("usage: " PGM " host_os template.h version version_number\n",
+             stderr);
       return 1;
     }
   host_os = argv[0];
   fname = argv[1];
+  hdr_version = argv[2];
+  hdr_version_number = argv[3];
 
   srcdir = malloc (strlen (fname) + 2 + 1);
   if (!srcdir)
@@ -184,7 +200,7 @@ main (int argc, char **argv)
                fname, lnr, strerror (errno));
       return 1;
     }
-  
+
   while (fgets (line, LINESIZE, fp))
     {
       size_t n = strlen (line);
@@ -198,7 +214,7 @@ main (int argc, char **argv)
           break;
         }
       line[--n] = 0;
-      
+
       p1 = strchr (line, '@');
       p2 = p1? strchr (p1+1, '@') : NULL;
       if (!p1 || !p2 || p2-p1 == 1)
@@ -213,7 +229,7 @@ main (int argc, char **argv)
       if (!strcmp (p1, "configure_input"))
         {
           s = strrchr (fname, '/');
-          printf ("Do not edit.  Generated from %s by %s for %s.", 
+          printf ("Do not edit.  Generated from %s by %s for %s.",
                   s? s+1 : fname, PGM, host_os);
           fputs (p2, stdout);
           putchar ('\n');
@@ -230,7 +246,7 @@ main (int argc, char **argv)
 
   if (ferror (fp))
     {
-      fprintf (stderr, "%s:%d: error reading file: %s\n", 
+      fprintf (stderr, "%s:%d: error reading file: %s\n",
                fname, lnr, strerror (errno));
       return 1;
     }
@@ -246,7 +262,7 @@ main (int argc, char **argv)
       fprintf (stderr, PGM ": error writing stdout: %s\n", strerror (errno));
       return 1;
     }
-  
+
   fclose (fp);
 
   return 0;

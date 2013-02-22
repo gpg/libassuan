@@ -27,12 +27,16 @@ min_automake_version="1.10"
 # bump the version number immediately after the release and do another
 # commit and push so that the git magic is able to work.  See below
 # for the LT versions.
-m4_define([mym4_version], [2.1.0])
+m4_define(mym4_version_major, [2])
+m4_define(mym4_version_minor, [1])
+m4_define(mym4_version_micro, [0])
 
 # Below is m4 magic to extract and compute the revision number, the
 # decimalized short revision number, a beta version string, and a flag
 # indicating a development version (mym4_isgit). Note that the m4
 # processing is done by autoconf and not during the configure run.
+m4_define(mym4_version,
+          [mym4_version_major.mym4_version_minor.mym4_version_micro])
 m4_define([mym4_revision],
           m4_esyscmd([git rev-parse --short HEAD | tr -d '\n\r']))
 m4_define([mym4_revision_dec],
@@ -82,6 +86,9 @@ AC_SUBST(VERSION)
 AC_DEFINE_UNQUOTED(PACKAGE, "$PACKAGE", [Name of this package])
 AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Version of this package])
 AC_DEFINE_UNQUOTED(PACKAGE_BUGREPORT, "$PACKAGE_BUGREPORT",[Bug report address])
+VERSION_NUMBER=m4_esyscmd(printf "0x%02x%02x%02x" mym4_version_major \
+                          mym4_version_minor mym4_version_micro)
+AC_SUBST(VERSION_NUMBER)
 
 
 # Don't default to build static libs.

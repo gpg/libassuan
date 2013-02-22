@@ -1,5 +1,6 @@
 /* assuan.c - Global interface (not specific to context).
    Copyright (C) 2009 Free Software Foundation, Inc.
+   Copyright (C) 2001, 2002, 2012, 2013 g10 Code GmbH
 
    This file is part of Assuan.
 
@@ -26,7 +27,11 @@
 
 #include "assuan-defs.h"
 #include "debug.h"
- 
+
+
+#define digitp(a) ((a) >= '0' && (a) <= '9')
+
+
 
 /* Global default state.  */
 
@@ -154,7 +159,7 @@ assuan_new (assuan_context_t *r_ctx)
 {
   return assuan_new_ext (r_ctx, _assuan_default_err_source,
 			 &_assuan_default_malloc_hooks,
-			 _assuan_default_log_cb, 
+			 _assuan_default_log_cb,
 			 _assuan_default_log_cb_data);
 }
 
@@ -186,4 +191,90 @@ assuan_release (assuan_context_t ctx)
   /* None of the members that are our responsibility requires
      deallocation.  */
   _assuan_free (ctx, ctx);
+}
+
+
+
+/*
+    Version number stuff.
+ */
+
+static const char*
+parse_version_number (const char *s, int *number)
+{
+  int val = 0;
+
+  if (*s == '0' && digitp (s[1]))
+    return NULL;  /* Leading zeros are not allowed.  */
+  for (; digitp (*s); s++)
+    {
+      val *= 10;
+      val += *s - '0';
+    }
+  *number = val;
+  return val < 0 ? NULL : s;
+}
+
+
+static const char *
+parse_version_string (const char *s, int *major, int *minor, int *micro)
+{
+  s = parse_version_number (s, major);
+  if (!s || *s != '.')
+    return NULL;
+  s++;
+  s = parse_version_number (s, minor);
+  if (!s || *s != '.')
+    return NULL;
+  s++;
+  s = parse_version_number (s, micro);
+  if (!s)
+    return NULL;
+  return s;  /* Patchlevel.  */
+}
+
+
+static const char *
+compare_versions (const char *my_version, const char *req_version)
+{
+  int my_major, my_minor, my_micro;
+  int rq_major, rq_minor, rq_micro;
+  const char *my_plvl, *rq_plvl;
+
+  if (!req_version)
+    return my_version;
+  if (!my_version)
+    return NULL;
+
+  my_plvl = parse_version_string (my_version, &my_major, &my_minor, &my_micro);
+  if (!my_plvl)
+    return NULL;	/* Very strange: our own version is bogus.  */
+  rq_plvl = parse_version_string(req_version,
+				 &rq_major, &rq_minor, &rq_micro);
+  if (!rq_plvl)
+    return NULL;	/* Requested version string is invalid.  */
+
+  if (my_major > rq_major
+	|| (my_major == rq_major && my_minor > rq_minor)
+      || (my_major == rq_major && my_minor == rq_minor
+	  && my_micro > rq_micro)
+      || (my_major == rq_major && my_minor == rq_minor
+	  && my_micro == rq_micro))
+    {
+      return my_version;
+    }
+  return NULL;
+}
+
+
+/*
+ * Check that the the version of the library is at minimum REQ_VERSION
+ * and return the actual version string; return NULL if the condition
+ * is not met.  If NULL is passed to this function, no check is done
+ * and the version string is simply returned.
+ */
+const char *
+assuan_check_version (const char *req_version)
+{
+  return compare_versions (PACKAGE_VERSION, req_version);
 }

@@ -30,17 +30,17 @@ EXPORTS
     assuan_get_assuan_log_prefix	@9
     assuan_get_command_name             @10
     assuan_get_data_fp			@11
-    assuan_get_flag			@12  
+    assuan_get_flag			@12
     assuan_get_gpg_err_source           @13
-    assuan_get_input_fd			@14  
+    assuan_get_input_fd			@14
     assuan_get_log_cb                   @15
     assuan_get_malloc_hooks             @16
-    assuan_get_output_fd		@17  
+    assuan_get_output_fd		@17
     assuan_get_peercred			@18
     assuan_get_pid			@19
     assuan_get_pointer			@20
     assuan_init_pipe_server		@21
-    assuan_init_socket_server		@22  
+    assuan_init_socket_server		@22
     assuan_inquire			@23
     assuan_inquire_ext			@24
     assuan_new                          @25
@@ -110,6 +110,7 @@ EXPORTS
     __assuan_recvmsg			@89
     __assuan_sendmsg			@90
     __assuan_waitpid			@91
+    assuan_check_version                @92
 
 ; END
 
