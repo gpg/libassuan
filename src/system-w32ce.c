@@ -27,7 +27,7 @@
 #include <time.h>
 # ifdef HAVE_WINSOCK2_H
 #  include <winsock2.h>
-# endif 
+# endif
 #include <windows.h>
 #include <winioctl.h>
 #include <devload.h>
@@ -62,7 +62,7 @@ utf8_to_wchar (const char *string)
     }
 
   nbytes = (size_t)(n+1) * sizeof(*result);
-  if (nbytes / sizeof(*result) != (n+1)) 
+  if (nbytes / sizeof(*result) != (n+1))
     {
       gpg_err_set_errno (ENOMEM);
       return NULL;
@@ -147,7 +147,7 @@ _assuan_w32ce_prepare_pipe (int *r_rvid, int write_end)
       else
         *r_rvid = rvid;
     }
-  
+
   return hd;
 }
 
@@ -211,7 +211,7 @@ _assuan_w32ce_create_pipe (HANDLE *read_hd, HANDLE *write_hd,
           SetLastError (lastrc);
         }
     }
-  
+
   *read_hd = hd[0];
   *write_hd = hd[1];
   return rc;
@@ -282,7 +282,7 @@ __assuan_close (assuan_context_t ctx, assuan_fd_t fd)
 
 
 
-static ssize_t
+ssize_t
 __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
 {
   /* Due to the peculiarities of the W32 API we can't use read for a
@@ -324,7 +324,7 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
         case WSAENOTSOCK:
           {
             DWORD nread = 0;
-            
+
             res = ReadFile (fd, buffer, size, &nread, NULL);
             if (! res)
               {
@@ -341,7 +341,7 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
 		    break;
 
                   default:
-		    gpg_err_set_errno (EIO); 
+		    gpg_err_set_errno (EIO);
                   }
                 res = -1;
               }
@@ -349,7 +349,7 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
               res = (int) nread;
           }
           break;
-          
+
         case WSAEWOULDBLOCK:
 	  gpg_err_set_errno (EAGAIN);
 	  break;
@@ -368,7 +368,7 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
 
 
 
-static ssize_t
+ssize_t
 __assuan_write (assuan_context_t ctx, assuan_fd_t fd, const void *buffer,
 		size_t size)
 {
@@ -404,7 +404,7 @@ __assuan_write (assuan_context_t ctx, assuan_fd_t fd, const void *buffer,
           TRACE_LOG1 ("WriteFile failed: rc=%d", (int)GetLastError ());
           switch (GetLastError ())
             {
-            case ERROR_BROKEN_PIPE: 
+            case ERROR_BROKEN_PIPE:
             case ERROR_NO_DATA:
 	      gpg_err_set_errno (EPIPE);
 	      break;
@@ -413,7 +413,7 @@ __assuan_write (assuan_context_t ctx, assuan_fd_t fd, const void *buffer,
             case ERROR_BUSY:
               gpg_err_set_errno (EAGAIN);
               break;
-	      
+
             default:
 	      gpg_err_set_errno (EIO);
 	      break;
@@ -430,7 +430,7 @@ __assuan_write (assuan_context_t ctx, assuan_fd_t fd, const void *buffer,
 
 
 
-static int
+int
 __assuan_recvmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
 		  int flags)
 {
@@ -441,7 +441,7 @@ __assuan_recvmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
 
 
 
-static int
+int
 __assuan_sendmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
 		  int flags)
 {
@@ -485,7 +485,7 @@ build_w32_commandline (assuan_context_t ctx, const char * const *argv,
         snprintf (p, 25, "-&S2=%d ", (int)fd2);
       p += strlen (p);
     }
-  
+
   *cmdline = NULL;
   n = strlen (fdbuf);
   for (i=0; (s = argv[i]); i++)
@@ -504,7 +504,7 @@ build_w32_commandline (assuan_context_t ctx, const char * const *argv,
     return -1;
 
   p = stpcpy (p, fdbuf);
-  for (i = 0; argv[i]; i++) 
+  for (i = 0; argv[i]; i++)
     {
       if (!i)
         continue; /* Ignore argv[0].  */
@@ -542,7 +542,7 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 		void (*atfork) (void *opaque, int reserved),
 		void *atforkvalue, unsigned int flags)
 {
-  PROCESS_INFORMATION pi = 
+  PROCESS_INFORMATION pi =
     {
       NULL,      /* Returns process handle.  */
       0,         /* Returns primary thread handle.  */
@@ -601,7 +601,7 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
         free_wchar (wcmdline);
         return -1;
       }
-    
+
     if (!CreateProcess (wname,                /* Program to start.  */
                         wcmdline,             /* Command line arguments.  */
                         NULL,                 /* (not supported)  */
@@ -632,8 +632,8 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
           " dwProcessID=%d dwThreadId=%d\n",
           pi.hProcess, pi.hThread, (int) pi.dwProcessId, (int) pi.dwThreadId);
 
-  CloseHandle (pi.hThread); 
-  
+  CloseHandle (pi.hThread);
+
   *r_pid = (pid_t) pi.hProcess;
   return 0;
 }
@@ -641,7 +641,7 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 
 
 
-static pid_t 
+pid_t
 __assuan_waitpid (assuan_context_t ctx, pid_t pid, int nowait,
 		  int *status, int options)
 {
@@ -665,7 +665,7 @@ __assuan_socket (assuan_context_t ctx, int namespace, int style, int protocol)
 {
   int res;
 
-  res = socket (domain, type, proto);
+  res = socket (namespace, style, protocol);
   if (res == -1)
     gpg_err_set_errno (_assuan_sock_wsa2errno (WSAGetLastError ()));
   return res;
@@ -701,5 +701,5 @@ struct assuan_system_hooks _assuan_system_hooks =
     __assuan_waitpid,
     __assuan_socketpair,
     __assuan_socket,
-    __assuan_connect    
+    __assuan_connect
   };

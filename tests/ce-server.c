@@ -37,7 +37,7 @@
 # include <arpa/inet.h>
 # ifdef HAVE_SYS_SELECT_H
 #  include <sys/select.h>
-# else
+# endif
 #endif
 #include <errno.h>
 
