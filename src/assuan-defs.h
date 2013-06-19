@@ -397,12 +397,15 @@ int _assuan_asprintf (char **buf, const char *fmt, ...);
 
 #define DIM(v)		     (sizeof(v)/sizeof((v)[0]))
 
-#if HAVE_W32_SYSTEM
-#define SOCKET2HANDLE(s) ((void *)(s))
-#define HANDLE2SOCKET(h) ((unsigned int)(h))
+#if HAVE_W64_SYSTEM
+# define SOCKET2HANDLE(s) ((void *)(s))
+# define HANDLE2SOCKET(h) ((uintptr_t)(h))
+#elif HAVE_W32_SYSTEM
+# define SOCKET2HANDLE(s) ((void *)(s))
+# define HANDLE2SOCKET(h) ((unsigned int)(h))
 #else
-#define SOCKET2HANDLE(s) (s)
-#define HANDLE2SOCKET(h) (h)
+# define SOCKET2HANDLE(s) (s)
+# define HANDLE2SOCKET(h) (h)
 #endif
 
 

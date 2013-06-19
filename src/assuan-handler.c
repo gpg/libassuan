@@ -271,9 +271,9 @@ assuan_command_parse_fd (assuan_context_t ctx, char *line, assuan_fd_t *rfd)
       line ++;
       if (!digitp (*line))
 	return set_error (ctx, GPG_ERR_ASS_SYNTAX, "number required");
-#ifdef HAVE_W32_SYSTEM
-      /* Fixme: For a W32/64bit system we will need to change the cast
-         and the conversion function.  */
+#if HAVE_W64_SYSTEM
+      *rfd = (void*)strtoull (line, &endp, 10);
+#elif HAVE_W32_SYSTEM
       *rfd = (void*)strtoul (line, &endp, 10);
 #else
       *rfd = strtoul (line, &endp, 10);
