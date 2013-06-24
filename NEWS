@@ -1,5 +1,8 @@
-Noteworthy changes in version 2.1.1 (unreleased)
+Noteworthy changes in version 2.1.1 (2013-06-24)
 ------------------------------------------------
+
+ * Limited support for 64 bit Windows.  This is sufficient for use by
+   GpgEX.
 
 
 Noteworthy changes in version 2.1.0 (2013-02-22)
