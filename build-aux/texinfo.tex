@@ -20,7 +20,7 @@
 % General Public License for more details.
 %
 % You should have received a copy of the GNU General Public License
-% along with this texinfo.tex file; see the file COPYING.  If not, 
+% along with this texinfo.tex file; see the file COPYING.  If not,
 % see <http://www.gnu.org/licenses/>.
 %
 % As a special exception, when this file is read by TeX when processing
@@ -1932,7 +1932,7 @@ where each line of input produces a line of output.}
 % @acronym for "FBI", "NATO", and the like.
 % We print this one point size smaller, since it's intended for
 % all-uppercase.
-% 
+%
 \def\acronym#1{\doacronym #1,,\finish}
 \def\doacronym#1,#2,#3\finish{%
   {\selectfonts\lsize #1}%
@@ -1944,7 +1944,7 @@ where each line of input produces a line of output.}
 
 % @abbr for "Comput. J." and the like.
 % No font change, but don't do end-of-sentence spacing.
-% 
+%
 \def\abbr#1{\doabbr #1,,\finish}
 \def\doabbr#1,#2,#3\finish{%
   {\frenchspacing #1}%
@@ -1971,7 +1971,7 @@ where each line of input produces a line of output.}
 % Laurent Siebenmann reports \Orb undefined with:
 %  Textures 1.7.7 (preloaded format=plain 93.10.14)  (68K)  16 APR 2004 02:38
 % so we'll define it if necessary.
-% 
+%
 \ifx\Orb\undefined
 \def\Orb{\mathhexbox20D}
 \fi
@@ -2287,7 +2287,7 @@ where each line of input produces a line of output.}
     % cause the example and the item to crash together.  So we use this
     % bizarre value of 10001 as a signal to \aboveenvbreak to insert
     % \parskip glue after all.  Section titles are handled this way also.
-    % 
+    %
     \penalty 10001
     \endgroup
     \itemxneedsnegativevskipfalse
@@ -3437,7 +3437,7 @@ where each line of input produces a line of output.}
     % to re-insert the same penalty (values >10000 are used for various
     % signals); since we just inserted a non-discardable item, any
     % following glue (such as a \parskip) would be a breakpoint.  For example:
-    % 
+    %
     %   @deffn deffn-whatever
     %   @vindex index-whatever
     %   Description.
@@ -4377,11 +4377,11 @@ where each line of input produces a line of output.}
   % glue accumulate.  (Not a breakpoint because it's preceded by a
   % discardable item.)
   \vskip-\parskip
-  % 
+  %
   % This is purely so the last item on the list is a known \penalty >
   % 10000.  This is so \startdefun can avoid allowing breakpoints after
   % section headings.  Otherwise, it would insert a valid breakpoint between:
-  % 
+  %
   %   @section sec-whatever
   %   @deffn def-whatever
   \penalty 10001
@@ -5129,7 +5129,7 @@ where each line of input produces a line of output.}
     % by \defargscommonending, instead of 10000, since the sectioning
     % commands also insert a nobreak penalty, and we don't want to allow
     % a break between a section heading and a defun.
-    % 
+    %
     \ifnum\lastpenalty=10002 \penalty2000 \fi
     %
     % Similarly, after a section heading, do not allow a break.
@@ -5497,7 +5497,7 @@ where each line of input produces a line of output.}
 % This does \let #1 = #2, with \csnames; that is,
 %   \let \csname#1\endcsname = \csname#2\endcsname
 % (except of course we have to play expansion games).
-% 
+%
 \def\cslet#1#2{%
   \expandafter\let
   \csname#1\expandafter\endcsname
@@ -5750,11 +5750,11 @@ where each line of input produces a line of output.}
 % is the best we can do for now.  makeinfo does not expand macros in the
 % argument to @deffn, which ends up writing an index entry, and texindex
 % isn't prepared for an index sort entry that starts with \.
-% 
+%
 % Since macro invocations are followed by braces, we can just redefine them
 % to take a single TeX argument.  The case of a macro invocation that
 % goes to end-of-line is not handled.
-% 
+%
 \def\emptyusermacros{\begingroup
   \def\do##1{\let\noexpand##1=\noexpand\asis}%
   \edef\next{\macrolist}\expandafter\endgroup\next}
