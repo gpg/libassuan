@@ -1,18 +1,18 @@
 /* debug.h - interface to debugging functions
    Copyright (C) 2002, 2004, 2005, 2007 g10 Code GmbH
- 
+
    This file is part of Assuan.
 
    Assuan is free software; you can redistribute it and/or modify it
    under the terms of the GNU Lesser General Public License as
    published by the Free Software Foundation; either version 2.1 of
    the License, or (at your option) any later version.
-   
+
    Assuan is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details.
-   
+
    You should have received a copy of the GNU Lesser General Public
    License along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -170,7 +170,7 @@ void _assuan_debug_buffer (assuan_context_t ctx, unsigned int cat,
 		    "%s (%s=%p): error: %s <%s>\n",			\
 		    _assuan_trace_func, _assuan_trace_tagname,		\
 		    _assuan_trace_tag, gpg_strerror (err),		\
-		    gpg_strsource (ctx->err_source)),			\
+		    ctx?gpg_strsource (ctx->err_source):""),            \
      _assuan_error (ctx, err))
 
 /* The cast to void suppresses GCC warnings.  */

@@ -54,9 +54,6 @@
 
 #define LINELENGTH ASSUAN_LINELENGTH
 
-/* Generate an error code specific to a context.  */
-#define _assuan_error(ctx, errcode) gpg_err_make ((ctx)->err_source, errcode)
-
 
 struct cmdtbl_s
 {
@@ -225,7 +222,15 @@ struct assuan_context_s
   assuan_fd_t output_fd;  /* Set by the OUTPUT command.  */
 };
 
+
 
+/* Generate an error code specific to a context.  */
+static GPG_ERR_INLINE gpg_error_t
+_assuan_error (assuan_context_t ctx, gpg_err_code_t errcode)
+{
+  return gpg_err_make (ctx?ctx->err_source:0, errcode);
+}
+
 /* Release all resources associated with an engine operation.  */
 void _assuan_reset (assuan_context_t ctx);
 
