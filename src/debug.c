@@ -1,22 +1,22 @@
 /* debug.c - helpful output in desperate situations
    Copyright (C) 2000 Werner Koch (dd9jn)
    Copyright (C) 2001, 2002, 2003, 2004, 2005, 2007, 2009 g10 Code GmbH
- 
+
    This file is part of Assuan.
 
    Assuan is free software; you can redistribute it and/or modify it
    under the terms of the GNU Lesser General Public License as
    published by the Free Software Foundation; either version 2.1 of
    the License, or (at your option) any later version.
-   
+
    Assuan is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details.
-   
+
    You should have received a copy of the GNU Lesser General Public
    License along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, 
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    MA 02110-1301, USA.  */
 
 #if HAVE_CONFIG_H
@@ -51,7 +51,11 @@ _assuan_debug (assuan_context_t ctx, unsigned int cat, const char *format, ...)
   char *msg;
   int res;
 
-  if (!ctx || !ctx->log_cb)
+  /* vasprintf is an expensive operation thus we first check whether
+     the callback has enabled CAT for logging.  */
+  if (!ctx
+      || !ctx->log_cb
+      || !(*ctx->log_cb) (ctx, ctx->log_cb_data, cat, NULL))
     return;
 
   saved_errno = errno;
@@ -77,11 +81,11 @@ _assuan_debug_begin (assuan_context_t ctx,
 
   *line = NULL;
   /* Probe if this wants to be logged based on category.  */
-  if (! ctx 
-      || ! ctx->log_cb 
+  if (! ctx
+      || ! ctx->log_cb
       || ! (*ctx->log_cb) (ctx, ctx->log_cb_data, cat, NULL))
     return;
-  
+
   va_start (arg_ptr, format);
   res = vasprintf ((char **) line, format, arg_ptr);
   va_end (arg_ptr);
@@ -147,8 +151,8 @@ _assuan_debug_buffer (assuan_context_t ctx, unsigned int cat,
   int j;
 
   /* Probe if this wants to be logged based on category.  */
-  if (!ctx 
-      || ! ctx->log_cb 
+  if (!ctx
+      || ! ctx->log_cb
       || ! (*ctx->log_cb) (ctx, ctx->log_cb_data, cat, NULL))
     return;
 
@@ -157,7 +161,7 @@ _assuan_debug_buffer (assuan_context_t ctx, unsigned int cat,
       char str[51];
       char *strp = str;
       char *strp2 = &str[34];
-      
+
       for (j = 0; j < 16; j++)
 	{
 	  unsigned char val;
@@ -179,7 +183,7 @@ _assuan_debug_buffer (assuan_context_t ctx, unsigned int cat,
       *(strp++) = ' ';
       *(strp2++) = '\n';
       *(strp2) = '\0';
-      
+
       _assuan_debug (ctx, cat, fmt, func, tagname, tag, str);
     }
 }
