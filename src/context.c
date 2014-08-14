@@ -190,7 +190,7 @@ assuan_set_error (assuan_context_t ctx, gpg_error_t err, const char *text)
 {
   TRACE4 (ctx, ASSUAN_LOG_CTX, "assuan_set_error", ctx,
 	  "err=%i (%s,%s),text=%s", err, gpg_strsource (err),
-	  gpg_strerror (err), text);
+	  gpg_strerror (err), text?text:"(none)");
 
   ctx->err_no = err;
   ctx->err_str = text;
