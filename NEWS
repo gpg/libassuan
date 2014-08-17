@@ -1,8 +1,12 @@
-Noteworthy changes in version 2.1.2 (unreleased)
+Noteworthy changes in version 2.1.2 (2014-08-17) [C4/A4/R2]
 ------------------------------------------------
 
+ * Fixed portability bugs for Solaris and AIX.
 
-Noteworthy changes in version 2.1.1 (2013-06-24)
+ * Added support for ppc64le.
+
+
+Noteworthy changes in version 2.1.1 (2013-06-24) [C4/A4/R1]
 ------------------------------------------------
 
  * Limited support for 64 bit Windows.  This is sufficient for use by
