@@ -1,6 +1,7 @@
 # configure.ac - for libassuan
 # Copyright (C) 2001, 2002, 2003, 2006, 2007, 2009,
 #               2011, 2012, 2013 Free Software Foundation, Inc.
+# Copyright (C) 2013, 2014  g10 Code GmbH
 #
 # This file is part of Assuan.
 #
@@ -27,27 +28,29 @@ min_automake_version="1.10"
 # bump the version number immediately after the release and do another
 # commit and push so that the git magic is able to work.  See below
 # for the LT versions.
-m4_define(mym4_version_major, [2])
-m4_define(mym4_version_minor, [1])
-m4_define(mym4_version_micro, [2])
+m4_define([mym4_package],[libassuan])
+m4_define([mym4_major], [2])
+m4_define([mym4_minor], [1])
+m4_define([mym4_micro], [2])
 
-# Below is m4 magic to extract and compute the revision number, the
-# decimalized short revision number, a beta version string, and a flag
-# indicating a development version (mym4_isgit). Note that the m4
-# processing is done by autoconf and not during the configure run.
-m4_define(mym4_version,
-          [mym4_version_major.mym4_version_minor.mym4_version_micro])
-m4_define([mym4_revision],
-          m4_esyscmd([git rev-parse --short HEAD | tr -d '\n\r']))
-m4_define([mym4_revision_dec],
-          m4_esyscmd_s([echo $((0x$(echo ]mym4_revision[|head -c 4)))]))
-m4_define([mym4_betastring],
-          m4_esyscmd_s([git describe --match 'libassuan-[0-9].*[0-9]' --long|\
-                        awk -F- '$3!=0{print"-beta"$3}']))
-m4_define([mym4_isgit],m4_if(mym4_betastring,[],[no],[yes]))
-m4_define([mym4_full_version],[mym4_version[]mym4_betastring])
+# To start a new development series, i.e a new major or minor number
+# you need to mark an arbitrary commit before the first beta release
+# with an annotated tag.  For example a 2.1 branch starts off with
+# the tag "foo-2.1-base".  This is used as the base for counting
+# beta numbers before the first release of a series.
 
-AC_INIT([libassuan],[mym4_full_version],[http://bugs.gnupg.org])
+# Below is m4 magic to extract and compute the git revision number,
+# the decimalized short revision number, a beta version string and a
+# flag indicating a development version (mym4_isbeta).  Note that the
+# m4 processing is done by autoconf and not during the configure run.
+m4_define([mym4_verslist], m4_split(m4_esyscmd([./autogen.sh --find-version] \
+                           mym4_package mym4_major mym4_minor mym4_micro),[:]))
+m4_define([mym4_isbeta],       m4_argn(2, mym4_verslist))
+m4_define([mym4_version],      m4_argn(4, mym4_verslist))
+m4_define([mym4_revision],     m4_argn(7, mym4_verslist))
+m4_define([mym4_revision_dec], m4_argn(8, mym4_verslist))
+
+AC_INIT([mym4_package],[mym4_version], [http://bugs.gnupg.org])
 
 # LT Version numbers, remember to change them just *before* a release.
 #   (Code changed:			REVISION++)
@@ -88,8 +91,8 @@ AC_SUBST(VERSION)
 AC_DEFINE_UNQUOTED(PACKAGE, "$PACKAGE", [Name of this package])
 AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Version of this package])
 AC_DEFINE_UNQUOTED(PACKAGE_BUGREPORT, "$PACKAGE_BUGREPORT",[Bug report address])
-VERSION_NUMBER=m4_esyscmd(printf "0x%02x%02x%02x" mym4_version_major \
-                          mym4_version_minor mym4_version_micro)
+VERSION_NUMBER=m4_esyscmd(printf "0x%02x%02x%02x" mym4_major \
+                          mym4_minor mym4_micro)
 AC_SUBST(VERSION_NUMBER)
 
 
