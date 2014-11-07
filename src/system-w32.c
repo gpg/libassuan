@@ -197,9 +197,27 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
 
   if (is_socket (fd))
     {
+      int tries = 3;
+
+    again:
+      ec = 0;
       res = recv (HANDLE2SOCKET (fd), buffer, size, 0);
       if (res == -1)
         ec = WSAGetLastError ();
+      if (ec == WSAEWOULDBLOCK && tries--)
+        {
+          /* EAGAIN: Use select to wait for resources and try again.
+             We do this 3 times and then give up.  The higher level
+             layer then needs to take care of EAGAIN.  No need to
+             specify a timeout - the socket is not expected to be in
+             blocking mode.  */
+          fd_set fds;
+
+          FD_ZERO (&fds);
+          FD_SET (HANDLE2SOCKET (fd), &fds);
+          select (0, &fds, NULL, NULL, NULL);
+          goto again;
+        }
     }
   else
     {
@@ -224,6 +242,7 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
 	  gpg_err_set_errno (EAGAIN);
 	  break;
 
+        case WSAECONNRESET: /* Due to the use of recv.  */
         case ERROR_BROKEN_PIPE:
 	  gpg_err_set_errno (EPIPE);
 	  break;
@@ -247,9 +266,27 @@ __assuan_write (assuan_context_t ctx, assuan_fd_t fd, const void *buffer,
 
   if (is_socket (fd))
     {
+      int tries = 3;
+
+    again:
+      ec = 0;
       res = send (HANDLE2SOCKET (fd), buffer, size, 0);
       if (res == -1)
         ec = WSAGetLastError ();
+      if (ec == WSAEWOULDBLOCK && tries--)
+        {
+          /* EAGAIN: Use select to wait for resources and try again.
+             We do this 3 times and then give up.  The higher level
+             layer then needs to take care of EAGAIN.  No need to
+             specify a timeout - the socket is not expected to be in
+             blocking mode.  */
+          fd_set fds;
+
+          FD_ZERO (&fds);
+          FD_SET (HANDLE2SOCKET (fd), &fds);
+          select (0, NULL, &fds, NULL, NULL);
+          goto again;
+        }
     }
   else
     {

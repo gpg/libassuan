@@ -80,6 +80,15 @@ readline (assuan_context_t ctx, char *buf, size_t buflen,
         {
           if (errno == EINTR)
             continue;
+#ifdef HAVE_W32_SYSTEM
+          if (errno == EPIPE)
+            {
+              /* Under Windows we get EPIPE (actually ECONNRESET)
+                 after termination of the client.  Assume an EOF.  */
+              *r_eof = 1;
+              break; /* allow incomplete lines */
+            }
+#endif /*HAVE_W32_SYSTEM*/
           return -1; /* read error */
         }
       else if (!n)
