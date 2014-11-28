@@ -287,8 +287,13 @@ eval_redirection (const char *fname, int *r_redirect)
       return NULL;
     }
   buffer[n] = 0;
+
+  /* Check that it is a redirection file.  We also check that the
+     first byte of the name is not a LF because that would lead to an
+     zero length name. */
   if (n < 17 || buffer[n-1] != '\n'
-      || memcmp (buffer, "%Assuan%\nsocket=", 16))
+      || memcmp (buffer, "%Assuan%\nsocket=", 16)
+      || buffer[16] == '\n')
     {
       gpg_err_set_errno (EINVAL);
       return NULL;
@@ -333,6 +338,8 @@ eval_redirection (const char *fname, int *r_redirect)
             }
           p = pend;
         }
+      else if (*p == '\n')
+        break; /* Be nice and stop at the first LF.  */
       else if (n < sizeof addr->sun_path - 1)
         addr->sun_path[n++] = *p;
       else
