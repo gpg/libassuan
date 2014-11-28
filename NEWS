@@ -1,6 +1,11 @@
 Noteworthy changes in version 2.1.4 (unreleased) [C4/A4/R_]
 ------------------------------------------------
 
+ * Interface changes relative to the 2.1.3 release:
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ assuan_sock_set_sockaddr_un  NEW.
+
+
 Noteworthy changes in version 2.1.3 (2014-11-07) [C4/A4/R3]
 ------------------------------------------------
 

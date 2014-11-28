@@ -346,6 +346,8 @@ int _assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
                           struct sockaddr *addr, int addrlen);
 int _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
 		       struct sockaddr *addr, int addrlen);
+int _assuan_sock_set_sockaddr_un (const char *fname, struct sockaddr *addr,
+                                  int *r_redirected);
 int _assuan_sock_get_nonce (assuan_context_t ctx, struct sockaddr *addr,
 			    int addrlen, assuan_sock_nonce_t *nonce);
 int _assuan_sock_check_nonce (assuan_context_t ctx, assuan_fd_t fd,

@@ -346,7 +346,7 @@ AM_PATH_GPG_ERROR(1.8,, AC_MSG_ERROR([libgpg-error was not found]))
 #
 # Checks for library functions.
 #
-AC_CHECK_FUNCS([flockfile funlockfile inet_pton])
+AC_CHECK_FUNCS([flockfile funlockfile inet_pton stat])
 
 # On some systems (e.g. Solaris) nanosleep requires linking to librl.
 # Given that we use nanosleep only as an optimization over a select

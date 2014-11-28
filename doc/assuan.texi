@@ -1935,7 +1935,10 @@ Wrapper around socket.
 
 Wrapper around connect.  For Unix domain sockets under Windows this
 function also does a write immediately after the the connect to send the
-nonce as read from the socket's file.
+nonce as read from the socket's file.  Under Unix this function check
+whether the socket file is a redirection file and connects to the
+redirected socket instead; see @code{assuan_sock_set_sockaddr_un} for
+details on the redirection file format.
 @end deftypefun
 
 
@@ -1947,6 +1950,38 @@ nonce as read from the socket's file.
 Wrapper around bind.  Under Windows this creates a file and writes the
 port number and a random nonce to this file.
 @end deftypefun
+
+@deftypefun int assuan_sock_set_sockaddr_un ( @
+        @w{const char *@var{fname}}, @
+        @w{struct sockaddr *@var{addr}}, @
+        @w{int *@var{r_redirected}})
+
+This is a helper function to initialize the Unix socket domain address
+structure @var{addr} and store the file name @var{fname} there.  If
+@var{r_redirected} is not NULL the function checks whether @var{fname}
+already exists, is a regular file, and not a socket.  In that case
+@var{fname} is read to see whether this is a redirection to a socket
+file.  If that is the case 1 is stored at @var{r_redirected}.  If the
+file does not look like a redirection file 0 will be stored there and
+@var{fname} will be used in the regular way.
+
+The format of a redirection file is
+
+@example
+%Assuan%
+socket=@var{name}
+@end example
+
+With @var{name} being is the actual socket to use.  No white spaces
+are allowed, both lines must be terminated by a single linefeed, and
+extra lines are not allowed.  Environment variables are interpreted in
+@var{name} if given in @code{$@{VAR@}} notation.  No escape characters
+are defined; if the string @code{$@{} shall be used in file name, an
+environment variable with that content may be used.  The length of the
+redirection file is limited to 511 bytes which is more than sufficient
+for any known implementation of Unix domain sockets.
+@end deftypefun
+
 
 @deftypefun int assuan_sock_get_nonce ( @
         @w{struct sockaddr *@var{addr}}, @

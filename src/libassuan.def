@@ -111,6 +111,7 @@ EXPORTS
     __assuan_sendmsg			@90
     __assuan_waitpid			@91
     assuan_check_version                @92
+    assuan_sock_set_sockaddr_un         @93
 
 ; END
 
