@@ -31,7 +31,7 @@ min_automake_version="1.10"
 m4_define([mym4_package],[libassuan])
 m4_define([mym4_major], [2])
 m4_define([mym4_minor], [2])
-m4_define([mym4_micro], [0])
+m4_define([mym4_micro], [1])
 
 # To start a new development series, i.e a new major or minor number
 # you need to mark an arbitrary commit before the first beta release

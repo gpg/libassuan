@@ -28,8 +28,7 @@ assuan_TEXINFOS = lgpl.texi gpl.texi
 online: assuan.html assuan.pdf
 	set -e; \
 	echo "Uploading current manuals to www.gnupg.org ..."; \
-        user=werner ; \
+        user=werner ; webhost="ftp.gnupg.org"; \
 	(cd assuan.html && rsync -vr --exclude='.svn' .  \
-	  $${user}@cvs.gnupg.org:webspace/manuals/assuan/ ); \
-        rsync -v assuan.pdf $${user}@cvs.gnupg.org:webspace/manuals/
-
+	  $${user}@$${webhost}:webspace/manuals/assuan/ ); \
+        rsync -v assuan.pdf $${user}@$${webhost}:webspace/manuals/
