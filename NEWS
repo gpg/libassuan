@@ -1,5 +1,7 @@
-Noteworthy changes in version 2.1.4 (unreleased) [C4/A4/R_]
+Noteworthy changes in version 2.2.0 (2014-12-11) [C5/A5/R0]
 ------------------------------------------------
+
+ * Added support for socket redirection.
 
  * Interface changes relative to the 2.1.3 release:
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

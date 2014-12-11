@@ -30,8 +30,8 @@ min_automake_version="1.10"
 # for the LT versions.
 m4_define([mym4_package],[libassuan])
 m4_define([mym4_major], [2])
-m4_define([mym4_minor], [1])
-m4_define([mym4_micro], [4])
+m4_define([mym4_minor], [2])
+m4_define([mym4_micro], [0])
 
 # To start a new development series, i.e a new major or minor number
 # you need to mark an arbitrary commit before the first beta release
@@ -58,9 +58,9 @@ AC_INIT([mym4_package],[mym4_version], [http://bugs.gnupg.org])
 #   (Interfaces added:			AGE++)
 #   (Interfaces removed/changed:	AGE=0)
 #
-LIBASSUAN_LT_CURRENT=4
-LIBASSUAN_LT_AGE=4
-LIBASSUAN_LT_REVISION=3
+LIBASSUAN_LT_CURRENT=5
+LIBASSUAN_LT_AGE=5
+LIBASSUAN_LT_REVISION=0
 
 # If the API is changed in an incompatible way: increment the next counter.
 LIBASSUAN_CONFIG_API_VERSION=2
@@ -74,7 +74,7 @@ PACKAGE=$PACKAGE_NAME
 VERSION=$PACKAGE_VERSION
 
 AC_CONFIG_AUX_DIR([build-aux])
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip])
 AM_MAINTAINER_MODE
 AC_CONFIG_SRCDIR(src/assuan.h.in)
 AC_CONFIG_MACRO_DIR(m4)
