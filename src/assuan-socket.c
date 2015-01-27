@@ -493,7 +493,7 @@ _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
       if (filehd == INVALID_HANDLE_VALUE)
         {
           if (GetLastError () == ERROR_FILE_EXISTS)
-            gpg_err_set_errno (WSAEADDRINUSE);
+            gpg_err_set_errno (EADDRINUSE);
           return -1;
         }
 

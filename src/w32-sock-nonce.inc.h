@@ -37,13 +37,15 @@ typedef struct assuan_sock_nonce_s assuan_sock_nonce_t;
 # ifndef AF_LOCAL
 #  define AF_LOCAL AF_UNIX
 # endif
-# define EADDRINUSE WSAEADDRINUSE
+# ifndef EADDRINUSE
+#  define EADDRINUSE WSAEADDRINUSE
+# endif
 struct sockaddr_un
 {
   short          sun_family;
   unsigned short sun_port;
   struct         in_addr sun_addr;
-  char           sun_path[108-2-4]; 
+  char           sun_path[108-2-4];
 };
 #endif
 
