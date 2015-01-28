@@ -35,7 +35,7 @@
 #ifdef HAVE_W32_SYSTEM
 # ifdef HAVE_WINSOCK2_H
 #  include <winsock2.h>
-# endif 
+# endif
 # include <windows.h>
 #else
 # include <sys/socket.h>
@@ -78,7 +78,7 @@
 
 /* Returns true if STR represents a valid port number in decimal
    notation and no garbage is following.  */
-static int 
+static int
 parse_portno (const char *str, uint16_t *r_port)
 {
   unsigned int value;
@@ -98,7 +98,8 @@ parse_portno (const char *str, uint16_t *r_port)
 
 
 static gpg_error_t
-_assuan_connect_finalize(assuan_context_t ctx, int fd, unsigned int flags)
+_assuan_connect_finalize (assuan_context_t ctx, assuan_fd_t fd,
+                          unsigned int flags)
 {
   gpg_error_t err;
 
@@ -148,11 +149,15 @@ gpg_error_t
 assuan_socket_connect_fd (assuan_context_t ctx, int fd, unsigned int flags)
 {
   gpg_error_t err;
+  assuan_fd_t afd;
 
   if (!ctx || fd < 0)
     return GPG_ERR_INV_ARG;
+  afd = assuan_fd_from_posix_fd (fd);
+  if (afd == ASSUAN_INVALID_FD)
+    return GPG_ERR_INV_ARG;
 
-  err = _assuan_connect_finalize(ctx, fd, flags);
+  err = _assuan_connect_finalize(ctx, afd, flags);
 
   if (err)
     _assuan_reset (ctx);
@@ -177,7 +182,7 @@ assuan_socket_connect_fd (assuan_context_t ctx, int fd, unsigned int flags)
 
       assuan://<ipaddr>:<port>
       assuan://[<ip6addr>]:<port>
-         
+
         Connect using TCP to PORT of the server with the numerical
         IPADDR.  Note that '[' and ']' are literal characters.
 
@@ -242,7 +247,9 @@ assuan_socket_connect (assuan_context_t ctx, const char *name,
   else
     {
       char *addrstr, *p;
+#ifdef HAVE_INET_PTON
       void *addrbuf = NULL;
+#endif
 
       addrstr = _assuan_malloc (ctx, strlen (name) + 1);
       if (!addrstr)
@@ -254,7 +261,7 @@ assuan_socket_connect (assuan_context_t ctx, const char *name,
           p = strchr (addrstr, ']');
           if (!p || p[1] != ':' || !parse_portno (p+2, &port))
             err = _assuan_error (ctx, GPG_ERR_BAD_URI);
-          else 
+          else
             {
               *p = 0;
 #ifdef WITH_IPV6
@@ -263,7 +270,9 @@ assuan_socket_connect (assuan_context_t ctx, const char *name,
               memset (&srvr_addr_in6, 0, sizeof srvr_addr_in6);
               srvr_addr_in6.sin6_family = af;
               srvr_addr_in6.sin6_port = htons (port);
+#ifdef HAVE_INET_PTON
               addrbuf = &srvr_addr_in6.sin6_addr;
+#endif
               srvr_addr = (struct sockaddr *)&srvr_addr_in6;
               len = sizeof srvr_addr_in6;
 #else
@@ -283,7 +292,9 @@ assuan_socket_connect (assuan_context_t ctx, const char *name,
               memset (&srvr_addr_in, 0, sizeof srvr_addr_in);
               srvr_addr_in.sin_family = af;
               srvr_addr_in.sin_port = htons (port);
+#ifdef HAVE_INET_PTON
               addrbuf = &srvr_addr_in.sin_addr;
+#endif
               srvr_addr = (struct sockaddr *)&srvr_addr_in;
               len = sizeof srvr_addr_in;
             }
@@ -308,12 +319,12 @@ assuan_socket_connect (assuan_context_t ctx, const char *name,
             err = _assuan_error (ctx, GPG_ERR_BAD_URI);
 #endif /*!HAVE_INET_PTON*/
         }
-      
+
       _assuan_free (ctx, addrstr);
       if (err)
         return err;
     }
-  
+
   fd = _assuan_sock_new (ctx, pf, SOCK_STREAM, 0);
   if (fd == ASSUAN_INVALID_FD)
     {
@@ -330,8 +341,8 @@ assuan_socket_connect (assuan_context_t ctx, const char *name,
       _assuan_close (ctx, fd);
       return _assuan_error (ctx, GPG_ERR_ASS_CONNECT_FAILED);
     }
- 
-  err = _assuan_connect_finalize(ctx, fd, flags);
+
+  err = _assuan_connect_finalize (ctx, fd, flags);
 
   if (err)
     _assuan_reset (ctx);
