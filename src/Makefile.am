@@ -19,7 +19,7 @@
 
 EXTRA_DIST = libassuan-config.in libassuan.m4 libassuan.vers \
              versioninfo.rc.in libassuan.def mkheader.c gpgcedev.def
-INCLUDES = -I.. -I$(top_srcdir)/include
+AM_CPPFLAGS = -I..
 
 bin_SCRIPTS = libassuan-config
 m4datadir = $(datadir)/aclocal

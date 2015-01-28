@@ -1,7 +1,7 @@
 # configure.ac - for libassuan
 # Copyright (C) 2001, 2002, 2003, 2006, 2007, 2009,
 #               2011, 2012, 2013 Free Software Foundation, Inc.
-# Copyright (C) 2013, 2014  g10 Code GmbH
+# Copyright (C) 2013, 2014, 2015  g10 Code GmbH
 #
 # This file is part of Assuan.
 #
@@ -20,8 +20,9 @@
 
 # Process this file with autoconf to produce a configure script.
 
+
 AC_PREREQ(2.61)
-min_automake_version="1.10"
+min_automake_version="1.14"
 
 # To build a release you need to create a tag with the version number
 # (git tag -s libassuan-n.m.k) and run "./autogen.sh --force".  Please
@@ -74,7 +75,7 @@ PACKAGE=$PACKAGE_NAME
 VERSION=$PACKAGE_VERSION
 
 AC_CONFIG_AUX_DIR([build-aux])
-AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip])
+AM_INIT_AUTOMAKE([serial-tests dist-bzip2 no-dist-gzip])
 AM_MAINTAINER_MODE
 AC_CONFIG_SRCDIR(src/assuan.h.in)
 AC_CONFIG_MACRO_DIR(m4)
