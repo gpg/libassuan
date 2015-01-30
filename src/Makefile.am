@@ -95,6 +95,7 @@ libassuan_res_ldflag = -Wl,.libs/versioninfo.o
 
 no_undefined = -no-undefined
 export_symbols = -export-symbols $(srcdir)/libassuan.def
+extra_ltoptions = -XCClinker -static-libgcc
 
 install-def-file:
 	$(INSTALL) $(srcdir)/libassuan.def $(DESTDIR)$(libdir)/libassuan.def
@@ -109,6 +110,8 @@ libassuan_res =
 libassuan_res_ldflag =
 no_undefined =
 export_symbols =
+extra_ltoptions =
+
 install-def-file:
 uninstall-def-file:
 
@@ -120,6 +123,7 @@ libassuan_la_SOURCES = $(common_sources) assuan-io.c
 nodist_libassuan_la_SOURCES = assuan.h
 libassuan_la_CPPFLAGS = $(AM_CPPFLAGS) @GPG_ERROR_CFLAGS@
 libassuan_la_LDFLAGS = $(libassuan_res_ldflag) $(no_undefined) \
+        $(extra_ltoptions) \
 	$(export_symbols) $(libassuan_version_script_cmd) -version-info \
 	@LIBASSUAN_LT_CURRENT@:@LIBASSUAN_LT_REVISION@:@LIBASSUAN_LT_AGE@
 libassuan_la_DEPENDENCIES = @LTLIBOBJS@ \
