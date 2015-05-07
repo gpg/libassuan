@@ -140,29 +140,34 @@ Indices
 @node Introduction
 @chapter Introduction to Assuan
 
-In an ideal world, Assuan would not be necessary.  Assuan's primary
-use is to allow a client to interact with a non-persistent server.
-Using Assuan, this is accomplished by forking a subprocess and
-communicating with it via, for example, a pipe or Unix domain socket.
-This method is neither elegant nor efficient, especially when there is
-a lot of data spread across several transactions: not only is there a
-penalty for an increased number of context switches, but also a
-significant amount of data is @var{memcpy}ed from the client to a file
-descriptor and from the file descriptor to the server.  Despite these
-and other disadvantages, this type of client/server communication can
-be useful: the client is completely separate from the server; they are
-in different address spaces.  This is especially important in
-situations where the server must have a known degree of reliability
-and data must be protected: as the Assuan protocol is well defined and
-clients cannot corrupt the servers' address space, auditing becomes
-much easier.
+Assuan is an extensible inter-process communication (IPC) protocol and
+library.  It is designed for point-to-point communication and it
+doesn't provide a naming system.  To contact a server, either the
+client must know how to locate the server, e.g., via a well-known Unix
+domain socket, or, if the server is transient, how to start it.  In
+the latter case, Assuan provides functionality to start the server
+process.
 
-Assuan was developed for use by the GNU Privacy Guard, GnuPG, to
+In Assuan, communication is typically either via a pipe or a Unix
+domain socket.  This method is neither elegant nor efficient,
+especially when there is a lot of data spread across several
+transactions.  Not only is there a penalty for an increased number of
+context switches, but a significant amount of data is @var{memcpy}ed
+from the client to a file descriptor and from the file descriptor to
+the server.  Despite these and other disadvantages, this type of
+client/server communication is useful: the client is separated from
+the server: they run in different address spaces.  This is especially
+important in situations where the server must have a known degree of
+reliability and data must be protected: as the Assuan protocol is well
+defined and clients cannot corrupt the servers' address space,
+auditing becomes much easier.
+
+Assuan was developed for use by the GNU Privacy Guard (GnuPG) to
 prevent potentially buggy clients from unwittingly corrupting
 sensitive transactions or compromising data such as a secret key.
-Assuan permits the servers, which do the actual work, e.g. encryption
+Assuan permits the servers, which do the actual work, e.g., encryption
 and decryption of data using a secret key, to be developed
-independently of the user interfaces, e.g. mail clients and other
+independently of the user interfaces, e.g., mail clients and other
 encryption front ends.  Like a shared library, the interface is well
 defined and any number of front ends can use it; however, unlike a
 shared library, the client cannot see or touch the server's data.  As
@@ -171,15 +176,15 @@ understandable and less error prone.
 
 Assuan is not, however, limited to use with GnuPG servers and clients:
 it was designed to be flexible enough to meet the demands of many
-transaction based environments with non-persistent servers.
+transaction-based environments.
 
 @node Assuan
 @chapter Description of the Assuan protocol.
 
 The architecture of the modular GnuPG system is based on several
-highly specialized modules which compose a network of client/server
-communication.  A common framework for intermodule communication is
-therefore needed and should be implemented in a library.
+highly specialized modules which form a network of clients and
+servers.  A common framework for intermodule communication is
+therefore needed and implemented as a library.
 
 Goals:
 
@@ -214,18 +219,18 @@ Design criteria:
 The implementation is line based with a maximum line size of 1000
 octets.  The default IPC mechanism is Unix Domain Sockets.
 
-On a connect request the server responds either with an okay or an
-error status.  For authentication-check the server may send an Inquiry
-response prior to the first Okay, and it may also issue Status
-messages.  The server must check that the client is allowed to
-connect, this is done by requesting the credentials for the peer and
-comparing them to those of the server.  This avoids attacks based on
-wrong socket permissions.
+On connect, the server responds either with okay or an error status.
+To perform an authentication check, the server may send an Inquiry
+response prior to the first Okay.  It may also issue Status messages.
+The server must check that the client is allowed to connect.  This is
+done by requesting the credentials for the peer and comparing them
+with the server's credentials.  This avoids attacks based on wrong
+socket permissions.
 
-It may choose to delay the first response in case of an error.  The
-server never closes the connection - however the lower protocol may do
-so after some time of inactivity or when the connection is in an error
-state.
+The server may choose to delay the first response in case of an error.
+The server, however, never closes the connection, however, the lower
+protocol may do so after some time of inactivity or when the
+connection enters an error state.
 
 All textual messages are assumed to be in UTF-8 unless otherwise noted.
 
@@ -249,42 +254,70 @@ Request could not be fulfilled.  The possible error codes are defined
 by @code{libgpg-error}.
 
 @item S @var{keyword} <status information depending on keyword>
-Informational output by the server, still processing the request.  A
-client may not send such lines to the server while processing an Inquiry
-command.  @var{keyword} shall start with a letter or an underscore.
+Informational output by the server, which is still processing the
+request.  A client may not send such lines to the server while
+processing an Inquiry command.  @var{keyword} shall start with a
+letter or an underscore.
 
 @item # <string>
 Comment line issued only for debugging purposes.  Totally ignored.
 
 @item D <raw data>
 Raw data returned to client. There must be exactly one space after the
-'D'.  The values for '%', CR and LF must be percent escaped; this is
-encoded as %25, %0D and %0A.  Only uppercase letters should be used in
-the hexadecimal representation.  Other characters may be percent escaped
-for easier debugging.  All these Data lines are considered one data
-stream up to the OK or ERR response.  Status and Inquiry Responses
-may be mixed with the Data lines.
+'D'.  The values for '%', CR and LF must be percent escaped; these are
+encoded as %25, %0D and %0A, respectively.  Only uppercase letters
+should be used in the hexadecimal representation.  Other characters
+may be percent escaped for easier debugging.  All Data lines are
+considered one data stream up to the OK or ERR response.  Status and
+Inquiry Responses may be mixed with the Data lines.
 
 @item INQUIRE @var{keyword} <parameters>
-Server needs further information from the client.  The client should
-answer with a command which is allowed after an inquiry.  Note that the
-server does not confirm that client command but either continues
-processing or ends processing with an error status.  Not all commands
-are allowed.
+The server needs further information from the client.  The client
+should respond with data (using the ``D'' command and terminated by
+``END'').  Alternatively, the client may cancel the current operation
+by responding with ``CAN''.
 @end table
 
+Consider the following examples (lines prefixed with S indicate text
+that the server sends; lines prefixed with C indicate text that the
+client sends):
 
-A client should only check the first letter of each line and then skip
-over to the next token (except for data lines where the raw data starts
-exactly after 2 bytes).  Lines larger than 1000 bytes should be
-treated as a communication error. (The rationale for having a line
-length limit is to allow for easier multiplexing of several channels).
+@example
+S: INQUIRE foo
+C: D foo bar
+C: D bar baz
+C: END
+[Server continues normal work]
+@end example
 
+This implements a callback to the client:
+
+@example
+S: INQUIRE foo
+C: END
+[Server continues]
+@end example
+
+and:
+
+@example
+S: INQUIRE foo
+C: CAN
+[Server terminates the operaion and in most cases returns an ERR to the client.]
+@end example
+
+But, CAN may also mean ``I have no data for you, try to get it from
+elsewhere.''
+
+
+Note: lines longer than 1000 bytes should be treated as a
+communication error.  (The rationale for having a line length limit is
+to allow for easier multiplexing of several channels.)
 
 @node Client requests
 @section Client requests
 
-The server waits for client requests after he sent an Okay or Error.
+The server waits for client requests after sending an Okay or Error.
 The client should not issue a request in other cases.
 
 @example
@@ -292,30 +325,31 @@ The client should not issue a request in other cases.
 @end example
 
 @var{command} is a one word string without preceding white space.
-Parameters are command specific, CR, LF and the percent signs should be
-percent escaped as described above.  To send a backslash as the last
-character it should also be percent escaped.  Percent escaping is
+Parameters are command specific, CR, LF and the percent signs should
+be percent escaped as described above.  To send a backslash as the
+last character it should also be percent escaped.  Percent escaping is
 allowed anywhere in the parameters but not in the command.  The line
-ends with a CR, LF or just a LF.
+ends with a CR, LF pair or just a LF.
 
 Not yet implemented feature: If there is a need for a parameter list
-longer than the line length limit (1000 characters including command and
-CR, LF), the last character of the line (right before the CR/LF or LF)
-must be a non-escape encoded backslash. The following line is then
-expected to be a continuation of the line with the backslash replaced by
-a blank and the line ending removed.
+longer than the line length limit (1000 characters including command
+and CR, LF), the last character of the line (right before the CR/LF or
+LF) must be a unescaped (i.e., literal) backslash. The following line
+is then expected to be a continuation of the line with the backslash
+replaced by a blank and the line ending removed.
 
 @example
 D <raw data>
 @end example
 
-Raw data to the server. There must be exactly one space after the 'D'.
-The values for '%', CR and LF must be percent escaped; this is encoded
-as %25, %0D and %0A.  Only uppercase letters should be used in the
-hexadecimal representation.  Other characters may be percent escaped
-for easier debugging.  All these Data lines are considered one data
-stream up to the @code{OK} or @code{ERR} response.  Status and Inquiry
-Responses may be mixed with the Data lines.
+Sends raw data to the server.  There must be exactly one space after
+the 'D'.  The values for '%', CR and LF must be percent escaped.
+These are encoded as %25, %0D and %0A, respectively.  Only uppercase
+letters should be used in the hexadecimal representation.  Other
+characters may be percent escaped for easier debugging.  All Data
+lines are considered one data stream up to the @code{OK} or @code{ERR}
+response.  Status and Inquiry Responses may be mixed with the Data
+lines.
 
 @example
 END
@@ -324,12 +358,12 @@ END
 Lines beginning with a @code{#} or empty lines are ignored.  This is
 useful to comment test scripts.
 
-Although the commands are application specific, some of them are used by
-all protocols and partly directly supported by the Assuan library:
+Although the commands are application specific, some of them are used
+by all protocols and partly supported by the Assuan library:
 
 @table @code
 @item BYE
-Close the connection.  The server will reply with @code{OK}.
+Close the connection.  The server will respond with @code{OK}.
 
 @item RESET
 Reset the connection but not any existing authentication.  The server
@@ -373,7 +407,7 @@ No operation.  Returns OK without any action.
 @section Error codes
 
 Libassuan is used with gpg-error style error codes.  It is recommended
-to set the error source to a different value than the default
+to set the error source to a different value from the default
 @code{GPG_ERR_SOURCE_UNKNOWN} by calling @ref{function
 assuan_set_gpg_err_source} early.
 
@@ -384,7 +418,7 @@ assuan_set_gpg_err_source} early.
 @node Preparation
 @chapter Preparation
 
-To use @sc{Assuan}, you have to perform some changes to your
+To use @sc{Assuan}, you have to make some changes to your
 sources and the build system.  The necessary changes are small and
 explained in the following sections.
 
@@ -408,14 +442,14 @@ file, like this:
 #include <assuan.h>
 @end example
 
-The name space of @code{libassuan} is @code{assuan_*} for function
+The namespace of @code{libassuan} is @code{assuan_*} for function
 and type names and @code{ASSUAN*} for other symbols.  In addition the
 same name prefixes with one prepended underscore are reserved for
 internal use and should never be used by an application.
 
 Because @code{libassuan} makes use of the GPG Error library, using
-@code{libassuan} will also use the @code{GPG_ERR_*} name space
-directly, and the @code{gpg_err*} and @code{gpg_str*} name space
+@code{libassuan} will also use the @code{GPG_ERR_*} namespace
+directly, and the @code{gpg_err*} and @code{gpg_str*} namespaces
 indirectly.
 
 
@@ -459,8 +493,8 @@ link @file{foo.o} with the @code{libassuan} library to a program
 gcc -o foo foo.o $(libassuan-config --libs)
 @end example
 
-Of course you can also combine both examples to a single command by
-specifying both options to @command{libassuan-config}:
+You can also combine both examples to a single command by specifying
+both options to @command{libassuan-config}:
 
 @example
 gcc -o foo foo.c $(libassuan-config --cflags --libs)
@@ -538,8 +572,8 @@ across contexts.
 @node Data Types
 @section Data Types used by the library
 
-@sc{Assuan} uses a context to keep the state for a connection.  The
-following data type is used for that:
+@sc{Assuan} uses a so-called context to store a connection's state.
+The following data type is used for that:
 
 @deftp {Data type} assuan_context_t
 The @code{assuan_context_t} type is a pointer to an object maintained
@@ -1257,7 +1291,7 @@ command_handler (int fd)
 @end example
 
 @noindent
-This is the first part of the command handler.  We start of by
+This is the first part of the command handler.  We start off by
 allocating a new Assuan context with @code{assuan_new}.
 @xref{function assuan_new}.
 
@@ -1268,30 +1302,30 @@ initialization is thus done using the function:
 
 @deftypefun gpg_error_t assuan_init_pipe_server (@w{assuan_context_t @var{ctx}}, @w{assuan_fd_t @var{filedes}[2]})
 
-The function takes the two file descriptors from @var{filedes} and
+This function takes the two file descriptors from @var{filedes} and
 returns a new Assuan context at @var{r_ctx}.  As usual, a return value
-of @code{0} indicates success and a failure is indicated by a
+of @code{0} indicates success and a failure is indicated by
 returning an error value.  In case of error, @code{NULL} will be stored
 at @var{r_ctx}.
 
 In case the server has been called using a bi-directional pipe
 (socketpair), @var{filedes} is ignored and the file descriptor is
 taken from the environment variable @env{_assuan_connection_fd}.  You
-won't need to know that because @code{assuan_pipe_connect}, used
-by the client to connect to such a server, automagically sets this
-variable.
+generally don't need to know this, because @code{assuan_pipe_connect},
+which is called by the client to connect to such a server,
+automagically sets this variable.
 @end deftypefun
 
 @deftypefun gpg_error_t assuan_init_socket_server (@w{assuan_context_t @var{ctx}}, @w{assuan_fd_t @var{fd}}, @w{unsigned int @var{flags}})
 
-The function takes the file descriptor @var{fd} which is expected to
-be associated with a socket and an Assuan context @var{ctx}. The
+This function takes the file descriptor @var{fd}, which is expected to
+be associated with a socket, and an Assuan context @var{ctx}.  The
 following bits are currently defined for @var{flags}:
 
 @table @code
 @item ASSUAN_SOCKET_SERVER_FDPASSING
 If set, @code{sendmsg} and @code{recvmesg} are used for input and
-output and thus enabling the use of descriptor passing.
+output, which enables the use of descriptor passing.
 @item ASSUAN_SOCKET_SERVER_ACCEPTED
 If set, @var{fd} refers to an already accepted socket.  That is,
 Libassuan won't call @var{accept} for it.  It is suggested to set this
@@ -1299,7 +1333,7 @@ bit as it allows better control of the connection state.
 @end table
 
 As usual, a return value of @code{0} indicates success and a failure
-is indicated by a returning an error value.
+is indicated by returning an error value.
 @end deftypefun
 
 @noindent
@@ -1312,8 +1346,8 @@ On the Windows platform the following function needs to be called after
 
 Save a copy of @var{nonce} in context @var{ctx}.  This should be used
 to register the server's nonce with a context established by
-@code{assuan_init_socket_server}.  It is actually only needed for
-Windows but it does not harm to use it on other systems as well.
+@code{assuan_init_socket_server}.  It is technically only needed for
+Windows, but it does no harm to use it on other systems.
 @end deftypefun
 
 
@@ -1500,18 +1534,18 @@ also allowed to modify that line which makes parsing much easier.
 @chapter How to use external I/O event loops
 
 The above implementations of an Assuan client and server are
-synchronous, insofar the main routines block until a request or client
-connection is completely processed.  In some programs, for example GUI
-applications, this is undesirable.  Instead, Assuan operations should
-be non-blocking, and the caller should be able to poll all involved
-file descriptors to determine when the next Assuan function can be
-invoked without blocking.
+synchronous, insofar as the main routines block until a request or
+client connection is completely processed.  In some programs, for
+example GUI applications, this is undesirable.  Instead, Assuan
+operations should be non-blocking, and the caller should be able to
+poll all involved file descriptors to determine when the next Assuan
+function can be invoked without blocking.
 
 To make this possible, client and server have to adhere to some rules:
 @itemize @bullet
 @item
 Either partner should always write full lines.  If partial lines are
-written, the remainder of the line should b sent without delay.
+written, the remainder of the line should be sent without delay.
 @item
 Either partner should eagerly receive status messages.  While
 receiving and sending bulk data may be delayed, the status
