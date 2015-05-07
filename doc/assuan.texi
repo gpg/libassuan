@@ -848,7 +848,7 @@ flags are usually 1 or 0 but certain flags might need other values.
 
 @deftp {Data type} assuan_flag_t
 The flags are all named and collected in an @code{enum} for better readability.
-Currently only one flag is defined:
+Available flags are:
 
 @table @code
 @item ASSUAN_NO_WAITPID
@@ -1106,12 +1106,12 @@ If the peer is not a simple pipe server but one using full-duplex
 sockets, the full-fledged variant of the above function should be
 used:
 
-@deftypefun gpg_error_t assuan_pipe_connect (@w{assuan_context_t *@var{ctx}},@w{const char *@var{name}}, @w{const char *@var{argv}[]}, @w{assuan_fd_t *@var{fd_child_list}}, @w{void (*@var{atfork}) (void *, int)}, @w{void *@var{atforkvalue}}, @w{unsigned int @var{flags}})
+@deftypefun gpg_error_t assuan_pipe_connect (@w{assuan_context_t @var{ctx}},@w{const char *@var{name}}, @w{const char *@var{argv}[]}, @w{assuan_fd_t *@var{fd_child_list}}, @w{void (*@var{atfork}) (void *, int)}, @w{void *@var{atforkvalue}}, @w{unsigned int @var{flags}})
 
 A call to this functions forks the current process and executes the
 program @var{name}, passing the arguments given in the NULL-terminated
 list @var{argv}.  A list of file descriptors not to be closed may be
-given using the @code{ASSUAN_INVLID_FD} terminated array @var{fd_child_list}.
+given using the @code{ASSUAN_INVALID_FD} terminated array @var{fd_child_list}.
 
 If @var{name} is a null pointer, only a fork but no exec is done.  Thus
 the child continues to run.  However all file descriptors are closed and
@@ -1149,13 +1149,13 @@ server.  On W32CE systems this flag is ignored.
 If you are using a long running server listening either on a TCP or a
 Unix domain socket, the following function is used to connect to the server:
 
-@deftypefun gpg_error_t assuan_socket_connect (@w{assuan_context_t *@var{ctx}}, @w{const char *@var{name}}, @w{pid_t @var{server_pid}}, @w{unsigned int @var{flags}})
+@deftypefun gpg_error_t assuan_socket_connect (@w{assuan_context_t @var{ctx}}, @w{const char *@var{name}}, @w{pid_t @var{server_pid}}, @w{unsigned int @var{flags}})
 
-Make a connection to the Unix domain socket @var{name} and return a
-new Assuan context at @var{ctx}.  @var{server_pid} is currently not
-used but may become handy in the future; if you don't know the
-server's process ID (PID), pass @code{ASSUAN_INVALID_PID}.  With
-@var{flags} set to @code{ASSUAN_SOCKET_CONNECT_FDPASSIN},
+Make a connection to the Unix domain socket @var{name} using the
+already-initialized Assuan context at @var{ctx}.  @var{server_pid} is
+currently not used but may become handy in the future; if you don't
+know the server's process ID (PID), pass @code{ASSUAN_INVALID_PID}.
+With @var{flags} set to @code{ASSUAN_SOCKET_CONNECT_FDPASSING},
 @code{sendmsg} and @code{recvmesg} are used for input and output and
 thereby enable the use of descriptor passing.
 
