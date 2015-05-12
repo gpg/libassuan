@@ -1,5 +1,9 @@
-Noteworthy changes in version 2.2.1 (unreleased) [C5/A5/R_]
+Noteworthy changes in version 2.2.1 (2015-05-12) [C5/A5/R1]
 ------------------------------------------------
+
+ * Documentation updates.
+
+ * Fixed building for Windows with newer versions of Mingw.
 
 
 Noteworthy changes in version 2.2.0 (2014-12-11) [C5/A5/R0]
