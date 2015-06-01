@@ -1752,12 +1752,12 @@ need to pass it the @var{keyword} and the content of the status line in
 
 @deftypefun gpg_error_t assuan_inquire (@w{assuan_context_t @var{ctx}}, @w{const char *@var{keyword}}, @w{unsigned char **@var{r_buffer}}, @w{size_t *@var{r_length}}, @w{size_t @var{maxlen}})
 
-A server may use this function to inquire data from a client.  It sends
-an @code{INQUIRE} command back to the server and returns the response
-conveniently in a newly allocated buffer.  You need to pass at least the
-server's context @var{ctx} and the @var{keyword} describing the
-requested data.  All other parameters may be @code{NULL} or @code{0},
-although this is rarely useful.
+A server may use this function to request specific data from a client.
+This function sends an 'INQUIRE' command back to the client and
+returns the client's response in a newly allocated buffer.  You need
+to pass at least the server's context (@var{ctx}) and a description of
+the required data (@var{keyword}).  All other parameters may be
+@code{NULL} or @code{0}, but this is rarely useful.
 
 On success the result is stored in a newly allocated buffer stored at
 @var{r_buffer}. The length of the data is stored at @var{r_length}.
