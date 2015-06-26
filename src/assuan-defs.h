@@ -228,7 +228,7 @@ struct assuan_context_s
 static GPG_ERR_INLINE gpg_error_t
 _assuan_error (assuan_context_t ctx, gpg_err_code_t errcode)
 {
-  return gpg_err_make (ctx?ctx->err_source:0, errcode);
+  return gpg_err_make (ctx?ctx->err_source: GPG_ERR_SOURCE_ASSUAN, errcode);
 }
 
 /* Release all resources associated with an engine operation.  */
