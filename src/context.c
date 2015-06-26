@@ -183,8 +183,8 @@ void assuan_set_io_monitor (assuan_context_t ctx,
 
 
 /* Store the error in the context so that the error sending function
-  can take out a descriptive text.  Inside the assuan code, use the
-  macro set_error instead of this function. */
+   can take out a descriptive text.  Inside the assuan code, use the
+   macro set_error instead of this function. */
 gpg_error_t
 assuan_set_error (assuan_context_t ctx, gpg_error_t err, const char *text)
 {

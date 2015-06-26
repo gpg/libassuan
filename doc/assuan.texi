@@ -1205,8 +1205,10 @@ The descriptor must be sent before the command is issued that makes
 use of the descriptor.
 
 Note that calling this function with a @var{ctx} of @code{NULL} and
-@var{fd} of @code{-1} can be used as a runtime test to check whether
-descriptor passing is available on the platform.  If it is, 0 is returned, otherwise an error with the error code @code{GPG_ERR_NOT_IMPLEMENTED}.
+@var{fd} of @code{ASSUAN_INVALID_FD} can be used as a runtime test to
+check whether descriptor passing is available on the platform:
+@code{0} is returned if descriptor passing is available, otherwise an
+error with the error code @code{GPG_ERR_NOT_IMPLEMENTED} is returned.
 @end deftypefun
 
 @anchor{function assuan_receivefd}

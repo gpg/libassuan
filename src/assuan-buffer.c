@@ -524,6 +524,9 @@ assuan_sendfd (assuan_context_t ctx, assuan_fd_t fd)
   return _assuan_error (ctx, GPG_ERR_NOT_IMPLEMENTED);
 #endif
 
+  if (!ctx)
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
+
   if (! ctx->engine.sendfd)
     return set_error (ctx, GPG_ERR_NOT_IMPLEMENTED,
 		      "server does not support sending and receiving "
@@ -534,6 +537,9 @@ assuan_sendfd (assuan_context_t ctx, assuan_fd_t fd)
 gpg_error_t
 assuan_receivefd (assuan_context_t ctx, assuan_fd_t *fd)
 {
+  if (!ctx)
+    return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
+
   if (! ctx->engine.receivefd)
     return set_error (ctx, GPG_ERR_NOT_IMPLEMENTED,
 		      "server does not support sending and receiving "
