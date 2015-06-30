@@ -2069,7 +2069,19 @@ Store the current value of the flag @var{name} for socket @var{fd} at
 success; on failure sets ERRNO and returns -1.
 @end deftypefun
 
-No flags are defined.
+The supported flags are:
+
+@table @code
+@item cygwin
+This flag has an effect only on Windows.  If the value is 1, the
+socket is set into Cygwin mode so that Cygwin clients can connect to
+such a socket.  This flag needs to be set before a bind and should not
+be changed during the lifetime of the socket.  There is no need to set
+this flag for connecting to a Cygwin style socket because no state is
+required at the client.  On non-Windows platforms setting this flag is
+ignored, reading the flag always returns a value of 0.
+
+@end table
 
 
 @c ---------------------------------------------------------------------

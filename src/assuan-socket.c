@@ -88,6 +88,87 @@ static assuan_context_t sock_ctx;
 
 
 #ifdef HAVE_W32_SYSTEM
+/* A table of active Cygwin connections.  This is only used for
+   listening socket which should be only a few.  We do not enter
+   sockets after a connect into this table.  */
+static assuan_fd_t cygwin_fdtable[16];
+/* A critical section to guard access to the table of Cygwin
+   connections. */
+static CRITICAL_SECTION cygwin_fdtable_cs;
+
+
+/* Return true if SOCKFD is listed as Cygwin socket.  */
+static int
+is_cygwin_fd (assuan_fd_t sockfd)
+{
+  int ret = 0;
+  int i;
+
+  EnterCriticalSection (&cygwin_fdtable_cs);
+  for (i=0; i < DIM(cygwin_fdtable); i++)
+    {
+      if (cygwin_fdtable[i] == sockfd)
+        {
+          ret = 1;
+          break;
+        }
+    }
+  LeaveCriticalSection (&cygwin_fdtable_cs);
+  return ret;
+}
+
+
+/* Insert SOCKFD into the table of Cygwin sockets.  Return 0 on
+   success or -1 on error.  */
+static int
+insert_cygwin_fd (assuan_fd_t sockfd)
+{
+  int ret = 0;
+  int mark = -1;
+  int i;
+
+  EnterCriticalSection (&cygwin_fdtable_cs);
+
+  for (i=0; i < DIM(cygwin_fdtable); i++)
+    {
+      if (cygwin_fdtable[i] == sockfd)
+        goto leave;  /* Already in table.  */
+      else if (cygwin_fdtable[i] == ASSUAN_INVALID_FD)
+        mark = i;
+    }
+  if (mark == -1)
+    {
+      gpg_err_set_errno (EMFILE);
+      ret = -1;
+    }
+  else
+    cygwin_fdtable[mark] = sockfd;
+
+ leave:
+  LeaveCriticalSection (&cygwin_fdtable_cs);
+  return ret;
+}
+
+
+/* Delete SOCKFD from the table of Cygwin sockets.  */
+static void
+delete_cygwin_fd (assuan_fd_t sockfd)
+{
+  int i;
+
+  EnterCriticalSection (&cygwin_fdtable_cs);
+  for (i=0; i < DIM(cygwin_fdtable); i++)
+    {
+      if (cygwin_fdtable[i] == sockfd)
+        {
+          cygwin_fdtable[i] = ASSUAN_INVALID_FD;
+          break;
+        }
+    }
+  LeaveCriticalSection (&cygwin_fdtable_cs);
+  return;
+}
+
 
 #ifdef HAVE_W32CE_SYSTEM
 static wchar_t *
@@ -210,16 +291,19 @@ get_nonce (char *buffer, size_t nbytes)
 }
 
 
-/* W32: The buffer for NONCE needs to be at least 16 bytes.  Returns 0 on
-   success and sets errno on failure. */
+/* W32: The buffer for NONCE needs to be at least 16 bytes.  Returns 0
+   on success and sets errno on failure.  If FNAME has a Cygwin socket
+   descriptor True is stored at CYGWIN.  */
 static int
-read_port_and_nonce (const char *fname, unsigned short *port, char *nonce)
+read_port_and_nonce (const char *fname, unsigned short *port, char *nonce,
+                     int *cygwin)
 {
   FILE *fp;
   char buffer[50], *p;
   size_t nread;
   int aval;
 
+  *cygwin = 0;
   fp = fopen (fname, "rb");
   if (!fp)
     return -1;
@@ -231,22 +315,52 @@ read_port_and_nonce (const char *fname, unsigned short *port, char *nonce)
       return -1;
     }
   buffer[nread] = 0;
-  aval = atoi (buffer);
-  if (aval < 1 || aval > 65535)
+  if (!strncmp (buffer, "!<socket >", 10))
     {
-      gpg_err_set_errno (EINVAL);
-      return -1;
+      /* This is the Cygwin compatible socket emulation.  The format
+       * of the file is:
+       *
+       *   "!<socket >%u %c %08x-%08x-%08x-%08x\x00"
+       *
+       * %d for port number, %c for kind of socket (s for STREAM), and
+       * we have 16-byte random bytes for nonce.  We only support
+       * stream mode.
+       */
+      unsigned int u0;
+      int narr[4];
+
+      if (sscanf (buffer+10, "%u s %08x-%08x-%08x-%08x",
+                  &u0, narr+0, narr+1, narr+2, narr+3) != 5
+          || u0 < 1 || u0 > 65535)
+        {
+          gpg_err_set_errno (EINVAL);
+          return -1;
+        }
+      *port = u0;
+      memcpy (nonce, narr, 16);
+      *cygwin = 1;
     }
-  *port = (unsigned int)aval;
-  for (p=buffer; nread && *p != '\n'; p++, nread--)
-    ;
-  if (*p != '\n' || nread != 17)
+  else
     {
-      gpg_err_set_errno (EINVAL);
-      return -1;
+      /* This is our own socket emulation.  */
+      aval = atoi (buffer);
+      if (aval < 1 || aval > 65535)
+        {
+          gpg_err_set_errno (EINVAL);
+          return -1;
+        }
+      *port = (unsigned int)aval;
+      for (p=buffer; nread && *p != '\n'; p++, nread--)
+        ;
+      if (*p != '\n' || nread != 17)
+        {
+          gpg_err_set_errno (EINVAL);
+          return -1;
+        }
+      p++; nread--;
+      memcpy (nonce, p, 16);
     }
-  p++; nread--;
-  memcpy (nonce, p, 16);
+
   return 0;
 }
 #endif /*HAVE_W32_SYSTEM*/
@@ -386,8 +500,16 @@ int
 _assuan_sock_set_flag (assuan_context_t ctx, assuan_fd_t sockfd,
 		      const char *name, int value)
 {
-  if (0)
+  if (!strcmp (name, "cygwin"))
     {
+#ifdef HAVE_W32_SYSTEM
+      if (!value)
+        delete_cygwin_fd (sockfd);
+      else if (insert_cygwin_fd (sockfd))
+        return -1;
+#else
+      /* Setting the Cygwin flag on non-Windows is ignored.  */
+#endif
     }
   else
     {
@@ -405,8 +527,13 @@ _assuan_sock_get_flag (assuan_context_t ctx, assuan_fd_t sockfd,
 {
   (void)ctx;
 
-  if (0)
+  if (!strcmp (name, "cygwin"))
     {
+#ifdef HAVE_W32_SYSTEM
+      *r_value = is_cygwin_fd (sockfd);
+#else
+      *r_value = 0;
+#endif
     }
   else
     {
@@ -416,6 +543,62 @@ _assuan_sock_get_flag (assuan_context_t ctx, assuan_fd_t sockfd,
 
   return 0;
 }
+
+
+/* Read NBYTES from SOCKFD into BUFFER.  Return 0 on success.  Handle
+   EAGAIN and EINTR.  */
+#ifdef HAVE_W32_SYSTEM
+static int
+do_readn (assuan_context_t ctx, assuan_fd_t sockfd,
+          void *buffer, size_t nbytes)
+{
+  char *p = buffer;
+  size_t n;
+
+  while (nbytes)
+    {
+      n = _assuan_read (ctx, sockfd, p, nbytes);
+      if (n < 0 && errno == EINTR)
+        ;
+      else if (n < 0 && errno == EAGAIN)
+        Sleep (100);
+      else if (n < 0)
+        return -1;
+      else if (!n)
+        {
+          gpg_err_set_errno (EIO);
+          return -1;
+        }
+      else
+        {
+          p += n;
+          nbytes -= n;
+        }
+    }
+  return 0;
+}
+
+
+/* Write NBYTES from BUFFER to SOCKFD.  Return 0 on success; on error
+   return -1 and set ERRNO.  */
+static int
+do_writen (assuan_context_t ctx, assuan_fd_t sockfd,
+           const void *buffer, size_t nbytes)
+{
+  int ret;
+
+  ret = _assuan_write (ctx, sockfd, buffer, nbytes);
+  if (ret >= 0 && ret != nbytes)
+    {
+      gpg_err_set_errno (EIO);
+      ret = -1;
+    }
+  else if (ret >= 0)
+    ret = 0;
+
+  return ret;
+}
+#endif /*HAVE_W32_SYSTEM*/
 
 
 int
@@ -429,10 +612,11 @@ _assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
       struct sockaddr_un *unaddr;
       unsigned short port;
       char nonce[16];
+      int cygwin;
       int ret;
 
       unaddr = (struct sockaddr_un *)addr;
-      if (read_port_and_nonce (unaddr->sun_path, &port, nonce))
+      if (read_port_and_nonce (unaddr->sun_path, &port, nonce, &cygwin))
         return -1;
 
       myaddr.sin_family = AF_INET;
@@ -449,20 +633,36 @@ _assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
       if (!ret)
         {
           /* Send the nonce. */
-          ret = _assuan_write (ctx, sockfd, nonce, 16);
-          if (ret >= 0 && ret != 16)
+          ret = do_writen (ctx, sockfd, nonce, 16);
+          if (!ret && cygwin)
             {
-              gpg_err_set_errno (EIO);
-              ret = -1;
+              char buffer[16];
+
+              /* The client sends the nonce back - not useful.  We do
+                 a dummy read.  */
+              ret = do_readn (ctx, sockfd, buffer, 16);
+              if (!ret)
+                {
+                  /* Send our credentials.  */
+                  int n = getpid ();
+                  memcpy (buffer, &n, 4);
+                  memset (buffer+4, 0, 4); /* uid = gid = 0 */
+                  ret = do_writen (ctx, sockfd, buffer, 8);
+                  if (!ret)
+                    {
+                      /* Receive credentials.  We don't need them.  */
+                      ret = do_readn (ctx, sockfd, buffer, 8);
+                    }
+                }
             }
         }
       return ret;
     }
   else
     {
-      int res;
-      res = _assuan_connect (ctx, HANDLE2SOCKET (sockfd), addr, addrlen);
-      return res;
+      int ret;
+      ret = _assuan_connect (ctx, HANDLE2SOCKET (sockfd), addr, addrlen);
+      return ret;
     }
 #else
 # if HAVE_STAT
@@ -514,11 +714,14 @@ _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
       HANDLE filehd;
       int len = sizeof myaddr;
       int rc;
-      char nonce[16];
-      char tmpbuf[33+16];
+      union {
+        char data[16];
+        int  aint[4];
+      } nonce;
+      char tmpbuf[50+16];
       DWORD nwritten;
 
-      if (get_nonce (nonce, 16))
+      if (get_nonce (nonce.data, 16))
         return -1;
 
       unaddr = (struct sockaddr_un *)addr;
@@ -553,10 +756,22 @@ _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
           gpg_err_set_errno (save_e);
           return rc;
         }
-      snprintf (tmpbuf, sizeof tmpbuf, "%d\n", ntohs (myaddr.sin_port));
-      len = strlen (tmpbuf);
-      memcpy (tmpbuf+len, nonce,16);
-      len += 16;
+
+      if (is_cygwin_fd (sockfd))
+        {
+          snprintf (tmpbuf, sizeof tmpbuf,
+                    "!<socket >%d s %08x-%08x-%08x-%08x",
+                    ntohs (myaddr.sin_port),
+                    nonce.aint[0], nonce.aint[1], nonce.aint[2], nonce.aint[3]);
+          len = strlen (tmpbuf) + 1;
+        }
+      else
+        {
+          snprintf (tmpbuf, sizeof tmpbuf-16, "%d\n", ntohs (myaddr.sin_port));
+          len = strlen (tmpbuf);
+          memcpy (tmpbuf+len, nonce.data,16);
+          len += 16;
+        }
 
       if (!WriteFile (filehd, tmpbuf, len, &nwritten, NULL))
         {
@@ -653,6 +868,7 @@ _assuan_sock_get_nonce (assuan_context_t ctx, struct sockaddr *addr,
     {
       struct sockaddr_un *unaddr;
       unsigned short port;
+      int dummy;
 
       if (sizeof nonce->nonce != 16)
         {
@@ -661,7 +877,7 @@ _assuan_sock_get_nonce (assuan_context_t ctx, struct sockaddr *addr,
         }
       nonce->length = 16;
       unaddr = (struct sockaddr_un *)addr;
-      if (read_port_and_nonce (unaddr->sun_path, &port, nonce->nonce))
+      if (read_port_and_nonce (unaddr->sun_path, &port, nonce->nonce, &dummy))
         return -1;
     }
   else
@@ -683,8 +899,7 @@ _assuan_sock_check_nonce (assuan_context_t ctx, assuan_fd_t fd,
 			  assuan_sock_nonce_t *nonce)
 {
 #ifdef HAVE_W32_SYSTEM
-  char buffer[16], *p;
-  size_t nleft;
+  char buffer[16];
   int n;
 
   if (sizeof nonce->nonce != 16)
@@ -702,33 +917,33 @@ _assuan_sock_check_nonce (assuan_context_t ctx, assuan_fd_t fd,
       return -1;
     }
 
-  p = buffer;
-  nleft = 16;
-  while (nleft)
-    {
-      n = _assuan_read (ctx, SOCKET2HANDLE(fd), p, nleft);
-      if (n < 0 && errno == EINTR)
-        ;
-      else if (n < 0 && errno == EAGAIN)
-        Sleep (100);
-      else if (n < 0)
-        return -1;
-      else if (!n)
-        {
-          gpg_err_set_errno (EIO);
-          return -1;
-        }
-      else
-        {
-          p += n;
-          nleft -= n;
-        }
-    }
+  if (do_readn (ctx, fd, buffer, 16))
+    return -1;
   if (memcmp (buffer, nonce->nonce, 16))
     {
       gpg_err_set_errno (EACCES);
       return -1;
     }
+  if (is_cygwin_fd (fd))
+    {
+      /* Send the nonce back to the client.  */
+      if (do_writen (ctx, fd, buffer, 16))
+        return -1;
+      /* Read the credentials.  Cygwin uses the
+            struct ucred { pid_t pid; uid_t uid; gid_t gid; };
+         with pid_t being an int (4 bytes) and uid_t and gid_t being
+         shorts (2 bytes).  Thus we need to read 8 bytes.  However we
+         we ignore the values because they are not kernel controlled.  */
+      if (do_readn (ctx, fd, buffer, 8))
+        return -1;
+      /* Send our credentials: We use the uid and gid we received but
+         our own pid.  */
+      n = getpid ();
+      memcpy (buffer, &n, 4);
+      if (do_writen (ctx, fd, buffer, 8))
+        return -1;
+    }
+
 #else
   (void)fd;
   (void)nonce;
@@ -749,6 +964,10 @@ assuan_sock_init ()
 
   if (sock_ctx != NULL)
     return 0;
+
+#ifdef HAVE_W32_SYSTEM
+  InitializeCriticalSection (&cygwin_fdtable_cs);
+#endif
 
   err = assuan_new (&sock_ctx);
 
@@ -773,12 +992,20 @@ assuan_sock_deinit ()
 
   assuan_release (sock_ctx);
   sock_ctx = NULL;
+
+#ifdef HAVE_W32_SYSTEM
+  DeleteCriticalSection (&cygwin_fdtable_cs);
+#endif
 }
 
 
 int
 assuan_sock_close (assuan_fd_t fd)
 {
+#ifdef HAVE_W32_SYSTEM
+  if (fd != ASSUAN_INVALID_FD)
+    delete_cygwin_fd (fd);
+#endif
   return _assuan_close (sock_ctx, fd);
 }
 

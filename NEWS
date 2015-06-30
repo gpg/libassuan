@@ -1,6 +1,8 @@
 Noteworthy changes in version 2.3.0 (unreleased) [C5/A5/R_]
 ------------------------------------------------
 
+ * Support Cygwin's local sockets.
+
  * Interface changes relative to the 2.2.1 release:
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  assuan_sock_set_flag     NEW.
