@@ -467,6 +467,8 @@ gpg_error_t assuan_sock_init (void);
 void assuan_sock_deinit (void);
 int assuan_sock_close (assuan_fd_t fd);
 assuan_fd_t assuan_sock_new (int domain, int type, int proto);
+int assuan_sock_set_flag (assuan_fd_t sockfd, const char *name, int value);
+int assuan_sock_get_flag (assuan_fd_t sockfd, const char *name, int *r_value);
 int assuan_sock_connect (assuan_fd_t sockfd,
                          struct sockaddr *addr, int addrlen);
 int assuan_sock_bind (assuan_fd_t sockfd, struct sockaddr *addr, int addrlen);

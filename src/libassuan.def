@@ -112,6 +112,8 @@ EXPORTS
     __assuan_waitpid			@91
     assuan_check_version                @92
     assuan_sock_set_sockaddr_un         @93
+    assuan_sock_set_flag                @94
+    assuan_sock_get_flag                @95
 
 ; END
 

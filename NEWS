@@ -1,5 +1,10 @@
-Noteworthy changes in version 2.2.2 (unreleased) [C5/A5/R_]
+Noteworthy changes in version 2.3.0 (unreleased) [C5/A5/R_]
 ------------------------------------------------
+
+ * Interface changes relative to the 2.2.1 release:
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ assuan_sock_set_flag     NEW.
+ assuan_sock_get_flag     NEW.
 
 
 Noteworthy changes in version 2.2.1 (2015-05-12) [C5/A5/R1]

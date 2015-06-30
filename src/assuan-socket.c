@@ -1,5 +1,6 @@
-/* assuan-socket.c
+/* assuan-socket.c - Socket wrapper
    Copyright (C) 2004, 2005, 2009 Free Software Foundation, Inc.
+   Copyright (C) 2001-2015 g10 Code GmbH
 
    This file is part of Assuan.
 
@@ -77,6 +78,13 @@
 # define SUN_LEN(ptr) ((size_t) (((struct sockaddr_un *) 0)->sun_path) \
 	               + strlen ((ptr)->sun_path))
 #endif
+
+/* In the future, we can allow access to sock_ctx, if that context's
+   hook functions need to be overridden.  There can only be one global
+   assuan_sock_* user (one library or one application) with this
+   convenience interface, if non-standard hook functions are
+   needed.  */
+static assuan_context_t sock_ctx;
 
 
 #ifdef HAVE_W32_SYSTEM
@@ -371,6 +379,42 @@ _assuan_sock_new (assuan_context_t ctx, int domain, int type, int proto)
 #else
   return _assuan_socket (ctx, domain, type, proto);
 #endif
+}
+
+
+int
+_assuan_sock_set_flag (assuan_context_t ctx, assuan_fd_t sockfd,
+		      const char *name, int value)
+{
+  if (0)
+    {
+    }
+  else
+    {
+      gpg_err_set_errno (EINVAL);
+      return -1;
+    }
+
+  return 0;
+}
+
+
+int
+_assuan_sock_get_flag (assuan_context_t ctx, assuan_fd_t sockfd,
+                       const char *name, int *r_value)
+{
+  (void)ctx;
+
+  if (0)
+    {
+    }
+  else
+    {
+      gpg_err_set_errno (EINVAL);
+      return -1;
+    }
+
+  return 0;
 }
 
 
@@ -695,13 +739,6 @@ _assuan_sock_check_nonce (assuan_context_t ctx, assuan_fd_t fd,
 
 /* Public API.  */
 
-/* In the future, we can allow access to sock_ctx, if that context's
-   hook functions need to be overridden.  There can only be one global
-   assuan_sock_* user (one library or one application) with this
-   convenience interface, if non-standard hook functions are
-   needed.  */
-static assuan_context_t sock_ctx;
-
 gpg_error_t
 assuan_sock_init ()
 {
@@ -749,6 +786,18 @@ assuan_fd_t
 assuan_sock_new (int domain, int type, int proto)
 {
   return _assuan_sock_new (sock_ctx, domain, type, proto);
+}
+
+int
+assuan_sock_set_flag (assuan_fd_t sockfd, const char *name, int value)
+{
+  return _assuan_sock_set_flag (sock_ctx, sockfd, name, value);
+}
+
+int
+assuan_sock_get_flag (assuan_fd_t sockfd, const char *name, int *r_value)
+{
+  return _assuan_sock_get_flag (sock_ctx, sockfd, name, r_value);
 }
 
 int

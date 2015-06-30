@@ -2046,6 +2046,30 @@ code it may be used on POSIX systems as well, where this function is
 a nop.
 @end deftypefun
 
+To control certain properties of the wrapper two additional functions
+are provided:
+
+@deftypefun int assuan_sock_set_flag ( @
+                @w{assuan_fd_t @var{fd}}, @
+                @w{const char *@var{name}}, @
+                @w{int @var{value}})
+
+Set the flags @var{name} for socket @var{fd} to @var{value}.  See
+below for a list of valid names.  Returns 0 on success; on failure
+sets ERRNO and returns -1.
+@end deftypefun
+
+@deftypefun int assuan_sock_get_flag ( @
+                @w{assuan_fd_t @var{fd}}, @
+                @w{const char *@var{name}}, @
+                @w{int *@var{r_value}})
+
+Store the current value of the flag @var{name} for socket @var{fd} at
+@var{r_value}.  See below for a list of valid names.  Returns 0 on
+success; on failure sets ERRNO and returns -1.
+@end deftypefun
+
+No flags are defined.
 
 
 @c ---------------------------------------------------------------------
