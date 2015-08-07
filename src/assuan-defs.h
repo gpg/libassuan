@@ -404,6 +404,16 @@ int _assuan_asprintf (char **buf, const char *fmt, ...);
 
 #define DIM(v)		     (sizeof(v)/sizeof((v)[0]))
 
+/* To avoid that a compiler optimizes memset calls away, these macros
+   can be used. */
+#define wipememory2(_ptr,_set,_len) do { \
+              volatile char *_vptr=(volatile char *)(_ptr); \
+              size_t _vlen=(_len); \
+              while(_vlen) { *_vptr=(_set); _vptr++; _vlen--; } \
+                  } while(0)
+#define wipememory(_ptr,_len) wipememory2(_ptr,0,_len)
+
+
 #if HAVE_W64_SYSTEM
 # define SOCKET2HANDLE(s) ((void *)(s))
 # define HANDLE2SOCKET(h) ((uintptr_t)(h))

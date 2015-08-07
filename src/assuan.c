@@ -189,7 +189,11 @@ assuan_release (assuan_context_t ctx)
 
   _assuan_reset (ctx);
   /* None of the members that are our responsibility requires
-     deallocation.  */
+     deallocation.  To avoid sensitive data in the line buffers we
+     wipe them out, though.  Note that we can't wipe the entire
+     context because it also has a pointer to the actual free().  */
+  wipememory (&ctx->inbound, sizeof ctx->inbound);
+  wipememory (&ctx->outbound, sizeof ctx->outbound);
   _assuan_free (ctx, ctx);
 }
 
