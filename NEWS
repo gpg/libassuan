@@ -1,7 +1,19 @@
-Noteworthy changes in version 2.3.0 (unreleased) [C5/A5/R_]
+Noteworthy changes in version 2.3.0 (2015-08-28) [C6/A6/R0]
 ------------------------------------------------
 
- * Support Cygwin's local sockets.
+ * Now wipes out the memory of the context structure before freeing.
+   The context may have stored sensitive data in its line buffers.
+
+ * Fixed a problem with the data length limit in assuan_inquire.
+
+ * Returns GPG_ERR_SOURCE_ASSUAN with errors from functions w/o a
+   context.
+
+ * Two new functions to tweak the behaviour of the socket wrappers.
+
+ * Experimental code to support Cygwin's local sockets.
+
+ * By default build without a build timestamp.
 
  * Interface changes relative to the 2.2.1 release:
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
