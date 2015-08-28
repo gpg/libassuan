@@ -136,7 +136,7 @@ free_membuf (assuan_context_t ctx, struct membuf *mb)
  * A server may use this to send an inquire.  r_buffer, r_length and
  * maxlen may all be NULL/0 to indicate that no real data is expected.
  * The returned buffer is guaranteed to have an extra 0-byte after the
- * length.  Thus it can be used as a string if embedded o bytes are
+ * length.  Thus it can be used as a string if embedded 0 bytes are
  * not an issue.
  *
  * Return value: 0 on success or an ASSUAN error code
@@ -151,6 +151,11 @@ assuan_inquire (assuan_context_t ctx, const char *keyword,
   unsigned char *line, *p;
   int linelen;
   int nodataexpected;
+
+  if (r_buffer)
+    *r_buffer = NULL;
+  if (r_length)
+    *r_length = 0;
 
   if (!ctx || !keyword || (10 + strlen (keyword) >= sizeof (cmdbuf)))
     return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
@@ -212,6 +217,9 @@ assuan_inquire (assuan_context_t ctx, const char *keyword,
       line += 2;
       linelen -= 2;
 
+      if (mb.too_large)
+        continue; /* Need to read up the remaining data.  */
+
       p = line;
       while (linelen)
         {
@@ -229,18 +237,18 @@ assuan_inquire (assuan_context_t ctx, const char *keyword,
             }
           line = p;
         }
-      if (mb.too_large)
-        {
-          rc = _assuan_error (ctx, GPG_ERR_ASS_TOO_MUCH_DATA);
-          goto out;
-        }
     }
 
   if (!nodataexpected)
     {
-      *r_buffer = get_membuf (ctx, &mb, r_length);
-      if (!*r_buffer)
-	rc = _assuan_error (ctx, gpg_err_code_from_syserror ());
+      if (mb.too_large)
+        rc = _assuan_error (ctx, GPG_ERR_ASS_TOO_MUCH_DATA);
+      else
+        {
+          *r_buffer = get_membuf (ctx, &mb, r_length);
+          if (!*r_buffer)
+            rc = _assuan_error (ctx, gpg_err_code_from_syserror ());
+        }
     }
 
  out:

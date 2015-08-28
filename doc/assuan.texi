@@ -1763,8 +1763,8 @@ the required data (@var{keyword}).  All other parameters may be
 
 On success the result is stored in a newly allocated buffer stored at
 @var{r_buffer}. The length of the data is stored at @var{r_length}.
-If @var{maxlen} has not been given as @code{0}, it describes an upper
-size limited of the expected data.  If the client returns too much
+If @var{maxlen} has not been given as @code{0}, it specifies an upper
+size limit of the expected data.  If the client returns too much
 data the function fails and an error with the error code
 @code{GPG_ERR_ASS_TOO_MUCH_DATA} will be returned.
 @end deftypefun
