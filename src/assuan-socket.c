@@ -34,6 +34,8 @@
 #else
 # include <sys/types.h>
 # include <sys/socket.h>
+# include <netinet/in.h>
+# include <arpa/inet.h>
 #endif
 #include <errno.h>
 #ifdef HAVE_SYS_STAT_H
@@ -74,10 +76,16 @@
 # define ENAMETOOLONG EINVAL
 #endif
 
+
 #ifndef SUN_LEN
 # define SUN_LEN(ptr) ((size_t) (((struct sockaddr_un *) 0)->sun_path) \
 	               + strlen ((ptr)->sun_path))
 #endif
+
+
+/* The standard SOCKS and TOR port.  */
+#define SOCKS_PORT 1080
+#define TOR_PORT   9050
 
 /* In the future, we can allow access to sock_ctx, if that context's
    hook functions need to be overridden.  There can only be one global
@@ -85,6 +93,12 @@
    convenience interface, if non-standard hook functions are
    needed.  */
 static assuan_context_t sock_ctx;
+
+/* This global flag can be set using assuan_sock_set_flag to enable
+   TOR or SOCKS mode for all sockets.  It may not be reset.  The value
+   is the port to be used. */
+static unsigned short tor_mode;
+
 
 
 #ifdef HAVE_W32_SYSTEM
@@ -498,8 +512,10 @@ _assuan_sock_new (assuan_context_t ctx, int domain, int type, int proto)
 
 int
 _assuan_sock_set_flag (assuan_context_t ctx, assuan_fd_t sockfd,
-		      const char *name, int value)
+                       const char *name, int value)
 {
+  (void)ctx;
+
   if (!strcmp (name, "cygwin"))
     {
 #ifdef HAVE_W32_SYSTEM
@@ -510,6 +526,39 @@ _assuan_sock_set_flag (assuan_context_t ctx, assuan_fd_t sockfd,
 #else
       /* Setting the Cygwin flag on non-Windows is ignored.  */
 #endif
+    }
+  else if (!strcmp (name, "tor-mode") || !strcmp (name, "socks"))
+    {
+      /* If SOCKFD is ASSUAN_INVALID_FD this controls global flag to
+         switch AF_INET and AF_INET6 into TOR mode by using a SOCKS5
+         proxy on localhost:9050.  It may only be switched on and this
+         needs to be done before any new threads are started.  Once
+         TOR mode has been enabled, TOR mode can be disabled for a
+         specific socket by using SOCKFD with a VALUE of 0.  */
+      if (sockfd == ASSUAN_INVALID_FD)
+        {
+          if (tor_mode && !value)
+            {
+              gpg_err_set_errno (EPERM);
+              return -1; /* Clearing the global flag is not allowed.  */
+            }
+          else if (value)
+            {
+              if (*name == 's')
+                tor_mode = SOCKS_PORT;
+              else
+                tor_mode = TOR_PORT;
+            }
+        }
+      else if (tor_mode && sockfd != ASSUAN_INVALID_FD)
+        {
+          /* Fixme: Disable/enable tormode for the given context.  */
+        }
+      else
+        {
+          gpg_err_set_errno (EINVAL);
+          return -1;
+        }
     }
   else
     {
@@ -535,6 +584,15 @@ _assuan_sock_get_flag (assuan_context_t ctx, assuan_fd_t sockfd,
       *r_value = 0;
 #endif
     }
+  else if (!strcmp (name, "tor-mode"))
+    {
+      /* FIXME: Find tor-mode for the given socket.  */
+      *r_value = tor_mode == TOR_PORT;
+    }
+  else if (!strcmp (name, "socks"))
+    {
+      *r_value = tor_mode == SOCKS_PORT;
+    }
   else
     {
       gpg_err_set_errno (EINVAL);
@@ -547,7 +605,6 @@ _assuan_sock_get_flag (assuan_context_t ctx, assuan_fd_t sockfd,
 
 /* Read NBYTES from SOCKFD into BUFFER.  Return 0 on success.  Handle
    EAGAIN and EINTR.  */
-#ifdef HAVE_W32_SYSTEM
 static int
 do_readn (assuan_context_t ctx, assuan_fd_t sockfd,
           void *buffer, size_t nbytes)
@@ -561,7 +618,7 @@ do_readn (assuan_context_t ctx, assuan_fd_t sockfd,
       if (n < 0 && errno == EINTR)
         ;
       else if (n < 0 && errno == EAGAIN)
-        Sleep (100);
+        _assuan_usleep (ctx, 100000); /* 100ms */
       else if (n < 0)
         return -1;
       else if (!n)
@@ -598,7 +655,164 @@ do_writen (assuan_context_t ctx, assuan_fd_t sockfd,
 
   return ret;
 }
-#endif /*HAVE_W32_SYSTEM*/
+
+
+/* Connect using the SOCKS5 protocol.  */
+static int
+socks5_connect (assuan_context_t ctx, int sock,
+                struct sockaddr *addr, socklen_t length)
+{
+  int ret;
+  /* struct sockaddr_in6 proxyaddr_in6; */
+  struct sockaddr_in  proxyaddr_in;
+  struct sockaddr *proxyaddr;
+  size_t proxyaddrlen;
+  struct sockaddr_in6 *addr_in6;
+  struct sockaddr_in  *addr_in;
+  unsigned char buffer[22];
+  size_t buflen;
+
+  /* memset (&proxyaddr_in6, 0, sizeof proxyaddr_in6); */
+  memset (&proxyaddr_in, 0, sizeof proxyaddr_in);
+
+  /* Connect to local host.  */
+  /* Fixme: First try to use IPv6.  */
+  proxyaddr_in.sin_family = AF_INET;
+  proxyaddr_in.sin_port = htons (tor_mode);
+  proxyaddr_in.sin_addr.s_addr = htonl (INADDR_LOOPBACK);
+  proxyaddr = (struct sockaddr *)&proxyaddr_in;
+  proxyaddrlen = sizeof proxyaddr_in;
+  ret = _assuan_connect (ctx, sock, proxyaddr, proxyaddrlen);
+  if (ret)
+    return ret;
+  buffer[0] = 5; /* RFC-1928 VER field.  */
+  buffer[1] = 1; /* NMETHODS */
+  buffer[2] = 0; /* Method: No authentication required. */
+
+  /* Negotiate method.  */
+  ret = do_writen (ctx, sock, buffer, 3);
+  if (ret)
+    return ret;
+  ret = do_readn (ctx, sock, buffer, 2);
+  if (ret)
+    return ret;
+  if (buffer[0] != 5 || buffer[1] != 0 )
+    {
+      /* Socks server returned wrong version or does not support our
+         requested method.  */
+      gpg_err_set_errno (ENOTSUP); /* Fixme: Is there a better errno? */
+      return -1;
+    }
+
+  /* Send request details (rfc-1928, 4).  */
+  buffer[0] = 5; /* VER  */
+  buffer[1] = 1; /* CMD = CONNECT  */
+  buffer[2] = 0; /* RSV  */
+  if (addr->sa_family == AF_INET6)
+    {
+      addr_in6 = (struct sockaddr_in6 *)addr;
+
+      buffer[3] = 4; /* ATYP = IPv6 */
+      memcpy (buffer+ 4, &addr_in6->sin6_addr.s6_addr, 16); /* DST.ADDR */
+      memcpy (buffer+20, &addr_in6->sin6_port, 2);          /* DST.PORT */
+      buflen = 22;
+    }
+  else
+    {
+      addr_in = (struct sockaddr_in *)addr;
+
+      buffer[3] = 1; /* ATYP = IPv4 */
+      memcpy (buffer+4, &addr_in->sin_addr.s_addr, 4); /* DST.ADDR */
+      memcpy (buffer+8, &addr_in->sin_port, 2);        /* DST.PORT */
+      buflen = 10;
+    }
+  ret = do_writen (ctx, sock, buffer, buflen);
+  if (ret)
+    return ret;
+  ret = do_readn (ctx, sock, buffer, buflen);
+  if (ret)
+    return ret;
+  if (buffer[0] != 5 || buffer[2] != 0 )
+    {
+      /* Socks server returned wrong version or the reserved field is
+         not zero.  */
+      gpg_err_set_errno (EPROTO);
+      return -1;
+    }
+  if (buffer[1])
+    {
+      switch (buffer[1])
+        {
+        case 0x01: /* general SOCKS server failure.  */
+          gpg_err_set_errno (ENETDOWN);
+          break;
+        case 0x02: /* connection not allowed by ruleset.  */
+          gpg_err_set_errno (EACCES);
+          break;
+        case 0x03: /* Network unreachable */
+          gpg_err_set_errno (ENETUNREACH);
+          break;
+        case 0x04: /* Host unreachable */
+          gpg_err_set_errno (EHOSTUNREACH);
+          break;
+        case 0x05: /* Connection refused */
+          gpg_err_set_errno (ECONNREFUSED);
+          break;
+        case 0x06: /* TTL expired */
+          gpg_err_set_errno (ETIMEDOUT);
+          break;
+        case 0x08: /* Address type not supported */
+          gpg_err_set_errno (EPROTONOSUPPORT);
+          break;
+        case 0x07: /* Command not supported */
+        default:
+          gpg_err_set_errno (ENOTSUP); /* Fixme: Is there a better errno? */
+        }
+      return -1;
+    }
+  /* FIXME: We have not way to store the actual address used by the
+     server.  */
+
+
+  return 0;
+}
+
+
+/* Return true if SOCKS shall be used.  This is the case if tor_mode
+   is enabled and and the desired address is not the loopback
+   address.  */
+static int
+use_socks (struct sockaddr *addr)
+{
+  if (!tor_mode)
+    return 0;
+  else if (addr->sa_family == AF_INET6)
+    {
+      struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)addr;
+      const unsigned char *s;
+      int i;
+
+      s = (unsigned char *)&addr_in6->sin6_addr.s6_addr;
+      if (s[15] != 1)
+        return 1;   /* Last octet is not 1 - not the loopback address.  */
+      for (i=0; i < 15; i++, s++)
+        if (*s)
+          return 1; /* Non-zero octet found - not the loopback address.  */
+
+      return 0; /* This is the loopback address.  */
+    }
+  else if (addr->sa_family == AF_INET)
+    {
+      struct sockaddr_in *addr_in = (struct sockaddr_in *)addr;
+
+      if (*(unsigned char*)&addr_in->sin_addr.s_addr == 127)
+        return 0; /* Loopback (127.0.0.0/8) */
+
+      return 1;
+    }
+  else
+    return 0;
+}
 
 
 int
@@ -658,11 +872,13 @@ _assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
         }
       return ret;
     }
+  else if (use_socks (addr))
+    {
+      return socks5_connect (ctx, HANDLE2SOCKET (sockfd), addr, addrlen);
+    }
   else
     {
-      int ret;
-      ret = _assuan_connect (ctx, HANDLE2SOCKET (sockfd), addr, addrlen);
-      return ret;
+      return _assuan_connect (ctx, HANDLE2SOCKET (sockfd), addr, addrlen);
     }
 #else
 # if HAVE_STAT
@@ -697,7 +913,15 @@ _assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
 
     }
 # endif /*HAVE_STAT*/
-  return _assuan_connect (ctx, sockfd, addr, addrlen);
+
+  if (use_socks (addr))
+    {
+      return socks5_connect (ctx, sockfd, addr, addrlen);
+    }
+  else
+    {
+      return _assuan_connect (ctx, sockfd, addr, addrlen);
+    }
 #endif
 }
 

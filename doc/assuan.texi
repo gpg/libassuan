@@ -2082,6 +2082,20 @@ this flag for connecting to a Cygwin style socket because no state is
 required at the client.  On non-Windows platforms setting this flag is
 ignored, reading the flag always returns a value of 0.
 
+@item tor-mode
+@itemx socks
+If @var{value} is 1 globally enable SOCKS5 mode for new connections
+using IPv6 or IPv4. @var{fd} must be set to @code{ASSUAN_INVALID_FD} A
+future extension may allow to disable SOCKS5 mode for a specified
+socket but globally disabling SOCKS5 mode is not possible.  Using the
+flag ``tor-mode'' expects the SOCKS5 proxy to listen on port 9050, the
+flag ``socks'' expects the proxy to listen on port 1080.
+
+Connections to the loopback address are not routed though the SOCKS
+proxy.  UDP requests are not supported at all.  The proxy will be
+connected at address 127.0.0.1; an IPv6 connection to the proxy is not
+yet supported.
+
 @end table
 
 

@@ -126,6 +126,10 @@ AH_TOP([
 
 /* Enable gpg-error's strerror macro under W32CE.  */
 #define GPG_ERR_ENABLE_ERRNO_MACROS 1
+
+/* Provide the es_ macro for estream.  */
+#define GPGRT_ENABLE_ES_MACROS 1
+
 ])
 
 AH_BOTTOM([
@@ -356,7 +360,7 @@ AM_PATH_GPG_ERROR(1.8,, AC_MSG_ERROR([libgpg-error was not found]))
 #
 # Checks for library functions.
 #
-AC_CHECK_FUNCS([flockfile funlockfile inet_pton stat])
+AC_CHECK_FUNCS([flockfile funlockfile inet_pton stat getaddrinfo])
 
 # On some systems (e.g. Solaris) nanosleep requires linking to librl.
 # Given that we use nanosleep only as an optimization over a select
