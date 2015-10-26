@@ -114,6 +114,7 @@ EXPORTS
     assuan_sock_set_sockaddr_un         @93
     assuan_sock_set_flag                @94
     assuan_sock_get_flag                @95
+    assuan_sock_connect_byname          @96
 
 ; END
 

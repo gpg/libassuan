@@ -1979,6 +1979,22 @@ details on the redirection file format.
 @end deftypefun
 
 
+@deftypefun int assuan_sock_connect_byname (@w{const char * @var{host}}, @
+         @w{unsigned short @var{port}}, @
+         @w{int @var{reserved}}, @
+         @w{const char *@var{credentials}}, @
+         @w{unsigned int @var{flags}})
+
+Directly connect to @var{port} on @var{host} given as a name.  The
+current implementation requires that @var{flags} has either
+@code{ASSUAN_SOCK_SOCKS} or @code{ASSUAN_SOCK_TOR} set.  On success a
+new TCP STREAM socket is returned; on error @code{ASSUAN_INVALID_FD}
+and ERRNO set.  If @var{credentials} is not @code{NULL}, it is a
+string used for password based SOCKS authentication.  Username and
+password are separated by a colon. @var{reserved} should be 0.
+@end deftypefun
+
+
 @deftypefun int assuan_sock_bind ( @
         @w{assuan_fd_t @var{sockfd}}, @
         @w{struct sockaddr *@var{addr}}, @

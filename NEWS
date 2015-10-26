@@ -1,5 +1,17 @@
-Noteworthy changes in version 2.3.1 (unreleased) [C6/A6/R_]
+Noteworthy changes in version 2.4.0 (unreleased) [C6/A6/R_]
 ------------------------------------------------
+
+ * New flags "socks" and "tor-mode" for assuan_sock_{set,get}_flag.
+
+ * New function assuan_sock_connect_byname.
+
+ * Interface changes relative to the 2.3.0 release:
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ assuan_sock_connect_byname    NEW.
+ ASSUAN_SOCK_TOR               NEW.
+ ASSUAN_SOCK_SOCKS             NEW.
+ assuan_sock_set_flag          EXTENDED.
+ assuan_sock_get_flag          EXTENDED.
 
 
 Noteworthy changes in version 2.3.0 (2015-08-28) [C6/A6/R0]

@@ -657,9 +657,11 @@ do_writen (assuan_context_t ctx, assuan_fd_t sockfd,
 }
 
 
-/* Connect using the SOCKS5 protocol.  */
+/* Connect using the SOCKS5 protocol. */
 static int
-socks5_connect (assuan_context_t ctx, int sock,
+socks5_connect (assuan_context_t ctx, int sock, unsigned short socksport,
+                const char *credentials,
+                const char *hostname, unsigned short hostport,
                 struct sockaddr *addr, socklen_t length)
 {
   int ret;
@@ -669,16 +671,36 @@ socks5_connect (assuan_context_t ctx, int sock,
   size_t proxyaddrlen;
   struct sockaddr_in6 *addr_in6;
   struct sockaddr_in  *addr_in;
-  unsigned char buffer[22];
-  size_t buflen;
+  unsigned char buffer[22+512]; /* The extra 512 gives enough space
+                                   for username/password or the
+                                   hostname. */
+  size_t buflen, hostnamelen;
+  int method;
 
   /* memset (&proxyaddr_in6, 0, sizeof proxyaddr_in6); */
   memset (&proxyaddr_in, 0, sizeof proxyaddr_in);
 
+  /* Either HOSTNAME or ADDR may be given.  */
+  if (hostname && addr)
+    {
+      gpg_err_set_errno (EINVAL);
+      return -1;
+    }
+
+  /* If a hostname is given it must fit into our buffer and it must be
+     less than 256 so that its length can be encoded in one byte.  */
+  hostnamelen = hostname? strlen (hostname) : 0;
+  if (hostnamelen > 255)
+    {
+      gpg_err_set_errno (ENAMETOOLONG);
+      return -1;
+    }
+
   /* Connect to local host.  */
-  /* Fixme: First try to use IPv6.  */
+  /* Fixme: First try to use IPv6 but note that
+     _assuan_sock_connect_byname created the socket with AF_INET.  */
   proxyaddr_in.sin_family = AF_INET;
-  proxyaddr_in.sin_port = htons (tor_mode);
+  proxyaddr_in.sin_port = htons (socksport);
   proxyaddr_in.sin_addr.s_addr = htonl (INADDR_LOOPBACK);
   proxyaddr = (struct sockaddr *)&proxyaddr_in;
   proxyaddrlen = sizeof proxyaddr_in;
@@ -687,7 +709,11 @@ socks5_connect (assuan_context_t ctx, int sock,
     return ret;
   buffer[0] = 5; /* RFC-1928 VER field.  */
   buffer[1] = 1; /* NMETHODS */
-  buffer[2] = 0; /* Method: No authentication required. */
+  if (credentials)
+    method = 2; /* Method: username/password authentication. */
+  else
+    method = 0; /* Method: No authentication required. */
+  buffer[2] = method;
 
   /* Negotiate method.  */
   ret = do_writen (ctx, sock, buffer, 3);
@@ -696,7 +722,7 @@ socks5_connect (assuan_context_t ctx, int sock,
   ret = do_readn (ctx, sock, buffer, 2);
   if (ret)
     return ret;
-  if (buffer[0] != 5 || buffer[1] != 0 )
+  if (buffer[0] != 5 || buffer[1] != method )
     {
       /* Socks server returned wrong version or does not support our
          requested method.  */
@@ -704,11 +730,70 @@ socks5_connect (assuan_context_t ctx, int sock,
       return -1;
     }
 
+  if (credentials)
+    {
+      const char *password;
+      int ulen, plen;
+
+      password = strchr (credentials, ':');
+      if (!password)
+        {
+          gpg_err_set_errno (EINVAL); /* No password given.  */
+          return -1;
+        }
+      ulen = password - credentials;
+      password++;
+      plen = strlen (password);
+      if (!ulen || ulen > 255 || !plen || plen > 255)
+        {
+          gpg_err_set_errno (EINVAL);
+          return -1;
+        }
+
+      buffer[0] = 1; /* VER of the sub-negotiation. */
+      buffer[1] = ulen;
+      buflen = 2;
+      memcpy (buffer+buflen, credentials, ulen);
+      buflen += ulen;
+      buffer[buflen++] = plen;
+      memcpy (buffer+buflen, password, plen);
+      buflen += plen;
+      ret = do_writen (ctx, sock, buffer, buflen);
+      wipememory (buffer, buflen);
+      if (ret)
+        return ret;
+      ret = do_readn (ctx, sock, buffer, 2);
+      if (ret)
+        return ret;
+      if (buffer[0] != 1)
+        {
+          /* SOCKS server returned wrong version.  */
+          gpg_err_set_errno (EPROTO);
+          return -1;
+        }
+      if (buffer[1])
+        {
+          /* SOCKS server denied access.  */
+          gpg_err_set_errno (EACCES);
+          return -1;
+        }
+    }
+
   /* Send request details (rfc-1928, 4).  */
   buffer[0] = 5; /* VER  */
   buffer[1] = 1; /* CMD = CONNECT  */
   buffer[2] = 0; /* RSV  */
-  if (addr->sa_family == AF_INET6)
+  if (hostname)
+    {
+      buffer[3] = 3; /* ATYP = DOMAINNAME */
+      buflen = 4;
+      buffer[buflen++] = hostnamelen;
+      memcpy (buffer+buflen, hostname, hostnamelen);
+      buflen += hostnamelen;
+      buffer[buflen++] = (hostport >> 8); /* DST.PORT */
+      buffer[buflen++] = hostport;
+    }
+  else if (addr->sa_family == AF_INET6)
     {
       addr_in6 = (struct sockaddr_in6 *)addr;
 
@@ -729,7 +814,7 @@ socks5_connect (assuan_context_t ctx, int sock,
   ret = do_writen (ctx, sock, buffer, buflen);
   if (ret)
     return ret;
-  ret = do_readn (ctx, sock, buffer, buflen);
+  ret = do_readn (ctx, sock, buffer, 10 /* Length for IPv4 */);
   if (ret)
     return ret;
   if (buffer[0] != 5 || buffer[2] != 0 )
@@ -743,10 +828,10 @@ socks5_connect (assuan_context_t ctx, int sock,
     {
       switch (buffer[1])
         {
-        case 0x01: /* general SOCKS server failure.  */
+        case 0x01: /* General SOCKS server failure.  */
           gpg_err_set_errno (ENETDOWN);
           break;
-        case 0x02: /* connection not allowed by ruleset.  */
+        case 0x02: /* Connection not allowed by ruleset.  */
           gpg_err_set_errno (EACCES);
           break;
         case 0x03: /* Network unreachable */
@@ -770,6 +855,15 @@ socks5_connect (assuan_context_t ctx, int sock,
         }
       return -1;
     }
+  if (buffer[3] == 4)
+    {
+      /* ATYP indicates a v6 address.  We need to read the remaining
+         12 bytes.  */
+      ret = do_readn (ctx, sock, buffer+10, 12);
+      if (ret)
+        return ret;
+    }
+
   /* FIXME: We have not way to store the actual address used by the
      server.  */
 
@@ -779,7 +873,7 @@ socks5_connect (assuan_context_t ctx, int sock,
 
 
 /* Return true if SOCKS shall be used.  This is the case if tor_mode
-   is enabled and and the desired address is not the loopback
+   is enabled and the desired address is not the loopback
    address.  */
 static int
 use_socks (struct sockaddr *addr)
@@ -874,7 +968,8 @@ _assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
     }
   else if (use_socks (addr))
     {
-      return socks5_connect (ctx, HANDLE2SOCKET (sockfd), addr, addrlen);
+      return socks5_connect (ctx, HANDLE2SOCKET (sockfd), tor_mode,
+                             NULL, NULL, 0, addr, addrlen);
     }
   else
     {
@@ -916,13 +1011,56 @@ _assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
 
   if (use_socks (addr))
     {
-      return socks5_connect (ctx, sockfd, addr, addrlen);
+      return socks5_connect (ctx, sockfd, tor_mode,
+                             NULL, NULL, 0, addr, addrlen);
     }
   else
     {
       return _assuan_connect (ctx, sockfd, addr, addrlen);
     }
 #endif
+}
+
+
+/* Connect to HOST specified as host name on PORT.  The current
+   implementation requires that either the flags ASSUAN_SOCK_SOCKS or
+   ASSUAN_SOCK_TOR are give in FLAGS.  On success a new socket is
+   returned; on error ASSUAN_INVALID_FD is returned and ERRNO set.  If
+   CREDENTIALS is not NULL, it is a string used for password based
+   authentication.  Username and password are separated by a
+   colon.  RESERVED must be 0. */
+assuan_fd_t
+_assuan_sock_connect_byname (assuan_context_t ctx, const char *host,
+                             unsigned short port, int reserved,
+                             const char *credentials, unsigned int flags)
+{
+  int fd;
+  unsigned short socksport;
+
+  if ((flags & ASSUAN_SOCK_TOR))
+    socksport = TOR_PORT;
+  else if ((flags & ASSUAN_SOCK_SOCKS))
+    socksport = SOCKS_PORT;
+  else
+    {
+      gpg_err_set_errno (ENOTSUP);
+      return ASSUAN_INVALID_FD;
+    }
+
+  fd = _assuan_sock_new (ctx, AF_INET, SOCK_STREAM, 0);
+  if (fd == ASSUAN_INVALID_FD)
+    return fd;
+
+  if (socks5_connect (ctx, fd, socksport,
+                      credentials, host, port, NULL, 0))
+    {
+      int save_errno = errno;
+      assuan_sock_close (fd);
+      gpg_err_set_errno (save_errno);
+      return -1;
+    }
+
+  return fd;
 }
 
 
@@ -1255,6 +1393,15 @@ int
 assuan_sock_connect (assuan_fd_t sockfd, struct sockaddr *addr, int addrlen)
 {
   return _assuan_sock_connect (sock_ctx, sockfd, addr, addrlen);
+}
+
+assuan_fd_t
+assuan_sock_connect_byname (const char *host, unsigned short port,
+                            int reserved, const char *credentials,
+                            unsigned int flags)
+{
+  return _assuan_sock_connect_byname (sock_ctx,
+                                      host, port, reserved, credentials, flags);
 }
 
 int

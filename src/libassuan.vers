@@ -104,6 +104,7 @@ LIBASSUAN_1.0 {
     assuan_sock_set_sockaddr_un;
     assuan_sock_set_flag;
     assuan_sock_get_flag;
+    assuan_sock_connect_byname;
 
     __assuan_close;
     __assuan_pipe;

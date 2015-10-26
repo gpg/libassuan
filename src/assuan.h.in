@@ -461,6 +461,14 @@ gpg_error_t assuan_set_error (assuan_context_t ctx, gpg_error_t err,
 
 /*-- assuan-socket.c --*/
 
+/* This flag is used with assuan_sock_connect_byname to
+   connect via SOCKS.  */
+#define ASSUAN_SOCK_SOCKS   1
+/* This flag is used with assuan_sock_connect_byname to force a
+   connection via Tor even if the socket subsystem has not been
+   swicthed into Tor mode.  This flags overrides ASSUAN_SOCK_SOCKS. */
+#define ASSUAN_SOCK_TOR     2
+
 /* These are socket wrapper functions to support an emulation of Unix
    domain sockets on Windows W32.  */
 gpg_error_t assuan_sock_init (void);
@@ -471,6 +479,10 @@ int assuan_sock_set_flag (assuan_fd_t sockfd, const char *name, int value);
 int assuan_sock_get_flag (assuan_fd_t sockfd, const char *name, int *r_value);
 int assuan_sock_connect (assuan_fd_t sockfd,
                          struct sockaddr *addr, int addrlen);
+assuan_fd_t assuan_sock_connect_byname (const char *host, unsigned short port,
+                                        int reserved,
+                                        const char *credentials,
+                                        unsigned int flags);
 int assuan_sock_bind (assuan_fd_t sockfd, struct sockaddr *addr, int addrlen);
 int assuan_sock_set_sockaddr_un (const char *fname, struct sockaddr *addr,
                                  int *r_redirected);
