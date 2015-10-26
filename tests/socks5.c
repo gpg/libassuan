@@ -69,6 +69,7 @@ main (int argc, char **argv)
   assuan_fd_t sock = ASSUAN_INVALID_FD;
   estream_t infp, outfp;
   int c;
+  int lf_seen;
 
   if (argc)
     {
@@ -279,13 +280,22 @@ main (int argc, char **argv)
       log_fatal ("opening outbound stream failed: %s\n", gpg_strerror (err));
     }
 
-  es_fputs ("HEAD / HTTP/1.0\r\n\r\n", outfp);
+  es_fputs ("GET / HTTP/1.0\r\n\r\n", outfp);
   es_fflush (outfp);
+  lf_seen = 0;
   while ((c = es_fgetc (infp)) != EOF)
     {
+      if (c == '\r')
+        continue;
       putchar (c);
       if (c == '\n')
-        break;
+        {
+          if (lf_seen)
+            break;
+          lf_seen = 1;
+        }
+      else
+        lf_seen = 0;
     }
   es_fclose (infp);
   es_fclose (outfp);
