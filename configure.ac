@@ -31,8 +31,8 @@ min_automake_version="1.14"
 # for the LT versions.
 m4_define([mym4_package],[libassuan])
 m4_define([mym4_major], [2])
-m4_define([mym4_minor], [3])
-m4_define([mym4_micro], [1])
+m4_define([mym4_minor], [4])
+m4_define([mym4_micro], [0])
 
 # To start a new development series, i.e a new major or minor number
 # you need to mark an arbitrary commit before the first beta release
@@ -59,8 +59,8 @@ AC_INIT([mym4_package],[mym4_version], [http://bugs.gnupg.org])
 #   (Interfaces added:			AGE++)
 #   (Interfaces removed/changed:	AGE=0)
 #
-LIBASSUAN_LT_CURRENT=6
-LIBASSUAN_LT_AGE=6
+LIBASSUAN_LT_CURRENT=7
+LIBASSUAN_LT_AGE=7
 LIBASSUAN_LT_REVISION=0
 
 # If the API is changed in an incompatible way: increment the next counter.

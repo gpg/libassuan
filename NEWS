@@ -1,11 +1,11 @@
-Noteworthy changes in version 2.4.0 (unreleased) [C6/A6/R_]
+Noteworthy changes in version 2.4.0 (2015-11-03) [C7/A7/R0]
 ------------------------------------------------
 
  * New flags "socks" and "tor-mode" for assuan_sock_{set,get}_flag.
 
  * New function assuan_sock_connect_byname.
 
- * Requires at least libgpg-error 1.17.
+ * Require at least libgpg-error 1.17.
 
  * Interface changes relative to the 2.3.0 release:
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
