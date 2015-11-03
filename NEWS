@@ -5,6 +5,8 @@ Noteworthy changes in version 2.4.0 (unreleased) [C6/A6/R_]
 
  * New function assuan_sock_connect_byname.
 
+ * Requires at least libgpg-error 1.17.
+
  * Interface changes relative to the 2.3.0 release:
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  assuan_sock_connect_byname    NEW.

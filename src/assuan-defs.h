@@ -394,12 +394,6 @@ int setenv (const char *name, const char *value, int replace);
 #ifndef HAVE_PUTC_UNLOCKED
 int putc_unlocked (int c, FILE *stream);
 #endif
-#ifndef HAVE_VASPRINTF
-int _assuan_vasprintf (char **result, const char *format, va_list args);
-int _assuan_asprintf (char **buf, const char *fmt, ...);
-#define vasprintf _assuan_vasprintf
-#define asprintf  _assuan_asprintf
-#endif
 
 
 #define DIM(v)		     (sizeof(v)/sizeof((v)[0]))

@@ -603,10 +603,14 @@ this will retrieve the underlying system handle with
 @node Initializing the library
 @section Initializing the library
 
-In general the library requires no initialization.  There are however
-some initialization hooks provided which are often useful.  These
-should be called as early as possible and in a multi-threaded
-application before a second thread is created.
+Libassuan makes use of Libgpg-error and assumes that Libgpg-error has
+been initialized.  In general @code{gpgrt_check_version} should be
+called to guarantee this; the Libgpg-error manual for details.
+
+Libassuan itself requires no initialization. There are however some
+initialization hooks provided which are often useful.  These should be
+called as early as possible and in a multi-threaded application before
+a second thread is created.
 
 These functions initialize default values that are used at context
 creation with @code{assuan_new}.  As there can only be one default,

@@ -28,7 +28,7 @@
 #ifdef HAVE_W32_SYSTEM
 # ifdef HAVE_WINSOCK2_H
 #  include <winsock2.h>
-# endif 
+# endif
 # include <windows.h>
 #endif /*HAVE_W32_SYSTEM*/
 #include <errno.h>
@@ -147,7 +147,7 @@ _assuan_log_handler (assuan_context_t ctx, void *hook, unsigned int cat,
   fprintf (fp, "%s", msg);
   /* If the log stream is a file, the output would be buffered.  This
      is bad for debugging, thus we flush the stream if FORMAT ends
-     with a LF.  */ 
+     with a LF.  */
   if (msg && *msg && msg[strlen (msg) - 1] == '\n')
     fflush (fp);
   gpg_err_set_errno (saved_errno);
@@ -174,7 +174,7 @@ _assuan_log_control_channel (assuan_context_t ctx, int outbound,
   /* Check whether logging is enabled and do a quick check to see
      whether the callback supports our category.  */
   if (!ctx
-      || !ctx->log_cb 
+      || !ctx->log_cb
       || ctx->flags.no_logging
       || !(*ctx->log_cb) (ctx, ctx->log_cb_data, ASSUAN_LOG_CONTROL, NULL))
     return;
@@ -204,8 +204,8 @@ _assuan_log_control_channel (assuan_context_t ctx, int outbound,
   if (string)
     {
       /* Print the diagnostic.  */
-      res = asprintf (&outbuf, "chan_" CHANNEL_FMT " %s [%s]\n",
-                      ctx->inbound.fd, outbound? "->":"<-", string);
+      res = gpgrt_asprintf (&outbuf, "chan_" CHANNEL_FMT " %s [%s]\n",
+                            ctx->inbound.fd, outbound? "->":"<-", string);
     }
   else if (buffer1)
     {
@@ -231,7 +231,7 @@ _assuan_log_control_channel (assuan_context_t ctx, int outbound,
         {
           /* No control characters and not starting with our error
              message indicator.  Log it verbatim.  */
-          res = asprintf (&outbuf, "chan_" CHANNEL_FMT " %s %.*s%.*s\n",
+          res = gpgrt_asprintf (&outbuf, "chan_" CHANNEL_FMT " %s %.*s%.*s\n",
                           ctx->inbound.fd, outbound? "->":"<-",
                           (int)length1, (const char*)buffer1,
                           (int)length2, buffer2? (const char*)buffer2:"");
@@ -246,7 +246,7 @@ _assuan_log_control_channel (assuan_context_t ctx, int outbound,
           char *hp;
           unsigned int nbytes;
           unsigned int maxbytes = full_logging? (2*LINELENGTH) : 16;
-            
+
           nbytes = length1 + length2;
           if (nbytes > maxbytes)
             nbytes = maxbytes;

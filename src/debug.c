@@ -60,7 +60,7 @@ _assuan_debug (assuan_context_t ctx, unsigned int cat, const char *format, ...)
 
   saved_errno = errno;
   va_start (arg_ptr, format);
-  res = vasprintf (&msg, format, arg_ptr);
+  res = gpgrt_vasprintf (&msg, format, arg_ptr);
   va_end (arg_ptr);
   if (res < 0)
     return;
@@ -87,7 +87,7 @@ _assuan_debug_begin (assuan_context_t ctx,
     return;
 
   va_start (arg_ptr, format);
-  res = vasprintf ((char **) line, format, arg_ptr);
+  res = gpgrt_vasprintf ((char **) line, format, arg_ptr);
   va_end (arg_ptr);
   if (res < 0)
     *line = NULL;
@@ -107,14 +107,14 @@ _assuan_debug_add (assuan_context_t ctx, void **line, const char *format, ...)
     return;
 
   va_start (arg_ptr, format);
-  res = vasprintf (&toadd, format, arg_ptr);
+  res = gpgrt_vasprintf (&toadd, format, arg_ptr);
   va_end (arg_ptr);
   if (res < 0)
     {
       free (*line);
       *line = NULL;
     }
-  res = asprintf (&result, "%s%s", *(char **) line, toadd);
+  res = gpgrt_asprintf (&result, "%s%s", *(char **) line, toadd);
   free (toadd);
   free (*line);
   if (res < 0)

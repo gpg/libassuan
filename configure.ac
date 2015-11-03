@@ -355,7 +355,7 @@ AM_CONDITIONAL(USE_DESCRIPTOR_PASSING, test "$use_descriptor_passing" = "yes")
 
 
 # Checking for libgpg-error.
-AM_PATH_GPG_ERROR(1.8,, AC_MSG_ERROR([libgpg-error was not found]))
+AM_PATH_GPG_ERROR(1.17,, AC_MSG_ERROR([libgpg-error was not found]))
 
 #
 # Checks for library functions.
@@ -396,7 +396,6 @@ AC_REPLACE_FUNCS(memrchr)
 AC_REPLACE_FUNCS(stpcpy)
 AC_CHECK_HEADERS(unistd.h)
 AC_REPLACE_FUNCS(setenv)
-AC_REPLACE_FUNCS(vasprintf)
 
 
 #
