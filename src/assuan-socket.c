@@ -659,7 +659,8 @@ do_writen (assuan_context_t ctx, assuan_fd_t sockfd,
 
 /* Connect using the SOCKS5 protocol. */
 static int
-socks5_connect (assuan_context_t ctx, int sock, unsigned short socksport,
+socks5_connect (assuan_context_t ctx, assuan_fd_t sock,
+                unsigned short socksport,
                 const char *credentials,
                 const char *hostname, unsigned short hostport,
                 struct sockaddr *addr, socklen_t length)
@@ -704,7 +705,7 @@ socks5_connect (assuan_context_t ctx, int sock, unsigned short socksport,
   proxyaddr_in.sin_addr.s_addr = htonl (INADDR_LOOPBACK);
   proxyaddr = (struct sockaddr *)&proxyaddr_in;
   proxyaddrlen = sizeof proxyaddr_in;
-  ret = _assuan_connect (ctx, sock, proxyaddr, proxyaddrlen);
+  ret = _assuan_connect (ctx, HANDLE2SOCKET (sock), proxyaddr, proxyaddrlen);
   if (ret)
     return ret;
   buffer[0] = 5; /* RFC-1928 VER field.  */
@@ -968,7 +969,7 @@ _assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
     }
   else if (use_socks (addr))
     {
-      return socks5_connect (ctx, HANDLE2SOCKET (sockfd), tor_mode,
+      return socks5_connect (ctx, sockfd, tor_mode,
                              NULL, NULL, 0, addr, addrlen);
     }
   else
@@ -1034,7 +1035,7 @@ _assuan_sock_connect_byname (assuan_context_t ctx, const char *host,
                              unsigned short port, int reserved,
                              const char *credentials, unsigned int flags)
 {
-  int fd;
+  assuan_fd_t fd;
   unsigned short socksport;
 
   if ((flags & ASSUAN_SOCK_TOR))
@@ -1057,7 +1058,7 @@ _assuan_sock_connect_byname (assuan_context_t ctx, const char *host,
       int save_errno = errno;
       assuan_sock_close (fd);
       gpg_err_set_errno (save_errno);
-      return -1;
+      return ASSUAN_INVALID_FD;
     }
 
   return fd;
