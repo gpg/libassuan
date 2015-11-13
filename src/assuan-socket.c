@@ -70,6 +70,30 @@
 # define S_IRGRP 0
 # define S_IWGRP 0
 #endif
+#ifndef ENOTSUP
+#define ENOTSUP 129
+#endif
+#ifndef EPROTO
+#define EPROTO 134
+#endif
+#ifndef EPROTONOSUPPORT
+#define EPROTONOSUPPORT 135
+#endif
+#ifndef ENETDOWN
+#define ENETDOWN 116
+#endif
+#ifndef ENETUNREACH
+#define ENETUNREACH 118
+#endif
+#ifndef EHOSTUNREACH
+#define EHOSTUNREACH 110
+#endif
+#ifndef ECONNREFUSED
+#define ECONNREFUSED 107
+#endif
+#ifndef ETIMEDOUT
+#define ETIMEDOUT 138
+#endif
 #endif
 
 #ifndef ENAMETOOLONG
