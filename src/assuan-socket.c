@@ -110,6 +110,7 @@
 /* The standard SOCKS and TOR port.  */
 #define SOCKS_PORT 1080
 #define TOR_PORT   9050
+#define TOR_PORT2  9150   /* The Tor browser is listening there.  */
 
 /* In the future, we can allow access to sock_ctx, if that context's
    hook functions need to be overridden.  There can only be one global
@@ -300,6 +301,8 @@ _assuan_sock_wsa2errno (int err)
       return EPIPE;
     case WSANOTINITIALISED:
       return ENOSYS;
+    case WSAECONNREFUSED:
+      return ECONNREFUSED;
     default:
       return EIO;
     }
@@ -730,6 +733,13 @@ socks5_connect (assuan_context_t ctx, assuan_fd_t sock,
   proxyaddr = (struct sockaddr *)&proxyaddr_in;
   proxyaddrlen = sizeof proxyaddr_in;
   ret = _assuan_connect (ctx, HANDLE2SOCKET (sock), proxyaddr, proxyaddrlen);
+  if (ret && socksport == TOR_PORT && errno == ECONNREFUSED)
+    {
+      /* Standard Tor port failed - try the Tor browser port.  */
+      proxyaddr_in.sin_port = htons (TOR_PORT2);
+      ret = _assuan_connect (ctx, HANDLE2SOCKET (sock),
+                             proxyaddr, proxyaddrlen);
+    }
   if (ret)
     return ret;
   buffer[0] = 5; /* RFC-1928 VER field.  */
