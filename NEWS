@@ -1,5 +1,9 @@
-Noteworthy changes in version 2.4.1 (unreleased) [C7/A7/R_]
+Noteworthy changes in version 2.4.1 (2015-11-23) [C7/A7/R1]
 ------------------------------------------------
+
+ * In Tor mode fallback to port 9150 if 9050 is not listening.
+
+ * Allow building with older mingw-w64 versions.
 
 
 Noteworthy changes in version 2.4.0 (2015-11-03) [C7/A7/R0]
