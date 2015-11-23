@@ -39,16 +39,7 @@
 #include "../src/assuan.h"
 #include "common.h"
 
-#ifndef HAVE_GETADDRINFO
-int
-main (void)
-{
-  fputs ("socks5: getaddrinfo not supported\n", stderr);
-  return 77; /* Skip test.  */
-}
-#else /* HAVE_GETADDRINFO */
 
-
 /*
 
      M A I N
@@ -71,6 +62,7 @@ main (int argc, char **argv)
   int c;
   int lf_seen;
 
+  gpgrt_init ();
   if (argc)
     {
       log_set_prefix (*argv);
@@ -210,6 +202,7 @@ main (int argc, char **argv)
     }
   else
     {
+#ifdef HAVE_GETADDRINFO
       struct addrinfo hints, *res, *ai;
       int ret;
       int anyok = 0;
@@ -262,6 +255,12 @@ main (int argc, char **argv)
       freeaddrinfo (res);
       if (!anyok)
         exit (1);
+#else /*!HAVE_GETADDRINFO*/
+      (void)only_v4;
+      (void)only_v6;
+      fputs ("socks5: getaddrinfo not supported\n", stderr);
+      exit (77); /* Skip test.  */
+#endif /*!HAVE_GETADDRINFO*/
     }
 
   infp = es_fdopen_nc (sock, "rb");
@@ -279,9 +278,12 @@ main (int argc, char **argv)
       assuan_sock_close (sock);
       log_fatal ("opening outbound stream failed: %s\n", gpg_strerror (err));
     }
-
   es_fputs ("GET / HTTP/1.0\r\n\r\n", outfp);
-  es_fflush (outfp);
+  if (es_fflush (outfp))
+    {
+      err = gpg_error_from_syserror ();
+      log_error ("es_fflush failed: %s\n", gpg_strerror (err));
+    }
   lf_seen = 0;
   while ((c = es_fgetc (infp)) != EOF)
     {
@@ -297,9 +299,13 @@ main (int argc, char **argv)
       else
         lf_seen = 0;
     }
+  if (es_ferror (infp))
+    {
+      err = gpg_error_from_syserror ();
+      log_error ("es_fgetc failed: %s\n", gpg_strerror (err));
+    }
   es_fclose (infp);
   es_fclose (outfp);
 
   return errorcount ? 1 : 0;
 }
-#endif /*HAVE_GETADDRINFO*/
