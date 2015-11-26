@@ -637,7 +637,7 @@ do_readn (assuan_context_t ctx, assuan_fd_t sockfd,
           void *buffer, size_t nbytes)
 {
   char *p = buffer;
-  size_t n;
+  ssize_t n;
 
   while (nbytes)
     {
