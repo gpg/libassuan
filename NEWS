@@ -1,6 +1,9 @@
 Noteworthy changes in version 2.4.2 (unreleased) [C7/A7/R_]
 ------------------------------------------------
 
+ * The nPth version of the connect system hook does now wrap the call
+   with npth_unprotec/npth_protect to avoid blocking during a connect.
+
 
 Noteworthy changes in version 2.4.1 (2015-11-23) [C7/A7/R1]
 ------------------------------------------------
