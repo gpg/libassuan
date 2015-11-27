@@ -1995,7 +1995,12 @@ current implementation requires that @var{flags} has either
 new TCP STREAM socket is returned; on error @code{ASSUAN_INVALID_FD}
 and ERRNO set.  If @var{credentials} is not @code{NULL}, it is a
 string used for password based SOCKS authentication.  Username and
-password are separated by a colon. @var{reserved} should be 0.
+password are separated by a colon. @var{reserved} should be 0.  To
+test whether the proxy is available @var{host} and @var{port} may be
+given as NULL/0:  If the proxy is available the function returns a
+valid socket which is in the state after credentials sub-negotiation.
+The caller now knows that the SOCKS proxy is available and has been
+authenticated; normally the caller closes the socket then.
 @end deftypefun
 
 

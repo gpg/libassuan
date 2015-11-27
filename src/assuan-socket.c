@@ -814,6 +814,13 @@ socks5_connect (assuan_context_t ctx, assuan_fd_t sock,
         }
     }
 
+  if (hostname && !*hostname && !hostport)
+    {
+      /* Empty hostname given.  Stop right here to allow the caller to
+         do the actual proxy request.  */
+      return 0;
+    }
+
   /* Send request details (rfc-1928, 4).  */
   buffer[0] = 5; /* VER  */
   buffer[1] = 1; /* CMD = CONNECT  */
@@ -1059,11 +1066,13 @@ _assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
 
 /* Connect to HOST specified as host name on PORT.  The current
    implementation requires that either the flags ASSUAN_SOCK_SOCKS or
-   ASSUAN_SOCK_TOR are give in FLAGS.  On success a new socket is
+   ASSUAN_SOCK_TOR are given in FLAGS.  On success a new socket is
    returned; on error ASSUAN_INVALID_FD is returned and ERRNO set.  If
    CREDENTIALS is not NULL, it is a string used for password based
-   authentication.  Username and password are separated by a
-   colon.  RESERVED must be 0. */
+   authentication.  Username and password are separated by a colon.
+   RESERVED must be 0.  By passing HOST and PORT as 0 the function can
+   be used to check for proxy availability: If the proxy is available
+   a socket will be returned which the caller should then close.  */
 assuan_fd_t
 _assuan_sock_connect_byname (assuan_context_t ctx, const char *host,
                              unsigned short port, int reserved,
@@ -1082,12 +1091,23 @@ _assuan_sock_connect_byname (assuan_context_t ctx, const char *host,
       return ASSUAN_INVALID_FD;
     }
 
+  if (host && !*host)
+    {
+      /* Error out early on an empty host name.  See below.  */
+      gpg_err_set_errno (EINVAL);
+      return ASSUAN_INVALID_FD;
+    }
+
   fd = _assuan_sock_new (ctx, AF_INET, SOCK_STREAM, 0);
   if (fd == ASSUAN_INVALID_FD)
     return fd;
 
+  /* For HOST being NULL we pass an empty string which indicates to
+     socks5_connect to stop midway during the proxy negotiation.  Note
+     that we can't pass NULL directly as this indicates IP address
+     mode to the called function.  */
   if (socks5_connect (ctx, fd, socksport,
-                      credentials, host, port, NULL, 0))
+                      credentials, host? host:"", port, NULL, 0))
     {
       int save_errno = errno;
       assuan_sock_close (fd);

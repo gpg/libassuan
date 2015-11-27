@@ -53,6 +53,7 @@ main (int argc, char **argv)
   int only_v6 = 0;
   int only_v4 = 0;
   int use_tor = 0;
+  int opt_have_proxy = 0;
   int disable_socks = 0;
   int opt_byname = 0;
   const char *user = NULL;
@@ -87,6 +88,7 @@ main (int argc, char **argv)
                 "  --inet6-only     Use only IPv6\n"
                 "  --inet4-only     Use only IPv4\n"
                 "  --disable-socks  Connect w/o SOCKS\n"
+                "  --have-proxy     Check whether the proxy is available\n"
                 "  --byname         Use assuan_sock_connect_byname\n"
                 "  --user STRING    Use STRING as user for authentication\n"
                 "  --pass STRING    Use STRING as password for authentication\n"
@@ -128,6 +130,11 @@ main (int argc, char **argv)
           opt_byname = 1;
           argc--; argv++;
         }
+      else if (!strcmp (*argv, "--have-proxy"))
+        {
+          opt_have_proxy = 1;
+          argc--; argv++;
+        }
       else if (!strcmp (*argv, "--user"))
         {
           argc--; argv++;
@@ -153,7 +160,7 @@ main (int argc, char **argv)
         }
     }
 
-  if (argc != 2)
+  if (argc != 2 && !opt_have_proxy)
     {
       fputs ("usage: socks5 HOST PORT\n", stderr);
       exit (1);
@@ -175,7 +182,30 @@ main (int argc, char **argv)
                  use_tor? "TOR": "SOCKS", gpg_strerror (err));
     }
 
-  if (opt_byname)
+  if (opt_have_proxy)
+    {
+      char *cred;
+
+      if (user || pass)
+        cred = xstrconcat (user?user:"", ":", pass, NULL);
+      else
+        cred = NULL;
+
+      sock = assuan_sock_connect_byname
+        (NULL, 0, 0, cred, use_tor? ASSUAN_SOCK_TOR : ASSUAN_SOCK_SOCKS);
+      if (sock == ASSUAN_INVALID_FD)
+        {
+          err = gpg_error_from_syserror ();
+          log_error ("SOCKS proxy is not available (%s)\n", gpg_strerror (err));
+          exit (1);
+        }
+      xfree (cred);
+      assuan_sock_close (sock);
+      if (verbose)
+        log_info ("SOCKS proxy available\n");
+      exit (0);
+    }
+  else if (opt_byname)
     {
       unsigned short port;
       char *cred;
