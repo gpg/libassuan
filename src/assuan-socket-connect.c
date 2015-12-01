@@ -223,7 +223,7 @@ assuan_socket_connect (assuan_context_t ctx, const char *name,
     {
       /* We require that the name starts with a slash if no URL
          schemata is used.  To make things easier we allow an optional
-         driver prefix.  */
+         drive prefix.  */
       s = name;
       if (*s && s[1] == ':')
         s += 2;

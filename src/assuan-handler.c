@@ -995,7 +995,7 @@ assuan_get_data_fp (assuan_context_t ctx)
 }
 
 
-/* Set the text used for the next OK reponse.  This string is
+/* Set the text used for the next OK response.  This string is
    automatically reset to NULL after the next command. */
 gpg_error_t
 assuan_set_okay_line (assuan_context_t ctx, const char *line)

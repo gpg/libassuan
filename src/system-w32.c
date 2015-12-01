@@ -428,7 +428,7 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
      variable.  However this requires us to write a full environment
      handler, because the strings are expected in sorted order.  The
      suggestion given in the MS Reference Library, to save the old
-     value, changeit, create proces and restore it, is not thread
+     value, change it, create process and restore it, is not thread
      safe.  */
 
   /* Build the command line.  */

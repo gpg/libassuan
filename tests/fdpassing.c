@@ -1,4 +1,4 @@
-/* fdpassing - Check the fiel descriptor passing.
+/* fdpassing - Check the file descriptor passing.
    Copyright (C) 2006, 2009 Free Software Foundation, Inc.
 
    This file is part of Assuan.

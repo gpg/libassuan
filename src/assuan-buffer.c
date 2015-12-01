@@ -476,7 +476,7 @@ _assuan_cookie_write_flush (void *cookie)
  * and may get buffered until a line is full.  To force sending the
  * data out @buffer may be passed as NULL (in which case @length must
  * also be 0); however when used by a client this flush operation does
- * also send the terminating "END" command to terminate the reponse on
+ * also send the terminating "END" command to terminate the response on
  * a INQUIRE response.  However, when assuan_transact() is used, this
  * function takes care of sending END itself.
  *

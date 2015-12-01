@@ -174,7 +174,7 @@ struct {
 } logcontrol;
 
 
-/* We don't need a device context for the pipe thus we use the adress
+/* We don't need a device context for the pipe thus we use the address
    of the critical section object for it.  */
 #define PIPECTX_VALUE ((DWORD)(&opnctx_table_cs))
 
