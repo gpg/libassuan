@@ -1,4 +1,4 @@
-Noteworthy changes in version 2.4.2 (unreleased) [C7/A7/R_]
+Noteworthy changes in version 2.4.2 (2015-12-02) [C7/A7/R2]
 ------------------------------------------------
 
  * The nPth version of the connect system hook does now wrap the call
