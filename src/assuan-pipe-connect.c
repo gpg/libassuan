@@ -65,13 +65,6 @@
 #endif
 
 
-#ifdef _POSIX_OPEN_MAX
-#define MAX_OPEN_FDS _POSIX_OPEN_MAX
-#else
-#define MAX_OPEN_FDS 20
-#endif
-
-
 /* This should be called to make sure that SIGPIPE gets ignored.  */
 static void
 fix_signals (void)

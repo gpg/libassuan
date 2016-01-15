@@ -24,20 +24,22 @@
 
 #include <stdlib.h>
 #include <errno.h>
+#ifdef HAVE_STDINT_H
+# include <stdint.h>
+#endif
 /* Solaris 8 needs sys/types.h before time.h.  */
 #include <sys/types.h>
 #include <time.h>
 #include <fcntl.h>
 #include <sys/wait.h>
+#ifdef HAVE_GETRLIMIT
+# include <sys/time.h>
+# include <sys/resource.h>
+#endif /*HAVE_GETRLIMIT*/
+
 
 #include "assuan-defs.h"
 #include "debug.h"
-
-#ifdef _POSIX_OPEN_MAX
-#define MAX_OPEN_FDS _POSIX_OPEN_MAX
-#else
-#define MAX_OPEN_FDS 20
-#endif
 
 
 
@@ -168,6 +170,61 @@ writen (int fd, const char *buffer, size_t length)
 }
 
 
+/* Return the maximum number of currently allowed open file
+ * descriptors.  */
+static int
+get_max_fds (void)
+{
+  int max_fds = -1;
+
+#ifdef HAVE_GETRLIMIT
+  struct rlimit rl;
+
+# ifdef RLIMIT_NOFILE
+  if (!getrlimit (RLIMIT_NOFILE, &rl))
+    max_fds = rl.rlim_max;
+# endif
+
+# ifdef RLIMIT_OFILE
+  if (max_fds == -1 && !getrlimit (RLIMIT_OFILE, &rl))
+    max_fds = rl.rlim_max;
+
+# endif
+#endif /*HAVE_GETRLIMIT*/
+
+#ifdef _SC_OPEN_MAX
+  if (max_fds == -1)
+    {
+      long int scres = sysconf (_SC_OPEN_MAX);
+      if (scres >= 0)
+        max_fds = scres;
+    }
+#endif
+
+#ifdef _POSIX_OPEN_MAX
+  if (max_fds == -1)
+    max_fds = _POSIX_OPEN_MAX;
+#endif
+
+#ifdef OPEN_MAX
+  if (max_fds == -1)
+    max_fds = OPEN_MAX;
+#endif
+
+  if (max_fds == -1)
+    max_fds = 256;  /* Arbitrary limit.  */
+
+  /* AIX returns INT32_MAX instead of a proper value.  We assume that
+     this is always an error and use a more reasonable limit.  */
+#ifdef INT32_MAX
+  if (max_fds == INT32_MAX)
+    max_fds = 256;
+#endif
+
+  return max_fds;
+}
+
+
 int
 __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 		const char **argv,
@@ -246,9 +303,7 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 
       /* Close all files which will not be duped and are not in the
 	 fd_child_list. */
-      n = sysconf (_SC_OPEN_MAX);
-      if (n < 0)
-	n = MAX_OPEN_FDS;
+      n = get_max_fds ();
       for (i = 0; i < n; i++)
 	{
 	  if (i == STDIN_FILENO || i == STDOUT_FILENO || i == STDERR_FILENO)

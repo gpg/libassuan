@@ -36,12 +36,6 @@
 #include "assuan-defs.h"
 #include "debug.h"
 
-#ifdef _POSIX_OPEN_MAX
-#define MAX_OPEN_FDS _POSIX_OPEN_MAX
-#else
-#define MAX_OPEN_FDS 20
-#endif
-
 #define DEBUG_SYSIO 0
 
 
@@ -66,11 +60,11 @@ _assuan_calloc (assuan_context_t ctx, size_t cnt, size_t elsize)
 {
   void *ptr;
   size_t nbytes;
-    
+
   nbytes = cnt * elsize;
 
   /* Check for overflow.  */
-  if (elsize && nbytes / elsize != cnt) 
+  if (elsize && nbytes / elsize != cnt)
     {
       gpg_err_set_errno (ENOMEM);
       return NULL;
@@ -111,7 +105,7 @@ _assuan_system_hooks_copy (assuan_system_hooks_t dst,
   /* Reset the defaults.  */
   if (dst != &_assuan_system_hooks)
     memcpy (dst, &_assuan_system_hooks, sizeof (*dst));
-      
+
   dst->version = ASSUAN_SYSTEM_HOOKS_VERSION;
   if (src->version >= 1)
     {
@@ -164,7 +158,7 @@ _assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx)
   if (err)
     return TRACE_SYSRES (err);
 
-  return TRACE_SUC2 ("read=0x%x, write=0x%x", fd[0], fd[1]); 
+  return TRACE_SUC2 ("read=0x%x, write=0x%x", fd[0], fd[1]);
 }
 
 
@@ -257,7 +251,7 @@ _assuan_recvmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
 		      cmptr->cmsg_len - (((char *)data) - ((char *)cmptr)),
 		      cmptr->cmsg_level, cmptr->cmsg_type, *(int *)data);
 	}
-    }    
+    }
   return TRACE_SYSRES (res);
 #else
   return (ctx->system.recvmsg) (ctx, fd, msg, flags);
@@ -280,7 +274,7 @@ _assuan_sendmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
     TRACE_LOG2 ("msg->iov[0] = { iov_base=%p, iov_len=%i }",
 		msg->msg_iov[0].iov_base, msg->msg_iov[0].iov_len);
     TRACE_LOGBUF (msg->msg_iov[0].iov_base, msg->msg_iov[0].iov_len);
-    
+
     cmptr = CMSG_FIRSTHDR (msg);
     if (cmptr)
       {
@@ -358,7 +352,7 @@ _assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 
 /* FIXME: Add some sort of waitpid function that covers GPGME and
    gpg-agent's use of assuan.  */
-pid_t 
+pid_t
 _assuan_waitpid (assuan_context_t ctx, pid_t pid, int action,
 		 int *status, int options)
 {
@@ -384,7 +378,7 @@ _assuan_socketpair (assuan_context_t ctx, int namespace, int style,
   TRACE_BEG4 (ctx, ASSUAN_LOG_SYSIO, "_assuan_socketpair", ctx,
 	      "namespace=%i,style=%i,protocol=%i,filedes=%p",
 	      namespace, style, protocol, filedes);
-  
+
   res = (ctx->system.socketpair) (ctx, namespace, style, protocol, filedes);
   if (res == 0)
     TRACE_LOG2 ("filedes = { 0x%x, 0x%x }", filedes[0], filedes[1]);
@@ -401,7 +395,7 @@ _assuan_socket (assuan_context_t ctx, int namespace, int style, int protocol)
   TRACE_BEG3 (ctx, ASSUAN_LOG_SYSIO, "_assuan_socket", ctx,
 	      "namespace=%i,style=%i,protocol=%i",
 	      namespace, style, protocol);
-  
+
   res = (ctx->system.socket) (ctx, namespace, style, protocol);
   return TRACE_SYSRES (res);
 }
@@ -413,7 +407,7 @@ _assuan_connect (assuan_context_t ctx, int sock, struct sockaddr *addr, socklen_
   int res;
   TRACE_BEG3 (ctx, ASSUAN_LOG_SYSIO, "_assuan_connect", ctx,
 	      "socket=%i,addr=%p,length=%i", sock, addr, length);
-  
+
   res = (ctx->system.connect) (ctx, sock, addr, length);
   return TRACE_SYSRES (res);
 }
