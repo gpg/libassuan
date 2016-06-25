@@ -661,7 +661,7 @@ dispatch_command (assuan_context_t ctx, char *line, int linelen)
   if (!s)
     return PROCESS_DONE (ctx, set_error (ctx, GPG_ERR_ASS_UNKNOWN_CMD, NULL));
   line += shift;
-  linelen -= shift;
+  /* linelen -= shift; -- not needed.  */
 
   if (ctx->pre_cmd_notify_fnc) {
     err = ctx->pre_cmd_notify_fnc(ctx, ctx->cmdtbl[i].name);

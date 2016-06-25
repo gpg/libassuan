@@ -59,10 +59,10 @@ cmd_echo (assuan_context_t ctx, char *line)
   nbytes = 0;
   while ( (c=getc (fp)) != -1)
     {
-      putc (c, stdout); 
+      putc (c, stdout);
       nbytes++;
     }
-  fflush (stdout); 
+  fflush (stdout);
   log_info ("done printing %d bytes to stdout\n", nbytes);
 
   fclose (fp);
@@ -118,7 +118,7 @@ server (void)
 
   assuan_set_log_stream (ctx, stderr);
 
-  for (;;) 
+  for (;;)
     {
       rc = assuan_accept (ctx);
       if (rc)
@@ -127,7 +127,7 @@ server (void)
             log_error ("assuan_accept failed: %s\n", gpg_strerror (rc));
           break;
         }
-      
+
       log_info ("client connected.  Client's pid is %ld\n",
                 (long)assuan_get_pid (ctx));
 
@@ -135,7 +135,7 @@ server (void)
       if (rc)
         log_error ("assuan_process failed: %s\n", gpg_strerror (rc));
     }
-  
+
   assuan_release (ctx);
 }
 
@@ -169,7 +169,7 @@ client (assuan_context_t ctx, const char *fname)
                      strerror (errno));
           return -1;
         }
-      
+
       rc = assuan_sendfd (ctx, fileno (fp));
       if (rc)
         {
@@ -204,12 +204,12 @@ client (assuan_context_t ctx, const char *fname)
 
 
 
-/* 
- 
+/*
+
      M A I N
 
 */
-int 
+int
 main (int argc, char **argv)
 {
   int last_argc = -1;
@@ -294,17 +294,18 @@ main (int argc, char **argv)
       if (err)
         {
           log_error ("assuan_pipe_connect failed: %s\n", gpg_strerror (err));
-          return 1;
+          assuan_release (ctx);
+          errorcount++;
         }
-      
-      if (!with_exec && loc[0] == 's')
+      else if (!with_exec && loc[0] == 's')
         {
           server ();
+          assuan_release (ctx);
           log_info ("server finished\n");
         }
       else
         {
-          if (client (ctx, fname)) 
+          if (client (ctx, fname))
             {
               log_info ("waiting for server to terminate...\n");
               assuan_release (ctx);
@@ -313,6 +314,7 @@ main (int argc, char **argv)
         }
     }
 
+  xfree (fname);
   return errorcount ? 1 : 0;
 }
 

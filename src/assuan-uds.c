@@ -34,7 +34,7 @@
 #else
 # ifdef HAVE_WINSOCK2_H
 #  include <winsock2.h>
-# endif 
+# endif
 # include <windows.h>
 #endif
 #if HAVE_SYS_UIO_H
@@ -60,10 +60,10 @@
 #define MY_ALIGN(n) ((((n))+ sizeof(size_t)-1) & (size_t)~(sizeof(size_t)-1))
 #ifndef CMSG_SPACE
 #define CMSG_SPACE(n) (MY_ALIGN(sizeof(struct cmsghdr)) + MY_ALIGN((n)))
-#endif 
+#endif
 #ifndef CMSG_LEN
 #define CMSG_LEN(n) (MY_ALIGN(sizeof(struct cmsghdr)) + (n))
-#endif 
+#endif
 #ifndef CMSG_FIRSTHDR
 #define CMSG_FIRSTHDR(mhdr) \
   ((size_t)(mhdr)->msg_controllen >= sizeof (struct cmsghdr)		      \
@@ -200,11 +200,13 @@ uds_sendfd (assuan_context_t ctx, assuan_fd_t fd)
   char buffer[80];
 
   /* We need to send some real data so that a read won't return 0
-     which will be taken as an EOF.  It also helps with debugging. */ 
+     which will be taken as an EOF.  It also helps with debugging. */
   snprintf (buffer, sizeof(buffer)-1, "# descriptor %d is in flight\n", fd);
   buffer[sizeof(buffer)-1] = 0;
 
   memset (&msg, 0, sizeof (msg));
+
+  memset (&control_u, 0, sizeof (control_u));
 
   msg.msg_name = NULL;
   msg.msg_namelen = 0;
