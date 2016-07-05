@@ -20,7 +20,7 @@
 
 TESTS_ENVIRONMENT =
 
-EXTRA_DIST = motd ce-createpipe.c $(testtools)
+EXTRA_DIST = motd ce-createpipe.c
 
 BUILT_SOURCES =
 CLEANFILES =
