@@ -363,6 +363,16 @@ AM_PATH_GPG_ERROR(1.17,, AC_MSG_ERROR([libgpg-error was not found]))
 AC_CHECK_FUNCS([flockfile funlockfile inet_pton stat getaddrinfo \
                 getrlimit ])
 
+# If we didn't find inet_pton, it might be in -lsocket (which might
+# require -lnsl)
+if test X"$ac_cv_func_inet_pton" != X"yes" ; then
+    AC_SEARCH_LIBS([inet_pton],[socket],[],[],[-lnsl])
+    if test X"$ac_cv_search_inet_pton" != X"no" ; then
+        AC_DEFINE([HAVE_INET_PTON],1,[Define to 1 if you have `inet_pton'.])
+    fi
+fi
+
+
 # On some systems (e.g. Solaris) nanosleep requires linking to librl.
 # Given that we use nanosleep only as an optimization over a select
 # based wait function we want it only if it is available in libc.
