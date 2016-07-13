@@ -233,15 +233,13 @@ assuan_socket_connect (assuan_context_t ctx, const char *name,
 
   if (af == AF_LOCAL)
     {
-      if (strlen (name)+1 >= sizeof srvr_addr_un.sun_path)
-        return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
+      int redirected;
 
-      memset (&srvr_addr_un, 0, sizeof srvr_addr_un);
-      srvr_addr_un.sun_family = AF_LOCAL;
-      strncpy (srvr_addr_un.sun_path, name, sizeof (srvr_addr_un.sun_path) - 1);
-      srvr_addr_un.sun_path[sizeof (srvr_addr_un.sun_path) - 1] = 0;
+      if (_assuan_sock_set_sockaddr_un (name, (struct sockaddr *)&srvr_addr_un,
+                                        &redirected))
+        return _assuan_error (ctx, gpg_err_code_from_syserror ());
+
       len = SUN_LEN (&srvr_addr_un);
-
       srvr_addr = (struct sockaddr *)&srvr_addr_un;
     }
   else
