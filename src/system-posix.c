@@ -36,6 +36,9 @@
 # include <sys/time.h>
 # include <sys/resource.h>
 #endif /*HAVE_GETRLIMIT*/
+#if __linux__
+# include <dirent.h>
+#endif /*__linux__ */
 
 
 #include "assuan-defs.h"
@@ -179,6 +182,43 @@ get_max_fds (void)
 
 #ifdef HAVE_GETRLIMIT
   struct rlimit rl;
+
+  /* Under Linux we can figure out the highest used file descriptor by
+   * reading /proc/PID/fd.  This is in the common cases much faster
+   * than for example doing 4096 close calls where almost all of them
+   * will fail.  We use the same code in GnuPG and measured this: On a
+   * system with a limit of 4096 files and only 8 files open with the
+   * highest number being 10, we speedup close_all_fds from 125ms to
+   * 0.4ms including the readdir.
+   *
+   * Another option would be to close the file descriptors as returned
+   * from reading that directory - however then we need to snapshot
+   * that list before starting to close them.  */
+#ifdef __linux__
+  {
+    DIR *dir = NULL;
+    struct dirent *dir_entry;
+    const char *s;
+    int x;
+
+    dir = opendir ("/proc/self/fd");
+    if (dir)
+      {
+        while ((dir_entry = readdir (dir)))
+          {
+            s = dir_entry->d_name;
+            if ( *s < '0' || *s > '9')
+              continue;
+            x = atoi (s);
+            if (x > max_fds)
+              max_fds = x;
+          }
+        closedir (dir);
+      }
+    if (max_fds != -1)
+      return max_fds + 1;
+    }
+#endif /* __linux__ */
 
 # ifdef RLIMIT_NOFILE
   if (!getrlimit (RLIMIT_NOFILE, &rl))
