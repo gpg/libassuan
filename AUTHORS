@@ -45,7 +45,7 @@ later split of into a separate library.
 Copyright
 =========
 
-The Libassuan code distributed under the GNU Lesser General Public
+The Libassuan code is distributed under the GNU Lesser General Public
 License, version 2.1 or later.  The manual is distributed under the
 GNU General Public License, Version 3 or later.
 
@@ -55,14 +55,14 @@ List of Copyright holders
   Copyright (C) 1992-2013 Free Software Foundation, Inc.
   Copyright (C) 1994 X Consortium
   Copyright (C) 2000 Werner Koch (dd9jn)
-  Copyright (C) 2001-2015 g10 Code GmbH
+  Copyright (C) 2001-2016 g10 Code GmbH
   Copyright (C) 2004 Simon Josefsson
 
 
 ==========
 
  Copyright 2003-2013 Free Software Foundation, Inc.
- Copyright (C) 2013-2014  g10 Code GmbH
+ Copyright (C) 2013-2016  g10 Code GmbH
 
  This file is free software; as a special exception the author gives
  unlimited permission to copy and/or distribute it, with or without
