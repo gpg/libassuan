@@ -803,7 +803,7 @@ socks5_connect (assuan_context_t ctx, assuan_fd_t sock,
       if (buffer[0] != 1)
         {
           /* SOCKS server returned wrong version.  */
-          gpg_err_set_errno (EPROTO);
+          gpg_err_set_errno (EPROTONOSUPPORT);
           return -1;
         }
       if (buffer[1])
@@ -863,7 +863,7 @@ socks5_connect (assuan_context_t ctx, assuan_fd_t sock,
     {
       /* Socks server returned wrong version or the reserved field is
          not zero.  */
-      gpg_err_set_errno (EPROTO);
+      gpg_err_set_errno (EPROTONOSUPPORT);
       return -1;
     }
   if (buffer[1])
