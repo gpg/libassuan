@@ -65,7 +65,7 @@ _assuan_debug (assuan_context_t ctx, unsigned int cat, const char *format, ...)
   if (res < 0)
     return;
   ctx->log_cb (ctx, ctx->log_cb_data, cat, msg);
-  free (msg);
+  gpgrt_free (msg);
   gpg_err_set_errno (saved_errno);
 }
 
@@ -111,12 +111,12 @@ _assuan_debug_add (assuan_context_t ctx, void **line, const char *format, ...)
   va_end (arg_ptr);
   if (res < 0)
     {
-      free (*line);
+      gpgrt_free (*line);
       *line = NULL;
     }
   res = gpgrt_asprintf (&result, "%s%s", *(char **) line, toadd);
-  free (toadd);
-  free (*line);
+  gpgrt_free (toadd);
+  gpgrt_free (*line);
   if (res < 0)
     *line = NULL;
   else
@@ -134,7 +134,7 @@ _assuan_debug_end (assuan_context_t ctx, void **line, unsigned int cat)
 
   /* Force logging here by using category ~0.  */
   _assuan_debug (ctx, ~0, "%s", *line);
-  free (*line);
+  gpgrt_free (*line);
   *line = NULL;
 }
 

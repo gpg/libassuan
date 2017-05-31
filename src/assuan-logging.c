@@ -296,7 +296,7 @@ _assuan_log_control_channel (assuan_context_t ctx, int outbound,
   else if (outbuf)
     {
       ctx->log_cb (ctx, ctx->log_cb_data, ASSUAN_LOG_CONTROL, outbuf);
-      free (outbuf);
+      gpgrt_free (outbuf);
     }
 #undef TOHEX
 #undef CHANNEL_FMT
