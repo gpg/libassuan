@@ -19,6 +19,7 @@
 
 
 ACLOCAL_AMFLAGS = -I m4
+DISTCHECK_CONFIGURE_FLAGS = --enable-doc
 
 # (A suitable gitlog-to-changelog script can be found in GnuPG master.)
 GITLOG_TO_CHANGELOG=gitlog-to-changelog
@@ -28,7 +29,13 @@ EXTRA_DIST = autogen.sh autogen.rc README.GIT         	                \
              tests/ChangeLog-2011 contrib/ChangeLog-2011     		\
              build-aux/git-log-footer build-aux/git-log-fix
 
-SUBDIRS = m4 src doc tests
+if BUILD_DOC
+doc = doc
+else
+doc =
+endif
+
+SUBDIRS = m4 src $(doc) tests
 
 
 dist-hook: gen-ChangeLog

@@ -454,6 +454,17 @@ else
   fi
 fi
 
+
+#
+# Extra features
+#
+build_doc=yes
+AC_ARG_ENABLE([doc], AC_HELP_STRING([--disable-doc],
+                                    [do not build the documentation]),
+                     build_doc=$enableval, build_doc=yes)
+AM_CONDITIONAL([BUILD_DOC], [test "x$build_doc" != xno])
+
+
 #
 # Create the config files.
 #
