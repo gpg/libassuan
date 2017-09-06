@@ -107,6 +107,11 @@
 #endif
 
 
+#ifndef INADDR_LOOPBACK
+# define INADDR_LOOPBACK ((in_addr_t) 0x7f000001) /* 127.0.0.1.  */
+#endif
+
+
 /* The standard SOCKS and TOR port.  */
 #define SOCKS_PORT 1080
 #define TOR_PORT   9050
