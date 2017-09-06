@@ -105,12 +105,16 @@ LT_LANG([Windows Resource])
 # For now we hardcode the use of version scripts.  It would be better
 # to write a test for this or even implement this within libtool.
 have_ld_version_script=no
+check_descriptor_passing=yes
 case "${host}" in
+    *-*-cygwin*)
+        check_descriptor_passing=no
+        ;;
     *-*-linux*)
-	have_ld_version_script=yes
+        have_ld_version_script=yes
         ;;
     *-*-gnu*)
-	have_ld_version_script=yes
+        have_ld_version_script=yes
         ;;
     *-apple-darwin*)
         AC_DEFINE(_XOPEN_SOURCE, 500, Activate POSIX interface on MacOS X)
@@ -217,10 +221,10 @@ case "${host}" in
         have_w32_system=yes
         ;;
     *-solaris*)
-	AC_DEFINE(_XOPEN_SOURCE, 500, Activate extensions on Solaris)
-	AC_DEFINE(_XOPEN_SOURCE_EXTENDED, 1, Activate extensions on Solaris)
-	AC_DEFINE(__EXTENSIONS__, 1, Activate extensions on Solaris)
-	;;
+        AC_DEFINE(_XOPEN_SOURCE, 500, Activate extensions on Solaris)
+        AC_DEFINE(_XOPEN_SOURCE_EXTENDED, 1, Activate extensions on Solaris)
+        AC_DEFINE(__EXTENSIONS__, 1, Activate extensions on Solaris)
+        ;;
 esac
 
 if test "$have_dosish_system" = yes; then
@@ -279,7 +283,7 @@ AC_DEFINE_UNQUOTED(BUILD_TIMESTAMP, "$BUILD_TIMESTAMP",
 # Check for network libraries.  They are needed for tests.
 #
 AC_CHECK_FUNC(setsockopt, , AC_CHECK_LIB(socket, setsockopt,
-	[NETLIBS="-lsocket $NETLIBS"]))
+        [NETLIBS="-lsocket $NETLIBS"]))
 AC_SUBST(NETLIBS)
 
 if test "$have_w32_system" = yes; then
@@ -329,10 +333,13 @@ AC_DECL_SYS_SIGLIST
 gl_HEADER_SYS_SOCKET
 gl_TYPE_SOCKLEN_T
 
-AC_CHECK_MEMBER(struct cmsghdr.cmsg_len,
-                [use_descriptor_passing=yes],
-                [use_descriptor_passing=no
-                 AC_MSG_WARN([
+if test $check_descriptor_passing != yes; then
+    use_descriptor_passing=no
+else
+    AC_CHECK_MEMBER(struct cmsghdr.cmsg_len,
+                    [use_descriptor_passing=yes],
+                    [use_descriptor_passing=no
+                     AC_MSG_WARN([
 ***
 *** Data structure for sending ancillary data missing.
 *** Descriptor passing won't work.
@@ -348,6 +355,7 @@ AC_CHECK_MEMBER(struct cmsghdr.cmsg_len,
 #endif
 #include <unistd.h>
        ])
+fi
 if test "$use_descriptor_passing" = "yes"; then
  AC_DEFINE(USE_DESCRIPTOR_PASSING, 1,
             [Defined if descriptor passing is supported])
