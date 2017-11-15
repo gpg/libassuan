@@ -745,6 +745,11 @@ socks5_connect (assuan_context_t ctx, assuan_fd_t sock,
       ret = _assuan_connect (ctx, HANDLE2SOCKET (sock),
                              proxyaddr, proxyaddrlen);
     }
+  /* If we get an EINPROGRESS here the caller is trying to do a
+   * non-blocking connect (e.g. for custom time out handling) which
+   * fails here.  The easiest fix would be to allow the client to tell
+   * us the timeout value and we do the timeout handling later on in the
+   * Socks protocol.  */
   if (ret)
     return ret;
   buffer[0] = 5; /* RFC-1928 VER field.  */
