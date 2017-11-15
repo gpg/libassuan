@@ -68,8 +68,8 @@ __assuan_usleep (assuan_context_t ctx, unsigned int usec)
     struct timespec req;
     struct timespec rem;
 
-    req.tv_sec  = usecs / 1000000;
-    req.tv_nsec = (usecs % 1000000) * 1000;
+    req.tv_sec  = usec / 1000000;
+    req.tv_nsec = (usec % 1000000) * 1000;
     while (nanosleep (&req, &rem) < 0 && errno == EINTR)
       req = rem;
   }
