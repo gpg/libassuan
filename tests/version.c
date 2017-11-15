@@ -84,6 +84,7 @@ main (int argc, char **argv)
       log_info ("Version from header: %s (0x%06x)\n",
                 ASSUAN_VERSION, ASSUAN_VERSION_NUMBER);
       log_info ("Version from binary: %s \n", assuan_check_version (NULL));
+      log_info ("Copyright blurb ...:%s\n", assuan_check_version ("\001\001"));
     }
 
   return errorcount ? 1 : 0;

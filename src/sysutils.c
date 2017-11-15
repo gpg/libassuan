@@ -48,8 +48,8 @@ _assuan_sysutils_blurb (void)
     "This is Libassuan " PACKAGE_VERSION " - The GnuPG IPC Library\n"
     "Copyright 2001-2013 Free Software Foundation, Inc.\n"
     "Copyright 2001-2014 g10 Code GmbH\n"
-    "SPDX-License-Identifier: LGPL-2.1+\n"
     "\n"
+    "SPDX-License-Identifier: LGPL-2.1+\n"
     "(" BUILD_REVISION " " BUILD_TIMESTAMP ")\n"
     "\n\n";
   return blurb;

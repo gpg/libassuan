@@ -281,5 +281,7 @@ compare_versions (const char *my_version, const char *req_version)
 const char *
 assuan_check_version (const char *req_version)
 {
+  if (req_version && req_version[0] == 1 && req_version[1] == 1)
+    return _assuan_sysutils_blurb ();
   return compare_versions (PACKAGE_VERSION, req_version);
 }
