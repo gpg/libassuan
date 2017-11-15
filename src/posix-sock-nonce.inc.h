@@ -15,6 +15,7 @@
 ##
 ## You should have received a copy of the GNU Lesser General Public
 ## License along with this program; if not, see <http://www.gnu.org/licenses/>.
+## SPDX-License-Identifier: LGPL-2.1+
 ##
 ##
 ## This file is included by the mkheader tool.  Lines starting with
@@ -23,7 +24,7 @@
    based on a local TCP connections.  To implement access permissions
    based on file permissions a nonce is used which is expected by the
    server as the first bytes received.  On POSIX systems this is a
-   dummy structure. */  
+   dummy structure. */
 struct assuan_sock_nonce_s
 {
   size_t length;

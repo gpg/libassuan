@@ -8,6 +8,7 @@ dnl
 dnl This file is distributed in the hope that it will be useful, but
 dnl WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
 dnl implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+dnl SPDX-License-Identifier: FSFULLR
 
 dnl
 dnl Common code used for libassuan detection [internal]
@@ -58,7 +59,7 @@ AC_DEFUN([_AM_PATH_LIBASSUAN_COMMON],
 
     if test "$major" -gt "$req_major"; then
         ok=yes
-    else 
+    else
         if test "$major" -eq "$req_major"; then
             if test "$minor" -gt "$req_minor"; then
                ok=yes

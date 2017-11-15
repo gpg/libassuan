@@ -1,22 +1,22 @@
 /* gpgcedrv.c - WindowsCE device driver to implement pipe and syslog.
-   Copyright (C) 2010 Free Software Foundation, Inc.
-
-   This file is part of Assuan.
-
-   Assuan is free software; you can redistribute it and/or modify it
-   under the terms of the GNU Lesser General Public License as
-   published by the Free Software Foundation; either version 3 of
-   the License, or (at your option) any later version.
-
-   Assuan is distributed in the hope that it will be useful, but
-   WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this program; if not, see <http://www.gnu.org/licenses/>.
+ * Copyright (C) 2010 Free Software Foundation, Inc.
+ *
+ * This file is part of Assuan.
+ *
+ * Assuan is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 3 of
+ * the License, or (at your option) any later version.
+ *
+ * Assuan is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this program; if not, see <http://www.gnu.org/licenses/>.
+ * SPDX-License-Identifier: LGPL-3.0+
  */
-
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -48,7 +48,7 @@
 #define GPGCEDEV_IOCTL_GET_RVID \
   CTL_CODE (FILE_DEVICE_STREAMS, 2048, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
-/* The IOCTL used to create the pipe. 
+/* The IOCTL used to create the pipe.
 
    The caller sends this IOCTL to the read or the write handle.  The
    required inbuf parameter is address of a variable holding the
@@ -85,7 +85,7 @@ struct pipeimpl_s
   CRITICAL_SECTION critsect;  /* Lock for all members.  */
 
   int refcnt;
-  char *buffer;       
+  char *buffer;
   size_t buffer_size;
   size_t buffer_len;  /* The valid length of the bufer.  */
   size_t buffer_pos;  /* The actual read position.  */
@@ -98,7 +98,7 @@ struct pipeimpl_s
   int flags;
 
   HANDLE space_available; /* Set if space is available.  */
-  HANDLE data_available;  /* Set if data is available.  */ 
+  HANDLE data_available;  /* Set if data is available.  */
 
   /* For the monitor thread started by ASSIGN_RVID.  */
   HANDLE monitor_proc;
@@ -198,7 +198,7 @@ log_debug (const char *fmt, ...)
     {
       va_list arg_ptr;
       FILE *fp;
-      
+
       fp = fopen (DBGFILENAME, "a+");
       if (!fp)
         return;
@@ -375,7 +375,7 @@ logimpl_flush (logimpl_t limpl)
       char buf[50];
       DWORD nwritten;
 
-      snprintf (buf, sizeof buf, 
+      snprintf (buf, sizeof buf,
                 "%06lu/%lu//", limpl->dsec % 1000000, limpl->logid);
       if (!WriteFile (logcontrol.filehd, buf, strlen (buf), &nwritten, NULL))
         log_debug ("error writing log file: rc=%d\n", (int)GetLastError ());
@@ -633,7 +633,7 @@ wchar_to_utf8 (const wchar_t *string)
   n = WideCharToMultiByte (CP_ACP, 0, string, length, result, n, NULL, NULL);
   if (n < 0)
     abort ();
-  
+
   result[n] = 0;
   return result;
 }
@@ -688,7 +688,7 @@ GPG_Init (LPCTSTR active_key, DWORD bus_context)
 
   if (RegOpenKeyEx (HKEY_LOCAL_MACHINE, active_key, 0, KEY_READ, &handle))
     {
-      log_debug ("GPG_Init: error reading registry: rc=%d\n", 
+      log_debug ("GPG_Init: error reading registry: rc=%d\n",
                  (int)GetLastError ());
       return 0;
     }
@@ -696,7 +696,7 @@ GPG_Init (LPCTSTR active_key, DWORD bus_context)
   buflen = sizeof buffer;
   if (RegQueryValueEx (handle, L"Name", 0, NULL, (PBYTE)buffer, &buflen))
     {
-      log_debug ("GPG_Init: error reading registry value 'Name': rc=%d\n", 
+      log_debug ("GPG_Init: error reading registry value 'Name': rc=%d\n",
                  (int)GetLastError ());
       result = 0;
     }
@@ -757,7 +757,7 @@ GPG_Deinit (DWORD devctx)
       SetLastError (ERROR_INVALID_PARAMETER);
       return FALSE; /* Error.  */
     }
-  
+
   return TRUE; /* Success.  */
 }
 
@@ -939,7 +939,7 @@ GPG_Read (DWORD opnctx_arg, void *buffer, DWORD count)
       EnterCriticalSection (&pimpl->critsect);
       goto retry;
     }
-  
+
   dst = buffer;
   src = pimpl->buffer + pimpl->buffer_pos;
   while (count > 0 && pimpl->buffer_pos < pimpl->buffer_len)
@@ -951,7 +951,7 @@ GPG_Read (DWORD opnctx_arg, void *buffer, DWORD count)
   result = (dst - (char*)buffer);
   if (pimpl->buffer_pos == pimpl->buffer_len)
     pimpl->buffer_pos = pimpl->buffer_len = 0;
-  
+
   /* Now there should be some space available.  Signal the write end.
      Even if COUNT was passed as NULL and no space is available,
      signaling must be done.  */
@@ -1029,7 +1029,7 @@ GPG_Write (DWORD opnctx_arg, const void *buffer, DWORD count)
           SetLastError (ERROR_BROKEN_PIPE);
           goto leave;
         }
-      
+
       /* Check for request to unblock once.  */
       if (pimpl->flags & PIPE_FLAG_UNBLOCK_WRITER)
         {
@@ -1040,7 +1040,7 @@ GPG_Write (DWORD opnctx_arg, const void *buffer, DWORD count)
           result = -1;
           goto leave;
         }
-      
+
       /* Write to our buffer.  */
       if (pimpl->buffer_len == pimpl->buffer_size)
         {
@@ -1055,7 +1055,7 @@ GPG_Write (DWORD opnctx_arg, const void *buffer, DWORD count)
           EnterCriticalSection (&pimpl->critsect);
           goto retry;
         }
-      
+
       src = buffer;
       dst = pimpl->buffer + pimpl->buffer_len;
       while (count > 0 && pimpl->buffer_len < pimpl->buffer_size)
@@ -1066,12 +1066,12 @@ GPG_Write (DWORD opnctx_arg, const void *buffer, DWORD count)
           nwritten++;
         }
       result = nwritten;
-      
+
       if (!SetEvent (pimpl->data_available))
         log_debug ("GPG_Write (ctx=%i): warning: SetEvent(data_available) "
                    "failed: rc=%d\n", opnctx_arg, (int)GetLastError ());
     }
-  
+
   log_debug ("GPG_Write (ctx=%i): success: result=%d\n", opnctx_arg, result);
 
  leave:
@@ -1162,7 +1162,7 @@ make_pipe (opnctx_t ctx, LONG rvid)
 	  SetLastError (ERROR_INVALID_ACCESS);
 	  return FALSE;
 	}
-      
+
       /* Make sure the peer has a pipe implementation to be shared.  If
 	 not yet, create one.  */
       pimpl = assert_pipeimpl (peerctx);
@@ -1175,7 +1175,7 @@ make_pipe (opnctx_t ctx, LONG rvid)
 	 monitor, and the pipe is already closed at the parent side.
 	 For example GPGME verify detached plain text, where GPG calls
 	 MAKE_PIPE very late.  */
-      
+
       for (idx = 0; idx < monitor_table_size; idx++)
 	if (monitor_table[idx].inuse
 	    && monitor_table[idx].pipeimpl->monitor_rvid == rvid)
@@ -1278,7 +1278,7 @@ unblock_call (opnctx_t ctx)
 }
 
 
-static DWORD CALLBACK 
+static DWORD CALLBACK
 monitor_main (void *arg)
 {
   pipeimpl_t pimpl = (pipeimpl_t) arg;
@@ -1286,7 +1286,7 @@ monitor_main (void *arg)
   int idx;
 
   log_debug ("starting monitor (pimpl=0x%p)\n", pimpl);
-  
+
   EnterCriticalSection (&pimpl->critsect);
   /* Putting proc first in the array is convenient, as this is a hard
      break-out condition (and thus takes precedence in WFMO).  The
@@ -1304,7 +1304,7 @@ monitor_main (void *arg)
     {
       log_debug ("monitor (pimpl=0x%p): done: monitored process taking over\n",
 		 pimpl);
-    }    
+    }
   else
     {
       DWORD res;
@@ -1324,7 +1324,7 @@ monitor_main (void *arg)
 	{
 	  log_debug ("monitor (pimpl=0x%p): done: monitored process died\n",
 		     pimpl);
-	}	  
+	}
       else if (res == WAIT_OBJECT_0 + 1)
 	goto retry;
       else
@@ -1391,7 +1391,7 @@ assign_rvid (opnctx_t ctx, DWORD rvid, DWORD pid)
       SetLastError (ERROR_NOT_FOUND);
       return FALSE;
     }
-  
+
   if (peerctx->pipeimpl
       && peerctx->pipeimpl->monitor_proc != INVALID_HANDLE_VALUE)
     {
@@ -1479,7 +1479,7 @@ GPG_IOControl (DWORD opnctx_arg, DWORD code, void *inbuf, DWORD inbuflen,
   opnctx = verify_opnctx (opnctx_arg);
   if (!opnctx)
     {
-      log_debug ("GPG_IOControl (ctx=%i): error: could not access context\n", 
+      log_debug ("GPG_IOControl (ctx=%i): error: could not access context\n",
 		 opnctx_arg);
       goto leave;
     }
@@ -1497,13 +1497,13 @@ GPG_IOControl (DWORD opnctx_arg, DWORD code, void *inbuf, DWORD inbuflen,
       log_debug ("GPG_IOControl (ctx=%i): code: GET_RVID\n", opnctx_arg);
       if (inbuf || inbuflen || !outbuf || outbuflen < sizeof (LONG))
         {
-	  log_debug ("GPG_IOControl (ctx=%i): error: invalid parameter\n", 
+	  log_debug ("GPG_IOControl (ctx=%i): error: invalid parameter\n",
 		     opnctx_arg);
           SetLastError (ERROR_INVALID_PARAMETER);
           goto leave;
         }
 
-      if (! opnctx->rvid) 
+      if (! opnctx->rvid)
 	opnctx->rvid = create_rendezvous_id ();
       log_debug ("GPG_IOControl (ctx=%i): returning rvid: %08lx\n",
 		 opnctx_arg, opnctx->rvid);
@@ -1516,16 +1516,16 @@ GPG_IOControl (DWORD opnctx_arg, DWORD code, void *inbuf, DWORD inbuflen,
 
     case GPGCEDEV_IOCTL_MAKE_PIPE:
       log_debug ("GPG_IOControl (ctx=%i): code: MAKE_PIPE\n", opnctx_arg);
-      if (!inbuf || inbuflen < sizeof (LONG) 
+      if (!inbuf || inbuflen < sizeof (LONG)
           || outbuf || outbuflen || actualoutlen)
         {
-	  log_debug ("GPG_IOControl (ctx=%i): error: invalid parameter\n", 
+	  log_debug ("GPG_IOControl (ctx=%i): error: invalid parameter\n",
 		     opnctx_arg);
           SetLastError (ERROR_INVALID_PARAMETER);
           goto leave;
         }
       memcpy (&rvid, inbuf, sizeof (LONG));
-      log_debug ("GPG_IOControl (ctx=%i): make pipe for rvid: %08lx\n", 
+      log_debug ("GPG_IOControl (ctx=%i): make pipe for rvid: %08lx\n",
 		 opnctx_arg, rvid);
       if (make_pipe (opnctx, rvid))
         result = TRUE;
@@ -1535,12 +1535,12 @@ GPG_IOControl (DWORD opnctx_arg, DWORD code, void *inbuf, DWORD inbuflen,
       log_debug ("GPG_IOControl (ctx=%i): code: UNBLOCK\n", opnctx_arg);
       if (inbuf || inbuflen || outbuf || outbuflen || actualoutlen)
         {
-	  log_debug ("GPG_IOControl (ctx=%i): error: invalid parameter\n", 
+	  log_debug ("GPG_IOControl (ctx=%i): error: invalid parameter\n",
 		     opnctx_arg);
           SetLastError (ERROR_INVALID_PARAMETER);
           goto leave;
         }
-      
+
       if (unblock_call (opnctx))
         result = TRUE;
       break;
@@ -1550,14 +1550,14 @@ GPG_IOControl (DWORD opnctx_arg, DWORD code, void *inbuf, DWORD inbuflen,
       if (!inbuf || inbuflen < 2 * sizeof (DWORD)
           || outbuf || outbuflen || actualoutlen)
         {
-	  log_debug ("GPG_IOControl (ctx=%i): error: invalid parameter\n", 
+	  log_debug ("GPG_IOControl (ctx=%i): error: invalid parameter\n",
 		     opnctx_arg);
           SetLastError (ERROR_INVALID_PARAMETER);
           goto leave;
         }
       memcpy (&rvid, inbuf, sizeof (DWORD));
       memcpy (&pid, ((char *) inbuf) + sizeof (DWORD), sizeof (DWORD));
-      log_debug ("GPG_IOControl (ctx=%i): assign rvid %08lx to pid %08lx\n", 
+      log_debug ("GPG_IOControl (ctx=%i): assign rvid %08lx to pid %08lx\n",
 		 opnctx_arg, rvid, pid);
       if (assign_rvid (opnctx, rvid, pid))
         result = TRUE;
@@ -1635,6 +1635,6 @@ DllMain (HINSTANCE hinst, DWORD reason, LPVOID reserved)
     default:
       break;
     }
-  
+
   return TRUE;
 }

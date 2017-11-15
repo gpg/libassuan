@@ -15,10 +15,11 @@
 ##
 ## You should have received a copy of the GNU Lesser General Public
 ## License along with this program; if not, see <http://www.gnu.org/licenses/>.
+## SPDX-License-Identifier: LGPL-2.1+
 ##
 ##
 ## This file is included by the mkheader tool.  Lines starting with
 ## a double hash mark are not copied to the destination file.
 #include <winsock2.h>
-#include <ws2tcpip.h> 
+#include <ws2tcpip.h>
 ##EOF##

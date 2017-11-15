@@ -1,20 +1,21 @@
-/* assuan-listen.c - Wait for a connection (server) 
-   Copyright (C) 2001, 2002, 2004, 2009 Free Software Foundation, Inc.
-
-   This file is part of Assuan.
-
-   Assuan is free software; you can redistribute it and/or modify it
-   under the terms of the GNU Lesser General Public License as
-   published by the Free Software Foundation; either version 2.1 of
-   the License, or (at your option) any later version.
-
-   Assuan is distributed in the hope that it will be useful, but
-   WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this program; if not, see <http://www.gnu.org/licenses/>.
+/* assuan-listen.c - Wait for a connection (server)
+ * Copyright (C) 2001, 2002, 2004, 2009 Free Software Foundation, Inc.
+ *
+ * This file is part of Assuan.
+ *
+ * Assuan is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * Assuan is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this program; if not, see <http://www.gnu.org/licenses/>.
+ * SPDX-License-Identifier: LGPL-2.1+
  */
 
 #ifdef HAVE_CONFIG_H
@@ -63,11 +64,11 @@ assuan_set_hello_line (assuan_context_t ctx, const char *line)
 /**
  * assuan_accept:
  * @ctx: context
- * 
+ *
  * Cancel any existing connection and wait for a connection from a
  * client.  The initial handshake is performed which may include an
  * initial authentication or encryption negotiation.
- * 
+ *
  * Return value: 0 on success or an error if the connection could for
  * some reason not be established.
  **/
@@ -128,7 +129,7 @@ assuan_accept (assuan_context_t ctx)
     }
   if (rc)
     return rc;
-    
+
   return 0;
 }
 

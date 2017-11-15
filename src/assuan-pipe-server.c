@@ -1,20 +1,21 @@
-/* assuan-pipe-server.c - Assuan server working over a pipe 
-   Copyright (C) 2001, 2002, 2009 Free Software Foundation, Inc.
-
-   This file is part of Assuan.
-
-   Assuan is free software; you can redistribute it and/or modify it
-   under the terms of the GNU Lesser General Public License as
-   published by the Free Software Foundation; either version 2.1 of
-   the License, or (at your option) any later version.
-
-   Assuan is distributed in the hope that it will be useful, but
-   WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this program; if not, see <http://www.gnu.org/licenses/>.
+/* assuan-pipe-server.c - Assuan server working over a pipe
+ * Copyright (C) 2001, 2002, 2009 Free Software Foundation, Inc.
+ *
+ * This file is part of Assuan.
+ *
+ * Assuan is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * Assuan is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this program; if not, see <http://www.gnu.org/licenses/>.
+ * SPDX-License-Identifier: LGPL-2.1+
  */
 
 #ifdef HAVE_CONFIG_H
@@ -35,7 +36,7 @@
 #ifdef HAVE_W32_SYSTEM
 # ifdef HAVE_WINSOCK2_H
 #  include <winsock2.h>
-# endif 
+# endif
 # include <windows.h>
 #ifdef HAVE_FCNTL_H
 # include <fcntl.h>
@@ -75,7 +76,7 @@ assuan_init_pipe_server (assuan_context_t ctx, assuan_fd_t filedes[2])
     {
       TRACE_LOG2 ("fd[0]=0x%x, fd[1]=0x%x", filedes[0], filedes[1]);
     }
-  
+
   rc = _assuan_register_std_commands (ctx);
   if (rc)
     return TRACE_ERR (rc);
@@ -95,7 +96,7 @@ assuan_init_pipe_server (assuan_context_t ctx, assuan_fd_t filedes[2])
       is_usd = 1;
 
     }
-  else if (filedes && filedes[0] != ASSUAN_INVALID_FD 
+  else if (filedes && filedes[0] != ASSUAN_INVALID_FD
 	   && filedes[1] != ASSUAN_INVALID_FD )
     {
       /* Standard pipe server. */
