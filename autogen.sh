@@ -1,6 +1,6 @@
 #! /bin/sh
 # autogen.sh
-# Copyright (C) 2003, 2014 g10 Code GmbH
+# Copyright (C) 2003, 2014, 2017 g10 Code GmbH
 #
 # This file is free software; as a special exception the author gives
 # unlimited permission to copy and/or distribute it, with or without
@@ -15,7 +15,7 @@
 # configure it for the respective package.  It is maintained as part of
 # GnuPG and source copied by other packages.
 #
-# Version: 2014-06-06
+# Version: 2017-01-17
 
 configure_ac="configure.ac"
 
@@ -80,7 +80,17 @@ if [ -n "${AUTOGEN_SH_SILENT}" ]; then
   SILENT=" --silent"
 fi
 if test x"$1" = x"--help"; then
-  echo "usage: ./autogen.sh [--silent] [--force] [--build-TYPE] [ARGS]"
+  echo "usage: ./autogen.sh [OPTIONS] [ARGS]"
+  echo "  Options:"
+  echo "    --silent       Silent operation"
+  echo "    --force        Pass --force to autoconf"
+  echo "    --find-version Helper for configure.ac"
+  echo "    --build-TYPE   Configure to cross build for TYPE"
+  echo "    --print-host   Print only the host triplet"
+  echo "    --print-build  Print only the build platform triplet"
+  echo ""
+  echo "  ARGS are passed to configure in --build-TYPE mode."
+  echo "  Configuration for this script is expected in autogen.rc"
   exit 0
 fi
 if test x"$1" = x"--silent"; then
@@ -200,6 +210,11 @@ if [ "$myhost" = "find-version" ]; then
     minor="$3"
     micro="$4"
 
+    if [ -z "$package" -o -z "$major" -o -z "$minor" ]; then
+      echo "usage: ./autogen.sh --find-version PACKAGE MAJOR MINOR [MICRO]" >&2
+      exit 1
+    fi
+
     case "$version_parts" in
       2)
         matchstr1="$package-$major.[0-9]*"
@@ -214,18 +229,20 @@ if [ "$myhost" = "find-version" ]; then
     esac
 
     beta=no
-    if [ -d .git ]; then
+    if [ -e .git ]; then
       ingit=yes
       tmp=$(git describe --match "${matchstr1}" --long 2>/dev/null)
+      tmp=$(echo "$tmp" | sed s/^"$package"//)
       if [ -n "$tmp" ]; then
-          tmp=$(echo "$tmp"|awk -F- '$3!=0 && $3 !~ /^beta/ {print"-beta"$3}')
+          tmp=$(echo "$tmp" | sed s/^"$package"//  \
+                | awk -F- '$3!=0 && $3 !~ /^beta/ {print"-beta"$3}')
       else
           tmp=$(git describe --match "${matchstr2}" --long 2>/dev/null \
                 | awk -F- '$4!=0{print"-beta"$4}')
       fi
       [ -n "$tmp" ] && beta=yes
       rev=$(git rev-parse --short HEAD | tr -d '\n\r')
-      rvd=$((0x$(echo ${rev} | head -c 4)))
+      rvd=$((0x$(echo ${rev} | dd bs=1 count=4 2>/dev/null)))
     else
       ingit=no
       beta=yes
@@ -310,7 +327,8 @@ if [ "$myhost" = "w32" ]; then
 
     $tsdir/configure --enable-maintainer-mode ${SILENT} \
              --prefix=${w32root}  \
-             --host=${host} --build=${build} \
+             --host=${host} --build=${build} SYSROOT=${w32root} \
+             PKG_CONFIG_LIBDIR=${w32root}/lib/pkgconfig \
              ${configure_opts} ${extraoptions} "$@"
     rc=$?
     exit $rc
@@ -416,13 +434,16 @@ fi
 
 # Check the git setup.
 if [ -d .git ]; then
-  CP="cp -a"
-  [ -z "${SILENT}" ] && CP="$CP -v"
+  CP="cp -p"
+  # If we have a GNU cp we can add -v
+  if cp --version >/dev/null 2>/dev/null; then
+    [ -z "${SILENT}" ] && CP="$CP -v"
+  fi
   if [ -f .git/hooks/pre-commit.sample -a ! -f .git/hooks/pre-commit ] ; then
     [ -z "${SILENT}" ] && cat <<EOF
 *** Activating trailing whitespace git pre-commit hook. ***
     For more information see this thread:
-      http://mail.gnome.org/archives/desktop-devel-list/2009-May/msg00084html
+      https://mail.gnome.org/archives/desktop-devel-list/2009-May/msg00084.html
     To deactivate this pre-commit hook again move .git/hooks/pre-commit
     and .git/hooks/pre-commit.sample out of the way.
 EOF

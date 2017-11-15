@@ -31,3 +31,4 @@ tests/Makefile.in
 tests/Makefile
 tests/fdpassing
 tests/pipeconnect
+/VERSION
