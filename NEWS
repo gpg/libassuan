@@ -1,5 +1,16 @@
-Noteworthy changes in version 2.4.4 (unreleased) [C7/A7/R_]
+Noteworthy changes in version 2.4.4 (2017-11-16) [C7/A7/R4]
 ------------------------------------------------
+
+ * New configure option --disable-doc.
+
+ * Fix the use of nanosleep.
+
+ * Portability fixes for OpenBSD and macOS. [#2910]
+
+ * Portability fix for systems not defining INADDR_LOOPBACK. [#2447]
+
+ * Improve descriptor passing test to fix a Cygwin build
+   problem. [#3384]
 
 
 Noteworthy changes in version 2.4.3 (2016-07-14) [C7/A7/R3]

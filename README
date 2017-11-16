@@ -13,10 +13,10 @@
     (GPLv3+).
 
     Please send bug report to the gnupg-devel mailing list or enter
-    them into the gnupg bug tracker at http://bugs.gnupg.org using the
+    them into the gnupg bug tracker at https://bugs.gnupg.org using the
     category "libassuan".
 
-    The primary FTP site is ftp://ftp.gnupg.org/gcrypt/libassuan.
+    The primary FTP site is https://gnupg.org/ftp/gcrypt/libassuan.
 
 
     Notes for Windows CE:
