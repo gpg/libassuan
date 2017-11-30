@@ -572,15 +572,19 @@ extern struct assuan_system_hooks _assuan_system_pth;
   { pid_t res; (void) ctx; npth_unprotect();				\
     res = __assuan_waitpid (ctx, pid, nowait, status, options);		\
     npth_protect(); return res; }					\
-  static int _assuan_npth_connect (assuan_context_t ctx, int sock,      \
-                                   struct sockaddr *addr, socklen_t len)\
-  { int res; npth_unprotect();                                          \
-    res = __assuan_connect (ctx, sock, addr, len);                      \
-    npth_protect(); return res; }                                       \
+  static int _assuan_npth_connect (assuan_context_t ctx, int sock,	\
+				   struct sockaddr *addr, socklen_t len)\
+  { int res; npth_unprotect();						\
+    res = __assuan_connect (ctx, sock, addr, len);			\
+    npth_protect(); return res; }					\
+  static int _assuan_npth_close (assuan_context_t ctx, assuan_fd_t fd)	\
+  { int res; npth_unprotect();						\
+    res = __assuan_close (ctx, fd);					\
+    npth_protect(); return res; }					\
 									\
   struct assuan_system_hooks _assuan_system_npth =			\
     { ASSUAN_SYSTEM_HOOKS_VERSION, _assuan_npth_usleep, __assuan_pipe,	\
-      __assuan_close, _assuan_npth_read, _assuan_npth_write,		\
+      _assuan_npth_close, _assuan_npth_read, _assuan_npth_write,	\
       _assuan_npth_recvmsg, _assuan_npth_sendmsg,			\
       __assuan_spawn, _assuan_npth_waitpid, __assuan_socketpair,	\
       __assuan_socket, _assuan_npth_connect }
