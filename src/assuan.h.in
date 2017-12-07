@@ -551,8 +551,8 @@ extern struct assuan_system_hooks _assuan_system_pth;
 
 #define ASSUAN_SYSTEM_NPTH_IMPL						\
   static void _assuan_npth_usleep (assuan_context_t ctx, unsigned int usec) \
-  { ssize_t res; (void) ctx; npth_unprotect();				\
-    res = __assuan_usleep (ctx, usec);					\
+  { npth_unprotect();				                        \
+    __assuan_usleep (ctx, usec);					\
     npth_protect(); }							\
   static ssize_t _assuan_npth_read (assuan_context_t ctx, assuan_fd_t fd, \
 				    void *buffer, size_t size)		\
