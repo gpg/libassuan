@@ -1,5 +1,7 @@
-Noteworthy changes in version 2.5.1 (unreleased) [C8/A8/R_]
+Noteworthy changes in version 2.5.1 (2017-12-07) [C8/A8/R1]
 ------------------------------------------------
+
+ * Fix c+p error in the previous usleep fix.
 
 
 Noteworthy changes in version 2.5.0 (2017-12-07) [C8/A8/R0]
