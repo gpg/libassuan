@@ -1495,3 +1495,10 @@ assuan_sock_check_nonce (assuan_fd_t fd, assuan_sock_nonce_t *nonce)
 {
   return _assuan_sock_check_nonce (sock_ctx, fd, nonce);
 }
+
+void
+assuan_sock_set_system_hooks (assuan_system_hooks_t system_hooks)
+{
+  if (sock_ctx)
+    _assuan_system_hooks_copy (&sock_ctx->system, system_hooks);
+}

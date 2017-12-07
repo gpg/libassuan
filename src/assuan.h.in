@@ -490,14 +490,19 @@ int assuan_sock_set_sockaddr_un (const char *fname, struct sockaddr *addr,
 int assuan_sock_get_nonce (struct sockaddr *addr, int addrlen,
                            assuan_sock_nonce_t *nonce);
 int assuan_sock_check_nonce (assuan_fd_t fd, assuan_sock_nonce_t *nonce);
+void assuan_sock_set_system_hooks (assuan_system_hooks_t system_hooks);
 
 
-/* Set the default or per context system callbacks.  This is
-   irreversible.  */
+/* Set the default system callbacks.  This is irreversible.  */
 void assuan_set_system_hooks (assuan_system_hooks_t system_hooks);
 
+/* Set the per context system callbacks.  This is irreversible.  */
 void assuan_ctx_set_system_hooks (assuan_context_t ctx,
 				  assuan_system_hooks_t system_hooks);
+
+/* Change the system hooks for the socket interface.
+ * This is not thread-safe.  */
+void assuan_sock_set_system_hooks (assuan_system_hooks_t system_hooks);
 
 void __assuan_usleep (assuan_context_t ctx, unsigned int usec);
 int __assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx);
