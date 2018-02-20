@@ -319,7 +319,7 @@ AC_SUBST(LIBASSUAN_CONFIG_EXTRA_LIBS)
 AC_HEADER_STDC
 AC_CHECK_HEADERS([string.h locale.h sys/uio.h stdint.h inttypes.h \
                   sys/types.h sys/stat.h unistd.h sys/time.h fcntl.h \
-                  sys/select.h ])
+                  sys/select.h ucred.h sys/ucred.h])
 AC_TYPE_UINTPTR_T
 AC_TYPE_UINT16_T
 
@@ -421,48 +421,16 @@ AC_REPLACE_FUNCS(setenv)
 
 
 #
-# Check for the getsockopt SO_PEERCRED
+# Check for the getsockopt SO_PEERCRED, etc.
 #
-AC_MSG_CHECKING(for SO_PEERCRED)
-AC_CACHE_VAL(assuan_cv_sys_so_peercred,
-      [AC_TRY_COMPILE([#include <sys/socket.h>],
-         [struct ucred cr;
-          int cl = sizeof cr;
-          getsockopt (1, SOL_SOCKET, SO_PEERCRED, &cr, &cl);],
-          assuan_cv_sys_so_peercred=yes,
-          assuan_cv_sys_so_peercred=no)
-       ])
-AC_MSG_RESULT($assuan_cv_sys_so_peercred)
+AC_CHECK_MEMBER(struct sockpeercred.pid, [], [], [#include <sys/types.h>
+#include <sys/socket.h> ])
 
-if test $assuan_cv_sys_so_peercred = yes; then
-  AC_DEFINE(HAVE_SO_PEERCRED, 1,
-            [Defined if SO_PEERCRED is supported (Linux specific)])
-else
-  # Check for the getsockopt LOCAL_PEEREID (NetBSD)
-  AC_MSG_CHECKING(for LOCAL_PEEREID)
-  AC_CACHE_VAL(assuan_cv_sys_so_local_peereid,
-      [AC_TRY_COMPILE([#include <sys/socket.>
-         #include <sys/un.h>],
-         [struct unpcbid unp;
-          int unpl = sizeof unp;
-          getsockopt (1, SOL_SOCKET, LOCAL_PEEREID, &unp, &unpl);],
-          assuan_cv_sys_so_local_peereid=yes,
-          assuan_cv_sys_so_local_peereid=no)
-       ])
-  AC_MSG_RESULT($assuan_cv_sys_so_local_peereid)
+# (Open)Solaris
+AC_CHECK_FUNCS([getpeerucred])
 
-  if test $assuan_cv_sys_so_local_peereid = yes; then
-    AC_DEFINE(HAVE_LOCAL_PEEREID, 1,
-              [Defined if LOCAL_PEEREID is supported (NetBSD specific)])
-  else
-    # (Open)Solaris
-    AC_CHECK_FUNCS([getpeerucred], AC_CHECK_HEADERS([ucred.h]))
-    if test $ac_cv_func_getpeerucred != yes; then
-        # FreeBSD
-        AC_CHECK_FUNCS([getpeereid])
-    fi
-  fi
-fi
+# FreeBSD
+AC_CHECK_FUNCS([getpeereid])
 
 
 #

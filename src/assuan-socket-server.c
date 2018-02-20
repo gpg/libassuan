@@ -31,9 +31,6 @@
 #ifdef HAVE_SYS_TYPES_H
 # include <sys/types.h>
 #endif
-#ifdef HAVE_UCRED_H
-#include <ucred.h>
-#endif
 #ifdef HAVE_W32_SYSTEM
 # ifdef HAVE_WINSOCK2_H
 #  include <winsock2.h>
@@ -48,6 +45,12 @@
 # include <sys/socket.h>
 # include <sys/un.h>
 #endif
+#ifdef HAVE_SYS_UCRED_H
+#include <sys/ucred.h>
+#endif
+#ifdef HAVE_UCRED_H
+#include <ucred.h>
+#endif
 
 #include "debug.h"
 #include "assuan-defs.h"
@@ -60,59 +63,86 @@ accept_connection_bottom (assuan_context_t ctx)
   TRACE (ctx, ASSUAN_LOG_SYSIO, "accept_connection_bottom", ctx);
 
   ctx->peercred_valid = 0;
-#ifdef HAVE_SO_PEERCRED
+#ifdef SO_PEERCRED
   {
-    struct ucred cr;
+#ifdef HAVE_STRUCT_SOCKPEERCRED_PID
+    struct sockpeercred cr;     /* OpenBSD */
+#else
+    struct ucred cr;            /* GNU/Linux */
+#endif
     socklen_t cl = sizeof cr;
 
-    if ( !getsockopt (fd, SOL_SOCKET, SO_PEERCRED, &cr, &cl))
+    if (!getsockopt (fd, SOL_SOCKET, SO_PEERCRED, &cr, &cl))
       {
-         ctx->peercred.pid = cr.pid;
-         ctx->peercred.uid = cr.uid;
-         ctx->peercred.gid = cr.gid;
-         ctx->peercred_valid = 1;
-
-         /* This overrides any already set PID if the function returns
-            a valid one. */
-         if (cr.pid != ASSUAN_INVALID_PID && cr.pid)
-           ctx->pid = cr.pid;
+        ctx->peercred_valid = 1;
+        ctx->peercred.pid = cr.pid;
+        ctx->peercred.uid = cr.uid;
+        ctx->peercred.gid = cr.gid;
       }
   }
-#elif defined (HAVE_GETPEERUCRED)
-  {
-    ucred_t *ucred = NULL;
+#elif defined (LOCAL_PEERPID)
+  {                             /* macOS */
+    socklen_t len = sizeof (pid_t);
 
-    if (getpeerucred (fd, &ucred) != -1)
+    if (!getsockopt (fd, SOL_LOCAL, LOCAL_PEERPID, &ctx->peercred.pid, &len))
       {
-        ctx->peercred.uid = ucred_geteuid (ucred);
-        ctx->peercred.gid = ucred_getegid (ucred);
-	ctx->peercred.pid = ucred_getpid (ucred);
-	ctx->peercred_valid = 1;
-	ucred_free (ucred);
+        ctx->peercred_valid = 1;
+
+#if defined (LOCAL_PEERCRED)
+        {
+          struct xucred cr;
+          len = sizeof (struct xucred);
+
+          if (!getsockopt (fd, SOL_LOCAL, LOCAL_PEERCRED, &cr, &len))
+            {
+              ctx->peercred.uid = cr.cr_uid;
+              ctx->peercred.gid = cr.cr_gid;
+            }
+        }
+#endif
       }
   }
-#elif defined (HAVE_LOCAL_PEEREID)
-  {
+#elif defined (LOCAL_PEEREID)
+  {                             /* NetBSD */
     struct unpcbid unp;
     socklen_t unpl = sizeof unp;
 
     if (getsockopt (fd, 0, LOCAL_PEEREID, &unp, &unpl) != -1)
+        {
+          ctx->peercred_valid = 1;
+          ctx->peercred.pid = unp.unp_pid;
+          ctx->peercred.uid = unp.unp_euid;
+          ctx->peercred.gid = unp.unp_egid;
+        }
+  }
+#elif defined (HAVE_GETPEERUCRED)
+  {                             /* Solaris */
+    ucred_t *ucred = NULL;
+
+    if (getpeerucred (fd, &ucred) != -1)
       {
-	ctx->peercred.pid = unp.unp_pid;
-	ctx->peercred.uid = unp.unp_euid;
-	ctx->peercred.gid = unp.unp_egid;
-	ctx->peercred_valid = 1;
+        ctx->peercred_valid = 1;
+        ctx->peercred.pid = ucred_getpid (ucred);
+        ctx->peercred.uid = ucred_geteuid (ucred);
+        ctx->peercred.gid = ucred_getegid (ucred);
+
+        ucred_free (ucred);
       }
   }
 #elif defined(HAVE_GETPEEREID)
-  {
+  {                             /* FreeBSD */
     if (getpeereid (fd, &ctx->peercred.uid, &ctx->peercred.gid) != -1)
       {
-	ctx->peercred.pid = ASSUAN_INVALID_PID;
-	ctx->peercred_valid = 1;
+        ctx->peercred_valid = 1;
+        ctx->peercred.pid = ASSUAN_INVALID_PID;
       }
   }
 #endif
+
+  /* This overrides any already set PID if the function returns
+     a valid one. */
+  if (ctx->peercred_valid && ctx->peercred.pid != ASSUAN_INVALID_PID)
+    ctx->pid = ctx->peercred.pid;
 
   ctx->inbound.fd = fd;
   ctx->inbound.eof = 0;
