@@ -382,8 +382,8 @@ pid_t assuan_get_pid (assuan_context_t ctx);
 struct _assuan_peercred
 {
 #ifdef _WIN32
-  /* Empty struct not allowed on some compilers.  */
-  unsigned int _dummy;
+  /* Empty struct not allowed on some compilers, so, put this (not valid).  */
+  pid_t pid;
 #else
   pid_t pid;
   uid_t uid;
