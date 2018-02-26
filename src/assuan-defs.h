@@ -410,7 +410,7 @@ int putc_unlocked (int c, FILE *stream);
 
 
 #if HAVE_W64_SYSTEM
-# define SOCKET2HANDLE(s) ((void *)(s))
+# define SOCKET2HANDLE(s) ((void *)(uintptr_t)(s))
 # define HANDLE2SOCKET(h) ((uintptr_t)(h))
 #elif HAVE_W32_SYSTEM
 # define SOCKET2HANDLE(s) ((void *)(s))
