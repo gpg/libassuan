@@ -25,12 +25,17 @@ EXTRA_DIST = motd ce-createpipe.c
 BUILT_SOURCES =
 CLEANFILES =
 
-testtools = socks5
-
-TESTS = version pipeconnect
+TESTS = version
 
 if HAVE_W32CE_SYSTEM
 w32cetools = ce-createpipe ce-server
+endif
+
+if HAVE_W32_SYSTEM
+testtools =
+else
+TESTS += pipeconnect
+testtools = socks5
 endif
 
 if USE_DESCRIPTOR_PASSING
