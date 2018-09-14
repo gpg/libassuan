@@ -423,7 +423,10 @@ AC_REPLACE_FUNCS(setenv)
 #
 # Check for the getsockopt SO_PEERCRED, etc.
 #
-AC_CHECK_MEMBER(struct sockpeercred.pid, [], [], [#include <sys/types.h>
+AC_CHECK_MEMBER(struct sockpeercred.pid,
+		[AC_DEFINE(HAVE_STRUCT_SOCKPEERCRED_PID, 1,
+		 Define if struct sockpeercred contains the pid member.)],
+		 [], [#include <sys/types.h>
 #include <sys/socket.h> ])
 
 # (Open)Solaris
