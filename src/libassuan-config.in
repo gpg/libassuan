@@ -70,6 +70,16 @@ while test $# -gt 0; do
     --exec-prefix)
       echo_exec_prefix=yes
       ;;
+    --variable=*)
+	case "${1#*=}" in
+	    prefix) echo "$prefix" ;;
+	    exec_prefix) echo "$exec_prefix" ;;
+	    host) echo "$my_host" ;;
+	    api_version) echo "$api_version" ;;
+	esac
+	exit 0
+	;;
+    --modversion)
     --version)
       echo "@PACKAGE_VERSION@"
       exit 0
