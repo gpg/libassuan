@@ -73,9 +73,6 @@ AC_SUBST(LIBASSUAN_LT_CURRENT)
 AC_SUBST(LIBASSUAN_LT_AGE)
 AC_SUBST(LIBASSUAN_LT_REVISION)
 
-PACKAGE=$PACKAGE_NAME
-VERSION=$PACKAGE_VERSION
-
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([serial-tests dist-bzip2 no-dist-gzip])
 AM_MAINTAINER_MODE
@@ -88,16 +85,9 @@ AB_INIT
 
 AC_GNU_SOURCE
 
-
-AC_SUBST(PACKAGE)
-AC_SUBST(VERSION)
-AC_DEFINE_UNQUOTED(PACKAGE, "$PACKAGE", [Name of this package])
-AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Version of this package])
-AC_DEFINE_UNQUOTED(PACKAGE_BUGREPORT, "$PACKAGE_BUGREPORT",[Bug report address])
 VERSION_NUMBER=m4_esyscmd(printf "0x%02x%02x%02x" mym4_major \
                           mym4_minor mym4_micro)
 AC_SUBST(VERSION_NUMBER)
-
 
 # Don't default to build static libs.
 LT_PREREQ([2.2.6])
@@ -456,6 +446,7 @@ AC_CONFIG_FILES([doc/Makefile])
 AC_CONFIG_FILES([tests/Makefile])
 AC_CONFIG_FILES([src/libassuan-config], [chmod +x src/libassuan-config])
 AC_CONFIG_FILES([src/versioninfo.rc])
+AC_CONFIG_FILES([src/libassuan.pc])
 
 AC_OUTPUT
 

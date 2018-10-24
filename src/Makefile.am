@@ -19,8 +19,12 @@
 # SPDX-License-Identifier: LGPL-2.1+
 ## Process this file with automake to produce Makefile.in
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = libassuan.pc
+
 EXTRA_DIST = libassuan-config.in libassuan.m4 libassuan.vers \
-             versioninfo.rc.in libassuan.def mkheader.c gpgcedev.def
+             versioninfo.rc.in libassuan.def mkheader.c gpgcedev.def \
+             libassuan.pc.in
 AM_CPPFLAGS = -I..
 
 bin_SCRIPTS = libassuan-config
@@ -149,6 +153,4 @@ mkheader: mkheader.c Makefile
 
 assuan.h: assuan.h.in mkheader $(parts_of_assuan_h)
 	./mkheader $(host_os) $(srcdir)/assuan.h.in \
-                   @VERSION@ @VERSION_NUMBER@ >$@
-
-
+                   $(PACKAGE_VERSION) $(VERSION_NUMBER) >$@

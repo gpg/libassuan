@@ -1,0 +1,14 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+includedir=@includedir@
+libdir=@libdir@
+host=@LIBASSUAN_CONFIG_HOST@
+api_version=@LIBASSUAN_CONFIG_API_VERSION@
+
+Name: libassuan
+Description: IPC library for the GnuPG components
+Requires: gpg-error
+Version: @PACKAGE_VERSION@
+Cflags: @LIBASSUAN_CONFIG_CFLAGS@
+Libs: @LIBASSUAN_CONFIG_LIB@ @LIBASSUAN_CONFIG_EXTRA_LIBS@
+URL: https://www.gnupg.org/related_software/libassuan/index.html
