@@ -79,8 +79,7 @@ while test $# -gt 0; do
 	esac
 	exit 0
 	;;
-    --modversion)
-    --version)
+    --modversion|--version)
       echo "@PACKAGE_VERSION@"
       exit 0
       ;;
