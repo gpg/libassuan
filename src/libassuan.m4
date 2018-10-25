@@ -16,7 +16,6 @@ dnl Returns ok set to yes or no.
 dnl
 AC_DEFUN([_AM_PATH_LIBASSUAN_COMMON],
 [ AC_REQUIRE([AC_CANONICAL_HOST])
-  AC_REQUIRE([AM_PATH_GPG_ERROR])
   AC_ARG_WITH(libassuan-prefix,
               AC_HELP_STRING([--with-libassuan-prefix=PFX],
                              [prefix where LIBASSUAN is installed (optional)]),
@@ -25,8 +24,16 @@ AC_DEFUN([_AM_PATH_LIBASSUAN_COMMON],
     if test x${LIBASSUAN_CONFIG+set} != xset ; then
       LIBASSUAN_CONFIG=$libassuan_config_prefix/bin/libassuan-config
     fi
+  fi
+
+  if test x"$GPGRT_CONFIG" != x -o "$GPGRT_CONFIG" != "no"; then
+    if CC=$CC $GPGRT_CONFIG libassuan >/dev/null 2>&1; then
+      LIBASSUAN_CONFIG="$GPGRT_CONFIG libassuan"
+    else
+      LIBASSUAN_CONFIG=no
+    fi
   else
-    LIBASSUAN_CONFIG="$GPG_ERROR_CONFIG libassuan"
+    AC_PATH_TOOL(LIBASSUAN_CONFIG, libassuan-config, no)
   fi
 
   tmp=ifelse([$1], ,1:0.9.2,$1)
@@ -40,8 +47,7 @@ AC_DEFUN([_AM_PATH_LIBASSUAN_COMMON],
 
   AC_MSG_CHECKING(for LIBASSUAN - version >= $min_libassuan_version)
   ok=no
-  if test "$LIBASSUAN_CONFIG" != "no" \
-     && test -f "${LIBASSUAN_CONFIG% *}" ; then
+  if test "$LIBASSUAN_CONFIG" != "no"; then
     req_major=`echo $min_libassuan_version | \
                sed 's/\([[0-9]]*\)\.\([[0-9]]*\)\.\([[0-9]]*\)/\1/'`
     req_minor=`echo $min_libassuan_version | \
