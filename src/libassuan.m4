@@ -26,7 +26,7 @@ AC_DEFUN([_AM_PATH_LIBASSUAN_COMMON],
     fi
   fi
 
-  if test x"$GPGRT_CONFIG" != x -o "$GPGRT_CONFIG" != "no"; then
+  if test x"$GPGRT_CONFIG" != x -a "$GPGRT_CONFIG" != "no"; then
     if CC=$CC $GPGRT_CONFIG libassuan >/dev/null 2>&1; then
       LIBASSUAN_CONFIG="$GPGRT_CONFIG libassuan"
     else
