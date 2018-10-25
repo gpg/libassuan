@@ -356,7 +356,7 @@ AM_CONDITIONAL(USE_DESCRIPTOR_PASSING, test "$use_descriptor_passing" = "yes")
 
 
 # Checking for libgpg-error.
-AM_PATH_GPG_ERROR(1.17,, AC_MSG_ERROR([libgpg-error was not found]))
+AM_PATH_GPG_ERROR(1.33,, AC_MSG_ERROR([libgpg-error was not found]))
 
 #
 # Checks for library functions.
