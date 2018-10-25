@@ -15,8 +15,8 @@ gpg_error_cflags="@GPG_ERROR_CFLAGS@"
 gpg_error_libs="@GPG_ERROR_LIBS@"
 
 PGM=libassuan-config
-lib="@LIBASSUAN_CONFIG_LIB@"
-extralibs="@LIBASSUAN_CONFIG_EXTRA_LIBS@ $gpg_error_libs"
+lib="@LIBASSUAN_CONFIG_LIBS@"
+extralibs="$gpg_error_libs"
 cflags="@LIBASSUAN_CONFIG_CFLAGS@ $gpg_error_cflags"
 api_version="@LIBASSUAN_CONFIG_API_VERSION@"
 my_host="@LIBASSUAN_CONFIG_HOST@"
