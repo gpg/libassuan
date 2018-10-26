@@ -32,6 +32,7 @@ AC_DEFUN([_AM_PATH_LIBASSUAN_COMMON],
       LIBASSUAN_CONFIG="$GPGRT_CONFIG libassuan"
       use_gpgrt_config=yes
     fi
+  fi
   if test -z "$use_gpgrt_config"; then
     AC_PATH_TOOL(LIBASSUAN_CONFIG, libassuan-config, no)
   fi
