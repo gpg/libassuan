@@ -56,7 +56,11 @@ AC_DEFUN([_AM_PATH_LIBASSUAN_COMMON],
     req_micro=`echo $min_libassuan_version | \
                sed 's/\([[0-9]]*\)\.\([[0-9]]*\)\.\([[0-9]]*\)/\3/'`
 
-    libassuan_config_version=`CC=$CC $LIBASSUAN_CONFIG --modversion`
+    if test -z "$use_gpgrt_config"; then
+      libassuan_config_version=`CC=$CC $LIBASSUAN_CONFIG --version`
+    else
+      libassuan_config_version=`CC=$CC $LIBASSUAN_CONFIG --modversion`
+    fi
     major=`echo $libassuan_config_version | \
                sed 's/\([[0-9]]*\)\.\([[0-9]]*\)\.\([[0-9]]*\).*/\1/'`
     minor=`echo $libassuan_config_version | \
@@ -89,7 +93,11 @@ AC_DEFUN([_AM_PATH_LIBASSUAN_COMMON],
 
   if test $ok = yes; then
     if test "$req_libassuan_api" -gt 0 ; then
-      tmp=`CC=$CC $LIBASSUAN_CONFIG --variable=api_version 2>/dev/null || echo 0`
+      if test -z "$use_gpgrt_config"; then
+        tmp=`CC=$CC $LIBASSUAN_CONFIG --api-version 2>/dev/null || echo 0`
+      else
+        tmp=`CC=$CC $LIBASSUAN_CONFIG --variable=api_version 2>/dev/null || echo 0`
+      fi
       if test "$tmp" -gt 0 ; then
         AC_MSG_CHECKING([LIBASSUAN API version])
         if test "$req_libassuan_api" -eq "$tmp" ; then
@@ -104,7 +112,11 @@ AC_DEFUN([_AM_PATH_LIBASSUAN_COMMON],
 
   if test $ok = yes; then
     if test x"$host" != x ; then
-      libassuan_config_host=`CC=$CC $LIBASSUAN_CONFIG --variable=host 2>/dev/null || echo none`
+      if test -z "$use_gpgrt_config"; then
+        libassuan_config_host=`CC=$CC $LIBASSUAN_CONFIG --host 2>/dev/null || echo none`
+      else
+        libassuan_config_host=`CC=$CC $LIBASSUAN_CONFIG --variable=host 2>/dev/null || echo none`
+      fi
       if test x"$libassuan_config_host" != xnone ; then
         if test x"$libassuan_config_host" != x"$host" ; then
   AC_MSG_WARN([[
