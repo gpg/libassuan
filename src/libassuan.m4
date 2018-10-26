@@ -34,7 +34,7 @@ AC_DEFUN([_AM_PATH_LIBASSUAN_COMMON],
     fi
   fi
   if test -z "$use_gpgrt_config"; then
-    AC_PATH_TOOL(LIBASSUAN_CONFIG, libassuan-config, no)
+    AC_PATH_PROG(LIBASSUAN_CONFIG, libassuan-config, no)
   fi
 
   tmp=ifelse([$1], ,1:0.9.2,$1)
