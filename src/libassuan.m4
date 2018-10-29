@@ -28,7 +28,7 @@ AC_DEFUN([_AM_PATH_LIBASSUAN_COMMON],
 
   use_gpgrt_config=""
   if test x"${LIBASSUAN_CONFIG}" = x -a x"$GPGRT_CONFIG" != x -a "$GPGRT_CONFIG" != "no"; then
-    if CC=$CC $GPGRT_CONFIG libassuan >/dev/null 2>&1; then
+    if $GPGRT_CONFIG libassuan --exists; then
       LIBASSUAN_CONFIG="$GPGRT_CONFIG libassuan"
       use_gpgrt_config=yes
     fi
@@ -57,9 +57,9 @@ AC_DEFUN([_AM_PATH_LIBASSUAN_COMMON],
                sed 's/\([[0-9]]*\)\.\([[0-9]]*\)\.\([[0-9]]*\)/\3/'`
 
     if test -z "$use_gpgrt_config"; then
-      libassuan_config_version=`CC=$CC $LIBASSUAN_CONFIG --version`
+      libassuan_config_version=`$LIBASSUAN_CONFIG --version`
     else
-      libassuan_config_version=`CC=$CC $LIBASSUAN_CONFIG --modversion`
+      libassuan_config_version=`$LIBASSUAN_CONFIG --modversion`
     fi
     major=`echo $libassuan_config_version | \
                sed 's/\([[0-9]]*\)\.\([[0-9]]*\)\.\([[0-9]]*\).*/\1/'`
@@ -94,9 +94,9 @@ AC_DEFUN([_AM_PATH_LIBASSUAN_COMMON],
   if test $ok = yes; then
     if test "$req_libassuan_api" -gt 0 ; then
       if test -z "$use_gpgrt_config"; then
-        tmp=`CC=$CC $LIBASSUAN_CONFIG --api-version 2>/dev/null || echo 0`
+        tmp=`$LIBASSUAN_CONFIG --api-version 2>/dev/null || echo 0`
       else
-        tmp=`CC=$CC $LIBASSUAN_CONFIG --variable=api_version 2>/dev/null || echo 0`
+        tmp=`$LIBASSUAN_CONFIG --variable=api_version 2>/dev/null || echo 0`
       fi
       if test "$tmp" -gt 0 ; then
         AC_MSG_CHECKING([LIBASSUAN API version])
@@ -113,9 +113,9 @@ AC_DEFUN([_AM_PATH_LIBASSUAN_COMMON],
   if test $ok = yes; then
     if test x"$host" != x ; then
       if test -z "$use_gpgrt_config"; then
-        libassuan_config_host=`CC=$CC $LIBASSUAN_CONFIG --host 2>/dev/null || echo none`
+        libassuan_config_host=`$LIBASSUAN_CONFIG --host 2>/dev/null || echo none`
       else
-        libassuan_config_host=`CC=$CC $LIBASSUAN_CONFIG --variable=host 2>/dev/null || echo none`
+        libassuan_config_host=`$LIBASSUAN_CONFIG --variable=host 2>/dev/null || echo none`
       fi
       if test x"$libassuan_config_host" != xnone ; then
         if test x"$libassuan_config_host" != x"$host" ; then
@@ -157,8 +157,8 @@ dnl
 AC_DEFUN([AM_PATH_LIBASSUAN],
 [ _AM_PATH_LIBASSUAN_COMMON($1)
   if test $ok = yes; then
-    LIBASSUAN_CFLAGS=`CC=$CC $LIBASSUAN_CONFIG --cflags`
-    LIBASSUAN_LIBS=`CC=$CC $LIBASSUAN_CONFIG --libs`
+    LIBASSUAN_CFLAGS=`$LIBASSUAN_CONFIG --cflags`
+    LIBASSUAN_LIBS=`$LIBASSUAN_CONFIG --libs`
     ifelse([$2], , :, [$2])
   else
     LIBASSUAN_CFLAGS=""
