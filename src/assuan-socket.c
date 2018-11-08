@@ -703,13 +703,18 @@ socks5_connect (assuan_context_t ctx, assuan_fd_t sock,
   struct sockaddr_in  proxyaddr_in;
   struct sockaddr *proxyaddr;
   size_t proxyaddrlen;
-  struct sockaddr_in6 *addr_in6;
-  struct sockaddr_in  *addr_in;
+  union {
+    struct sockaddr *addr;
+    struct sockaddr_in *addr_in;
+    struct sockaddr_in6 *addr_in6;
+  } addru;
   unsigned char buffer[22+512]; /* The extra 512 gives enough space
                                    for username/password or the
                                    hostname. */
   size_t buflen, hostnamelen;
   int method;
+
+  addru.addr = addr;
 
   /* memset (&proxyaddr_in6, 0, sizeof proxyaddr_in6); */
   memset (&proxyaddr_in, 0, sizeof proxyaddr_in);
@@ -848,20 +853,16 @@ socks5_connect (assuan_context_t ctx, assuan_fd_t sock,
     }
   else if (addr->sa_family == AF_INET6)
     {
-      addr_in6 = (struct sockaddr_in6 *)addr;
-
       buffer[3] = 4; /* ATYP = IPv6 */
-      memcpy (buffer+ 4, &addr_in6->sin6_addr.s6_addr, 16); /* DST.ADDR */
-      memcpy (buffer+20, &addr_in6->sin6_port, 2);          /* DST.PORT */
+      memcpy (buffer+ 4, &addru.addr_in6->sin6_addr.s6_addr, 16); /* DST.ADDR */
+      memcpy (buffer+20, &addru.addr_in6->sin6_port, 2);          /* DST.PORT */
       buflen = 22;
     }
   else
     {
-      addr_in = (struct sockaddr_in *)addr;
-
       buffer[3] = 1; /* ATYP = IPv4 */
-      memcpy (buffer+4, &addr_in->sin_addr.s_addr, 4); /* DST.ADDR */
-      memcpy (buffer+8, &addr_in->sin_port, 2);        /* DST.PORT */
+      memcpy (buffer+4, &addru.addr_in->sin_addr.s_addr, 4); /* DST.ADDR */
+      memcpy (buffer+8, &addru.addr_in->sin_port, 2);        /* DST.PORT */
       buflen = 10;
     }
   ret = do_writen (ctx, sock, buffer, buflen);
@@ -931,15 +932,22 @@ socks5_connect (assuan_context_t ctx, assuan_fd_t sock,
 static int
 use_socks (struct sockaddr *addr)
 {
+  union {
+    struct sockaddr *addr;
+    struct sockaddr_in *addr_in;
+    struct sockaddr_in6 *addr_in6;
+  } addru;
+
+  addru.addr = addr;
+
   if (!tor_mode)
     return 0;
   else if (addr->sa_family == AF_INET6)
     {
-      struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)addr;
       const unsigned char *s;
       int i;
 
-      s = (unsigned char *)&addr_in6->sin6_addr.s6_addr;
+      s = (unsigned char *)&addru.addr_in6->sin6_addr.s6_addr;
       if (s[15] != 1)
         return 1;   /* Last octet is not 1 - not the loopback address.  */
       for (i=0; i < 15; i++, s++)
@@ -950,9 +958,7 @@ use_socks (struct sockaddr *addr)
     }
   else if (addr->sa_family == AF_INET)
     {
-      struct sockaddr_in *addr_in = (struct sockaddr_in *)addr;
-
-      if (*(unsigned char*)&addr_in->sin_addr.s_addr == 127)
+      if (*(unsigned char*)&addru.addr_in->sin_addr.s_addr == 127)
         return 0; /* Loopback (127.0.0.0/8) */
 
       return 1;
