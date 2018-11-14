@@ -108,12 +108,12 @@ accept_connection_bottom (assuan_context_t ctx)
     socklen_t unpl = sizeof unp;
 
     if (getsockopt (fd, 0, LOCAL_PEEREID, &unp, &unpl) != -1)
-        {
-          ctx->peercred_valid = 1;
-          ctx->peercred.pid = unp.unp_pid;
-          ctx->peercred.uid = unp.unp_euid;
-          ctx->peercred.gid = unp.unp_egid;
-        }
+      {
+        ctx->peercred_valid = 1;
+        ctx->peercred.pid = unp.unp_pid;
+        ctx->peercred.uid = unp.unp_euid;
+        ctx->peercred.gid = unp.unp_egid;
+      }
   }
 #elif defined (HAVE_GETPEERUCRED)
   {                             /* Solaris */
