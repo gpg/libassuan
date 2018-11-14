@@ -51,7 +51,6 @@ LIBASSUAN_1.0 {
     assuan_inquire;
     assuan_inquire_ext;
     assuan_new;
-    assuan_new;
     assuan_new_ext;
     assuan_pending_line;
     assuan_pipe_connect;
@@ -69,7 +68,6 @@ LIBASSUAN_1.0 {
     assuan_register_pre_cmd_notify;
     assuan_register_post_cmd_notify;
     assuan_register_reset_notify;
-    assuan_release;
     assuan_release;
     assuan_send_data;
     assuan_sendfd;
