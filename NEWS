@@ -1,5 +1,11 @@
-Noteworthy changes in version 2.5.2 (unreleased) [C8/A8/R_]
+Noteworthy changes in version 2.5.2 (2018-12-13) [C8/A8/R2]
 ------------------------------------------------
+
+ * Better credential support for BSDs.
+
+ * Fix some compiler warnings.
+
+ * Update the build system.
 
 
 Noteworthy changes in version 2.5.1 (2017-12-07) [C8/A8/R1]
