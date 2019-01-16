@@ -47,5 +47,6 @@ AM_LDFLAGS = -no-install
 
 noinst_HEADERS = common.h
 noinst_PROGRAMS = $(TESTS) $(w32cetools) $(testtools)
-LDADD = ../src/libassuan.la  $(NETLIBS) $(GPG_ERROR_LIBS)
+LDADD = ../src/libassuan.la  $(NETLIBS) $(GPG_ERROR_LIBS) \
+	@LDADD_FOR_TESTS_KLUDGE@
 
