@@ -789,7 +789,7 @@ socks5_connect (assuan_context_t ctx, assuan_fd_t sock,
      select indeed blocks, but it's only single thread.  For
      succeeding calls, this select should soon return successfully.
    */
-  ret = select (sock+1, &fds, NULL, NULL, &tv);
+  ret = select (HANDLE2SOCKET (sock)+1, &fds, NULL, NULL, &tv);
   if (!ret)
     {
       gpg_err_set_errno (ETIMEDOUT);
