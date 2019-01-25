@@ -690,6 +690,8 @@ do_writen (assuan_context_t ctx, assuan_fd_t sockfd,
 }
 
 
+#define TIMEOUT_NOT_WAITING_SOCKS5_FOREVER 1 /* in second(s) */
+
 /* Connect using the SOCKS5 protocol. */
 static int
 socks5_connect (assuan_context_t ctx, assuan_fd_t sock,
@@ -713,8 +715,13 @@ socks5_connect (assuan_context_t ctx, assuan_fd_t sock,
                                    hostname. */
   size_t buflen, hostnamelen;
   int method;
+  fd_set fds;
+  struct timeval tv = { TIMEOUT_NOT_WAITING_SOCKS5_FOREVER, 0 };
 
   addru.addr = addr;
+
+  FD_ZERO (&fds);
+  FD_SET (HANDLE2SOCKET (sock), &fds);
 
   /* memset (&proxyaddr_in6, 0, sizeof proxyaddr_in6); */
   memset (&proxyaddr_in, 0, sizeof proxyaddr_in);
@@ -770,6 +777,25 @@ socks5_connect (assuan_context_t ctx, assuan_fd_t sock,
   ret = do_writen (ctx, sock, buffer, 3);
   if (ret)
     return ret;
+
+  /* There may be a different service at the port, which doesn't
+     respond.  Not to be bothred by such a service.  */
+  /* FIXME: Since the process may block on select, it should be
+     npth_select to release thread scheduling if nPth is enabled.
+     Ideally, select is better to be in the system hooks.  However, it
+     is considered OK to use select directly; Normal use case is three
+     steps: detect SOCKS5 service before nPth use, configure nPth
+     system hooks, and then use socks5_connect.  For the first call,
+     select indeed blocks, but it's only single thread.  For
+     succeeding calls, this select should soon return successfully.
+   */
+  ret = select (sock+1, &fds, NULL, NULL, &tv);
+  if (!ret)
+    {
+      gpg_err_set_errno (ETIMEDOUT);
+      return -1;
+    }
+
   ret = do_readn (ctx, sock, buffer, 2);
   if (ret)
     return ret;
