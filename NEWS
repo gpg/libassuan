@@ -1,5 +1,14 @@
-Noteworthy changes in version 2.5.3 (unreleased) [C8/A8/R_]
+Noteworthy changes in version 2.5.3 (2019-02-11) [C8/A8/R3]
 ------------------------------------------------
+
+ * Add a timeout for writing to a SOCKS5 proxy.  This helps if another
+   service is running on the standard tor socket (e.g. Windows 10).
+   [#3381]
+
+ * Add workaround for a problem with LD_LIBRARY_PATH on newer systems.
+   [#4298]
+
+ Release-info: https://dev.gnupg.org/T4361
 
 
 Noteworthy changes in version 2.5.2 (2018-12-13) [C8/A8/R2]

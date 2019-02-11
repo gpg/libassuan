@@ -40,7 +40,7 @@ BEGIN
             VALUE "FileDescription", "Assuan - GnuPG IPC\0"
             VALUE "FileVersion", "@LIBASSUAN_LT_CURRENT@.@LIBASSUAN_LT_AGE@.@LIBASSUAN_LT_REVISION@.@BUILD_REVISION@\0"
             VALUE "InternalName", "libassuan\0"
-            VALUE "LegalCopyright", "Copyright © 2001-2018 g10 Code GmbH\0"
+            VALUE "LegalCopyright", "Copyright © 2001-2019 g10 Code GmbH\0"
             VALUE "LegalTrademarks", "\0"
             VALUE "OriginalFilename", "libassuan.dll\0"
             VALUE "PrivateBuild", "\0"
