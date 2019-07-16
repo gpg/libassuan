@@ -149,7 +149,7 @@ install-exec-hook:
 endif
 
 mkheader: mkheader.c Makefile
-	$(CC_FOR_BUILD) -I. -I$(srcdir) -o $@ $(srcdir)/mkheader.c
+	$(CC_FOR_BUILD) $(CFLAGS_FOR_BUILD) $(CPPFLAGS_FOR_BUILD) $(LDFLAGS_FOR_BUILD) -I. -I$(srcdir) -o $@ $(srcdir)/mkheader.c
 
 assuan.h: assuan.h.in mkheader $(parts_of_assuan_h)
 	./mkheader $(host_os) $(srcdir)/assuan.h.in \
