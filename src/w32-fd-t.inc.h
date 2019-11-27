@@ -28,6 +28,10 @@
 typedef void *assuan_fd_t;
 #define ASSUAN_INVALID_FD ((void*)(-1))
 #define ASSUAN_INVALID_PID ((pid_t) -1)
+#if GPGRT_HAVE_PRAGMA_GCC_PUSH
+# pragma GCC push_options
+# pragma GCC diagnostic ignored "-Wbad-function-cast"
+#endif
 static GPG_ERR_INLINE assuan_fd_t
 assuan_fd_from_posix_fd (int fd)
 {
@@ -36,5 +40,8 @@ assuan_fd_from_posix_fd (int fd)
   else
     return (assuan_fd_t) _get_osfhandle (fd);
 }
+#if GPGRT_HAVE_PRAGMA_GCC_PUSH
+# pragma GCC pop_options
+#endif
 
 ##EOF##
