@@ -78,7 +78,7 @@
 
 
 /* Returns true if STR represents a valid port number in decimal
-   notation and no garbage is following.  */
+ * notation and no garbage is following.  */
 static int
 parse_portno (const char *str, uint16_t *r_port)
 {
@@ -168,26 +168,25 @@ assuan_socket_connect_fd (assuan_context_t ctx, int fd, unsigned int flags)
 
 
 /* Make a connection to the Unix domain socket NAME and return a new
-   Assuan context in CTX.  SERVER_PID is currently not used but may
-   become handy in the future.  Defined flag bits are:
-
-     ASSUAN_SOCKET_CONNECT_FDPASSING
-        sendmsg and recvmsg are used.
-
-   NAME must either start with a slash and optional with a drive
-   prefix ("c:") or use one of these URL schemata:
-
-      file://<fname>
-
-        This is the same as the default just with an explicit schemata.
-
-      assuan://<ipaddr>:<port>
-      assuan://[<ip6addr>]:<port>
-
-        Connect using TCP to PORT of the server with the numerical
-        IPADDR.  Note that '[' and ']' are literal characters.
-
-  */
+ * Assuan context in CTX.  SERVER_PID is currently not used but may
+ * become handy in the future.  Defined flag bits are:
+ *
+ *   ASSUAN_SOCKET_CONNECT_FDPASSING
+ *      sendmsg and recvmsg are used.
+ *
+ * NAME must either start with a slash and optional with a drive
+ * prefix ("c:") or use one of these URL schemata:
+ *
+ *    file://<fname>
+ *
+ *      This is the same as the default just with an explicit schemata.
+ *
+ *    assuan://<ipaddr>:<port>
+ *    assuan://[<ip6addr>]:<port>
+ *
+ * Connect using TCP to PORT of the server with the numerical
+ * IPADDR.  Note that '[' and ']' are literal characters.
+ */
 gpg_error_t
 assuan_socket_connect (assuan_context_t ctx, const char *name,
 		       pid_t server_pid, unsigned int flags)
