@@ -7,8 +7,9 @@ api_version=@LIBASSUAN_CONFIG_API_VERSION@
 
 Name: libassuan
 Description: IPC library for the GnuPG components
-Requires: gpg-error
+Requires.private: gpg-error
 Version: @PACKAGE_VERSION@
 Cflags: -I${includedir} @LIBASSUAN_CONFIG_CFLAGS@
 Libs: -L${libdir} @LIBASSUAN_CONFIG_LIBS@
+Libs.private: @NETLIBS@
 URL: https://www.gnupg.org/related_software/libassuan/index.html
