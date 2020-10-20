@@ -408,7 +408,7 @@ static struct {
  * HELPSTRING
  *
  * Register a handler to be used for a given command.  Note that
- * several default handlers are already regsitered with a new context.
+ * several default handlers are already registered with a new context.
  * This function however allows to override them.
  *
  * Return value: 0 on success or an error code

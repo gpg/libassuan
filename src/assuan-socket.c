@@ -215,7 +215,6 @@ delete_cygwin_fd (assuan_fd_t sockfd)
 }
 
 
-#ifdef HAVE_W32CE_SYSTEM
 static wchar_t *
 utf8_to_wchar (const char *string)
 {
@@ -289,10 +288,7 @@ MyDeleteFile (LPCSTR lpFileName)
   SetLastError (err);
   return result;
 }
-#else /*!HAVE_W32CE_SYSTEM*/
-#define MyCreateFile CreateFileA
-#define MyDeleteFile DeleteFileA
-#endif /*!HAVE_W32CE_SYSTEM*/
+
 
 int
 _assuan_sock_wsa2errno (int err)
@@ -345,17 +341,17 @@ static int
 read_port_and_nonce (const char *fname, unsigned short *port, char *nonce,
                      int *cygwin)
 {
-  FILE *fp;
+  estream_t fp;
   char buffer[50], *p;
   size_t nread;
   int aval;
 
   *cygwin = 0;
-  fp = fopen (fname, "rb");
+  fp = gpgrt_fopen (fname, "rb");
   if (!fp)
     return -1;
-  nread = fread (buffer, 1, sizeof buffer - 1, fp);
-  fclose (fp);
+  nread = gpgrt_fread (buffer, 1, sizeof buffer - 1, fp);
+  gpgrt_fclose (fp);
   if (!nread)
     {
       gpg_err_set_errno (ENOENT);
