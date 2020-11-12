@@ -252,7 +252,7 @@ _assuan_log_control_channel (assuan_context_t ctx, int outbound,
           if (nbytes > maxbytes)
             nbytes = maxbytes;
 
-          if (!(outbuf = malloc (50 + 3*nbytes + 60 + 3 + 1)))
+          if (!(outbuf = gpgrt_malloc (50 + 3*nbytes + 60 + 3 + 1)))
             res = -1;
           else
             {
