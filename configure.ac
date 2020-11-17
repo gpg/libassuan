@@ -22,7 +22,7 @@
 # Process this file with autoconf to produce a configure script.
 
 
-AC_PREREQ(2.61)
+AC_PREREQ([2.61])
 min_automake_version="1.14"
 
 # To build a release you need to create a tag with the version number
@@ -53,7 +53,7 @@ m4_define([mym4_revision],     m4_argn(7, mym4_verslist))
 m4_define([mym4_revision_dec], m4_argn(8, mym4_verslist))
 m4_esyscmd([echo ]mym4_version[>VERSION])
 
-AC_INIT([mym4_package],[mym4_version], [https://bugs.gnupg.org])
+AC_INIT([mym4_package],[mym4_version],[https://bugs.gnupg.org])
 
 # LT Version numbers, remember to change them just *before* a release.
 #   (Code changed:			REVISION++)
@@ -78,12 +78,12 @@ AM_INIT_AUTOMAKE([serial-tests dist-bzip2 no-dist-gzip])
 AM_MAINTAINER_MODE
 AC_CONFIG_SRCDIR(src/assuan.h.in)
 AC_CONFIG_MACRO_DIR(m4)
-AM_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_HOST
 AM_SILENT_RULES
 AB_INIT
 
-AC_GNU_SOURCE
+AC_USE_SYSTEM_EXTENSIONS
 
 # Taken from mpfr-4.0.1, then modified for LDADD_FOR_TESTS_KLUDGE
 dnl Under Linux, make sure that the old dtags are used if LD_LIBRARY_PATH
@@ -291,7 +291,7 @@ BUILD_FILEVERSION="${BUILD_FILEVERSION}mym4_revision_dec"
 AC_SUBST(BUILD_FILEVERSION)
 
 AC_ARG_ENABLE([build-timestamp],
-  AC_HELP_STRING([--enable-build-timestamp],
+  AS_HELP_STRING([--enable-build-timestamp],
                  [set an explicit build timestamp for reproducibility.
                   (default is the current time in ISO-8601 format)]),
      [if test "$enableval" = "yes"; then
@@ -349,8 +349,6 @@ AC_TYPE_UINT16_T
 AC_C_CONST
 AC_C_INLINE
 AC_TYPE_SIZE_T
-AC_TYPE_SIGNAL
-AC_DECL_SYS_SIGLIST
 
 gl_HEADER_SYS_SOCKET
 gl_TYPE_SOCKLEN_T
@@ -460,7 +458,7 @@ AC_CHECK_FUNCS([getpeereid])
 # Extra features
 #
 build_doc=yes
-AC_ARG_ENABLE([doc], AC_HELP_STRING([--disable-doc],
+AC_ARG_ENABLE([doc], AS_HELP_STRING([--disable-doc],
                                     [do not build the documentation]),
                      build_doc=$enableval, build_doc=yes)
 AM_CONDITIONAL([BUILD_DOC], [test "x$build_doc" != xno])
