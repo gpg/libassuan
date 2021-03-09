@@ -354,6 +354,7 @@ int _assuan_sock_get_nonce (assuan_context_t ctx, struct sockaddr *addr,
 int _assuan_sock_check_nonce (assuan_context_t ctx, assuan_fd_t fd,
 			      assuan_sock_nonce_t *nonce);
 #ifdef HAVE_W32_SYSTEM
+wchar_t *_assuan_utf8_to_wchar (const char *string);
 int _assuan_sock_wsa2errno (int err);
 #endif
 

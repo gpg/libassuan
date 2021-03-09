@@ -215,8 +215,8 @@ delete_cygwin_fd (assuan_fd_t sockfd)
 }
 
 
-static wchar_t *
-utf8_to_wchar (const char *string)
+wchar_t *
+_assuan_utf8_to_wchar (const char *string)
 {
   int n;
   size_t nbytes;
@@ -260,7 +260,7 @@ MyCreateFile (LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwSharedMode,
   HANDLE result;
   int err;
 
-  filename = utf8_to_wchar (lpFileName);
+  filename = _assuan_utf8_to_wchar (lpFileName);
   if (!filename)
     return INVALID_HANDLE_VALUE;
 
@@ -278,7 +278,7 @@ MyDeleteFile (LPCSTR lpFileName)
   wchar_t *filename;
   int result, err;
 
-  filename = utf8_to_wchar (lpFileName);
+  filename = _assuan_utf8_to_wchar (lpFileName);
   if (!filename)
     return 0;
 

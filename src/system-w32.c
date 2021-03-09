@@ -419,11 +419,14 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
       0,         /* Returns pid.  */
       0          /* Returns tid.  */
     };
-  STARTUPINFO si;
+  STARTUPINFOW si;
   assuan_fd_t fd;
   assuan_fd_t *fdp;
   char *cmdline;
+  wchar_t *wcmdline = NULL;
+  wchar_t *wname = NULL;
   HANDLE nullfd = INVALID_HANDLE_VALUE;
+  int rc;
 
   /* fixme: Actually we should set the "_assuan_pipe_connect_pid" env
      variable.  However this requires us to write a full environment
@@ -478,26 +481,35 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
   /* Note: We inherit all handles flagged as inheritable.  This seems
      to be a security flaw but there seems to be no way of selecting
      handles to inherit.  A fix for this would be to use a helper
-     process like we have in gpgme.  */
+     process like we have in gpgme.
+     Take care: CreateProcessW may modify wpgmname */
   /*   _assuan_log_printf ("CreateProcess, path=`%s' cmdline=`%s'\n", */
   /*                       name, cmdline); */
-  if (!CreateProcess (name,                 /* Program to start.  */
-                      cmdline,              /* Command line arguments.  */
-                      &sec_attr,            /* Process security attributes.  */
-                      &sec_attr,            /* Thread security attributes.  */
-                      TRUE,                 /* Inherit handles.  */
-                      (CREATE_DEFAULT_ERROR_MODE
-                       | ((flags & 128)? DETACHED_PROCESS : 0)
-                       | GetPriorityClass (GetCurrentProcess ())
-                       | CREATE_SUSPENDED), /* Creation flags.  */
-                      NULL,                 /* Environment.  */
-                      NULL,                 /* Use current drive/directory.  */
-                      &si,                  /* Startup information. */
-                      &pi                   /* Returns process information.  */
-                      ))
+  if (name && !(wname = _assuan_utf8_to_wchar (name)))
+    rc = 0;
+  else if (!(wcmdline = _assuan_utf8_to_wchar (cmdline)))
+    rc = 0;
+  else
+    rc = CreateProcessW (wname,              /* Program to start.  */
+                         wcmdline,           /* Command line arguments.  */
+                         &sec_attr,          /* Process security attributes.  */
+                         &sec_attr,          /* Thread security attributes.  */
+                         TRUE,               /* Inherit handles.  */
+                         (CREATE_DEFAULT_ERROR_MODE
+                          | ((flags & 128)? DETACHED_PROCESS : 0)
+                          | GetPriorityClass (GetCurrentProcess ())
+                          | CREATE_SUSPENDED), /* Creation flags.  */
+                         NULL,               /* Environment.  */
+                         NULL,               /* Use current drive/directory.  */
+                         &si,                /* Startup information. */
+                         &pi                 /* Returns process information.  */
+                         );
+  if (!rc)
     {
       TRACE1 (ctx, ASSUAN_LOG_SYSIO, "pipe_connect_w32", ctx,
-	      "CreateProcess failed: %s", _assuan_w32_strerror (ctx, -1));
+	      "CreateProcess failed%s: %s", _assuan_w32_strerror (ctx, -1));
+      free (wname);
+      free (wcmdline);
       _assuan_free (ctx, cmdline);
       if (nullfd != INVALID_HANDLE_VALUE)
         CloseHandle (nullfd);
@@ -506,6 +518,8 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
       return -1;
     }
 
+  free (wname);
+  free (wcmdline);
   _assuan_free (ctx, cmdline);
   if (nullfd != INVALID_HANDLE_VALUE)
     CloseHandle (nullfd);
