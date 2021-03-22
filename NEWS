@@ -1,6 +1,13 @@
-Noteworthy changes in version 2.5.5 (unreleased) [C8/A8/R_]
+Noteworthy changes in version 2.5.5 (2021-03-22) [C8/A8/R5]
 ------------------------------------------------
 
+ * Allows starting servers with Unicode names on Windows.  [#4398]
+
+ * Fix a crash in the logging code.  [0dd8ffbd32]
+
+ * Upgrade autoconf stuff.
+
+ Release-info: https://dev.gnupg.org/T5354
 
 
 Noteworthy changes in version 2.5.4 (2020-10-23) [C8/A8/R4]
