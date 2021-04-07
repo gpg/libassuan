@@ -176,6 +176,7 @@ client (assuan_context_t ctx, const char *fname)
       rc = assuan_sendfd (ctx, fileno (fp));
       if (rc)
         {
+          fclose (fp);
           log_error ("assuan_sendfd failed: %s\n", gpg_strerror (rc));
           return -1;
         }
