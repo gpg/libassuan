@@ -337,7 +337,7 @@ AC_SUBST(LIBASSUAN_CONFIG_API_VERSION)
 # Checks for header files.
 #
 AC_HEADER_STDC
-AC_CHECK_HEADERS([string.h locale.h sys/uio.h stdint.h inttypes.h \
+AC_CHECK_HEADERS([locale.h sys/uio.h stdint.h inttypes.h \
                   sys/types.h sys/stat.h unistd.h sys/time.h fcntl.h \
                   sys/select.h ucred.h sys/ucred.h])
 AC_TYPE_UINTPTR_T
