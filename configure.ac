@@ -22,7 +22,7 @@
 # Process this file with autoconf to produce a configure script.
 
 
-AC_PREREQ([2.61])
+AC_PREREQ([2.69])
 min_automake_version="1.14"
 
 # To build a release you need to create a tag with the version number
@@ -337,7 +337,6 @@ AC_SUBST(LIBASSUAN_CONFIG_API_VERSION)
 #
 # Checks for header files.
 #
-AC_HEADER_STDC
 AC_CHECK_HEADERS([locale.h sys/uio.h stdint.h inttypes.h \
                   sys/types.h sys/stat.h unistd.h sys/time.h fcntl.h \
                   sys/select.h ucred.h sys/ucred.h])
