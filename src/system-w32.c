@@ -566,25 +566,25 @@ __assuan_socketpair (assuan_context_t ctx, int namespace, int style,
 }
 
 
-int
+assuan_fd_t
 __assuan_socket (assuan_context_t ctx, int domain, int type, int proto)
 {
-  int res;
+  assuan_fd_t res;
 
-  res = socket (domain, type, proto);
-  if (res == -1)
+  res = SOCKET2HANDLE (socket (domain, type, proto));
+  if (res == SOCKET2HANDLE (INVALID_SOCKET))
     gpg_err_set_errno (_assuan_sock_wsa2errno (WSAGetLastError ()));
   return res;
 }
 
 
 int
-__assuan_connect (assuan_context_t ctx, int sock, struct sockaddr *addr,
-		  socklen_t length)
+__assuan_connect (assuan_context_t ctx, assuan_fd_t sock,
+                  struct sockaddr *addr, socklen_t length)
 {
   int res;
 
-  res = connect (sock, addr, length);
+  res = connect (HANDLE2SOCKET (sock), addr, length);
   if (res < 0)
     gpg_err_set_errno (_assuan_sock_wsa2errno (WSAGetLastError ()));
   return res;

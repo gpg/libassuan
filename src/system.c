@@ -389,10 +389,10 @@ _assuan_socketpair (assuan_context_t ctx, int namespace, int style,
 
 
 
-int
+assuan_fd_t
 _assuan_socket (assuan_context_t ctx, int namespace, int style, int protocol)
 {
-  int res;
+  assuan_fd_t res;
   TRACE_BEG3 (ctx, ASSUAN_LOG_SYSIO, "_assuan_socket", ctx,
 	      "namespace=%i,style=%i,protocol=%i",
 	      namespace, style, protocol);
@@ -403,7 +403,8 @@ _assuan_socket (assuan_context_t ctx, int namespace, int style, int protocol)
 
 
 int
-_assuan_connect (assuan_context_t ctx, int sock, struct sockaddr *addr, socklen_t length)
+_assuan_connect (assuan_context_t ctx, assuan_fd_t sock,
+                 struct sockaddr *addr, socklen_t length)
 {
   int res;
   TRACE_BEG3 (ctx, ASSUAN_LOG_SYSIO, "_assuan_connect", ctx,

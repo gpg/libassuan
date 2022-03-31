@@ -269,9 +269,10 @@ pid_t  _assuan_waitpid (assuan_context_t ctx, pid_t pid, int nowait,
 			int *status, int options);
 int _assuan_socketpair (assuan_context_t ctx, int namespace, int style,
 			int protocol, assuan_fd_t filedes[2]);
-int _assuan_socket (assuan_context_t ctx, int namespace, int style, int protocol);
-int _assuan_connect (assuan_context_t ctx, int sock, struct sockaddr *addr,
-		     socklen_t length);
+assuan_fd_t _assuan_socket (assuan_context_t ctx, int namespace,
+                            int style, int protocol);
+int _assuan_connect (assuan_context_t ctx, assuan_fd_t sock,
+                     struct sockaddr *addr, socklen_t length);
 
 extern struct assuan_system_hooks _assuan_system_hooks;
 
@@ -411,7 +412,7 @@ int putc_unlocked (int c, FILE *stream);
 
 
 #if HAVE_W64_SYSTEM
-# define SOCKET2HANDLE(s) ((void *)(uintptr_t)(s))
+# define SOCKET2HANDLE(s) ((void *)(s))
 # define HANDLE2SOCKET(h) ((uintptr_t)(h))
 #elif HAVE_W32_SYSTEM
 # define SOCKET2HANDLE(s) ((void *)(s))

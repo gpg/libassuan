@@ -531,7 +531,7 @@ _assuan_sock_new (assuan_context_t ctx, int domain, int type, int proto)
   assuan_fd_t res;
   if (domain == AF_UNIX || domain == AF_LOCAL)
     domain = AF_INET;
-  res = SOCKET2HANDLE(_assuan_socket (ctx, domain, type, proto));
+  res = _assuan_socket (ctx, domain, type, proto);
   return res;
 #else
   return _assuan_socket (ctx, domain, type, proto);
@@ -746,13 +746,12 @@ socks5_connect (assuan_context_t ctx, assuan_fd_t sock,
   proxyaddr_in.sin_addr.s_addr = htonl (INADDR_LOOPBACK);
   proxyaddr = (struct sockaddr *)&proxyaddr_in;
   proxyaddrlen = sizeof proxyaddr_in;
-  ret = _assuan_connect (ctx, HANDLE2SOCKET (sock), proxyaddr, proxyaddrlen);
+  ret = _assuan_connect (ctx, sock, proxyaddr, proxyaddrlen);
   if (ret && socksport == TOR_PORT && errno == ECONNREFUSED)
     {
       /* Standard Tor port failed - try the Tor browser port.  */
       proxyaddr_in.sin_port = htons (TOR_PORT2);
-      ret = _assuan_connect (ctx, HANDLE2SOCKET (sock),
-                             proxyaddr, proxyaddrlen);
+      ret = _assuan_connect (ctx, sock, proxyaddr, proxyaddrlen);
     }
   /* If we get an EINPROGRESS here the caller is trying to do a
    * non-blocking connect (e.g. for custom time out handling) which
@@ -1017,7 +1016,7 @@ _assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
       unaddr->sun_port = myaddr.sin_port;
       unaddr->sun_addr.s_addr = myaddr.sin_addr.s_addr;
 
-      ret = _assuan_connect (ctx, HANDLE2SOCKET(sockfd),
+      ret = _assuan_connect (ctx, sockfd,
 			    (struct sockaddr *)&myaddr, sizeof myaddr);
       if (!ret)
         {
@@ -1054,7 +1053,7 @@ _assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
     }
   else
     {
-      return _assuan_connect (ctx, HANDLE2SOCKET (sockfd), addr, addrlen);
+      return _assuan_connect (ctx, sockfd, addr, addrlen);
     }
 #else
 # if HAVE_STAT
