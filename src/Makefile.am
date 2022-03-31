@@ -27,7 +27,11 @@ EXTRA_DIST = libassuan-config.in libassuan.m4 libassuan.vers \
              libassuan.pc.in
 AM_CPPFLAGS = -I..
 
+if USE_GPGRT_CONFIG
+noinst_SCRIPTS = libassuan-config
+else
 bin_SCRIPTS = libassuan-config
+endif
 m4datadir = $(datadir)/aclocal
 m4data_DATA = libassuan.m4
 lib_LTLIBRARIES = libassuan.la
