@@ -125,13 +125,6 @@ write_special (const char *fname, int lnr, const char *tag)
       else
         include_file (fname, lnr, "posix-sock-nonce.inc.h");
     }
-  else if (!strcmp (tag, "include:sys-pth-impl"))
-    {
-      if (strstr (host_os, "mingw32"))
-        include_file (fname, lnr, "w32-sys-pth-impl.h");
-      else
-        include_file (fname, lnr, "posix-sys-pth-impl.h");
-    }
   else if (!strcmp (tag, "include:w32ce-add"))
     {
       if (!strcmp (host_os, "mingw32ce"))

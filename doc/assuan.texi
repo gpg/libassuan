@@ -1017,12 +1017,6 @@ System hooks suitable for use with the nPth library.
 The implementation of system hooks for use with the nPth library.
 This must be invoked once somewhere in the application, and defines
 the structure that is referenced by @code{ASSUAN_SYSTEM_NPTH}.
-@item ASSUAN_SYSTEM_PTH
-System hooks suitable for use with the GNU Pth library.
-@item ASSUAN_SYSTEM_PTH_IMPL
-The implementation of system hooks for use with the GNU Pth library.
-This must be invoked once somewhere in the application, and defines
-the structure that is referenced by @code{ASSUAN_SYSTEM_PTH}.
 @end table
 
 

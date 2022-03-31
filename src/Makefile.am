@@ -52,7 +52,6 @@ parts_of_assuan_h = \
 	posix-types.inc.h      w32-types.inc.h \
 	posix-fd-t.inc.h       w32-fd-t.inc.h  w32ce-fd-t.inc.h \
 	posix-sock-nonce.inc.h w32-sock-nonce.inc.h \
-	posix-sys-pth-impl.h   w32-sys-pth-impl.h \
         w32ce-add.h
 
 common_sources = \

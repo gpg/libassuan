@@ -540,33 +540,6 @@ int __assuan_recvmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
 int __assuan_sendmsg (assuan_context_t ctx, assuan_fd_t fd, const assuan_msghdr_t msg, int flags);
 pid_t __assuan_waitpid (assuan_context_t ctx, pid_t pid, int nowait, int *status, int options);
 
-/* Standard system hooks for the legacy GNU Pth.  */
-#define ASSUAN_SYSTEM_PTH_IMPL						\
-  static void _assuan_pth_usleep (assuan_context_t ctx, unsigned int usec) \
-  { (void) ctx; pth_usleep (usec); }					\
-  static ssize_t _assuan_pth_read (assuan_context_t ctx, assuan_fd_t fd, \
-				void *buffer, size_t size)		\
-  { (void) ctx; return pth_read (fd, buffer, size); }			\
-  static ssize_t _assuan_pth_write (assuan_context_t ctx, assuan_fd_t fd, \
-				 const void *buffer, size_t size)	\
-  { (void) ctx; return pth_write (fd, buffer, size); }			\
-@include:sys-pth-impl@
-  static pid_t _assuan_pth_waitpid (assuan_context_t ctx, pid_t pid,     \
-				   int nowait, int *status, int options) \
-  { (void) ctx;                                                         \
-     if (!nowait) return pth_waitpid (pid, status, options);            \
-      else return 0; }							\
-									\
-  struct assuan_system_hooks _assuan_system_pth =			\
-    { ASSUAN_SYSTEM_HOOKS_VERSION, _assuan_pth_usleep, __assuan_pipe,	\
-      __assuan_close, _assuan_pth_read, _assuan_pth_write,		\
-      _assuan_pth_recvmsg, _assuan_pth_sendmsg,				\
-      __assuan_spawn, _assuan_pth_waitpid, __assuan_socketpair,		\
-      __assuan_socket, __assuan_connect }
-
-extern struct assuan_system_hooks _assuan_system_pth;
-#define ASSUAN_SYSTEM_PTH &_assuan_system_pth
-
 /* Standard system hooks for nPth.  */
 #define ASSUAN_SYSTEM_NPTH_IMPL						\
   static void _assuan_npth_usleep (assuan_context_t ctx, unsigned int usec) \
