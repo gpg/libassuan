@@ -148,10 +148,10 @@ install-exec-hook:
               $(DESTDIR)$(bindir)/gpgcedev.dll
 endif
 
-mkheader: mkheader.c Makefile
+mkheader$(EXEEXT_FOR_BUILD): mkheader.c Makefile
 	$(CC_FOR_BUILD) $(CFLAGS_FOR_BUILD) $(CPPFLAGS_FOR_BUILD) \
           $(LDFLAGS_FOR_BUILD) -I. -I$(srcdir) -o $@ $(srcdir)/mkheader.c
 
-assuan.h: assuan.h.in mkheader $(parts_of_assuan_h)
-	./mkheader $(host_os) $(srcdir)/assuan.h.in \
+assuan.h: assuan.h.in mkheader$(EXEEXT_FOR_BUILD) $(parts_of_assuan_h)
+	./mkheader$(EXEEXT_FOR_BUILD) $(host_os) $(srcdir)/assuan.h.in \
                    $(PACKAGE_VERSION) $(VERSION_NUMBER) >$@
