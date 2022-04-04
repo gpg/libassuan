@@ -147,18 +147,17 @@ _assuan_connect_finalize (assuan_context_t ctx, assuan_fd_t fd,
  * and initialize the connection.
  */
 gpg_error_t
-assuan_socket_connect_fd (assuan_context_t ctx, int fd, unsigned int flags)
+assuan_socket_connect_fd (assuan_context_t ctx, assuan_fd_t fd,
+                          unsigned int flags)
 {
   gpg_error_t err;
-  assuan_fd_t afd;
 
-  if (!ctx || fd < 0)
+  if (!ctx)
     return GPG_ERR_INV_ARG;
-  afd = assuan_fd_from_posix_fd (fd);
-  if (afd == ASSUAN_INVALID_FD)
+  if (fd == ASSUAN_INVALID_FD)
     return GPG_ERR_INV_ARG;
 
-  err = _assuan_connect_finalize(ctx, afd, flags);
+  err = _assuan_connect_finalize (ctx, fd, flags);
 
   if (err)
     _assuan_reset (ctx);

@@ -24,10 +24,5 @@
 typedef int assuan_fd_t;
 #define ASSUAN_INVALID_FD  (-1)
 #define ASSUAN_INVALID_PID ((pid_t) -1)
-static GPG_ERR_INLINE assuan_fd_t
-assuan_fd_from_posix_fd (int fd)
-{
-  return fd;
-}
 
 ##EOF##

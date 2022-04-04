@@ -389,7 +389,7 @@ gpg_error_t assuan_socket_connect (assuan_context_t ctx, const char *name,
 				   pid_t server_pid, unsigned int flags);
 
 /*-- assuan-socket-connect.c --*/
-gpg_error_t assuan_socket_connect_fd (assuan_context_t ctx, int fd,
+gpg_error_t assuan_socket_connect_fd (assuan_context_t ctx, assuan_fd_t fd,
 				   unsigned int flags);
 
 /*-- context.c --*/
