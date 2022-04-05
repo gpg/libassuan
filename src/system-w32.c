@@ -403,16 +403,6 @@ build_w32_commandline (assuan_context_t ctx, const char * const *argv,
 }
 
 
-static assuan_fd_t
-assuan_fd_from_posix_fd (int fd)
-{
-  if (fd < 0)
-    return ASSUAN_INVALID_FD;
-  else
-    return (assuan_fd_t) _get_osfhandle (fd);
-}
-
-
 int
 __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 		const char **argv,
