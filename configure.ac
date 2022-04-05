@@ -419,7 +419,6 @@ fi
 
 
 AC_REPLACE_FUNCS(isascii)
-AC_REPLACE_FUNCS(putc_unlocked)
 AC_REPLACE_FUNCS(memrchr)
 AC_REPLACE_FUNCS(stpcpy)
 AC_CHECK_HEADERS(unistd.h)
