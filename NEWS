@@ -1,6 +1,9 @@
 Noteworthy changes in version 2.5.6 (unreleased) [C8/A8/R_]
 ------------------------------------------------
 
+ * Use of ASSUAN_SYSTEM_NPTH is deprecated.  Instead, please use
+   the gpgrt_set_syscall_clamp function from gpgrt library.
+
 
 Noteworthy changes in version 2.5.5 (2021-03-22) [C8/A8/R5]
 ------------------------------------------------

@@ -433,5 +433,7 @@ void _assuan_server_release (assuan_context_t ctx);
 /* Encode the C formatted string SRC and return the malloc'ed result.  */
 char *_assuan_encode_c_string (assuan_context_t ctx, const char *src);
 
+void _assuan_pre_syscall (void);
+void _assuan_post_syscall (void);
 
 #endif /*ASSUAN_DEFS_H*/

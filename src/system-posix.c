@@ -435,7 +435,7 @@ __assuan_connect (assuan_context_t ctx, int sock, struct sockaddr *addr,
 /* The default system hooks for assuan contexts.  */
 struct assuan_system_hooks _assuan_system_hooks =
   {
-    ASSUAN_SYSTEM_HOOKS_VERSION,
+    0,
     __assuan_usleep,
     __assuan_pipe,
     __assuan_close,
