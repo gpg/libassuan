@@ -113,6 +113,7 @@ _assuan_connect_finalize (assuan_context_t ctx, assuan_fd_t fd,
   ctx->inbound.fd = fd;
   ctx->outbound.fd = fd;
   ctx->max_accepts = -1;
+  ctx->flags.is_socket = 1;
 
   if (flags & ASSUAN_SOCKET_CONNECT_FDPASSING)
     _assuan_init_uds_io (ctx);

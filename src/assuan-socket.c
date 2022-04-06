@@ -1425,6 +1425,7 @@ assuan_sock_init ()
 #endif
 
   err = assuan_new (&sock_ctx);
+  sock_ctx->flags.is_socket = 1;
 
 #ifdef HAVE_W32_SYSTEM
   if (! err)

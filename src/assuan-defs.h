@@ -96,6 +96,8 @@ struct assuan_context_s
     unsigned int convey_comments : 1;
     unsigned int no_logging : 1;
     unsigned int force_close : 1;
+    /* From here, it's internal flag.  */
+    unsigned int is_socket : 1;
   } flags;
 
   /* If set, this is called right before logging an I/O line.  */

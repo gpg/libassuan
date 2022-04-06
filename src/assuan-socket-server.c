@@ -201,6 +201,7 @@ assuan_init_socket_server (assuan_context_t ctx, assuan_fd_t fd,
   TRACE_BEG2 (ctx, ASSUAN_LOG_CTX, "assuan_init_socket_server", ctx,
 	      "fd=0x%x, flags=0x%x", fd, flags);
 
+  ctx->flags.is_socket = 1;
   rc = _assuan_register_std_commands (ctx);
   if (rc)
     return TRACE_ERR (rc);
