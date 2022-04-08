@@ -989,6 +989,24 @@ use_socks (struct sockaddr *addr)
 }
 
 
+static assuan_fd_t
+_assuan_sock_accept (assuan_context_t ctx, assuan_fd_t sockfd,
+                     struct sockaddr *addr, socklen_t *p_addrlen)
+{
+  (void)ctx;
+#ifdef HAVE_W32_SYSTEM
+  assuan_fd_t res;
+
+  res = SOCKET2HANDLE (accept (HANDLE2SOCKET (sockfd), addr, p_addrlen));
+  if (res == SOCKET2HANDLE (INVALID_SOCKET))
+    gpg_err_set_errno (_assuan_sock_wsa2errno (WSAGetLastError ()));
+  return res;
+#else
+  return accept (sockfd, addr, p_addrlen);
+#endif
+}
+
+
 int
 _assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
 		      struct sockaddr *addr, int addrlen)
@@ -1481,6 +1499,13 @@ int
 assuan_sock_get_flag (assuan_fd_t sockfd, const char *name, int *r_value)
 {
   return _assuan_sock_get_flag (sock_ctx, sockfd, name, r_value);
+}
+
+assuan_fd_t
+assuan_sock_accept (assuan_fd_t sockfd, struct sockaddr *addr,
+                    socklen_t *p_addrlen)
+{
+  return _assuan_sock_accept (sock_ctx, sockfd, addr, p_addrlen);
 }
 
 int

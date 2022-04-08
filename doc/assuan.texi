@@ -1972,6 +1972,14 @@ Wrapper for close which does a closesocket on Windows if needed.
 Wrapper around socket.
 @end deftypefun
 
+@deftypefun assuan_fd_t assuan_sock_accept (@w{assuan_fd_t @var{sockfd}}, @
+         @w{struct sockaddr *@var{addr}}, @
+         @w{socklen_t *@var{p_addrlen}})
+
+Wrapper around accept.
+@end deftypefun
+
+
 @deftypefun int assuan_sock_connect (@w{assuan_fd_t @var{sockfd}}, @
          @w{struct sockaddr *@var{addr}}, @
          @w{int @var{addrlen}})

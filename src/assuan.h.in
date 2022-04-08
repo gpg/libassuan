@@ -498,6 +498,8 @@ int assuan_sock_close (assuan_fd_t fd);
 assuan_fd_t assuan_sock_new (int domain, int type, int proto);
 int assuan_sock_set_flag (assuan_fd_t sockfd, const char *name, int value);
 int assuan_sock_get_flag (assuan_fd_t sockfd, const char *name, int *r_value);
+assuan_fd_t assuan_sock_accept (assuan_fd_t sockfd,
+                                struct sockaddr *addr, socklen_t *p_addrlen);
 int assuan_sock_connect (assuan_fd_t sockfd,
                          struct sockaddr *addr, int addrlen);
 assuan_fd_t assuan_sock_connect_byname (const char *host, unsigned short port,
