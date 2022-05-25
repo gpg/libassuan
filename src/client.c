@@ -275,6 +275,8 @@ assuan_transact (assuan_context_t ctx,
       else
         {
           rc = data_cb (data_cb_arg, line, linelen);
+          if (ctx->flags.confidential)
+            wipememory (ctx->inbound.line, LINELENGTH);
           if (!rc)
             goto again;
         }
