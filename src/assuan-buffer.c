@@ -499,6 +499,8 @@ assuan_send_data (assuan_context_t ctx, const void *buffer, size_t length)
   if (!buffer)
     { /* flush what we have */
       _assuan_cookie_write_flush (ctx);
+      if (ctx->flags.confidential)
+        wipememory (ctx->outbound.data.line, LINELENGTH);
       if (ctx->outbound.data.error)
         return ctx->outbound.data.error;
       if (!ctx->is_server)
