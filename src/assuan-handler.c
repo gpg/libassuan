@@ -39,7 +39,7 @@ static int my_strcasecmp (const char *a, const char *b);
 
 
 #define PROCESS_DONE(ctx, rc) \
-  ((ctx)->in_process_next ? assuan_process_done ((ctx), (rc)) : (rc))
+  ((ctx)->flags.in_process_next ? assuan_process_done ((ctx), (rc)) : (rc))
 
 static gpg_error_t
 dummy_handler (assuan_context_t ctx, char *line)
@@ -147,7 +147,7 @@ std_handler_bye (assuan_context_t ctx, char *line)
   assuan_close_input_fd (ctx);
   assuan_close_output_fd (ctx);
   /* pretty simple :-) */
-  ctx->process_complete = 1;
+  ctx->flags.process_complete = 1;
   return PROCESS_DONE (ctx, 0);
 }
 
@@ -683,13 +683,13 @@ dispatch_command (assuan_context_t ctx, char *line, int linelen)
 gpg_error_t
 assuan_process_done (assuan_context_t ctx, gpg_error_t rc)
 {
-  if (!ctx->in_command)
+  if (!ctx->flags.in_command)
     return _assuan_error (ctx, GPG_ERR_ASS_GENERAL);
 
   if (ctx->flags.force_close)
-    ctx->process_complete = 1;
+    ctx->flags.process_complete = 1;
 
-  ctx->in_command = 0;
+  ctx->flags.in_command = 0;
 
   /* Check for data write errors.  */
   if (ctx->outbound.data.fp)
@@ -711,7 +711,7 @@ assuan_process_done (assuan_context_t ctx, gpg_error_t rc)
   /* Error handling.  */
   if (!rc)
     {
-      if (ctx->process_complete)
+      if (ctx->flags.process_complete)
 	{
 	  /* No error checking because the peer may have already
 	     disconnect. */
@@ -769,7 +769,7 @@ process_next (assuan_context_t ctx)
     return 0;
   if (gpg_err_code (rc) == GPG_ERR_EOF)
     {
-      ctx->process_complete = 1;
+      ctx->flags.process_complete = 1;
       return 0;
     }
   if (rc)
@@ -784,18 +784,18 @@ process_next (assuan_context_t ctx)
      in a command, it can only be the response to an INQUIRE
      reply.  */
 
-  if (!ctx->in_command)
+  if (!ctx->flags.in_command)
     {
-      ctx->in_command = 1;
+      ctx->flags.in_command = 1;
 
       ctx->outbound.data.error = 0;
       ctx->outbound.data.linelen = 0;
       /* Dispatch command and return reply.  */
-      ctx->in_process_next = 1;
+      ctx->flags.in_process_next = 1;
       rc = dispatch_command (ctx, ctx->inbound.line, ctx->inbound.linelen);
-      ctx->in_process_next = 0;
+      ctx->flags.in_process_next = 0;
     }
-  else if (ctx->in_inquire)
+  else if (ctx->flags.in_inquire)
     {
       /* FIXME: Pick up the continuation.  */
       rc = _assuan_inquire_ext_cb (ctx);
@@ -827,15 +827,15 @@ assuan_process_next (assuan_context_t ctx, int *done)
 
   if (done)
     *done = 0;
-  ctx->process_complete = 0;
+  ctx->flags.process_complete = 0;
   do
     {
       rc = process_next (ctx);
     }
-  while (!rc && !ctx->process_complete && assuan_pending_line (ctx));
+  while (!rc && !ctx->flags.process_complete && assuan_pending_line (ctx));
 
   if (done)
-    *done = !!ctx->process_complete;
+    *done = !!ctx->flags.process_complete;
 
   return rc;
 }
@@ -847,7 +847,7 @@ process_request (assuan_context_t ctx)
 {
   gpg_error_t rc;
 
-  if (ctx->in_inquire)
+  if (ctx->flags.in_inquire)
     return _assuan_error (ctx, GPG_ERR_ASS_NESTED_COMMANDS);
 
   do
@@ -857,7 +857,7 @@ process_request (assuan_context_t ctx)
   while (_assuan_error_is_eagain (ctx, rc));
   if (gpg_err_code (rc) == GPG_ERR_EOF)
     {
-      ctx->process_complete = 1;
+      ctx->flags.process_complete = 1;
       return 0;
     }
   if (rc)
@@ -865,7 +865,7 @@ process_request (assuan_context_t ctx)
   if (*ctx->inbound.line == '#' || !ctx->inbound.linelen)
     return 0; /* comment line - ignore */
 
-  ctx->in_command = 1;
+  ctx->flags.in_command = 1;
   ctx->outbound.data.error = 0;
   ctx->outbound.data.linelen = 0;
   /* dispatch command and return reply */
@@ -890,10 +890,10 @@ assuan_process (assuan_context_t ctx)
 {
   gpg_error_t rc;
 
-  ctx->process_complete = 0;
+  ctx->flags.process_complete = 0;
   do {
     rc = process_request (ctx);
-  } while (!rc && !ctx->process_complete);
+  } while (!rc && !ctx->flags.process_complete);
 
   return rc;
 }

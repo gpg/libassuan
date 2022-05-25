@@ -211,7 +211,7 @@ assuan_init_socket_server (assuan_context_t ctx, assuan_fd_t fd,
   ctx->engine.writefnc = _assuan_simple_write;
   ctx->engine.sendfd = NULL;
   ctx->engine.receivefd = NULL;
-  ctx->is_server = 1;
+  ctx->flags.is_server = 1;
   if (flags & ASSUAN_SOCKET_SERVER_ACCEPTED)
     /* We want a second accept to indicate EOF. */
     ctx->max_accepts = 1;

@@ -110,7 +110,7 @@ assuan_init_pipe_server (assuan_context_t ctx, assuan_fd_t filedes[2])
     }
 #endif
 
-  ctx->is_server = 1;
+  ctx->flags.is_server = 1;
   ctx->engine.release = _assuan_server_release;
   ctx->engine.readfnc = _assuan_simple_read;
   ctx->engine.writefnc = _assuan_simple_write;

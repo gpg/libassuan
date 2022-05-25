@@ -163,12 +163,12 @@ assuan_inquire (assuan_context_t ctx, const char *keyword,
   nodataexpected = !r_buffer && !r_length && !maxlen;
   if (!nodataexpected && (!r_buffer || !r_length))
     return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
-  if (!ctx->is_server)
+  if (!ctx->flags.is_server)
     return _assuan_error (ctx, GPG_ERR_ASS_NOT_A_SERVER);
-  if (ctx->in_inquire)
+  if (ctx->flags.in_inquire)
     return _assuan_error (ctx, GPG_ERR_ASS_NESTED_COMMANDS);
 
-  ctx->in_inquire = 1;
+  ctx->flags.in_inquire = 1;
   if (nodataexpected)
     memset (&mb, 0, sizeof mb); /* avoid compiler warnings */
   else
@@ -261,7 +261,7 @@ assuan_inquire (assuan_context_t ctx, const char *keyword,
     }
   if (ctx->flags.confidential)
     wipememory (ctx->inbound.line, LINELENGTH);
-  ctx->in_inquire = 0;
+  ctx->flags.in_inquire = 0;
   return rc;
 }
 
@@ -269,14 +269,14 @@ assuan_inquire (assuan_context_t ctx, const char *keyword,
 void
 _assuan_inquire_release (assuan_context_t ctx)
 {
-  if (ctx->in_inquire)
+  if (ctx->flags.in_inquire)
     {
       if (ctx->inquire_membuf)
 	{
 	  free_membuf (ctx, ctx->inquire_membuf);
 	  free (ctx->inquire_membuf);
 	}
-      ctx->in_inquire = 0;
+      ctx->flags.in_inquire = 0;
     }
 }
 
@@ -360,7 +360,7 @@ _assuan_inquire_ext_cb (assuan_context_t ctx)
 	free (mb);
 	ctx->inquire_membuf = NULL;
       }
-    ctx->in_inquire = 0;
+    ctx->flags.in_inquire = 0;
     rc = (ctx->inquire_cb) (ctx->inquire_cb_data, rc, buf, buf_len);
   }
   return rc;
@@ -391,9 +391,9 @@ assuan_inquire_ext (assuan_context_t ctx, const char *keyword, size_t maxlen,
 
   if (!ctx || !keyword || (10 + strlen (keyword) >= sizeof (cmdbuf)))
     return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
-  if (!ctx->is_server)
+  if (!ctx->flags.is_server)
     return _assuan_error (ctx, GPG_ERR_ASS_NOT_A_SERVER);
-  if (ctx->in_inquire)
+  if (ctx->flags.in_inquire)
     return _assuan_error (ctx, GPG_ERR_ASS_NESTED_COMMANDS);
 
   mb = malloc (sizeof (struct membuf));
@@ -410,7 +410,7 @@ assuan_inquire_ext (assuan_context_t ctx, const char *keyword, size_t maxlen,
       return rc;
     }
 
-  ctx->in_inquire = 1;
+  ctx->flags.in_inquire = 1;
 
   /* Set up the continuation.  */
   ctx->inquire_cb = cb;

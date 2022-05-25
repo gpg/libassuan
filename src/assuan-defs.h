@@ -96,8 +96,13 @@ struct assuan_context_s
     unsigned int convey_comments : 1;
     unsigned int no_logging : 1;
     unsigned int force_close : 1;
-    /* From here, it's internal flag.  */
+    /* From here, we have internal flags, not defined by assuan_flag_t.  */
     unsigned int is_socket : 1;
+    unsigned int is_server : 1;	/* Set if this is context belongs to a server */
+    unsigned int in_inquire : 1;
+    unsigned int in_process_next : 1;
+    unsigned int process_complete : 1;
+    unsigned int in_command : 1;
   } flags;
 
   /* If set, this is called right before logging an I/O line.  */
@@ -135,12 +140,6 @@ struct assuan_context_s
   /* assuan-util.c  */
   gpg_error_t err_no;
   const char *err_str;
-
-  int is_server;      /* Set if this is context belongs to a server */
-  int in_inquire;
-  int in_process_next;
-  int process_complete;
-  int in_command;
 
   /* The following members are used by assuan_inquire_ext.  */
   gpg_error_t (*inquire_cb) (void *cb_data, gpg_error_t rc,

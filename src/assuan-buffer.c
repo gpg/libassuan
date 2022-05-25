@@ -503,7 +503,7 @@ assuan_send_data (assuan_context_t ctx, const void *buffer, size_t length)
         wipememory (ctx->outbound.data.line, LINELENGTH);
       if (ctx->outbound.data.error)
         return ctx->outbound.data.error;
-      if (!ctx->is_server)
+      if (!ctx->flags.is_server)
         return assuan_write_line (ctx, length == 1? "CAN":"END");
     }
   else
