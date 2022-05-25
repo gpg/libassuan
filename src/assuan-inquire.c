@@ -254,7 +254,13 @@ assuan_inquire (assuan_context_t ctx, const char *keyword,
 
  out:
   if (!nodataexpected)
-    free_membuf (ctx, &mb);
+    {
+      if (ctx->flags.confidential)
+        wipememory (mb.buf, mb.len);
+      free_membuf (ctx, &mb);
+    }
+  if (ctx->flags.confidential)
+    wipememory (ctx->inbound.line, LINELENGTH);
   ctx->in_inquire = 0;
   return rc;
 }
