@@ -76,6 +76,8 @@ assuan_set_flag (assuan_context_t ctx, assuan_flag_t flag, int value)
 
     case ASSUAN_CONFIDENTIAL:
       ctx->flags.confidential = value;
+      if (ctx->flags.in_inq_cb && value)
+        ctx->flags.confidential_inquiry = value;
       break;
 
     case ASSUAN_NO_FIXSIGNALS:

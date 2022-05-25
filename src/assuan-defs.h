@@ -98,11 +98,13 @@ struct assuan_context_s
     unsigned int force_close : 1;
     /* From here, we have internal flags, not defined by assuan_flag_t.  */
     unsigned int is_socket : 1;
-    unsigned int is_server : 1;	/* Set if this is context belongs to a server */
-    unsigned int in_inquire : 1;
+    unsigned int is_server : 1; /* Set if this is context belongs to a server */
+    unsigned int in_inquire : 1; /* Server: inside assuan_inquire */
     unsigned int in_process_next : 1;
     unsigned int process_complete : 1;
     unsigned int in_command : 1;
+    unsigned int in_inq_cb : 1; /* Client: inquire callback is active */
+    unsigned int confidential_inquiry : 1; /* Client: inquiry is confidential */
   } flags;
 
   /* If set, this is called right before logging an I/O line.  */

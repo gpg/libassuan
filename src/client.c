@@ -291,6 +291,9 @@ assuan_transact (assuan_context_t ctx,
         }
       else
         {
+          ctx->flags.confidential_inquiry = 0;
+          ctx->flags.in_inq_cb = 1;
+
           rc = inquire_cb (inquire_cb_arg, line);
           if (!rc)
             rc = assuan_send_data (ctx, NULL, 0); /* flush and send END */
@@ -303,6 +306,13 @@ assuan_transact (assuan_context_t ctx,
               assuan_send_data (ctx, NULL, 1);
               _assuan_read_from_server (ctx, &response, &off, 0);
             }
+
+          if (ctx->flags.confidential_inquiry)
+            wipememory (ctx->outbound.data.line, LINELENGTH);
+
+          ctx->flags.confidential_inquiry = 0;
+          ctx->flags.in_inq_cb = 0;
+
           if (!rc)
             goto again;
         }
