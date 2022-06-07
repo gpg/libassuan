@@ -24,7 +24,6 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 includes=""
 libdirs=""
-exec_prefix_set=no
 echo_libs=no
 echo_cflags=no
 echo_prefix=no
