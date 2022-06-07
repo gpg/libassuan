@@ -216,7 +216,7 @@ main (int argc, char **argv)
         cred = NULL;
 
       port = strtoul (argv[1], NULL, 10);
-      if (port < 0 || port > 65535)
+      if (port > 65535)
         log_fatal ("port number out of range\n");
 
       sock = assuan_sock_connect_byname (argv[0], port, 0, cred,
