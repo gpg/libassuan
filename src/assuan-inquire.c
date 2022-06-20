@@ -255,7 +255,7 @@ assuan_inquire (assuan_context_t ctx, const char *keyword,
  out:
   if (!nodataexpected)
     {
-      if (ctx->flags.confidential)
+      if (ctx->flags.confidential && mb->buf)
         wipememory (mb.buf, mb.len);
       free_membuf (ctx, &mb);
     }
