@@ -20,16 +20,12 @@
 
 TESTS_ENVIRONMENT =
 
-EXTRA_DIST = motd ce-createpipe.c
+EXTRA_DIST = motd
 
 BUILT_SOURCES =
 CLEANFILES =
 
 TESTS = version
-
-if HAVE_W32CE_SYSTEM
-w32cetools = ce-createpipe ce-server
-endif
 
 if HAVE_W32_SYSTEM
 testtools =

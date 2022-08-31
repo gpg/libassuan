@@ -23,7 +23,7 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libassuan.pc
 
 EXTRA_DIST = libassuan-config.in libassuan.m4 libassuan.vers \
-             versioninfo.rc.in libassuan.def mkheader.c gpgcedev.def \
+             versioninfo.rc.in libassuan.def mkheader.c \
              libassuan.pc.in
 AM_CPPFLAGS = -I..
 
@@ -35,10 +35,6 @@ endif
 m4datadir = $(datadir)/aclocal
 m4data_DATA = libassuan.m4
 lib_LTLIBRARIES = libassuan.la
-if HAVE_W32CE_SYSTEM
-lib_LTLIBRARIES += libgpgcedev.la
-bin_PROGRAMS = gpgcemgr
-endif
 nodist_include_HEADERS = assuan.h
 
 if HAVE_LD_VERSION_SCRIPT
@@ -52,11 +48,10 @@ CLEANFILES = mkheader assuan.h
 BUILT_SOURCES = assuan.h
 
 parts_of_assuan_h = \
-	posix-includes.inc.h   w32-includes.inc.h \
+	posix-includes.inc.h   \
 	posix-types.inc.h      w32-types.inc.h \
-	posix-fd-t.inc.h       w32-fd-t.inc.h  w32ce-fd-t.inc.h \
-	posix-sock-nonce.inc.h w32-sock-nonce.inc.h \
-        w32ce-add.h
+	posix-fd-t.inc.h       w32-fd-t.inc.h \
+	posix-sock-nonce.inc.h w32-sock-nonce.inc.h
 
 common_sources = \
 	assuan.h.in $(parts_of_assuan_h) \
@@ -78,11 +73,7 @@ common_sources = \
 	assuan-socket.c
 
 if HAVE_W32_SYSTEM
-if HAVE_W32CE_SYSTEM
-common_sources += system-w32ce.c
-else
 common_sources += system-w32.c
-endif
 else
 common_sources += system-posix.c
 endif
@@ -138,18 +129,6 @@ libassuan_la_LDFLAGS = $(libassuan_res_ldflag) $(no_undefined) \
 libassuan_la_DEPENDENCIES = @LTLIBOBJS@ \
 	$(srcdir)/libassuan.vers $(libassuan_deps)
 libassuan_la_LIBADD = @LTLIBOBJS@ @NETLIBS@ @GPG_ERROR_LIBS@
-
-if HAVE_W32CE_SYSTEM
-libgpgcedev_la_SOURCES = gpgcedev.c
-libgpgcedev_la_CPPFLAGS = $(AM_CPPFLAGS)
-libgpgcedev_la_LDFLAGS = $(no_undefined) -export-symbols $(srcdir)/gpgcedev.def
-libgpgcedev_la_DEPENDENCIES = gpgcedev.def
-gpgcemgr_SOURCES = gpgcemgr.c
-gpgcemgr_CPPFLAGS = $(AM_CPPFLAGS)
-install-exec-hook:
-	mv -f $(DESTDIR)$(bindir)/libgpgcedev-0.dll \
-              $(DESTDIR)$(bindir)/gpgcedev.dll
-endif
 
 mkheader$(EXEEXT_FOR_BUILD): mkheader.c Makefile
 	$(CC_FOR_BUILD) $(CFLAGS_FOR_BUILD) $(CPPFLAGS_FOR_BUILD) \

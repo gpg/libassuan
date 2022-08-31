@@ -26,11 +26,6 @@
 #endif
 
 
-#ifdef HAVE_W32CE_SYSTEM
-#define getpid() GetCurrentProcessId ()
-#define getenv(a) (NULL)
-#endif
-
 #if HAVE_W32_SYSTEM
 #define SOCKET2HANDLE(s) ((void *)(s))
 #define HANDLE2SOCKET(h) ((unsigned int)(h))

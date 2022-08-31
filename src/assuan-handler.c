@@ -311,16 +311,6 @@ std_handler_input (assuan_context_t ctx, char *line)
   if (rc)
     return PROCESS_DONE (ctx, rc);
 
-#ifdef HAVE_W32CE_SYSTEM
-  oldfd = fd;
-  fd = _assuan_w32ce_finish_pipe ((int)fd, 0);
-  if (fd == INVALID_HANDLE_VALUE)
-    return PROCESS_DONE (ctx, set_error (ctx, GPG_ERR_ASS_PARAMETER,
-					 "rvid conversion failed"));
-  TRACE2 (ctx, ASSUAN_LOG_SYSIO, "std_handler_input", ctx,
-	  "turned RVID 0x%x into handle 0x%x", oldfd, fd);
-#endif
-
   if (ctx->input_notify_fnc)
     {
       oldfd = ctx->input_fd;
@@ -351,16 +341,6 @@ std_handler_output (assuan_context_t ctx, char *line)
   rc = assuan_command_parse_fd (ctx, line, &fd);
   if (rc)
     return PROCESS_DONE (ctx, rc);
-
-#ifdef HAVE_W32CE_SYSTEM
-  oldfd = fd;
-  fd = _assuan_w32ce_finish_pipe ((int)fd, 1);
-  if (fd == INVALID_HANDLE_VALUE)
-    return PROCESS_DONE (ctx, set_error (ctx, gpg_err_code_from_syserror (),
-					 "rvid conversion failed"));
-  TRACE2 (ctx, ASSUAN_LOG_SYSIO, "std_handler_output", ctx,
-	  "turned RVID 0x%x into handle 0x%x", oldfd, fd);
-#endif
 
   if (ctx->output_notify_fnc)
     {
@@ -935,9 +915,7 @@ assuan_get_active_fds (assuan_context_t ctx, int what,
       if (ctx->outbound.fd != ASSUAN_INVALID_FD)
         fdarray[n++] = ctx->outbound.fd;
       if (ctx->outbound.data.fp)
-#if defined(HAVE_W32CE_SYSTEM)
-        fdarray[n++] = (void*)fileno (ctx->outbound.data.fp);
-#elif defined(HAVE_W32_SYSTEM)
+#if defined(HAVE_W32_SYSTEM)
         fdarray[n++] = (void*)_get_osfhandle (fileno (ctx->outbound.data.fp));
 #else
         fdarray[n++] = fileno (ctx->outbound.data.fp);

@@ -156,9 +156,6 @@ AH_TOP([
 #ifndef _ASSUAN_CONFIG_H_INCLUDED
 #define _ASSUAN_CONFIG_H_INCLUDED
 
-/* Enable gpg-error's strerror macro under W32CE.  */
-#define GPG_ERR_ENABLE_ERRNO_MACROS 1
-
 /* Provide the es_ macro for estream.  */
 #define GPGRT_ENABLE_ES_MACROS 1
 
@@ -213,7 +210,6 @@ fi
 have_dosish_system=no
 have_w32_system=no
 have_w64_system=no
-have_w32ce_system=no
 case "${host}" in
     *-linux*)
         if test "$GCC" = yes; then
@@ -224,11 +220,6 @@ case "${host}" in
         have_dosish_system=yes
         have_w32_system=yes
         have_w64_system=yes
-        ;;
-    *-mingw32ce*)
-        have_dosish_system=yes
-        have_w32_system=yes
-        have_w32ce_system=yes
         ;;
     *-mingw32*)
         have_dosish_system=yes
@@ -254,13 +245,9 @@ if test "$have_w32_system" = yes; then
       AC_DEFINE(HAVE_W64_SYSTEM,1,
                 [Defined if we run on a 64 bit W32 API based system])
     fi
-    if test "$have_w32ce_system" = yes; then
-       AC_DEFINE(HAVE_W32CE_SYSTEM,1,[Defined if we run on WindowsCE])
-    fi
     AC_CHECK_HEADERS([winsock2.h])
 fi
 AM_CONDITIONAL(HAVE_W32_SYSTEM, test "$have_w32_system" = yes)
-AM_CONDITIONAL(HAVE_W32CE_SYSTEM, test "$have_w32ce_system" = yes)
 AM_CONDITIONAL(HAVE_W64_SYSTEM, test "$have_w64_system" = yes)
 
 
@@ -302,12 +289,8 @@ AC_CHECK_FUNC(setsockopt, , AC_CHECK_LIB(socket, setsockopt,
 AC_SUBST(NETLIBS)
 
 if test "$have_w32_system" = yes; then
-   if test "$have_w32ce_system" = yes; then
-     NETLIBS="-lws2 $NETLIBS"
-   else
-     # FIXME: Check why we need to use ws2_32 and document that.
-     NETLIBS="-lws2_32 $NETLIBS"
-   fi
+   # FIXME: Check why we need to use ws2_32 and document that.
+   NETLIBS="-lws2_32 $NETLIBS"
 fi
 
 #

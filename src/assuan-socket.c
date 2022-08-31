@@ -29,9 +29,7 @@
 # define WIN32_LEAN_AND_MEAN
 # include <windows.h>
 # include <wincrypt.h>
-#ifndef HAVE_W32CE_SYSTEM
 # include <io.h>
-#endif
 #else
 # include <sys/types.h>
 # include <sys/socket.h>
