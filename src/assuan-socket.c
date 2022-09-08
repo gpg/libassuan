@@ -1426,7 +1426,7 @@ _assuan_sock_check_nonce (assuan_context_t ctx, assuan_fd_t fd,
 /* Public API.  */
 
 gpg_error_t
-assuan_sock_init ()
+assuan_sock_init (void)
 {
   gpg_error_t err;
 #ifdef HAVE_W32_SYSTEM
@@ -1453,7 +1453,7 @@ assuan_sock_init ()
 
 
 void
-assuan_sock_deinit ()
+assuan_sock_deinit (void)
 {
   if (sock_ctx == NULL)
     return;
