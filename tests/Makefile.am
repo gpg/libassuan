@@ -29,6 +29,7 @@ TESTS = version
 
 if HAVE_W32_SYSTEM
 testtools =
+TESTS += fdpassing-socket
 else
 TESTS += pipeconnect
 testtools = socks5
@@ -43,5 +44,4 @@ AM_LDFLAGS = -no-install
 
 noinst_HEADERS = common.h
 noinst_PROGRAMS = $(TESTS) $(w32cetools) $(testtools)
-LDADD = ../src/libassuan.la $(GPG_ERROR_LIBS) \
-	@LDADD_FOR_TESTS_KLUDGE@
+LDADD = ../src/libassuan.la $(GPG_ERROR_LIBS) @LDADD_FOR_TESTS_KLUDGE@
