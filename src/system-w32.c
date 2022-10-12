@@ -167,6 +167,21 @@ __assuan_close (assuan_context_t ctx, assuan_fd_t fd)
 
 
 
+gpg_error_t
+w32_fdpass_send (assuan_context_t ctx, assuan_fd_t fd)
+{
+  char fdpass_msg[256];
+  size_t msglen;
+  int res;
+
+  /* not yet implemented.  */
+  (void)fd;
+  msglen = 6;
+  strcpy (fdpass_msg, "hello!");
+  res = send (HANDLE2SOCKET (ctx->outbound.fd), fdpass_msg, msglen, MSG_OOB);
+  return 0;
+}
+
 static int
 process_fdpass_msg (const char *fdpass_msg, size_t msglen, assuan_fd_t *r_fd)
 {

@@ -115,8 +115,12 @@ _assuan_connect_finalize (assuan_context_t ctx, assuan_fd_t fd,
   ctx->max_accepts = -1;
   ctx->flags.is_socket = 1;
 
+#ifdef HAVE_W32_SYSTEM
+  ctx->engine.sendfd = w32_fdpass_send;
+#else
   if (flags & ASSUAN_SOCKET_CONNECT_FDPASSING)
     _assuan_init_uds_io (ctx);
+#endif
 
   /* initial handshake */
   {
