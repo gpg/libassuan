@@ -167,6 +167,15 @@ __assuan_close (assuan_context_t ctx, assuan_fd_t fd)
 
 
 
+static int
+process_fdpass_msg (const char *fdpass_msg, size_t msglen, assuan_fd_t *r_fd)
+{
+  fprintf (stderr, "process_fdpass_msg: %s\n", fdpass_msg);
+  *r_fd = NULL;
+  /* not implemented yet, but pretending as if it's successful.  */
+  return 0;
+}
+
 ssize_t
 __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
 {
@@ -175,7 +184,40 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
 
   if (ctx->flags.is_socket)
     {
+      fd_set fds;
       int tries = 3;
+      struct timeval timeout;
+
+      timeout.tv_sec = 0;
+      timeout.tv_usec = 0;
+      FD_ZERO (&fds);
+      FD_SET (HANDLE2SOCKET (fd), &fds);
+      res = select (0, NULL, NULL, &fds, &timeout);
+      if (res < 0)
+        {
+          gpg_err_set_errno (EIO);
+          return -1;
+        }
+      else if (res)
+        {
+          assuan_fd_t fd_recv;
+          char fdpass_msg[256];
+
+          res = recv (HANDLE2SOCKET (fd), fdpass_msg, sizeof (fdpass_msg), MSG_OOB);
+          if (res < 0)
+            {
+              gpg_err_set_errno (EIO);
+              return -1;
+            }
+          res = process_fdpass_msg (fdpass_msg, res, &fd_recv);
+          if (res)
+            ctx->uds.pendingfds[ctx->uds.pendingfdscount++] = fd_recv;
+          else
+            {
+              gpg_err_set_errno (EIO);
+              return -1;
+            }
+        }
 
     again:
       ec = 0;
@@ -189,8 +231,6 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
              layer then needs to take care of EAGAIN.  No need to
              specify a timeout - the socket is not expected to be in
              blocking mode.  */
-          fd_set fds;
-
           FD_ZERO (&fds);
           FD_SET (HANDLE2SOCKET (fd), &fds);
           select (0, &fds, NULL, NULL, NULL);
