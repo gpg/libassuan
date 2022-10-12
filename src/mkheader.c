@@ -84,24 +84,6 @@ write_special (const char *fname, int lnr, const char *tag)
       else
         include_file (fname, lnr, "posix-includes.inc.h");
     }
-  else if (!strcmp (tag, "include:sys/types.h"))
-    {
-      if (!strcmp (host_os, "mingw32ce"))
-        fputs ("#ifdef __MINGW32CE__\n"
-               "# include <sys/types.h>\n"
-               "#endif\n", stdout);
-      else
-        fputs ("#include <sys/types.h>\n", stdout);
-    }
-  else if (!strcmp (tag, "include:unistd.h"))
-    {
-      if (!strcmp (host_os, "mingw32ce"))
-        fputs ("#ifdef __MINGW32CE__\n"
-               "# include <unistd.h>\n"
-               "#endif\n", stdout);
-      else
-        fputs ("#include <unistd.h>\n", stdout);
-    }
   else if (!strcmp (tag, "include:types"))
     {
       if (strstr (host_os, "mingw32"))
@@ -111,9 +93,7 @@ write_special (const char *fname, int lnr, const char *tag)
     }
   else if (!strcmp (tag, "include:fd-t"))
     {
-      if (!strcmp (host_os, "mingw32ce"))
-        include_file (fname, lnr, "w32ce-fd-t.inc.h");
-      else if (strstr (host_os, "mingw32"))
+      if (strstr (host_os, "mingw32"))
         include_file (fname, lnr, "w32-fd-t.inc.h");
       else
         include_file (fname, lnr, "posix-fd-t.inc.h");
@@ -124,11 +104,6 @@ write_special (const char *fname, int lnr, const char *tag)
         include_file (fname, lnr, "w32-sock-nonce.inc.h");
       else
         include_file (fname, lnr, "posix-sock-nonce.inc.h");
-    }
-  else if (!strcmp (tag, "include:w32ce-add"))
-    {
-      if (!strcmp (host_os, "mingw32ce"))
-        include_file (fname, lnr, "w32ce-add.h");
     }
   else if (!strcmp (tag, "version"))
     {
