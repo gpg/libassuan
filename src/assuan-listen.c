@@ -117,7 +117,7 @@ assuan_accept (assuan_context_t ctx)
   else
     {
       static char const okstr[] = "OK Pleased to meet you";
-      pid_t apid = assuan_get_pid (ctx);
+      pid_t apid = getpid ();
       if (apid != ASSUAN_INVALID_PID)
         {
           char tmpbuf[50];

@@ -131,7 +131,32 @@ _assuan_connect_finalize (assuan_context_t ctx, assuan_fd_t fd,
     if (err)
       TRACE1 (ctx, ASSUAN_LOG_SYSIO, "assuan_socket_connect", ctx,
 	      "can't connect to server: %s\n", gpg_strerror (err));
-    else if (response != ASSUAN_RESPONSE_OK)
+    else if (response == ASSUAN_RESPONSE_OK)
+      {
+        const char *line = ctx->inbound.line + off;
+        int pid = ASSUAN_INVALID_PID;
+
+        fprintf (stderr, "%s\n", line);
+
+        /* Parse the message: OK ..., process %i */
+        line = strchr (line, ',');
+        if (line)
+          {
+            line = strchr (line + 1, ' ');
+            if (line)
+              {
+                line = strchr (line + 1, ' ');
+                if (line)
+                  {
+                    pid = atoi (line + 1);
+                    fprintf (stderr, "PID=%d (%s)\n", pid, line+1);
+                  }
+              }
+          }
+        if (pid != ASSUAN_INVALID_PID)
+          ctx->pid = pid;
+      }
+    else
       {
 	char *sname = _assuan_encode_c_string (ctx, ctx->inbound.line);
 	if (sname)
