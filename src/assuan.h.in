@@ -32,8 +32,8 @@
 #define ASSUAN_H
 
 #include <stdio.h>
-@include:sys/types.h@
-@include:unistd.h@
+#include <sys/types.h>
+#include <unistd.h>
 #include <stdarg.h>
 
 #ifndef _ASSUAN_NO_SOCKET_WRAPPER
@@ -601,8 +601,6 @@ pid_t __assuan_waitpid (assuan_context_t ctx, pid_t pid,
 
 extern struct assuan_system_hooks _assuan_system_npth;
 #define ASSUAN_SYSTEM_NPTH &_assuan_system_npth
-
-@include:w32ce-add@
 
 #ifdef __cplusplus
 }
