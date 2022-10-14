@@ -169,6 +169,7 @@ __assuan_close (assuan_context_t ctx, assuan_fd_t fd)
 
 /* To encode/decode file HANDLE, we use FDPASS_FORMAT */
 #define FDPASS_FORMAT "%p"
+#define FDPASS_MSG_SIZE (sizeof (uintptr_t)*2 + 1)
 
 static gpg_error_t
 get_file_handle (int fd, int server_pid, HANDLE *r_handle)
@@ -303,6 +304,8 @@ w32_fdpass_recv (assuan_context_t ctx, assuan_fd_t *fd)
     ctx->uds.pendingfds[i-1] = ctx->uds.pendingfds[i];
   ctx->uds.pendingfdscount--;
 
+  TRACE1 (ctx, ASSUAN_LOG_SYSIO, "w32_fdpass_recv", ctx,
+          "received fd: %p", ctx->uds.pendingfds[0]);
   return 0;
 }
 
@@ -317,7 +320,6 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
       fd_set fds;
       int tries = 3;
       fd_set efds;
-    try_again:
 
       FD_ZERO (&fds);
       FD_SET (HANDLE2SOCKET (fd), &fds);
@@ -332,7 +334,7 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
       else if (FD_ISSET (HANDLE2SOCKET (fd), &efds))
         {
           int fd_recv;
-          char fdpass_msg[256];
+          char fdpass_msg[FDPASS_MSG_SIZE];
 
           /* the message of ! */
           res = recv (HANDLE2SOCKET (fd), fdpass_msg, sizeof (fdpass_msg), MSG_OOB);
@@ -358,27 +360,27 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
             }
 
           ctx->uds.pendingfds[ctx->uds.pendingfdscount++] = (assuan_fd_t)fd_recv;
-          goto try_again;
+	  TRACE1 (ctx, ASSUAN_LOG_SYSIO, "__assuan_read", ctx,
+		  "received fd: %d", fd_recv);
+          /* Fall through  */
         }
-      else
+
+    again:
+      ec = 0;
+      res = recv (HANDLE2SOCKET (fd), buffer, size, 0);
+      if (res == -1)
+        ec = WSAGetLastError ();
+      if (ec == WSAEWOULDBLOCK && tries--)
         {
-        again:
-          ec = 0;
-          res = recv (HANDLE2SOCKET (fd), buffer, size, 0);
-          if (res == -1)
-            ec = WSAGetLastError ();
-          if (ec == WSAEWOULDBLOCK && tries--)
-            {
-              /* EAGAIN: Use select to wait for resources and try again.
-                 We do this 3 times and then give up.  The higher level
-                 layer then needs to take care of EAGAIN.  No need to
-                 specify a timeout - the socket is not expected to be in
-                 blocking mode.  */
-              FD_ZERO (&fds);
-              FD_SET (HANDLE2SOCKET (fd), &fds);
-              select (0, &fds, NULL, NULL, NULL);
-              goto again;
-            }
+          /* EAGAIN: Use select to wait for resources and try again.
+             We do this 3 times and then give up.  The higher level
+             layer then needs to take care of EAGAIN.  No need to
+             specify a timeout - the socket is not expected to be in
+             blocking mode.  */
+          FD_ZERO (&fds);
+          FD_SET (HANDLE2SOCKET (fd), &fds);
+          select (0, &fds, NULL, NULL, NULL);
+          goto again;
         }
     }
   else
