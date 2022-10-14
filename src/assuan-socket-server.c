@@ -238,8 +238,12 @@ assuan_init_socket_server (assuan_context_t ctx, assuan_fd_t fd,
                          : accept_connection);
   ctx->finish_handler = _assuan_server_finish;
 
+#ifdef HAVE_W32_SYSTEM
+  ctx->engine.receivefd = w32_fdpass_recv;
+#else
   if (flags & ASSUAN_SOCKET_SERVER_FDPASSING)
     _assuan_init_uds_io (ctx);
+#endif
 
   rc = _assuan_register_std_commands (ctx);
   if (rc)

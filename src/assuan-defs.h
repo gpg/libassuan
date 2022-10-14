@@ -328,6 +328,7 @@ int _assuan_error_is_eagain (assuan_context_t ctx, gpg_error_t err);
 #ifdef HAVE_W32_SYSTEM
 char *_assuan_w32_strerror (assuan_context_t ctx, int ec);
 gpg_error_t w32_fdpass_send (assuan_context_t ctx, assuan_fd_t fd);
+gpg_error_t w32_fdpass_recv (assuan_context_t ctx, assuan_fd_t *fd);
 #endif /*HAVE_W32_SYSTEM*/
 
 

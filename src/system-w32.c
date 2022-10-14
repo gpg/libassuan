@@ -167,27 +167,142 @@ __assuan_close (assuan_context_t ctx, assuan_fd_t fd)
 
 
 
+/* To encode/decode file HANDLE, we use FDPASS_FORMAT */
+#define FDPASS_FORMAT "%p"
+
+static gpg_error_t
+get_file_handle (int fd, int server_pid, HANDLE *r_handle)
+{
+  HANDLE prochandle, handle, newhandle;
+
+  handle = (void *)_get_osfhandle (fd);
+
+  prochandle = OpenProcess (PROCESS_DUP_HANDLE, FALSE, server_pid);
+  if (!prochandle)
+    return gpg_error (GPG_ERR_ASS_PARAMETER);/*FIXME: error*/
+
+  if (!DuplicateHandle (GetCurrentProcess (), handle, prochandle, &newhandle,
+                        0, TRUE, DUPLICATE_SAME_ACCESS))
+    {
+      CloseHandle (prochandle);
+      return gpg_error (GPG_ERR_ASS_PARAMETER);/*FIXME: error*/
+    }
+  CloseHandle (prochandle);
+  *r_handle = newhandle;
+  return 0;
+}
+
+
+/*
+ * On Windows, we can consider two different ways about what FD means:
+ *
+ * (1) POSIX fd
+ * (2) Windows file HANDLE
+ *
+ * In assuan, we use assuan_fd_t for socket/pipe.
+ *
+ * Here, it refers file object.
+ *
+ * If we started the design and implementation now, it would be more
+ * natural (easy to understand, no confusion) to use the "int" type
+ * and POSIX fd here.  Considering the purpose of sending fd (the file
+ * object to share), it is better portability-wise, even though use of
+ * POSIX fd on Windows requires emulation layer.  (These days, in
+ * GnuPG, we use gpgrt's estream for file assces and gpgrt_fileno for
+ * POSIX fd.)
+ *
+ * That is:
+ *
+ * - assuan_sendfd/assuan_recvfd sends/receives POSIX fd
+ * - assuan_get_input_fd/assuan_get_output_fd returns POSIX fd
+ *
+ * However, those APIs now uses assuan_fd_t.  That's troublesome or it
+ * allows confusion about the semantics of the APIs.
+ *
+ * Perhaps, avoiding API/ABI breaks, we would need introducing new APIs:
+ *
+ * - assuan_sendFD/assuan_recvFD sends/receives POSIX fd
+ * - assuan_get_input_FD/assuan_get_output_FD returns POSIX fd
+ *
+ * For this experiment, we don't care about API/ABI breaks, for now.
+ * And use POSIX fd here.
+ *
+ * We use sending MSG_OOB, but it only allows a single-byte in TCP.
+ * So, it is used to notify other end for fdpassing.
+ */
 gpg_error_t
 w32_fdpass_send (assuan_context_t ctx, assuan_fd_t fd)
 {
   char fdpass_msg[256];
   size_t msglen;
   int res;
+  int fd0;                      /* POSIX fd */
+  intptr_t fd_converted_to_integer;
+  HANDLE file_handle;
+  gpg_error_t err;
 
-  /* not yet implemented.  */
-  (void)fd;
-  msglen = 6;
-  strcpy (fdpass_msg, "hello!");
-  res = send (HANDLE2SOCKET (ctx->outbound.fd), fdpass_msg, msglen, MSG_OOB);
+  fd_converted_to_integer = (intptr_t)fd;
+  fd0 = (int)fd_converted_to_integer; /* Bit pattern is possibly truncated.  */
+
+  err = get_file_handle (fd0, ctx->pid, &file_handle);
+  if (err)
+    return err;
+
+  res = snprintf (fdpass_msg, sizeof (fdpass_msg), FDPASS_FORMAT, file_handle);
+  if (res < 0)
+    {
+      CloseHandle (file_handle);
+      return gpg_error (GPG_ERR_ASS_PARAMETER);/*FIXME: error*/
+    }
+
+  msglen = (size_t)res + 1;     /* Including NUL.  */
+
+  res = send (HANDLE2SOCKET (ctx->outbound.fd), "!", 1, MSG_OOB);
+  res = send (HANDLE2SOCKET (ctx->outbound.fd), fdpass_msg, msglen, 0);
   return 0;
 }
 
 static int
-process_fdpass_msg (const char *fdpass_msg, size_t msglen, assuan_fd_t *r_fd)
+process_fdpass_msg (const char *fdpass_msg, size_t msglen, int *r_fd)
 {
-  fprintf (stderr, "process_fdpass_msg: %s\n", fdpass_msg);
-  *r_fd = NULL;
-  /* not implemented yet, but pretending as if it's successful.  */
+  void *file_handle;
+  int res;
+  int fd;
+
+  *r_fd = -1;
+
+  res = sscanf (fdpass_msg, FDPASS_FORMAT, &file_handle);
+  if (res != 1)
+    return -1;
+
+  fd = _open_osfhandle ((intptr_t)file_handle, _O_RDWR);
+  if (fd < 0)
+    {
+      CloseHandle (file_handle);
+      return -1;
+    }
+
+  *r_fd = fd;
+  return 0;
+}
+
+gpg_error_t
+w32_fdpass_recv (assuan_context_t ctx, assuan_fd_t *fd)
+{
+  int i;
+
+  if (!ctx->uds.pendingfdscount)
+    {
+      TRACE0 (ctx, ASSUAN_LOG_SYSIO, "w32_receivefd", ctx,
+	      "no pending file descriptors");
+      return _assuan_error (ctx, GPG_ERR_ASS_GENERAL);
+    }
+
+  *fd = ctx->uds.pendingfds[0];
+  for (i=1; i < ctx->uds.pendingfdscount; i++)
+    ctx->uds.pendingfds[i-1] = ctx->uds.pendingfds[i];
+  ctx->uds.pendingfdscount--;
+
   return 0;
 }
 
@@ -201,55 +316,69 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
     {
       fd_set fds;
       int tries = 3;
-      struct timeval timeout;
+      fd_set efds;
+    try_again:
 
-      timeout.tv_sec = 0;
-      timeout.tv_usec = 0;
       FD_ZERO (&fds);
       FD_SET (HANDLE2SOCKET (fd), &fds);
-      res = select (0, NULL, NULL, &fds, &timeout);
+      FD_ZERO (&efds);
+      FD_SET (HANDLE2SOCKET (fd), &efds);
+      res = select (0, &fds, NULL, &efds, NULL);
       if (res < 0)
         {
           gpg_err_set_errno (EIO);
           return -1;
         }
-      else if (res)
+      else if (FD_ISSET (HANDLE2SOCKET (fd), &efds))
         {
-          assuan_fd_t fd_recv;
+          int fd_recv;
           char fdpass_msg[256];
 
+          /* the message of ! */
           res = recv (HANDLE2SOCKET (fd), fdpass_msg, sizeof (fdpass_msg), MSG_OOB);
           if (res < 0)
             {
               gpg_err_set_errno (EIO);
               return -1;
             }
-          res = process_fdpass_msg (fdpass_msg, res, &fd_recv);
-          if (res)
-            ctx->uds.pendingfds[ctx->uds.pendingfdscount++] = fd_recv;
-          else
+
+          /* the body of message */
+          res = recv (HANDLE2SOCKET (fd), fdpass_msg, sizeof (fdpass_msg), 0);
+          if (res < 0)
             {
               gpg_err_set_errno (EIO);
               return -1;
             }
-        }
 
-    again:
-      ec = 0;
-      res = recv (HANDLE2SOCKET (fd), buffer, size, 0);
-      if (res == -1)
-        ec = WSAGetLastError ();
-      if (ec == WSAEWOULDBLOCK && tries--)
+          res = process_fdpass_msg (fdpass_msg, res, &fd_recv);
+          if (res < 0)
+            {
+              gpg_err_set_errno (EIO);
+              return -1;
+            }
+
+          ctx->uds.pendingfds[ctx->uds.pendingfdscount++] = (assuan_fd_t)fd_recv;
+          goto try_again;
+        }
+      else
         {
-          /* EAGAIN: Use select to wait for resources and try again.
-             We do this 3 times and then give up.  The higher level
-             layer then needs to take care of EAGAIN.  No need to
-             specify a timeout - the socket is not expected to be in
-             blocking mode.  */
-          FD_ZERO (&fds);
-          FD_SET (HANDLE2SOCKET (fd), &fds);
-          select (0, &fds, NULL, NULL, NULL);
-          goto again;
+        again:
+          ec = 0;
+          res = recv (HANDLE2SOCKET (fd), buffer, size, 0);
+          if (res == -1)
+            ec = WSAGetLastError ();
+          if (ec == WSAEWOULDBLOCK && tries--)
+            {
+              /* EAGAIN: Use select to wait for resources and try again.
+                 We do this 3 times and then give up.  The higher level
+                 layer then needs to take care of EAGAIN.  No need to
+                 specify a timeout - the socket is not expected to be in
+                 blocking mode.  */
+              FD_ZERO (&fds);
+              FD_SET (HANDLE2SOCKET (fd), &fds);
+              select (0, &fds, NULL, NULL, NULL);
+              goto again;
+            }
         }
     }
   else
