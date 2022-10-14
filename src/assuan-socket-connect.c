@@ -136,8 +136,6 @@ _assuan_connect_finalize (assuan_context_t ctx, assuan_fd_t fd,
         const char *line = ctx->inbound.line + off;
         int pid = ASSUAN_INVALID_PID;
 
-        fprintf (stderr, "%s\n", line);
-
         /* Parse the message: OK ..., process %i */
         line = strchr (line, ',');
         if (line)
@@ -147,10 +145,7 @@ _assuan_connect_finalize (assuan_context_t ctx, assuan_fd_t fd,
               {
                 line = strchr (line + 1, ' ');
                 if (line)
-                  {
-                    pid = atoi (line + 1);
-                    fprintf (stderr, "PID=%d (%s)\n", pid, line+1);
-                  }
+                  pid = atoi (line + 1);
               }
           }
         if (pid != ASSUAN_INVALID_PID)
