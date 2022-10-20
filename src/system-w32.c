@@ -249,6 +249,7 @@ w32_fdpass_send (assuan_context_t ctx, assuan_fd_t fd)
   if (err)
     return err;
 
+#if 0
   res = snprintf (fdpass_msg, sizeof (fdpass_msg), FDPASS_FORMAT, file_handle);
   if (res < 0)
     {
@@ -261,6 +262,17 @@ w32_fdpass_send (assuan_context_t ctx, assuan_fd_t fd)
   res = send (HANDLE2SOCKET (ctx->outbound.fd), "!", 1, MSG_OOB);
   res = send (HANDLE2SOCKET (ctx->outbound.fd), fdpass_msg, msglen, 0);
   return 0;
+#else
+  res = snprintf (fdpass_msg, sizeof (fdpass_msg), "SENDFD %p", file_handle);
+  if (res < 0)
+    {
+      CloseHandle (file_handle);
+      return gpg_error (GPG_ERR_ASS_PARAMETER);/*FIXME: error*/
+    }
+
+  err = assuan_transact (ctx, fdpass_msg, NULL, NULL, NULL, NULL, NULL, NULL);
+  return err;
+#endif
 }
 
 static int

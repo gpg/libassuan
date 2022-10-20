@@ -27,6 +27,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#if HAVE_W32_SYSTEM || HAVE_W64_SYSTEM
+#include <fcntl.h>
+#endif
 
 #include "assuan-defs.h"
 #include "debug.h"
@@ -356,6 +359,44 @@ std_handler_output (assuan_context_t ctx, char *line)
 }
 
 
+#if HAVE_W32_SYSTEM || HAVE_W64_SYSTEM
+static const char w32_help_sendfd[] =
+  "SENDFD <N>\n"
+  "\n"
+  "Used by a client to pass a file HANDLE to the server.\n"
+  "The server opens <N> as a local file HANDLE.";
+static gpg_error_t
+w32_handler_sendfd (assuan_context_t ctx, char *line)
+{
+  gpg_error_t err = 0;
+  char *endp;
+  intptr_t file_handle;
+  int fd;
+
+#if HAVE_W64_SYSTEM
+  file_handle = strtoull (line, &endp, 16);
+#elif HAVE_W32_SYSTEM
+  file_handle = strtoul (line, &endp, 16);
+#endif
+
+  if (*endp)
+    {
+      err = set_error (ctx, GPG_ERR_ASS_SYNTAX, "hex number required");
+      return PROCESS_DONE (ctx, err);
+    }
+
+  fd = _open_osfhandle ((intptr_t)file_handle, _O_RDWR);
+  if (fd < 0)
+    {
+      CloseHandle ((HANDLE)file_handle);
+      err = GPG_ERR_ASSUAN;
+    }
+
+  ctx->uds.pendingfds[ctx->uds.pendingfdscount++] = (assuan_fd_t)fd;
+  return PROCESS_DONE (ctx, err);
+}
+#endif
+
 /* This is a table with the standard commands and handler for them.
    The table is used to initialize a new context and associate strings
    with default handlers */
@@ -376,6 +417,9 @@ static struct {
 
   { "INPUT",  std_handler_input, std_help_input, 0 },
   { "OUTPUT", std_handler_output, std_help_output, 0 },
+#if HAVE_W32_SYSTEM
+  { "SENDFD",  w32_handler_sendfd, w32_help_sendfd, 1 },
+#endif
   { } };
 
 
