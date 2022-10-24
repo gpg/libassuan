@@ -365,7 +365,7 @@ read_port_and_nonce (const char *fname, unsigned short *port, char *nonce,
        *
        *   "!<socket >%u %c %08x-%08x-%08x-%08x\x00"
        *
-       * %d for port number, %c for kind of socket (s for STREAM), and
+       * %u for port number, %c for kind of socket (s for STREAM), and
        * we have 16-byte random bytes for nonce.  We only support
        * stream mode.
        */
