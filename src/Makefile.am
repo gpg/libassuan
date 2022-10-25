@@ -48,7 +48,7 @@ CLEANFILES = mkheader assuan.h
 BUILT_SOURCES = assuan.h
 
 parts_of_assuan_h = \
-	posix-includes.inc.h   \
+	posix-includes.inc.h   w32-includes.inc.h \
 	posix-types.inc.h      w32-types.inc.h \
 	posix-fd-t.inc.h       w32-fd-t.inc.h \
 	posix-sock-nonce.inc.h w32-sock-nonce.inc.h
