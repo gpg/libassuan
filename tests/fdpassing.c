@@ -25,10 +25,8 @@
 #include <string.h>
 #include <assert.h>
 #include <sys/stat.h>
-#include <sys/socket.h>
 #include <unistd.h>
 #include <errno.h>
-#include <sys/wait.h>  /* Used by main driver. */
 
 #include "../src/assuan.h"
 #include "common.h"
@@ -292,7 +290,7 @@ main (int argc, char **argv)
       if (err)
 	log_fatal ("assuan_new failed: %s\n", gpg_strerror (err));
 
-      err = assuan_pipe_connect (ctx, with_exec? "./fdpassing":NULL,
+      err = assuan_pipe_connect (ctx, with_exec? "./fdpassing.exe":NULL,
 				 with_exec ? arglist : &loc,
 				 no_close_fds, NULL, NULL, 1);
       if (err)

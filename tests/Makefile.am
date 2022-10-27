@@ -29,7 +29,7 @@ TESTS = version
 
 if HAVE_W32_SYSTEM
 testtools =
-TESTS += fdpassing-socket
+TESTS += fdpassing
 else
 TESTS += pipeconnect
 testtools = socks5
