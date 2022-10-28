@@ -118,7 +118,11 @@ assuan_init_pipe_server (assuan_context_t ctx, assuan_fd_t filedes[2])
   ctx->engine.readfnc = _assuan_simple_read;
   ctx->engine.writefnc = _assuan_simple_write;
   ctx->engine.sendfd = NULL;
+#ifdef HAVE_W32_SYSTEM
+  ctx->engine.receivefd = w32_fdpass_recv;
+#else
   ctx->engine.receivefd = NULL;
+#endif
   ctx->max_accepts = 1;
 
   s = getenv ("_assuan_pipe_connect_pid");

@@ -104,7 +104,31 @@ initial_handshake (assuan_context_t ctx)
   if (err)
     TRACE1 (ctx, ASSUAN_LOG_SYSIO, "initial_handshake", ctx,
 	    "can't connect server: %s", gpg_strerror (err));
-  else if (response != ASSUAN_RESPONSE_OK)
+  else if (response == ASSUAN_RESPONSE_OK)
+    {
+#ifdef HAVE_W32_SYSTEM
+      const char *line = ctx->inbound.line + off;
+      int pid = ASSUAN_INVALID_PID;
+
+      /* Parse the message: OK ..., process %i */
+      line = strchr (line, ',');
+      if (line)
+        {
+          line = strchr (line + 1, ' ');
+          if (line)
+            {
+              line = strchr (line + 1, ' ');
+              if (line)
+                pid = atoi (line + 1);
+            }
+        }
+      if (pid != ASSUAN_INVALID_PID)
+        ctx->pid = pid;
+#else
+        ;
+#endif
+    }
+  else
     {
       TRACE1 (ctx, ASSUAN_LOG_SYSIO, "initial_handshake", ctx,
 	      "can't connect server: `%s'", ctx->inbound.line);
@@ -209,7 +233,11 @@ pipe_connect (assuan_context_t ctx,
   ctx->engine.release = _assuan_client_release;
   ctx->engine.readfnc = _assuan_simple_read;
   ctx->engine.writefnc = _assuan_simple_write;
+#ifdef HAVE_W32_SYSTEM
+  ctx->engine.sendfd = w32_fdpass_send;
+#else
   ctx->engine.sendfd = NULL;
+#endif
   ctx->engine.receivefd = NULL;
   ctx->finish_handler = _assuan_client_finish;
   ctx->max_accepts = 1;

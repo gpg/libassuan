@@ -60,11 +60,11 @@ cmd_echo (assuan_context_t ctx, char *line)
   nbytes = 0;
   while ( (c=getc (fp)) != -1)
     {
-      putc (c, stdout);
+      putc (c, stderr);
       nbytes++;
     }
-  fflush (stdout);
-  log_info ("done printing %d bytes to stdout\n", nbytes);
+  fflush (stderr);
+  log_info ("done printing %d bytes to stderr\n", nbytes);
 
   fclose (fp);
   return 0;
@@ -102,14 +102,18 @@ server (void)
 {
   int rc;
   assuan_context_t ctx;
+  assuan_fd_t filedes[2];
 
   log_info ("server started\n");
+
+  filedes[0] = _get_osfhandle (0);
+  filedes[1] = _get_osfhandle (1);
 
   rc = assuan_new (&ctx);
   if (rc)
     log_fatal ("assuan_new failed: %s\n", gpg_strerror (rc));
 
-  rc = assuan_init_pipe_server (ctx, NULL);
+  rc = assuan_init_pipe_server (ctx, filedes);
   if (rc)
     log_fatal ("assuan_init_pipe_server failed: %s\n", gpg_strerror (rc));
 
@@ -117,7 +121,7 @@ server (void)
   if (rc)
     log_fatal ("register_commands failed: %s\n", gpg_strerror(rc));
 
-  assuan_set_log_stream (ctx, stderr);
+  // assuan_set_log_stream (ctx, stderr);
 
   for (;;)
     {
@@ -276,11 +280,11 @@ main (int argc, char **argv)
     {
       const char *loc;
 
-      no_close_fds[0] = 2;
+      no_close_fds[0] = _get_osfhandle (fileno (stderr));
       no_close_fds[1] = -1;
       if (with_exec)
         {
-          arglist[0] = "fdpassing";
+          arglist[0] = "fdpassing.exe";
           arglist[1] = "--server";
           arglist[2] = verbose? "--verbose":NULL;
           arglist[3] = NULL;
@@ -289,6 +293,8 @@ main (int argc, char **argv)
       err = assuan_new (&ctx);
       if (err)
 	log_fatal ("assuan_new failed: %s\n", gpg_strerror (err));
+
+      assuan_set_log_stream (ctx, stderr);
 
       err = assuan_pipe_connect (ctx, with_exec? "./fdpassing.exe":NULL,
 				 with_exec ? arglist : &loc,
