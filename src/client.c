@@ -50,7 +50,8 @@ _assuan_client_finish (assuan_context_t ctx)
     }
   if (ctx->pid != ASSUAN_INVALID_PID && ctx->pid)
     {
-      _assuan_waitpid (ctx, ctx->pid, ctx->flags.no_waitpid, NULL, 0);
+      if (!ctx->flags.is_socket)
+	_assuan_waitpid (ctx, ctx->pid, ctx->flags.no_waitpid, NULL, 0);
       ctx->pid = ASSUAN_INVALID_PID;
     }
 
