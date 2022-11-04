@@ -209,7 +209,11 @@ pipe_connect (assuan_context_t ctx,
   ctx->engine.release = _assuan_client_release;
   ctx->engine.readfnc = _assuan_simple_read;
   ctx->engine.writefnc = _assuan_simple_write;
+#ifdef HAVE_W32_SYSTEM
+  ctx->engine.sendfd = w32_fdpass_send;
+#else
   ctx->engine.sendfd = NULL;
+#endif
   ctx->engine.receivefd = NULL;
   ctx->finish_handler = _assuan_client_finish;
   ctx->max_accepts = 1;
@@ -413,16 +417,12 @@ assuan_pipe_connect (assuan_context_t ctx,
   TRACE2 (ctx, ASSUAN_LOG_CTX, "assuan_pipe_connect", ctx,
 	  "name=%s, flags=0x%x", name ? name : "(null)", flags);
 
+#ifndef HAVE_W32_SYSTEM
   if (flags & ASSUAN_PIPE_CONNECT_FDPASSING)
-    {
-#ifdef HAVE_W32_SYSTEM
-      return _assuan_error (ctx, GPG_ERR_NOT_IMPLEMENTED);
-#else
-      return socketpair_connect (ctx, name, argv, fd_child_list,
-                                 atfork, atforkvalue);
-#endif
-    }
+    return socketpair_connect (ctx, name, argv, fd_child_list,
+			       atfork, atforkvalue);
   else
+#endif
     return pipe_connect (ctx, name, argv, fd_child_list, atfork, atforkvalue,
                          flags);
 }

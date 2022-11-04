@@ -167,6 +167,83 @@ __assuan_close (assuan_context_t ctx, assuan_fd_t fd)
 
 
 
+/* Get a file HANDLE to send, from POSIX fd.  */
+static gpg_error_t
+get_file_handle (int fd, int server_pid, HANDLE *r_handle)
+{
+  HANDLE prochandle, handle, newhandle;
+
+  handle = (void *)_get_osfhandle (fd);
+
+  prochandle = OpenProcess (PROCESS_DUP_HANDLE, FALSE, server_pid);
+  if (!prochandle)
+    return gpg_error (GPG_ERR_ASS_PARAMETER);/*FIXME: error*/
+
+  if (!DuplicateHandle (GetCurrentProcess (), handle, prochandle, &newhandle,
+                        0, TRUE, DUPLICATE_SAME_ACCESS))
+    {
+      CloseHandle (prochandle);
+      return gpg_error (GPG_ERR_ASS_PARAMETER);/*FIXME: error*/
+    }
+  CloseHandle (prochandle);
+  *r_handle = newhandle;
+  return 0;
+}
+
+
+/* Send a FD (which means POSIX fd) to the peer.  */
+gpg_error_t
+w32_fdpass_send (assuan_context_t ctx, assuan_fd_t fd)
+{
+  char fdpass_msg[256];
+  int res;
+  int fd0;                      /* POSIX fd */
+  intptr_t fd_converted_to_integer;
+  HANDLE file_handle;
+  gpg_error_t err;
+
+  fd_converted_to_integer = (intptr_t)fd;
+  fd0 = (int)fd_converted_to_integer; /* Bit pattern is possibly truncated.  */
+
+  err = get_file_handle (fd0, ctx->pid, &file_handle);
+  if (err)
+    return err;
+
+  res = snprintf (fdpass_msg, sizeof (fdpass_msg), "SENDFD %p", file_handle);
+  if (res < 0)
+    {
+      CloseHandle (file_handle);
+      return gpg_error (GPG_ERR_ASS_PARAMETER);/*FIXME: error*/
+    }
+
+  err = assuan_transact (ctx, fdpass_msg, NULL, NULL, NULL, NULL, NULL, NULL);
+  return err;
+}
+
+
+/* Receive a HANDLE from the peer and turn it into a FD (POSIX fd).  */
+gpg_error_t
+w32_fdpass_recv (assuan_context_t ctx, assuan_fd_t *fd)
+{
+  int i;
+
+  if (!ctx->uds.pendingfdscount)
+    {
+      TRACE0 (ctx, ASSUAN_LOG_SYSIO, "w32_receivefd", ctx,
+	      "no pending file descriptors");
+      return _assuan_error (ctx, GPG_ERR_ASS_GENERAL);
+    }
+
+  *fd = ctx->uds.pendingfds[0];
+  for (i=1; i < ctx->uds.pendingfdscount; i++)
+    ctx->uds.pendingfds[i-1] = ctx->uds.pendingfds[i];
+  ctx->uds.pendingfdscount--;
+
+  TRACE1 (ctx, ASSUAN_LOG_SYSIO, "w32_fdpass_recv", ctx,
+          "received fd: %p", ctx->uds.pendingfds[0]);
+  return 0;
+}
+
 ssize_t
 __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
 {
