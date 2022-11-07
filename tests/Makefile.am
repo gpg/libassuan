@@ -28,8 +28,8 @@ CLEANFILES =
 TESTS = version
 
 if HAVE_W32_SYSTEM
-testtools =
 TESTS += fdpassing
+testtools =
 else
 TESTS += pipeconnect
 testtools = socks5
