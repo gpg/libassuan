@@ -171,6 +171,7 @@ __assuan_close (assuan_context_t ctx, assuan_fd_t fd)
 #define FDPASS_FORMAT "%p"
 #define FDPASS_MSG_SIZE (sizeof (uintptr_t)*2 + 1)
 
+/* Get a file HANDLE to send, from POSIX fd.  */
 static gpg_error_t
 get_file_handle (int fd, int server_pid, HANDLE *r_handle)
 {
@@ -194,43 +195,7 @@ get_file_handle (int fd, int server_pid, HANDLE *r_handle)
 }
 
 
-/*
- * On Windows, we can consider two different ways about what FD means:
- *
- * (1) POSIX fd
- * (2) Windows file HANDLE
- *
- * In assuan, we use assuan_fd_t for socket/pipe.
- *
- * Here, it refers file object.
- *
- * If we started the design and implementation now, it would be more
- * natural (easy to understand, no confusion) to use the "int" type
- * and POSIX fd here.  Considering the purpose of sending fd (the file
- * object to share), it is better portability-wise, even though use of
- * POSIX fd on Windows requires emulation layer.  (These days, in
- * GnuPG, we use gpgrt's estream for file assces and gpgrt_fileno for
- * POSIX fd.)
- *
- * That is:
- *
- * - assuan_sendfd/assuan_recvfd sends/receives POSIX fd
- * - assuan_get_input_fd/assuan_get_output_fd returns POSIX fd
- *
- * However, those APIs now uses assuan_fd_t.  That's troublesome or it
- * allows confusion about the semantics of the APIs.
- *
- * Perhaps, avoiding API/ABI breaks, we would need introducing new APIs:
- *
- * - assuan_sendFD/assuan_recvFD sends/receives POSIX fd
- * - assuan_get_input_FD/assuan_get_output_FD returns POSIX fd
- *
- * For this experiment, we don't care about API/ABI breaks, for now.
- * And use POSIX fd here.
- *
- * We use sending MSG_OOB, but it only allows a single-byte in TCP.
- * So, it is used to notify other end for fdpassing.
- */
+/* Send a FD (which means POSIX fd) to the peer.  */
 gpg_error_t
 w32_fdpass_send (assuan_context_t ctx, assuan_fd_t fd)
 {
@@ -283,6 +248,8 @@ process_fdpass_msg (const char *fdpass_msg, size_t msglen, int *r_fd)
   return 0;
 }
 
+
+/* Receive a HANDLE from the peer and turn it into a FD (POSIX fd).  */
 gpg_error_t
 w32_fdpass_recv (assuan_context_t ctx, assuan_fd_t *fd)
 {

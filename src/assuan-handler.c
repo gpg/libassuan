@@ -360,6 +360,10 @@ std_handler_output (assuan_context_t ctx, char *line)
 
 
 #if HAVE_W32_SYSTEM || HAVE_W64_SYSTEM
+/*
+ * The command used by a client to send FD.  That is, from the viewpoint
+ * of handling this command, it is to _receive_ a file handle.
+ */
 static const char w32_help_sendfd[] =
   "SENDFD <N>\n"
   "\n"
