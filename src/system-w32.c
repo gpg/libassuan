@@ -167,10 +167,6 @@ __assuan_close (assuan_context_t ctx, assuan_fd_t fd)
 
 
 
-/* To encode/decode file HANDLE, we use FDPASS_FORMAT */
-#define FDPASS_FORMAT "%p"
-#define FDPASS_MSG_SIZE (sizeof (uintptr_t)*2 + 1)
-
 /* Get a file HANDLE to send, from POSIX fd.  */
 static gpg_error_t
 get_file_handle (int fd, int server_pid, HANDLE *r_handle)
@@ -224,30 +220,6 @@ w32_fdpass_send (assuan_context_t ctx, assuan_fd_t fd)
   return err;
 }
 
-static int
-process_fdpass_msg (const char *fdpass_msg, size_t msglen, int *r_fd)
-{
-  void *file_handle;
-  int res;
-  int fd;
-
-  *r_fd = -1;
-
-  res = sscanf (fdpass_msg, FDPASS_FORMAT, &file_handle);
-  if (res != 1)
-    return -1;
-
-  fd = _open_osfhandle ((intptr_t)file_handle, _O_RDWR);
-  if (fd < 0)
-    {
-      CloseHandle (file_handle);
-      return -1;
-    }
-
-  *r_fd = fd;
-  return 0;
-}
-
 
 /* Receive a HANDLE from the peer and turn it into a FD (POSIX fd).  */
 gpg_error_t
@@ -280,53 +252,7 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
 
   if (ctx->flags.is_socket)
     {
-      fd_set fds;
       int tries = 3;
-      fd_set efds;
-
-      FD_ZERO (&fds);
-      FD_SET (HANDLE2SOCKET (fd), &fds);
-      FD_ZERO (&efds);
-      FD_SET (HANDLE2SOCKET (fd), &efds);
-      res = select (0, &fds, NULL, &efds, NULL);
-      if (res < 0)
-        {
-          gpg_err_set_errno (EIO);
-          return -1;
-        }
-      else if (FD_ISSET (HANDLE2SOCKET (fd), &efds))
-        {
-          int fd_recv;
-          char fdpass_msg[FDPASS_MSG_SIZE];
-
-          /* the message of ! */
-          res = recv (HANDLE2SOCKET (fd), fdpass_msg, sizeof (fdpass_msg), MSG_OOB);
-          if (res < 0)
-            {
-              gpg_err_set_errno (EIO);
-              return -1;
-            }
-
-          /* the body of message */
-          res = recv (HANDLE2SOCKET (fd), fdpass_msg, sizeof (fdpass_msg), 0);
-          if (res < 0)
-            {
-              gpg_err_set_errno (EIO);
-              return -1;
-            }
-
-          res = process_fdpass_msg (fdpass_msg, res, &fd_recv);
-          if (res < 0)
-            {
-              gpg_err_set_errno (EIO);
-              return -1;
-            }
-
-          ctx->uds.pendingfds[ctx->uds.pendingfdscount++] = (assuan_fd_t)fd_recv;
-	  TRACE1 (ctx, ASSUAN_LOG_SYSIO, "__assuan_read", ctx,
-		  "received fd: %d", fd_recv);
-          /* Fall through  */
-        }
 
     again:
       ec = 0;
@@ -340,6 +266,8 @@ __assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
              layer then needs to take care of EAGAIN.  No need to
              specify a timeout - the socket is not expected to be in
              blocking mode.  */
+          fd_set fds;
+
           FD_ZERO (&fds);
           FD_SET (HANDLE2SOCKET (fd), &fds);
           select (0, &fds, NULL, NULL, NULL);

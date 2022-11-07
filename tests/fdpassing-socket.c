@@ -30,8 +30,6 @@
 # include <windows.h>
 # include <wincrypt.h>
 # include <io.h>
-#else
-# include <sys/socket.h>
 #endif
 #include <unistd.h>
 #include <errno.h>
@@ -68,11 +66,11 @@ cmd_echo (assuan_context_t ctx, char *line)
   nbytes = 0;
   while ( (c = gpgrt_fgetc (fp)) != -1)
     {
-      putc (c, stdout);
+      putc (c, stderr);
       nbytes++;
     }
-  fflush (stdout);
-  log_info ("done printing %d bytes to stdout\n", nbytes);
+  fflush (stderr);
+  log_info ("done printing %d bytes to stderr\n", nbytes);
 
   gpgrt_fclose (fp);
   return 0;
