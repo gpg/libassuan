@@ -115,8 +115,12 @@ _assuan_connect_finalize (assuan_context_t ctx, assuan_fd_t fd,
   ctx->max_accepts = -1;
   ctx->flags.is_socket = 1;
 
+#ifdef HAVE_W32_SYSTEM
+  ctx->engine.sendfd = w32_fdpass_send;
+#else
   if (flags & ASSUAN_SOCKET_CONNECT_FDPASSING)
     _assuan_init_uds_io (ctx);
+#endif
 
   /* initial handshake */
   {
@@ -127,7 +131,27 @@ _assuan_connect_finalize (assuan_context_t ctx, assuan_fd_t fd,
     if (err)
       TRACE1 (ctx, ASSUAN_LOG_SYSIO, "assuan_socket_connect", ctx,
 	      "can't connect to server: %s\n", gpg_strerror (err));
-    else if (response != ASSUAN_RESPONSE_OK)
+    else if (response == ASSUAN_RESPONSE_OK)
+      {
+        const char *line = ctx->inbound.line + off;
+        int pid = ASSUAN_INVALID_PID;
+
+        /* Parse the message: OK ..., process %i */
+        line = strchr (line, ',');
+        if (line)
+          {
+            line = strchr (line + 1, ' ');
+            if (line)
+              {
+                line = strchr (line + 1, ' ');
+                if (line)
+                  pid = atoi (line + 1);
+              }
+          }
+        if (pid != ASSUAN_INVALID_PID)
+          ctx->pid = pid;
+      }
+    else
       {
 	char *sname = _assuan_encode_c_string (ctx, ctx->inbound.line);
 	if (sname)
