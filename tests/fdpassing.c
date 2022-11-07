@@ -25,10 +25,8 @@
 #include <string.h>
 #include <assert.h>
 #include <sys/stat.h>
-#include <sys/socket.h>
 #include <unistd.h>
 #include <errno.h>
-#include <sys/wait.h>  /* Used by main driver. */
 
 #include "../src/assuan.h"
 #include "common.h"
@@ -50,7 +48,7 @@ cmd_echo (assuan_context_t ctx, char *line)
 
   log_info ("got ECHO command (%s)\n", line);
 
-  fd = assuan_get_input_fd (ctx);
+  fd = (int)assuan_get_input_fd (ctx);
   if (fd == -1)
     return gpg_error (GPG_ERR_ASS_NO_INPUT);
   fp = fdopen (fd, "r");
@@ -62,11 +60,11 @@ cmd_echo (assuan_context_t ctx, char *line)
   nbytes = 0;
   while ( (c=getc (fp)) != -1)
     {
-      putc (c, stdout);
+      putc (c, stderr);
       nbytes++;
     }
-  fflush (stdout);
-  log_info ("done printing %d bytes to stdout\n", nbytes);
+  fflush (stderr);
+  log_info ("done printing %d bytes to stderr\n", nbytes);
 
   fclose (fp);
   return 0;
@@ -173,7 +171,7 @@ client (assuan_context_t ctx, const char *fname)
           return -1;
         }
 
-      rc = assuan_sendfd (ctx, fileno (fp));
+      rc = assuan_sendfd (ctx, (assuan_fd_t)fileno (fp));
       if (rc)
         {
           fclose (fp);
@@ -219,7 +217,7 @@ main (int argc, char **argv)
   int last_argc = -1;
   assuan_context_t ctx;
   gpg_error_t err;
-  int no_close_fds[2];
+  assuan_fd_t no_close_fds[2];
   const char *arglist[10];
   int is_server = 0;
   int with_exec = 0;
@@ -240,7 +238,7 @@ main (int argc, char **argv)
 "\n"
 "Options:\n"
 "  --verbose      Show what is going on\n"
-"  --with-exec    Exec the child.  Default is just a fork\n"
+"  --with-exec    Exec the child.  Default is just a fork on POSIX machine\n"
 );
           exit (0);
         }
@@ -266,6 +264,9 @@ main (int argc, char **argv)
         }
     }
 
+#ifdef HAVE_W32_SYSTEM
+  with_exec = 1;
+#endif
 
   assuan_set_assuan_log_prefix (log_prefix);
 
@@ -277,12 +278,19 @@ main (int argc, char **argv)
   else
     {
       const char *loc;
+      const char *program_name;
 
-      no_close_fds[0] = 2;
-      no_close_fds[1] = -1;
+#ifdef HAVE_W32_SYSTEM
+      program_name = "fdpassing.exe";
+#else
+      program_name = "fdpassing";
+#endif
+
+      no_close_fds[0] = verbose? assuan_fd_from_posix_fd (2): (assuan_fd_t)-1;
+      no_close_fds[1] = (assuan_fd_t)-1;
       if (with_exec)
         {
-          arglist[0] = "fdpassing";
+          arglist[0] = program_name;
           arglist[1] = "--server";
           arglist[2] = verbose? "--verbose":NULL;
           arglist[3] = NULL;
@@ -292,7 +300,7 @@ main (int argc, char **argv)
       if (err)
 	log_fatal ("assuan_new failed: %s\n", gpg_strerror (err));
 
-      err = assuan_pipe_connect (ctx, with_exec? "./fdpassing":NULL,
+      err = assuan_pipe_connect (ctx, with_exec? program_name : NULL,
 				 with_exec ? arglist : &loc,
 				 no_close_fds, NULL, NULL, 1);
       if (err)

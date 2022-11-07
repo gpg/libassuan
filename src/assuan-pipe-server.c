@@ -82,8 +82,16 @@ assuan_init_pipe_server (assuan_context_t ctx, assuan_fd_t filedes[2])
     return TRACE_ERR (rc);
 
 #ifdef HAVE_W32_SYSTEM
-  infd  = filedes[0];
-  outfd = filedes[1];
+  if (filedes)
+    {
+      infd  = filedes[0];
+      outfd = filedes[1];
+    }
+  else
+    {
+      infd = assuan_fd_from_posix_fd (0);
+      outfd = assuan_fd_from_posix_fd (1);
+    }
 #else
   s = getenv ("_assuan_connection_fd");
   if (s && *s && is_valid_socket (s))
