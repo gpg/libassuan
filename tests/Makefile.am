@@ -18,30 +18,34 @@
 
 ## Process this file with automake to produce Makefile.in
 
-TESTS_ENVIRONMENT =
+TESTS_ENVIRONMENT = EXEEXT=$(EXEEXT); export EXEEXT;
 
 EXTRA_DIST = motd
 
 BUILT_SOURCES =
 CLEANFILES =
 
-TESTS = version
+test_programs = version
+test_programs += pipeconnect
 
 if HAVE_W32_SYSTEM
-TESTS += fdpassing
+test_programs += fdpassing
+check_SCRIPTS = fdpassing-socket.sh
 testtools =
 else
-TESTS += pipeconnect
 testtools = socks5
 endif
 
 if USE_DESCRIPTOR_PASSING
-TESTS += fdpassing
+test_programs += fdpassing
+check_SCRIPTS = fdpassing-socket.sh
 endif
+
+TESTS = $(test_programs) $(check_SCRIPTS)
 
 AM_CFLAGS = $(GPG_ERROR_CFLAGS)
 AM_LDFLAGS = -no-install
 
 noinst_HEADERS = common.h
-noinst_PROGRAMS = $(TESTS) $(w32cetools) $(testtools)
+noinst_PROGRAMS = $(test_programs) $(w32cetools) $(testtools)
 LDADD = ../src/libassuan.la $(GPG_ERROR_LIBS) @LDADD_FOR_TESTS_KLUDGE@

@@ -68,14 +68,14 @@ cmd_cat (assuan_context_t ctx, char *line)
   fdout = assuan_get_output_fd (ctx);
   if (fdout == ASSUAN_INVALID_FD)
     return gpg_error (GPG_ERR_ASS_NO_OUTPUT);
-  fp = fdopen (fd, "r");
+  fp = fdopen ((int)fd, "r");
   if (!fp)
     {
       log_error ("fdopen failed on input fd: %s\n", strerror (errno));
       return gpg_error (GPG_ERR_ASS_GENERAL);
     }
 
-  fpout = fdopen (fdout, "w");
+  fpout = fdopen ((int)fdout, "w");
   if (!fpout)
     {
       log_error ("fdopen failed on output fd: %s\n", strerror (errno));
@@ -198,7 +198,7 @@ run_client (const char *servername)
   assuan_fd_t no_close_fds[2];
   const char *arglist[5];
 
-  no_close_fds[0] = fileno (stderr);
+  no_close_fds[0] = assuan_fd_from_posix_fd (fileno (stderr));
   no_close_fds[1] = ASSUAN_INVALID_FD;
 
   arglist[0] = servername;
@@ -249,9 +249,9 @@ parse_std_file_handles (int *argcp, char ***argvp)
 {
   (void)argcp;
   (void)argvp;
-  my_stdin = 0;
-  my_stdout = 1;
-  my_stderr = 2;
+  my_stdin = assuan_fd_from_posix_fd (0);
+  my_stdout = assuan_fd_from_posix_fd (1);
+  my_stderr = assuan_fd_from_posix_fd (2);
 }
 
 

@@ -25,6 +25,15 @@
 #include <string.h>
 #include <assert.h>
 #include <sys/stat.h>
+#if HAVE_W32_SYSTEM
+# define WIN32_LEAN_AND_MEAN
+# include <windows.h>
+# include <wincrypt.h>
+# include <io.h>
+#else
+# include <sys/socket.h>
+# include <sys/un.h>
+#endif
 #include <unistd.h>
 #include <errno.h>
 
@@ -98,20 +107,9 @@ register_commands (assuan_context_t ctx)
 
 
 static void
-server (void)
+server_common (assuan_context_t ctx)
 {
   int rc;
-  assuan_context_t ctx;
-
-  log_info ("server started\n");
-
-  rc = assuan_new (&ctx);
-  if (rc)
-    log_fatal ("assuan_new failed: %s\n", gpg_strerror (rc));
-
-  rc = assuan_init_pipe_server (ctx, NULL);
-  if (rc)
-    log_fatal ("assuan_init_pipe_server failed: %s\n", gpg_strerror (rc));
 
   rc = register_commands (ctx);
   if (rc)
@@ -140,8 +138,87 @@ server (void)
   assuan_release (ctx);
 }
 
+static void
+server_pipe (void)
+{
+  int rc;
+  assuan_context_t ctx;
 
+  log_info ("server started\n");
 
+  rc = assuan_new (&ctx);
+  if (rc)
+    log_fatal ("assuan_new failed: %s\n", gpg_strerror (rc));
+
+  rc = assuan_init_pipe_server (ctx, NULL);
+  if (rc)
+    log_fatal ("assuan_init_pipe_server failed: %s\n", gpg_strerror (rc));
+
+  server_common (ctx);
+}
+
+static assuan_sock_nonce_t socket_nonce;
+
+static void
+server_socket (const char *socketname)
+{
+  int rc;
+  assuan_context_t ctx;
+  assuan_fd_t fd;
+  struct sockaddr_un unaddr_struct;
+  struct sockaddr *addr;
+  socklen_t len;
+
+  log_info ("server on socket started\n");
+
+  fd = assuan_sock_new (AF_UNIX, SOCK_STREAM, 0);
+  if (fd == ASSUAN_INVALID_FD)
+    log_fatal ("assuan_sock_new failed\n");
+
+  addr = (struct sockaddr *)&unaddr_struct;
+  rc = assuan_sock_set_sockaddr_un (socketname, addr, NULL);
+  if (rc)
+    {
+      assuan_sock_close (fd);
+      log_fatal ("assuan_sock_set_sockaddr_un failed: %s\n", gpg_strerror (rc));
+    }
+
+  len = offsetof (struct sockaddr_un, sun_path)
+    + strlen (unaddr_struct.sun_path);
+  rc = assuan_sock_bind (fd, addr, len);
+  if (rc)
+    {
+      assuan_sock_close (fd);
+      log_fatal ("assuan_sock_bind failed: %s\n", gpg_strerror (rc));
+    }
+
+  rc = assuan_sock_get_nonce (addr, len, &socket_nonce);
+  if (rc)
+    {
+      assuan_sock_close (fd);
+      log_fatal ("assuan_sock_get_nonce failed: %s\n", gpg_strerror (rc));
+    }
+
+  rc = listen (HANDLE2SOCKET (fd), 5);
+  if (rc < 0)
+    {
+      assuan_sock_close (fd);
+      log_fatal ("listen failed: %s\n",
+		 gpg_strerror (gpg_error_from_syserror ()));
+    }
+
+  rc = assuan_new (&ctx);
+  if (rc)
+    log_fatal ("assuan_new failed: %s\n", gpg_strerror (rc));
+
+  rc = assuan_init_socket_server (ctx, fd, ASSUAN_SOCKET_SERVER_FDPASSING);
+  if (rc)
+    log_fatal ("assuan_init_socket_server failed: %s\n", gpg_strerror (rc));
+
+  assuan_set_sock_nonce (ctx, &socket_nonce);
+
+  server_common (ctx);
+}
 
 /*
 
@@ -217,11 +294,9 @@ main (int argc, char **argv)
   int last_argc = -1;
   assuan_context_t ctx;
   gpg_error_t err;
-  assuan_fd_t no_close_fds[2];
-  const char *arglist[10];
   int is_server = 0;
   int with_exec = 0;
-  char *fname = prepend_srcdir ("motd");
+  const char *socketname = NULL;
 
   if (argc)
     {
@@ -239,6 +314,7 @@ main (int argc, char **argv)
 "Options:\n"
 "  --verbose      Show what is going on\n"
 "  --with-exec    Exec the child.  Default is just a fork on POSIX machine\n"
+"  --socketname   Specify the socket path\n"
 );
           exit (0);
         }
@@ -262,71 +338,113 @@ main (int argc, char **argv)
           with_exec = 1;
           argc--; argv++;
         }
+      else if (!strcmp (*argv, "--socketname"))
+        {
+          argc--; argv++;
+	  if (argc)
+	    {
+	      socketname = *argv++;
+	      argc--;
+	    }
+        }
     }
 
+  if (socketname)
+    assuan_sock_init ();
+  else
+    {
 #ifdef HAVE_W32_SYSTEM
-  with_exec = 1;
+      with_exec = 1;
+#else
+      ;
 #endif
+    }
 
   assuan_set_assuan_log_prefix (log_prefix);
 
   if (is_server)
     {
-      server ();
+      if (socketname)
+        server_socket (socketname);
+      else
+        server_pipe ();
       log_info ("server finished\n");
     }
   else
     {
-      const char *loc;
-      const char *program_name;
-
-#ifdef HAVE_W32_SYSTEM
-      program_name = "fdpassing.exe";
-#else
-      program_name = "fdpassing";
-#endif
-
-      no_close_fds[0] = verbose? assuan_fd_from_posix_fd (2): (assuan_fd_t)-1;
-      no_close_fds[1] = (assuan_fd_t)-1;
-      if (with_exec)
-        {
-          arglist[0] = program_name;
-          arglist[1] = "--server";
-          arglist[2] = verbose? "--verbose":NULL;
-          arglist[3] = NULL;
-        }
+      char *fname;
 
       err = assuan_new (&ctx);
       if (err)
 	log_fatal ("assuan_new failed: %s\n", gpg_strerror (err));
 
-      err = assuan_pipe_connect (ctx, with_exec? program_name : NULL,
-				 with_exec ? arglist : &loc,
-				 no_close_fds, NULL, NULL, 1);
-      if (err)
+      if (socketname)
         {
-          log_error ("assuan_pipe_connect failed: %s\n", gpg_strerror (err));
-          assuan_release (ctx);
-          errorcount++;
-        }
-      else if (!with_exec && loc[0] == 's')
-        {
-          server ();
-          assuan_release (ctx);
-          log_info ("server finished\n");
+          err = assuan_socket_connect (ctx, socketname, 0,
+                                       ASSUAN_SOCKET_CONNECT_FDPASSING);
+          if (err)
+            {
+              log_error ("assuan_socket_connect failed: %s\n",
+                         gpg_strerror (err));
+              assuan_release (ctx);
+              errorcount++;
+              goto done;
+            }
         }
       else
         {
-          if (client (ctx, fname))
+          assuan_fd_t no_close_fds[2];
+          const char *arglist[10];
+          const char *loc;
+          const char *program_name;
+
+#ifdef HAVE_W32_SYSTEM
+          program_name = "fdpassing.exe";
+#else
+          program_name = "fdpassing";
+#endif
+
+          no_close_fds[0] = verbose?
+            assuan_fd_from_posix_fd (2): (assuan_fd_t)-1;
+          no_close_fds[1] = (assuan_fd_t)-1;
+          if (with_exec)
             {
-              log_info ("waiting for server to terminate...\n");
-              assuan_release (ctx);
+              arglist[0] = program_name;
+              arglist[1] = "--server";
+              arglist[2] = verbose? "--verbose":NULL;
+              arglist[3] = NULL;
             }
-          log_info ("client finished\n");
+
+          err = assuan_pipe_connect (ctx, with_exec? program_name : NULL,
+                                     with_exec ? arglist : &loc,
+                                     no_close_fds, NULL, NULL, 1);
+          if (err)
+            {
+              log_error ("assuan_pipe_connect failed: %s\n",
+                         gpg_strerror (err));
+              assuan_release (ctx);
+              errorcount++;
+            }
+          else if (!with_exec && loc[0] == 's')
+            {
+              server_pipe ();
+              assuan_release (ctx);
+              log_info ("server finished\n");
+              goto done;
+            }
         }
+
+      fname = prepend_srcdir ("motd");
+      if (client (ctx, fname))
+        {
+          log_info ("waiting for server to terminate...\n");
+          assuan_release (ctx);
+        }
+      log_info ("client finished\n");
+      xfree (fname);
     }
 
-  xfree (fname);
+ done:
   return errorcount ? 1 : 0;
 }
 
