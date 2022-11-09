@@ -106,9 +106,9 @@ initial_handshake (assuan_context_t ctx)
 	    "can't connect server: %s", gpg_strerror (err));
   else if (response == ASSUAN_RESPONSE_OK)
     {
-#ifdef HAVE_W32_SYSTEM
+#if defined(HAVE_W64_SYSTEM) || defined(HAVE_W32_SYSTEM)
       const char *line = ctx->inbound.line + off;
-      int pid = ASSUAN_INVALID_PID;
+      int process_handle = ASSUAN_INVALID_PID;
 
       /* Parse the message: OK ..., process %i */
       line = strchr (line, ',');
@@ -119,11 +119,11 @@ initial_handshake (assuan_context_t ctx)
             {
               line = strchr (line + 1, ' ');
               if (line)
-                pid = atoi (line + 1);
+                process_handle = atoi (line + 1);
             }
         }
-      if (pid != ASSUAN_INVALID_PID)
-        ctx->pid = pid;
+      if (process_handle != ASSUAN_INVALID_PID)
+        ctx->process_handle = process_handle;
 #else
         ;
 #endif

@@ -133,8 +133,9 @@ _assuan_connect_finalize (assuan_context_t ctx, assuan_fd_t fd,
 	      "can't connect to server: %s\n", gpg_strerror (err));
     else if (response == ASSUAN_RESPONSE_OK)
       {
+#if defined(HAVE_W64_SYSTEM) || defined(HAVE_W32_SYSTEM)
         const char *line = ctx->inbound.line + off;
-        int pid = ASSUAN_INVALID_PID;
+        int process_handle = ASSUAN_INVALID_PID;
 
         /* Parse the message: OK ..., process %i */
         line = strchr (line, ',');
@@ -145,11 +146,14 @@ _assuan_connect_finalize (assuan_context_t ctx, assuan_fd_t fd,
               {
                 line = strchr (line + 1, ' ');
                 if (line)
-                  pid = atoi (line + 1);
+                  process_handle = atoi (line + 1);
               }
           }
-        if (pid != ASSUAN_INVALID_PID)
-          ctx->pid = pid;
+        if (process_handle != ASSUAN_INVALID_PID)
+          ctx->process_handle = process_handle;
+#else
+        ;
+#endif
       }
     else
       {

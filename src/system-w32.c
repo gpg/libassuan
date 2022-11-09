@@ -205,7 +205,7 @@ w32_fdpass_send (assuan_context_t ctx, assuan_fd_t fd)
   fd_converted_to_integer = (intptr_t)fd;
   fd0 = (int)fd_converted_to_integer; /* Bit pattern is possibly truncated.  */
 
-  err = get_file_handle (fd0, ctx->pid, &file_handle);
+  err = get_file_handle (fd0, ctx->process_handle, &file_handle);
   if (err)
     return err;
 
