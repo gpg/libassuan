@@ -291,6 +291,7 @@ client (assuan_context_t ctx, const char *fname)
 int
 main (int argc, char **argv)
 {
+  const char *program_name = NULL;
   int last_argc = -1;
   assuan_context_t ctx;
   gpg_error_t err;
@@ -300,6 +301,7 @@ main (int argc, char **argv)
 
   if (argc)
     {
+      program_name = *argv;
       log_set_prefix (*argv);
       argc--; argv++;
     }
@@ -396,13 +398,6 @@ main (int argc, char **argv)
           assuan_fd_t no_close_fds[2];
           const char *arglist[10];
           const char *loc;
-          const char *program_name;
-
-#ifdef HAVE_W32_SYSTEM
-          program_name = "fdpassing.exe";
-#else
-          program_name = "fdpassing";
-#endif
 
           no_close_fds[0] = verbose?
             assuan_fd_from_posix_fd (2): (assuan_fd_t)-1;
@@ -447,4 +442,3 @@ main (int argc, char **argv)
  done:
   return errorcount ? 1 : 0;
 }
-
