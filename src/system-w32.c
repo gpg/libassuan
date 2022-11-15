@@ -169,13 +169,13 @@ __assuan_close (assuan_context_t ctx, assuan_fd_t fd)
 
 /* Get a file HANDLE to send, from POSIX fd.  */
 static gpg_error_t
-get_file_handle (int fd, int server_pid, HANDLE *r_handle)
+get_file_handle (int fd, int process_id, HANDLE *r_handle)
 {
   HANDLE prochandle, handle, newhandle;
 
   handle = (void *)_get_osfhandle (fd);
 
-  prochandle = OpenProcess (PROCESS_DUP_HANDLE, FALSE, server_pid);
+  prochandle = OpenProcess (PROCESS_DUP_HANDLE, FALSE, process_id);
   if (!prochandle)
     return gpg_error (GPG_ERR_ASS_PARAMETER);/*FIXME: error*/
 
@@ -205,7 +205,7 @@ w32_fdpass_send (assuan_context_t ctx, assuan_fd_t fd)
   fd_converted_to_integer = (intptr_t)fd;
   fd0 = (int)fd_converted_to_integer; /* Bit pattern is possibly truncated.  */
 
-  err = get_file_handle (fd0, ctx->process_handle, &file_handle);
+  err = get_file_handle (fd0, ctx->process_id, &file_handle);
   if (err)
     return err;
 

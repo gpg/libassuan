@@ -108,7 +108,7 @@ initial_handshake (assuan_context_t ctx)
     {
 #if defined(HAVE_W64_SYSTEM) || defined(HAVE_W32_SYSTEM)
       const char *line = ctx->inbound.line + off;
-      int process_handle = ASSUAN_INVALID_PID;
+      int process_id = -1;
 
       /* Parse the message: OK ..., process %i */
       line = strchr (line, ',');
@@ -119,11 +119,11 @@ initial_handshake (assuan_context_t ctx)
             {
               line = strchr (line + 1, ' ');
               if (line)
-                process_handle = atoi (line + 1);
+                process_id = atoi (line + 1);
             }
         }
-      if (process_handle != ASSUAN_INVALID_PID)
-        ctx->process_handle = process_handle;
+      if (process_id != -1)
+        ctx->process_id = process_id;
 #else
         ;
 #endif
