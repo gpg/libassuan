@@ -20,7 +20,7 @@
 
 TESTS_ENVIRONMENT = EXEEXT=$(EXEEXT); export EXEEXT;
 
-EXTRA_DIST = motd
+EXTRA_DIST = motd fdpassing-socket.sh
 
 BUILT_SOURCES =
 CLEANFILES =
