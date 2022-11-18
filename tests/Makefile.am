@@ -51,5 +51,5 @@ AM_LDFLAGS = -no-install
 endif
 
 noinst_HEADERS = common.h
-noinst_PROGRAMS = $(test_programs) $(w32cetools) $(testtools)
+noinst_PROGRAMS = $(test_programs) $(testtools)
 LDADD = ../src/libassuan.la $(GPG_ERROR_LIBS) @LDADD_FOR_TESTS_KLUDGE@
