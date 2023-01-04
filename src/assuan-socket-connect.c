@@ -113,7 +113,6 @@ _assuan_connect_finalize (assuan_context_t ctx, assuan_fd_t fd,
   ctx->inbound.fd = fd;
   ctx->outbound.fd = fd;
   ctx->max_accepts = -1;
-  ctx->flags.is_socket = 1;
 
 #ifdef HAVE_W32_SYSTEM
   ctx->engine.sendfd = w32_fdpass_send;
@@ -186,6 +185,7 @@ assuan_socket_connect_fd (assuan_context_t ctx, assuan_fd_t fd,
   if (fd == ASSUAN_INVALID_FD)
     return GPG_ERR_INV_ARG;
 
+  ctx->flags.is_socket = 1;
   err = _assuan_connect_finalize (ctx, fd, flags);
 
   if (err)
@@ -351,6 +351,7 @@ assuan_socket_connect (assuan_context_t ctx, const char *name,
         return err;
     }
 
+  ctx->flags.is_socket = 1;
   fd = _assuan_sock_new (ctx, pf, SOCK_STREAM, 0);
   if (fd == ASSUAN_INVALID_FD)
     {
