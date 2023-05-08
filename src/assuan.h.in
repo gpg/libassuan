@@ -503,7 +503,7 @@ assuan_fd_t assuan_sock_accept (assuan_fd_t sockfd,
 int assuan_sock_connect (assuan_fd_t sockfd,
                          struct sockaddr *addr, int addrlen);
 assuan_fd_t assuan_sock_connect_byname (const char *host, unsigned short port,
-                                        int reserved,
+                                        int timeout,
                                         const char *credentials,
                                         unsigned int flags);
 int assuan_sock_bind (assuan_fd_t sockfd, struct sockaddr *addr, int addrlen);

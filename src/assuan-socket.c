@@ -692,7 +692,8 @@ socks5_connect (assuan_context_t ctx, assuan_fd_t sock,
                 unsigned short socksport,
                 const char *credentials,
                 const char *hostname, unsigned short hostport,
-                struct sockaddr *addr, socklen_t length)
+                struct sockaddr *addr, socklen_t length,
+                int timeout)
 {
   int ret;
   /* struct sockaddr_in6 proxyaddr_in6; */
@@ -751,11 +752,6 @@ socks5_connect (assuan_context_t ctx, assuan_fd_t sock,
       proxyaddr_in.sin_port = htons (TOR_PORT2);
       ret = _assuan_connect (ctx, sock, proxyaddr, proxyaddrlen);
     }
-  /* If we get an EINPROGRESS here the caller is trying to do a
-   * non-blocking connect (e.g. for custom time out handling) which
-   * fails here.  The easiest fix would be to allow the client to tell
-   * us the timeout value and we do the timeout handling later on in the
-   * Socks protocol.  */
   if (ret)
     return ret;
   buffer[0] = 5; /* RFC-1928 VER field.  */
@@ -783,7 +779,9 @@ socks5_connect (assuan_context_t ctx, assuan_fd_t sock,
      succeeding calls, this select should soon return successfully.
    */
   ret = select (HANDLE2SOCKET (sock)+1, &fds, NULL, NULL, &tv);
-  if (!ret)
+  if (ret < 0)
+    return ret;
+  else if (!ret)
     {
       gpg_err_set_errno (ETIMEDOUT);
       return -1;
@@ -887,6 +885,30 @@ socks5_connect (assuan_context_t ctx, assuan_fd_t sock,
   ret = do_writen (ctx, sock, buffer, buflen);
   if (ret)
     return ret;
+
+  if (timeout != 0)
+    {
+      if (timeout == -1)
+        {
+          tv.tv_sec = 0;
+          tv.tv_usec = 0;
+        }
+      else
+        {
+          /* TIMEOUT is in milisecond */
+          tv.tv_sec = timeout / 1000;
+          tv.tv_usec = (timeout % 1000) * 1000;
+        }
+      ret = select (HANDLE2SOCKET (sock)+1, &fds, NULL, NULL, &tv);
+      if (ret < 0)
+        return ret;
+      if (!ret)
+        {
+          gpg_err_set_errno (ETIMEDOUT);
+          return -1;
+        }
+    }
+
   ret = do_readn (ctx, sock, buffer, 10 /* Length for IPv4 */);
   if (ret)
     return ret;
@@ -1065,7 +1087,7 @@ _assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
   else if (use_socks (addr))
     {
       return socks5_connect (ctx, sockfd, tor_mode,
-                             NULL, NULL, 0, addr, addrlen);
+                             NULL, NULL, 0, addr, addrlen, 0);
     }
   else
     {
@@ -1108,7 +1130,7 @@ _assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
   if (use_socks (addr))
     {
       return socks5_connect (ctx, sockfd, tor_mode,
-                             NULL, NULL, 0, addr, addrlen);
+                             NULL, NULL, 0, addr, addrlen, 0);
     }
   else
     {
@@ -1124,12 +1146,14 @@ _assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
    returned; on error ASSUAN_INVALID_FD is returned and ERRNO set.  If
    CREDENTIALS is not NULL, it is a string used for password based
    authentication.  Username and password are separated by a colon.
-   RESERVED must be 0.  By passing HOST and PORT as 0 the function can
-   be used to check for proxy availability: If the proxy is available
-   a socket will be returned which the caller should then close.  */
+   TIMEOUT specifies connection timeout in miliseconds (0 means
+   default timeout, -1 means immediate timeout).  By passing HOST and
+   PORT as 0 the function can be used to check for proxy availability:
+   If the proxy is available a socket will be returned which the
+   caller should then close.  */
 assuan_fd_t
 _assuan_sock_connect_byname (assuan_context_t ctx, const char *host,
-                             unsigned short port, int reserved,
+                             unsigned short port, int timeout,
                              const char *credentials, unsigned int flags)
 {
   assuan_fd_t fd;
@@ -1161,7 +1185,8 @@ _assuan_sock_connect_byname (assuan_context_t ctx, const char *host,
      that we can't pass NULL directly as this indicates IP address
      mode to the called function.  */
   if (socks5_connect (ctx, fd, socksport,
-                      credentials, host? host:"", port, NULL, 0))
+                      credentials, host? host:"", port, NULL, 0,
+                      timeout))
     {
       int save_errno = errno;
       assuan_sock_close (fd);
@@ -1514,11 +1539,11 @@ assuan_sock_connect (assuan_fd_t sockfd, struct sockaddr *addr, int addrlen)
 
 assuan_fd_t
 assuan_sock_connect_byname (const char *host, unsigned short port,
-                            int reserved, const char *credentials,
+                            int timeout, const char *credentials,
                             unsigned int flags)
 {
   return _assuan_sock_connect_byname (sock_ctx,
-                                      host, port, reserved, credentials, flags);
+                                      host, port, timeout, credentials, flags);
 }
 
 int

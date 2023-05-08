@@ -1997,7 +1997,7 @@ details on the redirection file format.
 
 @deftypefun int assuan_sock_connect_byname (@w{const char * @var{host}}, @
          @w{unsigned short @var{port}}, @
-         @w{int @var{reserved}}, @
+         @w{int @var{timeout}}, @
          @w{const char *@var{credentials}}, @
          @w{unsigned int @var{flags}})
 
@@ -2007,12 +2007,15 @@ current implementation requires that @var{flags} has either
 new TCP STREAM socket is returned; on error @code{ASSUAN_INVALID_FD}
 and ERRNO set.  If @var{credentials} is not @code{NULL}, it is a
 string used for password based SOCKS authentication.  Username and
-password are separated by a colon. @var{reserved} should be 0.  To
-test whether the proxy is available @var{host} and @var{port} may be
-given as NULL/0:  If the proxy is available the function returns a
-valid socket which is in the state after credentials sub-negotiation.
-The caller now knows that the SOCKS proxy is available and has been
-authenticated; normally the caller closes the socket then.
+password are separated by a colon. @var{timeout} specifies timeout
+value (in miliseconds) for the connection.  @var{timeout} with zero
+means no timeout (for client side, the SOCKS server may timeout).
+@var{timeout} with -1 means no wait.  To test whether the proxy is
+available @var{host} and @var{port} may be given as NULL/0: If the
+proxy is available the function returns a valid socket which is in the
+state after credentials sub-negotiation.  The caller now knows that
+the SOCKS proxy is available and has been authenticated; normally the
+caller closes the socket then.
 @end deftypefun
 
 
