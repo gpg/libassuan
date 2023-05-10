@@ -33,6 +33,9 @@
 #include <assert.h>
 #include <errno.h>
 
+#ifdef HAVE_W32_SYSTEM
+#include <fcntl.h>
+#endif
 #include "../src/assuan.h"
 #include "common.h"
 
@@ -55,27 +58,43 @@ cmd_echo (assuan_context_t ctx, char *line)
 static gpg_error_t
 cmd_cat (assuan_context_t ctx, char *line)
 {
-  assuan_fd_t fd, fdout;
+  assuan_fd_t assuan_fdin, assuan_fdout;
+  int fd, fdout;
   int c;
   FILE *fp, *fpout;
   int nbytes;
 
   log_info ("got CAT command (%s)\n", line);
 
+#ifdef HAVE_W32_SYSTEM
+  assuan_fdin = assuan_get_input_fd (ctx);
+  if (assuan_fdin == ASSUAN_INVALID_FD)
+    return gpg_error (GPG_ERR_ASS_NO_INPUT);
+  assuan_fdout = assuan_get_output_fd (ctx);
+  if (assuan_fdout == ASSUAN_INVALID_FD)
+    return gpg_error (GPG_ERR_ASS_NO_OUTPUT);
+  fd = _open_osfhandle ((intptr_t)assuan_fdin, _O_RDONLY);
+  if (fd < 0)
+    return gpg_error (GPG_ERR_ASS_NO_INPUT);
+  fdout = _open_osfhandle ((intptr_t)assuan_fdout, _O_WRONLY);
+  if (fdout < 0)
+    return gpg_error (GPG_ERR_ASS_NO_OUTPUT);
+#else
   fd = assuan_get_input_fd (ctx);
   if (fd == ASSUAN_INVALID_FD)
     return gpg_error (GPG_ERR_ASS_NO_INPUT);
   fdout = assuan_get_output_fd (ctx);
   if (fdout == ASSUAN_INVALID_FD)
     return gpg_error (GPG_ERR_ASS_NO_OUTPUT);
-  fp = fdopen ((int)fd, "r");
+#endif
+  fp = fdopen (fd, "r");
   if (!fp)
     {
       log_error ("fdopen failed on input fd: %s\n", strerror (errno));
       return gpg_error (GPG_ERR_ASS_GENERAL);
     }
 
-  fpout = fdopen ((int)fdout, "w");
+  fpout = fdopen (fdout, "w");
   if (!fpout)
     {
       log_error ("fdopen failed on output fd: %s\n", strerror (errno));
