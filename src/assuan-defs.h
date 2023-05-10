@@ -180,7 +180,7 @@ struct assuan_context_s
   int max_accepts;  /* If we can not handle more than one connection,
 		       set this to 1, otherwise to -1.  */
   pid_t pid;	  /* The pid of the peer. */
-#if defined(HAVE_W64_SYSTEM) || defined(HAVE_W32_SYSTEM)
+#if defined(HAVE_W32_SYSTEM)
   int process_id;     /* process ID of the server for FD passing.  */
 #endif
   assuan_fd_t listen_fd;  /* The fd we are listening on (used by

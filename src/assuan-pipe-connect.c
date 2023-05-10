@@ -106,7 +106,7 @@ initial_handshake (assuan_context_t ctx)
 	    "can't connect server: %s", gpg_strerror (err));
   else if (response == ASSUAN_RESPONSE_OK)
     {
-#if defined(HAVE_W64_SYSTEM) || defined(HAVE_W32_SYSTEM)
+#if defined(HAVE_W32_SYSTEM)
       const char *line = ctx->inbound.line + off;
       int process_id = -1;
 

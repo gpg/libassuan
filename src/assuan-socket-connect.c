@@ -132,7 +132,7 @@ _assuan_connect_finalize (assuan_context_t ctx, assuan_fd_t fd,
 	      "can't connect to server: %s\n", gpg_strerror (err));
     else if (response == ASSUAN_RESPONSE_OK)
       {
-#if defined(HAVE_W64_SYSTEM) || defined(HAVE_W32_SYSTEM)
+#if defined(HAVE_W32_SYSTEM)
         const char *line = ctx->inbound.line + off;
         int process_id = -1;
 
