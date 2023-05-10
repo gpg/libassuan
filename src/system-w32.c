@@ -167,19 +167,17 @@ __assuan_close (assuan_context_t ctx, assuan_fd_t fd)
 
 
 
-/* Get a file HANDLE to send, from POSIX fd.  */
+/* Get a file HANDLE for other end to send, from MY_HANDLE.  */
 static gpg_error_t
-get_file_handle (int fd, int process_id, HANDLE *r_handle)
+get_file_handle (assuan_fd_t my_handle, int process_id, HANDLE *r_handle)
 {
-  HANDLE prochandle, handle, newhandle;
-
-  handle = (void *)_get_osfhandle (fd);
+  HANDLE prochandle, newhandle;
 
   prochandle = OpenProcess (PROCESS_DUP_HANDLE, FALSE, process_id);
   if (!prochandle)
     return gpg_error (GPG_ERR_ASS_PARAMETER);/*FIXME: error*/
 
-  if (!DuplicateHandle (GetCurrentProcess (), handle, prochandle, &newhandle,
+  if (!DuplicateHandle (GetCurrentProcess (), my_handle, prochandle, &newhandle,
                         0, TRUE, DUPLICATE_SAME_ACCESS))
     {
       CloseHandle (prochandle);
@@ -191,21 +189,16 @@ get_file_handle (int fd, int process_id, HANDLE *r_handle)
 }
 
 
-/* Send a FD (which means POSIX fd) to the peer.  */
+/* Send an FD (which means Windows HANDLE) to the peer.  */
 gpg_error_t
 w32_fdpass_send (assuan_context_t ctx, assuan_fd_t fd)
 {
   char fdpass_msg[256];
   int res;
-  int fd0;                      /* POSIX fd */
-  intptr_t fd_converted_to_integer;
   HANDLE file_handle;
   gpg_error_t err;
 
-  fd_converted_to_integer = (intptr_t)fd;
-  fd0 = (int)fd_converted_to_integer; /* Bit pattern is possibly truncated.  */
-
-  err = get_file_handle (fd0, ctx->process_id, &file_handle);
+  err = get_file_handle (fd, ctx->process_id, &file_handle);
   if (err)
     return err;
 
@@ -221,7 +214,7 @@ w32_fdpass_send (assuan_context_t ctx, assuan_fd_t fd)
 }
 
 
-/* Receive a HANDLE from the peer and turn it into a FD (POSIX fd).  */
+/* Receive a HANDLE from the peer and turn it into an FD.  */
 gpg_error_t
 w32_fdpass_recv (assuan_context_t ctx, assuan_fd_t *fd)
 {

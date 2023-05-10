@@ -30,6 +30,7 @@
 # include <windows.h>
 # include <wincrypt.h>
 # include <io.h>
+#include <fcntl.h>
 #else
 # include <sys/socket.h>
 # include <sys/un.h>
@@ -54,12 +55,24 @@ cmd_echo (assuan_context_t ctx, char *line)
   int c;
   FILE *fp;
   int nbytes;
+#ifdef HAVE_W32_SYSTEM
+  HANDLE file_handle;
+#endif
 
   log_info ("got ECHO command (%s)\n", line);
 
+#if HAVE_W32_SYSTEM
+  file_handle = assuan_get_input_fd (ctx);
+  if (file_handle == ASSUAN_INVALID_FD)
+    return gpg_error (GPG_ERR_ASS_NO_INPUT);
+  fd = _open_osfhandle ((intptr_t)file_handle, _O_RDONLY);
+  if (fd < 0)
+    return gpg_error (GPG_ERR_ASS_NO_INPUT);
+#else
   fd = (int)assuan_get_input_fd (ctx);
   if (fd == -1)
     return gpg_error (GPG_ERR_ASS_NO_INPUT);
+#endif
   fp = fdopen (fd, "r");
   if (!fp)
     {
@@ -234,6 +247,9 @@ client (assuan_context_t ctx, const char *fname)
   int rc;
   FILE *fp;
   int i;
+#if HAVE_W32_SYSTEM
+  HANDLE file_handle;
+#endif
 
   log_info ("client started. Servers's pid is %ld\n",
             (long)assuan_get_pid (ctx));
@@ -248,7 +264,12 @@ client (assuan_context_t ctx, const char *fname)
           return -1;
         }
 
+#ifdef HAVE_W32_SYSTEM
+      file_handle = (HANDLE)_get_osfhandle (fileno (fp));
+      rc = assuan_sendfd (ctx, file_handle);
+#else
       rc = assuan_sendfd (ctx, (assuan_fd_t)fileno (fp));
+#endif
       if (rc)
         {
           fclose (fp);

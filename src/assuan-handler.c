@@ -27,9 +27,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#if HAVE_W32_SYSTEM || HAVE_W64_SYSTEM
-#include <fcntl.h>
-#endif
 
 #include "assuan-defs.h"
 #include "debug.h"
@@ -359,10 +356,11 @@ std_handler_output (assuan_context_t ctx, char *line)
 }
 
 
-#if HAVE_W32_SYSTEM || HAVE_W64_SYSTEM
+#ifdef HAVE_W32_SYSTEM
 /*
- * The command used by a client to send FD.  That is, from the viewpoint
- * of handling this command, it is to _receive_ a file handle.
+ * The command used by a client to send an FD.  That is, from the
+ * viewpoint of handling this command, it is to _receive_ a file
+ * handle.
  */
 static const char w32_help_sendfd[] =
   "SENDFD <N>\n"
@@ -375,7 +373,6 @@ w32_handler_sendfd (assuan_context_t ctx, char *line)
   gpg_error_t err = 0;
   char *endp;
   intptr_t file_handle;
-  int fd;
 
 #if HAVE_W64_SYSTEM
   file_handle = strtoull (line, &endp, 16);
@@ -389,14 +386,7 @@ w32_handler_sendfd (assuan_context_t ctx, char *line)
       return PROCESS_DONE (ctx, err);
     }
 
-  fd = _open_osfhandle ((intptr_t)file_handle, _O_RDWR);
-  if (fd < 0)
-    {
-      CloseHandle ((HANDLE)file_handle);
-      err = GPG_ERR_ASSUAN;
-    }
-
-  ctx->uds.pendingfds[ctx->uds.pendingfdscount++] = (assuan_fd_t)fd;
+  ctx->uds.pendingfds[ctx->uds.pendingfdscount++] = (assuan_fd_t)file_handle;
   return PROCESS_DONE (ctx, err);
 }
 #endif
