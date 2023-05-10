@@ -26,7 +26,13 @@
 #endif
 
 
-#if HAVE_W32_SYSTEM
+#if HAVE_W64_SYSTEM
+#define SOCKET2HANDLE(s) ((void *)(s))
+#define HANDLE2SOCKET(h) ((uintptr_t)(h))
+CRITICAL_SECTION _log_critsect;
+#define _log_enter()  do { EnterCriticalSection (&_log_critsect); } while (0)
+#define _log_leave()  do { LeaveCriticalSection (&_log_critsect); } while (0)
+#elif HAVE_W32_SYSTEM
 #define SOCKET2HANDLE(s) ((void *)(s))
 #define HANDLE2SOCKET(h) ((unsigned int)(h))
 CRITICAL_SECTION _log_critsect;
