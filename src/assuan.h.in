@@ -551,6 +551,7 @@ int __assuan_sendmsg (assuan_context_t ctx, assuan_fd_t fd,
 pid_t __assuan_waitpid (assuan_context_t ctx, pid_t pid,
                         int nowait, int *status, int options);
 
+#ifdef ASSUAN_REALLY_REQUIRE_OLD_WAY_OF_SYSTEM_NPTH
 /* Standard system hooks for nPth.  */
 #define ASSUAN_SYSTEM_NPTH_IMPL						\
   static void _assuan_npth_usleep (assuan_context_t ctx, unsigned int usec) \
@@ -601,6 +602,10 @@ pid_t __assuan_waitpid (assuan_context_t ctx, pid_t pid,
 
 extern struct assuan_system_hooks _assuan_system_npth;
 #define ASSUAN_SYSTEM_NPTH &_assuan_system_npth
+#else
+#define ASSUAN_SYSTEM_NPTH_IMPL /**/
+#define ASSUAN_SYSTEM_NPTH NULL
+#endif
 
 #ifdef __cplusplus
 }

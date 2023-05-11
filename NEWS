@@ -1,8 +1,12 @@
 Noteworthy changes in version 2.5.6 (unreleased) [C8/A8/R_]
 ------------------------------------------------
 
- * Use of ASSUAN_SYSTEM_NPTH is deprecated.  Instead, please use
-   the gpgrt_set_syscall_clamp function from gpgrt library.
+ * Use of ASSUAN_SYSTEM_NPTH is deprecated.  Instead, when you use
+   nPTH, please use the gpgrt_set_syscall_clamp function from gpgrt
+   library to set npth_unprotect/npth_protect.  If it's really needed
+   (to support running with old versions of libassuan), please define
+   ASSUAN_REALLY_REQUIRE_OLD_WAY_OF_SYSTEM_NPTH before including
+   <assuan.h>.
 
  * No support for WindowsCE, any more.
 
