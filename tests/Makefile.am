@@ -43,7 +43,11 @@ TESTS += fdpassing
 endif
 
 AM_CFLAGS = $(GPG_ERROR_CFLAGS)
+if HAVE_W32_SYSTEM
+AM_LDFLAGS = -no-fast-install
+else
 AM_LDFLAGS = -no-install
+endif
 
 noinst_HEADERS = common.h
 noinst_PROGRAMS = $(TESTS) $(w32cetools) $(testtools)
