@@ -103,6 +103,9 @@ _assuan_system_hooks_copy (assuan_system_hooks_t dst,
 			   assuan_system_hooks_t src)
 
 {
+  if (src == NULL)
+    return;
+
   /* Reset the defaults.  */
   if (dst != &_assuan_system_hooks)
     memcpy (dst, &_assuan_system_hooks, sizeof (*dst));
