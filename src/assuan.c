@@ -120,6 +120,11 @@ _assuan_pre_syscall (void)
 {
   if (pre_syscall_func)
     pre_syscall_func ();
+  else if (!_assuan_syscall_func_initialized)
+    {
+      gpgrt_get_syscall_clamp (&pre_syscall_func, &post_syscall_func);
+      _assuan_syscall_func_initialized = 1;
+    }
 }
 
 
@@ -140,12 +145,6 @@ assuan_new_ext (assuan_context_t *r_ctx, gpg_err_source_t err_source,
 {
   struct assuan_context_s wctx;
   assuan_context_t ctx;
-
-  if (!_assuan_syscall_func_initialized)
-    {
-      gpgrt_get_syscall_clamp (&pre_syscall_func, &post_syscall_func);
-      _assuan_syscall_func_initialized = 1;
-    }
 
   /* Set up a working context so we can use standard functions.  */
   memset (&wctx, 0, sizeof (wctx));
