@@ -58,7 +58,9 @@ cmd_echo (assuan_context_t ctx, char *line)
 static gpg_error_t
 cmd_cat (assuan_context_t ctx, char *line)
 {
+#ifdef HAVE_W32_SYSTEM
   assuan_fd_t assuan_fdin, assuan_fdout;
+#endif
   int fd, fdout;
   int c;
   FILE *fp, *fpout;
