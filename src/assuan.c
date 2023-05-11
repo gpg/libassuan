@@ -118,12 +118,14 @@ assuan_set_system_hooks (assuan_system_hooks_t system_hooks)
 void
 _assuan_pre_syscall (void)
 {
+ again:
   if (pre_syscall_func)
     pre_syscall_func ();
   else if (!_assuan_syscall_func_initialized)
     {
       gpgrt_get_syscall_clamp (&pre_syscall_func, &post_syscall_func);
       _assuan_syscall_func_initialized = 1;
+      goto again;
     }
 }
 
