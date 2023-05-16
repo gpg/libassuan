@@ -290,7 +290,7 @@ _assuan_recvmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
 		 int flags)
 {
 #if DEBUG_SYSIO
-  ssize_t res;
+  int res;
   TRACE_BEG3 (ctx, ASSUAN_LOG_SYSIO, "_assuan_recvmsg", ctx,
 	      "fd=0x%x, msg=%p, flags=0x%x", fd, msg, flags);
   if (ctx->system.version)
@@ -325,7 +325,7 @@ _assuan_recvmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
     return (ctx->system.recvmsg) (ctx, fd, msg, flags);
   else
     {
-      ssize_t res;
+      int res;
       _assuan_pre_syscall ();
       res = __assuan_recvmsg (ctx, fd, msg, flags);
       _assuan_post_syscall ();
@@ -341,7 +341,7 @@ _assuan_sendmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
 		 int flags)
 {
 #if DEBUG_SYSIO
-  ssize_t res;
+  int res;
   TRACE_BEG3 (ctx, ASSUAN_LOG_SYSIO, "_assuan_sendmsg", ctx,
 	      "fd=0x%x, msg=%p, flags=0x%x", fd, msg, flags);
   {
@@ -375,7 +375,7 @@ _assuan_sendmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
     return (ctx->system.sendmsg) (ctx, fd, msg, flags);
   else
     {
-      ssize_t res;
+      int res;
       _assuan_pre_syscall ();
       res = __assuan_sendmsg (ctx, fd, msg, flags);
       _assuan_post_syscall ();
@@ -453,7 +453,7 @@ _assuan_waitpid (assuan_context_t ctx, pid_t pid, int action,
 		 int *status, int options)
 {
 #if DEBUG_SYSIO
-  ssize_t res;
+  pid_t res;
   TRACE_BEG4 (ctx, ASSUAN_LOG_SYSIO, "_assuan_waitpid", ctx,
 	      "pid=%i, action=%i, status=%p, options=%i",
 	      pid, action, status, options);
@@ -471,7 +471,7 @@ _assuan_waitpid (assuan_context_t ctx, pid_t pid, int action,
     return (ctx->system.waitpid) (ctx, pid, action, status, options);
   else
     {
-      ssize_t res;
+      pid_t res;
       _assuan_pre_syscall ();
       res = __assuan_waitpid (ctx, pid, action, status, options);
       _assuan_post_syscall ();
