@@ -951,7 +951,7 @@ This is the function called by @sc{Assuan} to send a message to a
 file descriptor.  It is functionally equivalent to the system
 @code{sendmsg} function.
 
-@item int (*spawn) (assuan_context_t ctx, pid_t *r_pid, const char *name, const char **argv, assuan_fd_t fd_in, assuan_fd_t fd_out, assuan_fd_t *fd_child_list, void (*atfork) (void *opaque, int reserved), void *atforkvalue, unsigned int flags)
+@item int (*spawn) (assuan_context_t ctx, assuan_pid_t *r_pid, const char *name, const char **argv, assuan_fd_t fd_in, assuan_fd_t fd_out, assuan_fd_t *fd_child_list, void (*atfork) (void *opaque, int reserved), void *atforkvalue, unsigned int flags)
 This is the function called by @sc{Assuan} to spawn a child process.
 The @code{stdin} and @code{stdout} file descriptors are provided in
 @code{fd_in} and @code{fd_out} respectively, but can be set to
@@ -978,7 +978,7 @@ new console is created and pops up a console window when starting the
 server.  On W32CE systems this flag is ignored.
 @end table
 
-@item pid_t (*waitpid) (assuan_context_t ctx, pid_t pid, int action, int *status, int options)
+@item assuan_pid_t (*waitpid) (assuan_context_t ctx, assuan_pid_t pid, int action, int *status, int options)
 This is the function called by @sc{Assuan} to wait for the spawned
 child process @var{pid} to exit, or, if @var{action} is 1, to just
 release all resources associated with @var{pid} (required on Windows
