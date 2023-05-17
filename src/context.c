@@ -202,7 +202,7 @@ assuan_set_error (assuan_context_t ctx, gpg_error_t err, const char *text)
 
 
 /* Return the PID of the peer or ASSUAN_INVALID_PID if not known.
-   This function works in some situations where assuan_get_ucred
+   This function works in some situations where assuan_get_peercred
    fails. */
 pid_t
 assuan_get_pid (assuan_context_t ctx)

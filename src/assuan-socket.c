@@ -1064,7 +1064,7 @@ _assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
             {
               char buffer[16];
 
-              /* The client sends the nonce back - not useful.  We do
+              /* The server sends the nonce back - not useful.  We do
                  a dummy read.  */
               ret = do_readn (ctx, sockfd, buffer, 16);
               if (!ret)
