@@ -132,11 +132,7 @@ LT_LANG([Windows Resource])
 # For now we hardcode the use of version scripts.  It would be better
 # to write a test for this or even implement this within libtool.
 have_ld_version_script=no
-check_descriptor_passing=yes
 case "${host}" in
-    *-*-cygwin*)
-        check_descriptor_passing=no
-        ;;
     *-*-linux*)
         have_ld_version_script=yes
         ;;
@@ -321,6 +317,18 @@ AC_C_INLINE
 AC_TYPE_SIZE_T
 
 gl_TYPE_SOCKLEN_T
+
+# Windows has different method for "descriptor passing" (actually,
+# it's file handle passing), so, don't check the feature.
+check_descriptor_passing=yes
+case "${host}" in
+    *-*-cygwin*)
+        check_descriptor_passing=no
+        ;;
+    *-mingw32*)
+        check_descriptor_passing=no
+        ;;
+esac
 
 if test $check_descriptor_passing != yes; then
     use_descriptor_passing=no

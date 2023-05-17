@@ -520,10 +520,10 @@ assuan_sendfd (assuan_context_t ctx, assuan_fd_t fd)
   /* It is explicitly allowed to use (NULL, -1) as a runtime test to
      check whether descriptor passing is available. */
   if (!ctx && fd == ASSUAN_INVALID_FD)
-#ifdef USE_DESCRIPTOR_PASSING
+#if defined(USE_DESCRIPTOR_PASSING) || defined(HAVE_W32_SYSTEM)
     return 0;
 #else
-  return _assuan_error (ctx, GPG_ERR_NOT_IMPLEMENTED);
+    return _assuan_error (ctx, GPG_ERR_NOT_IMPLEMENTED);
 #endif
 
   if (!ctx)
