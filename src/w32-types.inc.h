@@ -32,4 +32,10 @@ typedef void *assuan_msghdr_t;
 # endif
 #endif
 
+#ifdef _WIN64
+ typedef unsigned long long assuan_pid_t;
+#else
+ typedef unsigned long assuan_pid_t;
+#endif
+
 ##EOF##

@@ -44,10 +44,12 @@ _assuan_server_finish (assuan_context_t ctx)
       _assuan_close (ctx, ctx->outbound.fd);
       ctx->outbound.fd = ASSUAN_INVALID_FD;
     }
-  if (ctx->pid != ASSUAN_INVALID_PID && ctx->pid)
-    {
-      ctx->pid = ASSUAN_INVALID_PID;
-    }
+
+#if defined(HAVE_W32_SYSTEM)
+  ctx->process_id = -1;
+#else
+  ctx->pid = ASSUAN_INVALID_PID;
+#endif
 
   _assuan_uds_deinit (ctx);
 

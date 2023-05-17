@@ -255,7 +255,7 @@ struct assuan_system_hooks
   /* If NAME is NULL, don't exec, just fork.  FD_CHILD_LIST is
      modified to reflect the value of the FD in the peer process (on
      Windows).  */
-  int (*spawn) (assuan_context_t ctx, pid_t *r_pid, const char *name,
+  int (*spawn) (assuan_context_t ctx, assuan_pid_t *r_pid, const char *name,
 		const char **argv,
 		assuan_fd_t fd_in, assuan_fd_t fd_out,
 		assuan_fd_t *fd_child_list,
@@ -263,8 +263,8 @@ struct assuan_system_hooks
 		void *atforkvalue, unsigned int flags);
 
   /* If action is 0, like waitpid.  If action is 1, just release the PID?  */
-  pid_t (*waitpid) (assuan_context_t ctx, pid_t pid,
-		    int action, int *status, int options);
+  assuan_pid_t (*waitpid) (assuan_context_t ctx, assuan_pid_t pid,
+                           int action, int *status, int options);
   int (*socketpair) (assuan_context_t ctx, int _namespace, int style,
 		     int protocol, assuan_fd_t filedes[2]);
   assuan_fd_t (*socket) (assuan_context_t ctx, int _namespace,
@@ -529,7 +529,7 @@ void assuan_sock_set_system_hooks (assuan_system_hooks_t system_hooks);
 void __assuan_usleep (assuan_context_t ctx, unsigned int usec);
 int __assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx);
 int __assuan_close (assuan_context_t ctx, assuan_fd_t fd);
-int __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
+int __assuan_spawn (assuan_context_t ctx, assuan_pid_t *r_pid, const char *name,
 		    const char **argv, assuan_fd_t fd_in, assuan_fd_t fd_out,
                     assuan_fd_t *fd_child_list,
                     void (*atfork) (void *opaque, int reserved),
@@ -548,8 +548,8 @@ int __assuan_recvmsg (assuan_context_t ctx, assuan_fd_t fd,
                       assuan_msghdr_t msg, int flags);
 int __assuan_sendmsg (assuan_context_t ctx, assuan_fd_t fd,
                       const assuan_msghdr_t msg, int flags);
-pid_t __assuan_waitpid (assuan_context_t ctx, pid_t pid,
-                        int nowait, int *status, int options);
+assuan_pid_t __assuan_waitpid (assuan_context_t ctx, assuan_pid_t pid,
+                               int nowait, int *status, int options);
 
 #ifdef ASSUAN_REALLY_REQUIRE_OLD_WAY_OF_SYSTEM_NPTH
 /* Standard system hooks for nPth.  */
@@ -578,9 +578,10 @@ pid_t __assuan_waitpid (assuan_context_t ctx, pid_t pid,
   { int res; (void) ctx; npth_unprotect();				\
     res = __assuan_sendmsg (ctx, fd, msg, flags);			\
     npth_protect(); return res; }					\
-  static pid_t _assuan_npth_waitpid (assuan_context_t ctx, pid_t pid,	\
-				     int nowait, int *status, int options) \
-  { pid_t res; (void) ctx; npth_unprotect();				\
+  static assuan_pid_t _assuan_npth_waitpid (assuan_context_t ctx,         \
+                                            assuan_pid_t pid, int nowait, \
+                                            int *status, int options)     \
+  { assuan_pid_t res; (void) ctx; npth_unprotect();			\
     res = __assuan_waitpid (ctx, pid, nowait, status, options);		\
     npth_protect(); return res; }					\
   static int _assuan_npth_connect (assuan_context_t ctx, assuan_fd_t sock, \

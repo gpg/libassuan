@@ -179,6 +179,13 @@ assuan_new_ext (assuan_context_t *r_ctx, gpg_err_source_t err_source,
     ctx->outbound.fd = ASSUAN_INVALID_FD;
     ctx->listen_fd = ASSUAN_INVALID_FD;
 
+#if defined(HAVE_W32_SYSTEM)
+    ctx->process_id = -1;
+#else
+    ctx->pid = ASSUAN_INVALID_PID;
+#endif
+    ctx->server_proc = ASSUAN_INVALID_PID;
+
     *r_ctx = ctx;
 
     return TRACE_SUC1 ("ctx=%p", ctx);

@@ -139,10 +139,12 @@ accept_connection_bottom (assuan_context_t ctx)
   }
 #endif
 
+#if !defined(HAVE_W32_SYSTEM)
   /* This overrides any already set PID if the function returns
      a valid one. */
   if (ctx->peercred_valid && ctx->peercred.pid != ASSUAN_INVALID_PID)
     ctx->pid = ctx->peercred.pid;
+#endif
 
   ctx->inbound.fd = fd;
   ctx->inbound.eof = 0;

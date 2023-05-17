@@ -207,10 +207,30 @@ assuan_set_error (assuan_context_t ctx, gpg_error_t err, const char *text)
 pid_t
 assuan_get_pid (assuan_context_t ctx)
 {
+#if defined(HAVE_W32_SYSTEM)
+  TRACE1 (ctx, ASSUAN_LOG_CTX, "assuan_get_pid", ctx,
+	  "pid=%i", ctx ? ctx->process_id : -1);
+#else
   TRACE1 (ctx, ASSUAN_LOG_CTX, "assuan_get_pid", ctx,
 	  "pid=%i", ctx ? ctx->pid : -1);
+#endif
 
-  return (ctx && ctx->pid) ? ctx->pid : ASSUAN_INVALID_PID;
+  if (!ctx)
+    return ASSUAN_INVALID_PID;
+
+  if (ctx->flags.is_server)
+#if defined(HAVE_W32_SYSTEM)
+    return ctx->process_id;
+#else
+    return ctx->pid;
+#endif
+  else
+    /*
+     * This use case of getting internal process reference by the
+     * application should be fixed.  It's here, only for backward
+     * compatibility.
+     */
+    return ctx->server_proc;
 }
 
 

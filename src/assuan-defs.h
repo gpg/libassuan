@@ -179,9 +179,47 @@ struct assuan_context_s
 
   int max_accepts;  /* If we can not handle more than one connection,
 		       set this to 1, otherwise to -1.  */
-  pid_t pid;	  /* The pid of the peer. */
+
+  /*
+   * Process reference (PID on POSIX, Process Handle on Windows).
+   * Internal use, only valid for client with pipe.
+   */
+  assuan_pid_t server_proc;
+
+  /*
+   * NOTE: There are two different references for the process:
+   *
+   * (1) Process ID which is valid on a system.
+   * (2) Process handle which is private to the process that get it.
+   *
+   * POSIX system only has (1).
+   * Windows system has both of (1) and (2).
+   */
+
 #if defined(HAVE_W32_SYSTEM)
-  int process_id;     /* process ID of the server for FD passing.  */
+  /*
+   * The process ID of the peer.
+   *
+   * client with pipe: Used internally for FD passing.
+   * client with socket: Used internally for FD passing.
+   *
+   * server with pipe: Not valid.
+   * server with socket: Valid for Cygwin Unix domain socket emulation.
+   *
+   */
+  int process_id;
+#else
+  /*
+   * The pid of the peer.
+   *
+   * client with pipe: Not valid.
+   * client with socket: Not valid.
+   *
+   * server with pipe: Valid (by env _assuan_pipe_connect_pid).
+   * server with socket: Valid on a system with SO_PEERCRED/etc.
+   *
+   */
+  pid_t pid;
 #endif
   assuan_fd_t listen_fd;  /* The fd we are listening on (used by
                              socket servers) */
@@ -265,14 +303,14 @@ int _assuan_recvmsg (assuan_context_t ctx, assuan_fd_t fd,
 		     assuan_msghdr_t msg, int flags);
 int _assuan_sendmsg (assuan_context_t ctx, assuan_fd_t fd,
 		     assuan_msghdr_t msg, int flags);
-int _assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
+int _assuan_spawn (assuan_context_t ctx, assuan_pid_t *r_pid, const char *name,
 		   const char *argv[],
 		   assuan_fd_t fd_in, assuan_fd_t fd_out,
 		   assuan_fd_t *fd_child_list,
 		   void (*atfork) (void *opaque, int reserved),
 		   void *atforkvalue, unsigned int flags);
-pid_t  _assuan_waitpid (assuan_context_t ctx, pid_t pid, int nowait,
-			int *status, int options);
+assuan_pid_t _assuan_waitpid (assuan_context_t ctx, assuan_pid_t pid,
+                              int nowait, int *status, int options);
 int _assuan_socketpair (assuan_context_t ctx, int namespace, int style,
 			int protocol, assuan_fd_t filedes[2]);
 assuan_fd_t _assuan_socket (assuan_context_t ctx, int namespace,

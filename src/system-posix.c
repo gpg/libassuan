@@ -266,7 +266,7 @@ get_max_fds (void)
 
 
 int
-__assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
+__assuan_spawn (assuan_context_t ctx, assuan_pid_t *r_pid, const char *name,
 		const char **argv,
 		assuan_fd_t fd_in, assuan_fd_t fd_out,
 		assuan_fd_t *fd_child_list,
@@ -394,8 +394,8 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 
 /* FIXME: Add some sort of waitpid function that covers GPGME and
    gpg-agent's use of assuan.  */
-pid_t
-__assuan_waitpid (assuan_context_t ctx, pid_t pid, int nowait,
+assuan_pid_t
+__assuan_waitpid (assuan_context_t ctx, assuan_pid_t pid, int nowait,
 		  int *status, int options)
 {
   /* We can't just release the PID, a waitpid is mandatory.  But

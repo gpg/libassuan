@@ -65,8 +65,10 @@ is_valid_socket (const char *s)
 gpg_error_t
 assuan_init_pipe_server (assuan_context_t ctx, assuan_fd_t filedes[2])
 {
+#if !defined(HAVE_W32_SYSTEM)
   const char *s;
   unsigned long ul;
+#endif
   gpg_error_t rc;
   assuan_fd_t infd = ASSUAN_INVALID_FD;
   assuan_fd_t outfd = ASSUAN_INVALID_FD;
@@ -130,11 +132,13 @@ assuan_init_pipe_server (assuan_context_t ctx, assuan_fd_t filedes[2])
 #endif
   ctx->max_accepts = 1;
 
+#if !defined(HAVE_W32_SYSTEM)
   s = getenv ("_assuan_pipe_connect_pid");
   if (s && (ul=strtoul (s, NULL, 10)) && ul)
     ctx->pid = (pid_t)ul;
   else
     ctx->pid = (pid_t)-1;
+#endif
   ctx->accept_handler = NULL;
   ctx->finish_handler = _assuan_server_finish;
   ctx->inbound.fd = infd;

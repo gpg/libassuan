@@ -391,7 +391,7 @@ _assuan_sendmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
    FD_CHILD_LIST as given (no remapping), which must be inheritable.
    On Unix, call ATFORK with ATFORKVALUE after fork and before exec.  */
 int
-_assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
+_assuan_spawn (assuan_context_t ctx, assuan_pid_t *r_pid, const char *name,
 	       const char **argv,
 	       assuan_fd_t fd_in, assuan_fd_t fd_out,
 	       assuan_fd_t *fd_child_list,
@@ -448,12 +448,12 @@ _assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 
 /* FIXME: Add some sort of waitpid function that covers GPGME and
    gpg-agent's use of assuan.  */
-pid_t
-_assuan_waitpid (assuan_context_t ctx, pid_t pid, int action,
+assuan_pid_t
+_assuan_waitpid (assuan_context_t ctx, assuan_pid_t pid, int action,
 		 int *status, int options)
 {
 #if DEBUG_SYSIO
-  pid_t res;
+  assuan_pid_t res;
   TRACE_BEG4 (ctx, ASSUAN_LOG_SYSIO, "_assuan_waitpid", ctx,
 	      "pid=%i, action=%i, status=%p, options=%i",
 	      pid, action, status, options);
@@ -471,7 +471,7 @@ _assuan_waitpid (assuan_context_t ctx, pid_t pid, int action,
     return (ctx->system.waitpid) (ctx, pid, action, status, options);
   else
     {
-      pid_t res;
+      assuan_pid_t res;
       _assuan_pre_syscall ();
       res = __assuan_waitpid (ctx, pid, action, status, options);
       _assuan_post_syscall ();

@@ -451,7 +451,7 @@ build_w32_commandline (assuan_context_t ctx, const char * const *argv,
 
 
 int
-__assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
+__assuan_spawn (assuan_context_t ctx, assuan_pid_t *r_pid, const char *name,
 		const char **argv,
 		assuan_fd_t fd_in, assuan_fd_t fd_out,
 		assuan_fd_t *fd_child_list,
@@ -579,7 +579,7 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
   /*                       pi.hProcess, pi.hThread, */
   /*                       (int) pi.dwProcessId, (int) pi.dwThreadId); */
 
-  *r_pid = (pid_t) pi.hProcess;
+  *r_pid = (assuan_pid_t) pi.hProcess;
 
   /* No need to modify peer process, as we don't change the handle
      names.  However this also means we are not safe, as we inherit
@@ -594,8 +594,8 @@ __assuan_spawn (assuan_context_t ctx, pid_t *r_pid, const char *name,
 
 /* FIXME: Add some sort of waitpid function that covers GPGME and
    gpg-agent's use of assuan.  */
-pid_t
-__assuan_waitpid (assuan_context_t ctx, pid_t pid, int nowait,
+assuan_pid_t
+__assuan_waitpid (assuan_context_t ctx, assuan_pid_t pid, int nowait,
 		  int *status, int options)
 {
   CloseHandle ((HANDLE) pid);

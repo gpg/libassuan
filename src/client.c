@@ -48,11 +48,11 @@ _assuan_client_finish (assuan_context_t ctx)
       _assuan_close (ctx, ctx->outbound.fd);
       ctx->outbound.fd = ASSUAN_INVALID_FD;
     }
-  if (ctx->pid != ASSUAN_INVALID_PID && ctx->pid)
+  if (ctx->server_proc != ASSUAN_INVALID_PID)
     {
       if (!ctx->flags.is_socket)
-	_assuan_waitpid (ctx, ctx->pid, ctx->flags.no_waitpid, NULL, 0);
-      ctx->pid = ASSUAN_INVALID_PID;
+	_assuan_waitpid (ctx, ctx->server_proc, ctx->flags.no_waitpid, NULL, 0);
+      ctx->server_proc = ASSUAN_INVALID_PID;
     }
 
   _assuan_uds_deinit (ctx);

@@ -1432,6 +1432,8 @@ _assuan_sock_check_nonce (assuan_context_t ctx, assuan_fd_t fd,
          we ignore the values because they are not kernel controlled.  */
       if (do_readn (ctx, fd, buffer, 8))
         return -1;
+
+      memcpy (&ctx->process_id, buffer, 4);
       /* Send our credentials: We use the uid and gid we received but
          our own pid.  */
       n = getpid ();

@@ -21,4 +21,5 @@
 ## This file is included by the mkheader tool.  Lines starting with
 ## a double hash mark are not copied to the destination file.
 typedef struct msghdr *assuan_msghdr_t;
+typedef pid_t assuan_pid_t;
 ##EOF##

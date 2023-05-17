@@ -184,7 +184,7 @@ pipe_connect (assuan_context_t ctx,
   gpg_error_t rc;
   assuan_fd_t rp[2];
   assuan_fd_t wp[2];
-  pid_t pid;
+  assuan_pid_t pid;
   int res;
   struct at_pipe_fork atp;
   unsigned int spawn_flags;
@@ -244,7 +244,7 @@ pipe_connect (assuan_context_t ctx,
   ctx->accept_handler = NULL;
   ctx->inbound.fd  = rp[0];  /* Our inbound is read end of read pipe. */
   ctx->outbound.fd = wp[1];  /* Our outbound is write end of write pipe. */
-  ctx->pid = pid;
+  ctx->server_proc = pid;
 
   rc = initial_handshake (ctx);
   if (rc)
