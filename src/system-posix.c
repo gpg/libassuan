@@ -398,12 +398,13 @@ assuan_pid_t
 __assuan_waitpid (assuan_context_t ctx, assuan_pid_t pid, int nowait,
 		  int *status, int options)
 {
+  if (nowait)
+    return 0;
+
   /* We can't just release the PID, a waitpid is mandatory.  But
      NOWAIT in POSIX systems just means the caller already did the
      waitpid for this child.  */
-  if (! nowait)
-    return waitpid (pid, NULL, 0);
-  return 0;
+  return waitpid (pid, status, options ? WNOHANG : 0);
 }
 
 

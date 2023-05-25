@@ -116,6 +116,8 @@ EXPORTS
     assuan_sock_get_flag                @95
     assuan_sock_connect_byname          @96
     assuan_sock_set_system_hooks        @97
+    assuan_pipe_wait_server_termination @98
+    assuan_pipe_kill_server             @99
 
 ; END
 
