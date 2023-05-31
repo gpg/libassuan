@@ -169,19 +169,26 @@ __assuan_close (assuan_context_t ctx, assuan_fd_t fd)
 
 /* Get a file HANDLE for other end to send, from MY_HANDLE.  */
 static gpg_error_t
-get_file_handle (assuan_fd_t my_handle, int process_id, HANDLE *r_handle)
+get_file_handle (assuan_context_t ctx, assuan_fd_t my_handle,
+                 int process_id, HANDLE *r_handle)
 {
   HANDLE prochandle, newhandle;
 
   prochandle = OpenProcess (PROCESS_DUP_HANDLE, FALSE, process_id);
   if (!prochandle)
-    return gpg_error (GPG_ERR_ASS_PARAMETER);/*FIXME: error*/
+    {
+      TRACE1 (ctx, ASSUAN_LOG_SYSIO, "assuan_sendfd", ctx,
+	      "OpenProcess failed: %s", _assuan_w32_strerror (ctx, -1));
+      return _assuan_error (ctx, gpg_err_code_from_errno (EIO));
+    }
 
   if (!DuplicateHandle (GetCurrentProcess (), my_handle, prochandle, &newhandle,
                         0, TRUE, DUPLICATE_SAME_ACCESS))
     {
+      TRACE1 (ctx, ASSUAN_LOG_SYSIO, "assuan_sendfd", ctx,
+	      "DuplicateHandle failed: %s", _assuan_w32_strerror (ctx, -1));
       CloseHandle (prochandle);
-      return gpg_error (GPG_ERR_ASS_PARAMETER);/*FIXME: error*/
+      return _assuan_error (ctx, GPG_ERR_ASS_PARAMETER);
     }
   CloseHandle (prochandle);
   *r_handle = newhandle;
@@ -195,10 +202,13 @@ w32_fdpass_send (assuan_context_t ctx, assuan_fd_t fd)
 {
   char fdpass_msg[256];
   int res;
-  HANDLE file_handle;
+  HANDLE file_handle = INVALID_HANDLE_VALUE;
   gpg_error_t err;
 
-  err = get_file_handle (fd, ctx->process_id, &file_handle);
+  if (ctx->process_id == -1)
+    return _assuan_error (ctx, GPG_ERR_SERVER_FAILED);
+
+  err = get_file_handle (ctx, fd, ctx->process_id, &file_handle);
   if (err)
     return err;
 
@@ -206,7 +216,7 @@ w32_fdpass_send (assuan_context_t ctx, assuan_fd_t fd)
   if (res < 0)
     {
       CloseHandle (file_handle);
-      return gpg_error (GPG_ERR_ASS_PARAMETER);/*FIXME: error*/
+      return _assuan_error (ctx, GPG_ERR_ASS_PARAMETER);
     }
 
   err = assuan_transact (ctx, fdpass_msg, NULL, NULL, NULL, NULL, NULL, NULL);
