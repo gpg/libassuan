@@ -77,6 +77,8 @@ assuan_accept (assuan_context_t ctx)
 {
   gpg_error_t rc = 0;
   const char *p, *pend;
+  pid_t apid = getpid ();
+  char tmpbuf[50];
 
   if (!ctx)
     return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
@@ -110,17 +112,34 @@ assuan_accept (assuan_context_t ctx)
           pend = strchr (p, '\n');
         }
       while (pend);
-      rc = _assuan_write_line (ctx, "OK ", p, strlen (p));
+#if defined(HAVE_W32_SYSTEM)
+      if (apid != ASSUAN_INVALID_PID)
+        {
+          snprintf (tmpbuf, sizeof tmpbuf, "%s, process %i", p, (int)apid);
+          rc = _assuan_write_line (ctx, "OK ", tmpbuf, strlen (tmpbuf));
+        }
+      else
+#endif
+        rc = _assuan_write_line (ctx, "OK ", p, strlen (p));
+
     }
   else if (p)
-    rc = assuan_write_line (ctx, p);
+    {
+#if defined(HAVE_W32_SYSTEM)
+      if (apid != ASSUAN_INVALID_PID)
+        {
+          snprintf (tmpbuf, sizeof tmpbuf, "%s, process %i", p, (int)apid);
+          rc = assuan_write_line (ctx, tmpbuf);
+        }
+      else
+#endif
+        rc = assuan_write_line (ctx, p);
+    }
   else
     {
       static char const okstr[] = "OK Pleased to meet you";
-      pid_t apid = getpid ();
       if (apid != ASSUAN_INVALID_PID)
         {
-          char tmpbuf[50];
           snprintf (tmpbuf, sizeof tmpbuf, "%s, process %i", okstr, (int)apid);
           rc = assuan_write_line (ctx, tmpbuf);
         }
