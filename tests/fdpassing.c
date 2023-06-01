@@ -229,6 +229,7 @@ server_socket (const char *socketname)
     log_fatal ("assuan_init_socket_server failed: %s\n", gpg_strerror (rc));
 
   assuan_set_sock_nonce (ctx, &socket_nonce);
+  assuan_set_hello_line (ctx, "Hello, this is a socket server.");
 
   server_common (ctx);
 }

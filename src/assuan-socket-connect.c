@@ -137,7 +137,7 @@ _assuan_connect_finalize (assuan_context_t ctx, assuan_fd_t fd,
         int process_id = -1;
 
         /* Parse the message: OK ..., process %i */
-        line = strchr (line, ',');
+        line = strrchr (line, ',');
         if (line)
           {
             line = strchr (line + 1, ' ');
