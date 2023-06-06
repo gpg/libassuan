@@ -147,15 +147,10 @@ __assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx)
 int
 __assuan_close (assuan_context_t ctx, assuan_fd_t fd)
 {
-  int rc;
-
-  if (ctx->flags.is_socket)
-    {
-      rc = closesocket (HANDLE2SOCKET(fd));
-      if (rc)
-        gpg_err_set_errno ( _assuan_sock_wsa2errno (WSAGetLastError ()) );
-    }
-  else
+  int rc = closesocket (HANDLE2SOCKET(fd));
+  if (rc)
+    gpg_err_set_errno ( _assuan_sock_wsa2errno (WSAGetLastError ()) );
+  if (rc && WSAGetLastError () == WSAENOTSOCK)
     {
       rc = CloseHandle (fd);
       if (rc)
