@@ -149,10 +149,12 @@ assuan_begin_confidential (assuan_context_t ctx)
 }
 
 
-/* Same as assuan_set_flag (ctx, ASSUAN_CONFIDENTIAL, 0).  */
+/* Same as assuan_set_flag (ctx, ASSUAN_CONFIDENTIAL, 0) but first
+ * flushes pending data.  */
 void
 assuan_end_confidential (assuan_context_t ctx)
 {
+  _assuan_cookie_write_flush (ctx);
   assuan_set_flag (ctx, ASSUAN_CONFIDENTIAL, 0);
 }
 
