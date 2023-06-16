@@ -1,4 +1,4 @@
-Noteworthy changes in version 2.5.6 (unreleased) [C8/A8/R_]
+Noteworthy changes in version 3.0.0 (unreleased) [C_/A_/R_]
 ------------------------------------------------
 
  * Use of ASSUAN_SYSTEM_NPTH is deprecated.  Instead, when you use

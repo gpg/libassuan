@@ -31,9 +31,9 @@ min_automake_version="1.14"
 # commit and push so that the git magic is able to work.  See below
 # for the LT versions.
 m4_define([mym4_package],[libassuan])
-m4_define([mym4_major], [2])
-m4_define([mym4_minor], [5])
-m4_define([mym4_micro], [6])
+m4_define([mym4_major], [3])
+m4_define([mym4_minor], [0])
+m4_define([mym4_micro], [0])
 
 # To start a new development series, i.e a new major or minor number
 # you need to mark an arbitrary commit before the first beta release
