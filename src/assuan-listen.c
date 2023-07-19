@@ -78,7 +78,7 @@ assuan_accept (assuan_context_t ctx)
   gpg_error_t rc = 0;
   const char *p, *pend;
   pid_t apid = getpid ();
-  char tmpbuf[50];
+  char tmpbuf[256];
 
   if (!ctx)
     return _assuan_error (ctx, GPG_ERR_ASS_INV_VALUE);
