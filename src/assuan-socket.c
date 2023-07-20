@@ -1013,17 +1013,23 @@ static assuan_fd_t
 _assuan_sock_accept (assuan_context_t ctx, assuan_fd_t sockfd,
                      struct sockaddr *addr, socklen_t *p_addrlen)
 {
-  (void)ctx;
-#ifdef HAVE_W32_SYSTEM
   assuan_fd_t res;
 
+  (void)ctx;
+
+  _assuan_pre_syscall ();
+
+#ifdef HAVE_W32_SYSTEM
   res = SOCKET2HANDLE (accept (HANDLE2SOCKET (sockfd), addr, p_addrlen));
   if (res == SOCKET2HANDLE (INVALID_SOCKET))
     gpg_err_set_errno (_assuan_sock_wsa2errno (WSAGetLastError ()));
-  return res;
 #else
-  return accept (sockfd, addr, p_addrlen);
+  res = accept (sockfd, addr, p_addrlen);
 #endif
+
+  _assuan_post_syscall ();
+
+  return res;
 }
 
 
@@ -1202,6 +1208,10 @@ int
 _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
 		   struct sockaddr *addr, int addrlen)
 {
+  int res;
+
+  _assuan_pre_syscall ();
+
 #ifdef HAVE_W32_SYSTEM
   if (addr->sa_family == AF_LOCAL || addr->sa_family == AF_UNIX)
     {
@@ -1218,7 +1228,10 @@ _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
       DWORD nwritten;
 
       if (get_nonce (nonce.data, 16))
-        return -1;
+        {
+          res = -1;
+          goto leave;
+        }
 
       unaddr = (struct sockaddr_un *)addr;
 
@@ -1237,7 +1250,8 @@ _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
         {
           if (GetLastError () == ERROR_FILE_EXISTS)
             gpg_err_set_errno (EADDRINUSE);
-          return -1;
+          res = -1;
+          goto leave;
         }
 
       rc = bind (HANDLE2SOCKET (sockfd), (struct sockaddr *)&myaddr, len);
@@ -1250,7 +1264,8 @@ _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
           CloseHandle (filehd);
           MyDeleteFile (unaddr->sun_path);
           gpg_err_set_errno (save_e);
-          return rc;
+          res = rc;
+          goto leave;
         }
 
       if (is_cygwin_fd (sockfd))
@@ -1274,21 +1289,25 @@ _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
           CloseHandle (filehd);
           MyDeleteFile (unaddr->sun_path);
           gpg_err_set_errno (EIO);
-          return -1;
+          res = -1;
+          goto leave;
         }
       CloseHandle (filehd);
-      return 0;
+      res = 0;
     }
   else
     {
-      int res = bind (HANDLE2SOCKET(sockfd), addr, addrlen);
+      res = bind (HANDLE2SOCKET(sockfd), addr, addrlen);
       if (res < 0)
 	gpg_err_set_errno ( _assuan_sock_wsa2errno (WSAGetLastError ()));
-      return res;
     }
+ leave:
 #else
-  return bind (sockfd, addr, addrlen);
+  res = bind (sockfd, addr, addrlen);
 #endif
+
+  _assuan_post_syscall ();
+  return res;
 }
 
 
