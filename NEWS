@@ -10,6 +10,10 @@ Noteworthy changes in version 3.0.0 (unreleased) [C_/A_/R_]
 
  * No support for WindowsCE, any more.
 
+ * Interface changes relative to the 3.0.0 release:
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ assuan_sock_accept   NEW.
+
 
 Noteworthy changes in version 2.5.5 (2021-03-22) [C8/A8/R5]
 ------------------------------------------------
