@@ -1,14 +1,20 @@
 Noteworthy changes in version 3.0.0 (unreleased) [C_/A_/R_]
 ------------------------------------------------
 
+ * Windows support for sendfd/recvfd.  [T6236]
+
+ * New function assuan_sock_accept.  [T5925]
+
  * Use of ASSUAN_SYSTEM_NPTH is deprecated.  Instead, when you use
    nPTH, please use the gpgrt_set_syscall_clamp function from gpgrt
    library to set npth_unprotect/npth_protect.  If it's really needed
    (to support running with old versions of libassuan), please define
    ASSUAN_REALLY_REQUIRE_OLD_WAY_OF_SYSTEM_NPTH before including
-   <assuan.h>.
+   <assuan.h>.  [T5914]
 
- * No support for WindowsCE, any more.
+ * No support for WindowsCE, any more.  [T6170]
+
+ * Implement timeout in assuan_sock_connect_byname.  [T3302]
 
  * Interface changes relative to the 3.0.0 release:
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
