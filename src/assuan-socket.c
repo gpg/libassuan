@@ -1210,8 +1210,6 @@ _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
 {
   int res;
 
-  _assuan_pre_syscall ();
-
 #ifdef HAVE_W32_SYSTEM
   if (addr->sa_family == AF_LOCAL || addr->sa_family == AF_UNIX)
     {
@@ -1306,7 +1304,6 @@ _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
   res = bind (sockfd, addr, addrlen);
 #endif
 
-  _assuan_post_syscall ();
   return res;
 }
 
