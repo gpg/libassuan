@@ -514,6 +514,10 @@ int assuan_sock_get_nonce (struct sockaddr *addr, int addrlen,
 int assuan_sock_check_nonce (assuan_fd_t fd, assuan_sock_nonce_t *nonce);
 void assuan_sock_set_system_hooks (assuan_system_hooks_t system_hooks);
 
+gpg_error_t assuan_pipe_wait_server_termination (assuan_context_t ctx,
+                                                 int *status, int no_hang);
+
+gpg_error_t assuan_pipe_kill_server (assuan_context_t ctx);
 
 /* Set the default system callbacks.  This is irreversible.  */
 void assuan_set_system_hooks (assuan_system_hooks_t system_hooks);

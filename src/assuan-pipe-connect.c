@@ -451,3 +451,40 @@ assuan_pipe_connect (assuan_context_t ctx,
                          flags);
 }
 
+gpg_error_t
+assuan_pipe_wait_server_termination (assuan_context_t ctx, int *status,
+                                     int no_hang)
+{
+  assuan_pid_t pid;
+
+  if (ctx->server_proc == -1)
+    return _assuan_error (ctx, GPG_ERR_NO_SERVICE);
+
+  pid = _assuan_waitpid (ctx, ctx->server_proc, 0, status, no_hang);
+  if (pid == -1)
+    return _assuan_error (ctx, gpg_err_code_from_syserror ());
+  else if (pid == 0)
+    return _assuan_error (ctx, GPG_ERR_TIMEOUT);
+
+  /* We did wait on the process already, so, not any more.  */
+  ctx->flags.no_waitpid = 1;
+  return 0;
+}
+
+gpg_error_t
+assuan_pipe_kill_server (assuan_context_t ctx)
+{
+  if (ctx->server_proc == -1)
+    ; /* No pid available can't send a kill. */
+  else
+    {
+      _assuan_pre_syscall ();
+#ifdef HAVE_W32_SYSTEM
+      TerminateProcess ((HANDLE)ctx->server_proc, 1);
+#else
+      kill (ctx->server_proc, SIGINT);
+#endif
+      _assuan_post_syscall ();
+    }
+  return 0;
+}

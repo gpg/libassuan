@@ -603,8 +603,30 @@ assuan_pid_t
 __assuan_waitpid (assuan_context_t ctx, assuan_pid_t pid, int nowait,
 		  int *status, int options)
 {
-  CloseHandle ((HANDLE) pid);
-  return 0;
+  int code;
+  DWORD exit_code;
+
+  (void)ctx;
+
+  if (nowait)
+    return 0;
+
+  code = WaitForSingleObject ((HANDLE)pid, options? 0: INFINITE);
+
+  if (code == WAIT_OBJECT_0)
+    {
+      if (status)
+        {
+          GetExitCodeProcess ((HANDLE)pid, &exit_code);
+          *status = (int)exit_code;
+        }
+      CloseHandle ((HANDLE)pid);
+      return pid;
+    }
+  else if (code == WAIT_TIMEOUT)
+    return 0;
+  else
+    return -1;
 }
 
 

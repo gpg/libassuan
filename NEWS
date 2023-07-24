@@ -18,7 +18,10 @@ Noteworthy changes in version 3.0.0 (unreleased) [C_/A_/R_]
 
  * Interface changes relative to the 3.0.0 release:
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- assuan_sock_accept   NEW.
+ assuan_sock_accept                  NEW.
+ assuan_pipe_wait_server_termination NEW.
+ assuan_pipe_kill_server             NEW.
+
 
 
 Noteworthy changes in version 2.5.5 (2021-03-22) [C8/A8/R5]
