@@ -16,6 +16,9 @@ Noteworthy changes in version 3.0.0 (unreleased) [C_/A_/R_]
 
  * Implement timeout in assuan_sock_connect_byname.  [T3302]
 
+ * New functions assuan_pipe_wait_server_termination and
+   assuan_pipe_kill_server to support abstraction of process.  [T6487]
+
  * Interface changes relative to the 3.0.0 release:
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  assuan_sock_accept                  NEW.
