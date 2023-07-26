@@ -9,7 +9,7 @@ dnl This file is distributed in the hope that it will be useful, but
 dnl WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
 dnl implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 dnl SPDX-License-Identifier: FSFULLR
-# Last-changed: 2022-11-01
+# Last-changed: 2023-07-26
 
 dnl
 dnl Common code used for libassuan detection [internal]
@@ -104,6 +104,8 @@ AC_DEFUN([_AM_PATH_LIBASSUAN_COMMON],
       if test "$tmp" -gt 0 ; then
         AC_MSG_CHECKING([LIBASSUAN API version])
         if test "$req_libassuan_api" -eq "$tmp" ; then
+          AC_MSG_RESULT(okay)
+        elif test "$req_libassuan_api" -eq 2 -a "$tmp" -eq 3; then
           AC_MSG_RESULT(okay)
         else
           ok=no
