@@ -114,6 +114,27 @@ assuan_set_system_hooks (assuan_system_hooks_t system_hooks)
 }
 
 
+gpg_error_t
+assuan_control (enum assuan_ctl_cmds cmd, void *arg)
+{
+  gpg_error_t err = 0;
+
+  (void)arg;
+  switch (cmd)
+    {
+    case ASSUAN_CONTROL_NOP:
+    default:
+      /* Nothing to do.  */
+      break;
+    case ASSUAN_CONTROL_REINIT_SYSCALL_CLAMP:
+      gpgrt_get_syscall_clamp (&pre_syscall_func, &post_syscall_func);
+      _assuan_syscall_func_initialized = 1;
+      break;
+    }
+
+  return err;
+}
+
 /* Used before blocking system calls.  */
 void
 _assuan_pre_syscall (void)

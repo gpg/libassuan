@@ -108,6 +108,7 @@ LIBASSUAN_1.0 {
     assuan_sock_accept;
     assuan_pipe_wait_server_termination;
     assuan_pipe_kill_server;
+    assuan_control;
 
     __assuan_close;
     __assuan_pipe;

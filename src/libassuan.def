@@ -119,6 +119,7 @@ EXPORTS
     assuan_sock_accept                  @98
     assuan_pipe_wait_server_termination @99
     assuan_pipe_kill_server             @100
+    assuan_control                      @101
 
 ; END
 

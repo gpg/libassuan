@@ -154,6 +154,16 @@ void assuan_release (assuan_context_t ctx);
  * context CTX.  This is a convenience function.  */
 void assuan_free (assuan_context_t ctx, void *ptr);
 
+/* Codes used with the gcry_control function. */
+enum assuan_ctl_cmds
+  {
+    ASSUAN_CONTROL_NOP = 0,
+    ASSUAN_CONTROL_REINIT_SYSCALL_CLAMP = 1
+  };
+
+/* Perform control operations defined by CMD.  */
+gpg_error_t assuan_control (enum assuan_ctl_cmds cmd, void *arg);
+
 
 /* Set user-data in a context.  */
 void assuan_set_pointer (assuan_context_t ctx, void *pointer);
