@@ -1,23 +1,29 @@
 Noteworthy changes in version 3.0.0 (unreleased) [C_/A_/R_]
 ------------------------------------------------
 
- * Windows support for sendfd/recvfd.  [T6236]
+ * New function assuan_control.  [T6625]
 
  * New function assuan_sock_accept.  [T5925]
 
- * Use of ASSUAN_SYSTEM_NPTH is deprecated.  Instead, when you use
-   nPTH, please use the gpgrt_set_syscall_clamp function from gpgrt
-   library to set npth_unprotect/npth_protect.  If it's really needed
-   (to support running with old versions of libassuan), please define
-   ASSUAN_REALLY_REQUIRE_OLD_WAY_OF_SYSTEM_NPTH before including
-   <assuan.h>.  [T5914]
-
- * No support for WindowsCE, any more.  [T6170]
-
- * Implement timeout in assuan_sock_connect_byname.  [T3302]
+ * API change: For new code, which use with nPTH, please use
+   gpgrt_get_syscall_clamp and assuan_control, instead of the
+   system_hooks API.  Use of ASSUAN_SYSTEM_NPTH is deprecated with new
+   API version 3.  If it's really needed to keep using old
+   implementation of ASSUAN_SYSTEM_NPTH (together with new API version
+   3), you need to change your your application code, to define
+   ASSUAN_REALLY_REQUIRE_V2_NPTH_SYSTEM_HOOKS before including
+   <assuan.h>.  For an application which uses version 2 API
+   (NEED_LIBASSUAN_API=2 in its configure.ac), use of
+   ASSUAN_SYSTEM_NPTH is still supported.  [T5914]
 
  * New functions assuan_pipe_wait_server_termination and
    assuan_pipe_kill_server to support abstraction of process.  [T6487]
+
+ * Windows support for sendfd/recvfd.  [T6236]
+
+ * Implement timeout in assuan_sock_connect_byname.  [T3302]
+
+ * No support for WindowsCE, any more.  [T6170]
 
  * Interface changes relative to the 3.0.0 release:
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

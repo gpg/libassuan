@@ -566,11 +566,11 @@ assuan_pid_t __assuan_waitpid (assuan_context_t ctx, assuan_pid_t pid,
                                int nowait, int *status, int options);
 
 #if defined(LIBASSUAN_API_REQUESTED) && LIBASSUAN_API_REQUESTED >= 3
-#defined ASSUAN_NO_GLOBAL_SYSTEM_HOOKS_ANY_MORE 1
+#defined ASSUAN_NO_NPTH_SYSTEM_HOOKS_ANY_MORE 1
 #endif
 
-#if defined(ASSUAN_REALLY_REQUIRE_OLD_WAY_OF_SYSTEM_NPTH) \
-    || !defined(ASSUAN_NO_GLOBAL_SYSTEM_HOOKS_ANY_MORE)
+#if defined(ASSUAN_REALLY_REQUIRE_V2_NPTH_SYSTEM_HOOKS) \
+    || !defined(ASSUAN_NO_NPTH_SYSTEM_HOOKS_ANY_MORE)
 /* Standard system hooks for nPth.  */
 #define ASSUAN_SYSTEM_NPTH_IMPL						\
   static void _assuan_npth_usleep (assuan_context_t ctx, unsigned int usec) \
