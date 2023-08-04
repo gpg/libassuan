@@ -32,6 +32,19 @@ Noteworthy changes in version 3.0.0 (unreleased) [C_/A_/R_]
  assuan_pipe_kill_server             NEW.
 
 
+Noteworthy changes in version 2.5.6 (2023-06-19) [C8/A8/R6]
+------------------------------------------------
+
+ * Fix logging of confidential data.  [rA0fc31770fa]
+
+ * Fix memory wiping.  [T5977]
+
+ * Fix macOS build problem.  [T5440,T5610]
+
+ * Upgrade autoconf stuff.
+
+ Release-info: https://dev.gnupg.org/T6542
+
 
 Noteworthy changes in version 2.5.5 (2021-03-22) [C8/A8/R5]
 ------------------------------------------------
