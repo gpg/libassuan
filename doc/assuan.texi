@@ -1040,7 +1040,7 @@ a pointer to the buffer holding that line at the address @var{line}.
 The valid length of the lines is stored at the address of @var{linelen}.
 This buffer is valid until the next read operation on the same context
 @var{ctx}.  You may modify the context of this buffer.  The buffer is
-invalid (i.e. must not be used) if an error is returned.  This function
+invalid (i.e., must not be used) if an error is returned.  This function
 returns @code{0} on success or an error value.
 @end deftypefun
 
@@ -1226,7 +1226,7 @@ error with the error code @code{GPG_ERR_NOT_IMPLEMENTED} is returned.
 Receive a descriptor pending for the context @var{ctx} from the peer.
 The descriptor must be pending before this function is called.  To
 accomplish this, the peer needs to use @code{assuan_sendfd} before the
-trigger is sent (e.g. using @code{assuan_write_line ("INPUT FD")}.
+trigger is sent (e.g., using @code{assuan_write_line ("INPUT FD")}.
 @end deftypefun
 
 
@@ -1527,7 +1527,7 @@ has been established using @code{assuan_accept}.  It is the main
 protocol handler responsible for reading the client commands and calling
 the appropriate handlers.  The function returns @code{0} on success or
 an error value if something went seriously wrong.  Error values from the
-individual command handlers, i.e. operational error, are not seen here.
+individual command handlers, i.e., operational error, are not seen here.
 @end deftypefun
 
 @noindent
@@ -2078,7 +2078,7 @@ Libassuan has no way to check the nonce of the server.  Thus an explicit
 check of the saved nonce using this function is required.  If this
 function fails the server should immediately drop the connection.  This
 function may not be used if Libassuan does the accept call itself
-(i.e. @code{ASSUAN_SOCKET_SERVER_ACCEPTED} has not been used) because
+(i.e., @code{ASSUAN_SOCKET_SERVER_ACCEPTED} has not been used) because
 in this case Libassuan calls this function internally.  See also
 @code{assuan_set_sock_nonce}.
 
