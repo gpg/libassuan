@@ -1,5 +1,12 @@
-Noteworthy changes in version 2.5.7 (unreleased) [C8/A8/R_]
+Noteworthy changes in version 2.5.7 (2024-03-06) [C8/A8/R7]
 ------------------------------------------------
+
+ * New configure option --with-libtool-modification.  [T6619]
+
+ * Change the naming of the 64 bit Windows DLL from libassuan6-0.dll
+   to libassuan-0.dll to sync this with what we did for libgpg-error.
+
+ Release-info: https://dev.gnupg.org/T7028
 
 
 Noteworthy changes in version 2.5.6 (2023-06-19) [C8/A8/R6]
