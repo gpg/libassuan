@@ -103,7 +103,7 @@ dnl Returns ok set to yes or no.
 dnl
 AC_DEFUN([_AM_PATH_LIBASSUAN_COMMON],
 [ AC_REQUIRE([AC_CANONICAL_HOST])dnl
-  AC_REQUIRE([_AM_PATH_GPGRT_CONFIG)dnl
+  AC_REQUIRE([_AM_PATH_GPGRT_CONFIG])dnl
   AC_ARG_WITH(libassuan-prefix,
               AS_HELP_STRING([--with-libassuan-prefix=PFX],
                              [prefix where LIBASSUAN is installed (optional)]),
