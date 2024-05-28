@@ -5,12 +5,12 @@ Noteworthy changes in version 3.0.0 (unreleased) [C_/A_/R_]
 
  * New function assuan_sock_accept.  [T5925]
 
- * API change: For new code, which use with nPTH, please use
-   gpgrt_get_syscall_clamp and assuan_control, instead of the
+ * API change: For new code, which uses libassuan with nPTH, please
+   use gpgrt_get_syscall_clamp and assuan_control, instead of the
    system_hooks API.  Use of ASSUAN_SYSTEM_NPTH is deprecated with new
    API version 3.  If it's really needed to keep using old
-   implementation of ASSUAN_SYSTEM_NPTH (together with new API version
-   3), you need to change your your application code, to define
+   implementation of ASSUAN_SYSTEM_NPTH, you need to change your your
+   application code, to define
    ASSUAN_REALLY_REQUIRE_V2_NPTH_SYSTEM_HOOKS before including
    <assuan.h>.  For an application which uses version 2 API
    (NEED_LIBASSUAN_API=2 in its configure.ac), use of
