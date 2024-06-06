@@ -107,13 +107,6 @@ assuan_get_log_cb (assuan_log_cb_t *log_cb, void **log_cb_data)
 }
 
 
-void
-assuan_set_system_hooks (assuan_system_hooks_t system_hooks)
-{
-  _assuan_system_hooks_copy (&_assuan_system_hooks, system_hooks);
-}
-
-
 gpg_error_t
 assuan_control (enum assuan_ctl_cmds cmd, void *arg)
 {
@@ -190,7 +183,6 @@ assuan_new_ext (assuan_context_t *r_ctx, gpg_err_source_t err_source,
       return TRACE_ERR (gpg_err_code_from_syserror ());
 
     memcpy (ctx, &wctx, sizeof (*ctx));
-    ctx->system = _assuan_system_hooks;
 
     /* FIXME: Delegate to subsystems/engines, as the FDs are not our
        responsibility (we don't deallocate them, for example).  */

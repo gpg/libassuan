@@ -111,9 +111,6 @@ struct assuan_context_s
   assuan_io_monitor_t io_monitor;
   void *io_monitor_data;
 
-  /* Callback handlers replacing system I/O functions.  */
-  struct assuan_system_hooks system;
-
   int peercred_valid;   /* Whether this structure has valid information. */
   struct _assuan_peercred peercred;
 
@@ -318,15 +315,30 @@ assuan_fd_t _assuan_socket (assuan_context_t ctx, int namespace,
 int _assuan_connect (assuan_context_t ctx, assuan_fd_t sock,
                      struct sockaddr *addr, socklen_t length);
 
-extern struct assuan_system_hooks _assuan_system_hooks;
-
-/* Copy the system hooks struct, paying attention to version
-   differences.  SRC is usually from the user, DST MUST be from the
-   library.  */
-void
-_assuan_system_hooks_copy (assuan_system_hooks_t dst,
-			   assuan_system_hooks_t src);
-
+void __assuan_usleep (assuan_context_t ctx, unsigned int usec);
+int __assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx);
+int __assuan_close (assuan_context_t ctx, assuan_fd_t fd);
+int __assuan_spawn (assuan_context_t ctx, assuan_pid_t *r_pid, const char *name,
+		    const char **argv, assuan_fd_t fd_in, assuan_fd_t fd_out,
+                    assuan_fd_t *fd_child_list,
+                    void (*atfork) (void *opaque, int reserved),
+                    void *atforkvalue, unsigned int flags);
+int __assuan_socketpair (assuan_context_t ctx, int _namespace, int style,
+                         int protocol, assuan_fd_t filedes[2]);
+assuan_fd_t __assuan_socket (assuan_context_t ctx, int _namespace,
+                             int style, int protocol);
+int __assuan_connect (assuan_context_t ctx, assuan_fd_t sock,
+                      struct sockaddr *addr, socklen_t length);
+ssize_t __assuan_read (assuan_context_t ctx, assuan_fd_t fd,
+                       void *buffer, size_t size);
+ssize_t __assuan_write (assuan_context_t ctx, assuan_fd_t fd,
+                        const void *buffer, size_t size);
+int __assuan_recvmsg (assuan_context_t ctx, assuan_fd_t fd,
+                      assuan_msghdr_t msg, int flags);
+int __assuan_sendmsg (assuan_context_t ctx, assuan_fd_t fd,
+                      const assuan_msghdr_t msg, int flags);
+assuan_pid_t __assuan_waitpid (assuan_context_t ctx, assuan_pid_t pid,
+                               int nowait, int *status, int options);
 
 /*-- assuan-pipe-server.c --*/
 void _assuan_release_context (assuan_context_t ctx);

@@ -233,58 +233,7 @@ typedef unsigned int (*assuan_io_monitor_t) (assuan_context_t ctx, void *hook,
 void assuan_set_io_monitor (assuan_context_t ctx,
 			    assuan_io_monitor_t io_monitor, void *hook_data);
 
-/* The system hooks.  See assuan_set_system_hooks et al. */
-#define ASSUAN_SYSTEM_HOOKS_VERSION 2
 #define ASSUAN_SPAWN_DETACHED 128
-struct assuan_system_hooks
-{
-  /* Always set to ASSUAN_SYTEM_HOOKS_VERSION.  */
-  int version;
-
-  /* Sleep for the given number of microseconds.  */
-  void (*usleep) (assuan_context_t ctx, unsigned int usec);
-
-  /* Create a pipe with an inheritable end.  */
-  int (*pipe) (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx);
-
- /* Close the given file descriptor, created with _assuan_pipe or one
-   of the socket functions.  */
-  int (*close) (assuan_context_t ctx, assuan_fd_t fd);
-
-
-  ssize_t (*read) (assuan_context_t ctx, assuan_fd_t fd, void *buffer,
-		   size_t size);
-  ssize_t (*write) (assuan_context_t ctx, assuan_fd_t fd,
-		    const void *buffer, size_t size);
-
-  int (*recvmsg) (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
-		  int flags);
-  int (*sendmsg) (assuan_context_t ctx, assuan_fd_t fd,
-		  const assuan_msghdr_t msg, int flags);
-
-  /* If NAME is NULL, don't exec, just fork.  FD_CHILD_LIST is
-     modified to reflect the value of the FD in the peer process (on
-     Windows).  */
-  int (*spawn) (assuan_context_t ctx, assuan_pid_t *r_pid, const char *name,
-		const char **argv,
-		assuan_fd_t fd_in, assuan_fd_t fd_out,
-		assuan_fd_t *fd_child_list,
-		void (*atfork) (void *opaque, int reserved),
-		void *atforkvalue, unsigned int flags);
-
-  /* If action is 0, like waitpid.  If action is 1, just release the PID?  */
-  assuan_pid_t (*waitpid) (assuan_context_t ctx, assuan_pid_t pid,
-                           int action, int *status, int options);
-  int (*socketpair) (assuan_context_t ctx, int _namespace, int style,
-		     int protocol, assuan_fd_t filedes[2]);
-  assuan_fd_t (*socket) (assuan_context_t ctx, int _namespace,
-                         int style, int protocol);
-  int (*connect) (assuan_context_t ctx, assuan_fd_t sock,
-                  struct sockaddr *addr, socklen_t length);
-};
-typedef struct assuan_system_hooks *assuan_system_hooks_t;
-
-
 
 /*
  * Configuration of the default log handler.
@@ -522,110 +471,11 @@ int assuan_sock_set_sockaddr_un (const char *fname, struct sockaddr *addr,
 int assuan_sock_get_nonce (struct sockaddr *addr, int addrlen,
                            assuan_sock_nonce_t *nonce);
 int assuan_sock_check_nonce (assuan_fd_t fd, assuan_sock_nonce_t *nonce);
-void assuan_sock_set_system_hooks (assuan_system_hooks_t system_hooks);
 
 gpg_error_t assuan_pipe_wait_server_termination (assuan_context_t ctx,
                                                  int *status, int no_hang);
 
 gpg_error_t assuan_pipe_kill_server (assuan_context_t ctx);
-
-/* Set the default system callbacks.  This is irreversible.  */
-void assuan_set_system_hooks (assuan_system_hooks_t system_hooks);
-
-/* Set the per context system callbacks.  This is irreversible.  */
-void assuan_ctx_set_system_hooks (assuan_context_t ctx,
-				  assuan_system_hooks_t system_hooks);
-
-/* Change the system hooks for the socket interface.
- * This is not thread-safe.  */
-void assuan_sock_set_system_hooks (assuan_system_hooks_t system_hooks);
-
-void __assuan_usleep (assuan_context_t ctx, unsigned int usec);
-int __assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx);
-int __assuan_close (assuan_context_t ctx, assuan_fd_t fd);
-int __assuan_spawn (assuan_context_t ctx, assuan_pid_t *r_pid, const char *name,
-		    const char **argv, assuan_fd_t fd_in, assuan_fd_t fd_out,
-                    assuan_fd_t *fd_child_list,
-                    void (*atfork) (void *opaque, int reserved),
-                    void *atforkvalue, unsigned int flags);
-int __assuan_socketpair (assuan_context_t ctx, int _namespace, int style,
-                         int protocol, assuan_fd_t filedes[2]);
-assuan_fd_t __assuan_socket (assuan_context_t ctx, int _namespace,
-                             int style, int protocol);
-int __assuan_connect (assuan_context_t ctx, assuan_fd_t sock,
-                      struct sockaddr *addr, socklen_t length);
-ssize_t __assuan_read (assuan_context_t ctx, assuan_fd_t fd,
-                       void *buffer, size_t size);
-ssize_t __assuan_write (assuan_context_t ctx, assuan_fd_t fd,
-                        const void *buffer, size_t size);
-int __assuan_recvmsg (assuan_context_t ctx, assuan_fd_t fd,
-                      assuan_msghdr_t msg, int flags);
-int __assuan_sendmsg (assuan_context_t ctx, assuan_fd_t fd,
-                      const assuan_msghdr_t msg, int flags);
-assuan_pid_t __assuan_waitpid (assuan_context_t ctx, assuan_pid_t pid,
-                               int nowait, int *status, int options);
-
-#if defined(LIBASSUAN_API_REQUESTED) && LIBASSUAN_API_REQUESTED >= 3
-#defined ASSUAN_NO_NPTH_SYSTEM_HOOKS_ANY_MORE 1
-#endif
-
-#if defined(ASSUAN_REALLY_REQUIRE_V2_NPTH_SYSTEM_HOOKS) \
-    || !defined(ASSUAN_NO_NPTH_SYSTEM_HOOKS_ANY_MORE)
-/* Standard system hooks for nPth.  */
-#define ASSUAN_SYSTEM_NPTH_IMPL						\
-  static void _assuan_npth_usleep (assuan_context_t ctx, unsigned int usec) \
-  { npth_unprotect();				                        \
-    __assuan_usleep (ctx, usec);					\
-    npth_protect(); }							\
-  static ssize_t _assuan_npth_read (assuan_context_t ctx, assuan_fd_t fd, \
-				    void *buffer, size_t size)		\
-  { ssize_t res; (void) ctx; npth_unprotect();				\
-    res = __assuan_read (ctx, fd, buffer, size);			\
-    npth_protect(); return res; }					\
-  static ssize_t _assuan_npth_write (assuan_context_t ctx, assuan_fd_t fd, \
-				     const void *buffer, size_t size)	\
-  { ssize_t res; (void) ctx; npth_unprotect();				\
-    res = __assuan_write (ctx, fd, buffer, size);			\
-    npth_protect(); return res; }					\
-  static int _assuan_npth_recvmsg (assuan_context_t ctx, assuan_fd_t fd, \
-				  assuan_msghdr_t msg, int flags)	\
-  { int res; (void) ctx; npth_unprotect();				\
-    res = __assuan_recvmsg (ctx, fd, msg, flags);			\
-    npth_protect(); return res; }					\
-  static int _assuan_npth_sendmsg (assuan_context_t ctx, assuan_fd_t fd, \
-				  const assuan_msghdr_t msg, int flags) \
-  { int res; (void) ctx; npth_unprotect();				\
-    res = __assuan_sendmsg (ctx, fd, msg, flags);			\
-    npth_protect(); return res; }					\
-  static assuan_pid_t _assuan_npth_waitpid (assuan_context_t ctx,         \
-                                            assuan_pid_t pid, int nowait, \
-                                            int *status, int options)     \
-  { assuan_pid_t res; (void) ctx; npth_unprotect();			\
-    res = __assuan_waitpid (ctx, pid, nowait, status, options);		\
-    npth_protect(); return res; }					\
-  static int _assuan_npth_connect (assuan_context_t ctx, assuan_fd_t sock, \
-				   struct sockaddr *addr, socklen_t len)\
-  { int res; npth_unprotect();						\
-    res = __assuan_connect (ctx, sock, addr, len);			\
-    npth_protect(); return res; }					\
-  static int _assuan_npth_close (assuan_context_t ctx, assuan_fd_t fd)	\
-  { int res; npth_unprotect();						\
-    res = __assuan_close (ctx, fd);					\
-    npth_protect(); return res; }					\
-									\
-  struct assuan_system_hooks _assuan_system_npth =			\
-    { ASSUAN_SYSTEM_HOOKS_VERSION, _assuan_npth_usleep, __assuan_pipe,	\
-      _assuan_npth_close, _assuan_npth_read, _assuan_npth_write,	\
-      _assuan_npth_recvmsg, _assuan_npth_sendmsg,			\
-      __assuan_spawn, _assuan_npth_waitpid, __assuan_socketpair,	\
-      __assuan_socket, _assuan_npth_connect }
-
-extern struct assuan_system_hooks _assuan_system_npth;
-#define ASSUAN_SYSTEM_NPTH &_assuan_system_npth
-#else
-#define ASSUAN_SYSTEM_NPTH_IMPL /**/
-#define ASSUAN_SYSTEM_NPTH NULL
-#endif
 
 #ifdef __cplusplus
 }

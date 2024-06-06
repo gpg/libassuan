@@ -159,19 +159,6 @@ assuan_end_confidential (assuan_context_t ctx)
 }
 
 
-/* Set the system callbacks.  */
-void
-assuan_ctx_set_system_hooks (assuan_context_t ctx,
-			     assuan_system_hooks_t system_hooks)
-{
-  TRACE2 (ctx, ASSUAN_LOG_CTX, "assuan_set_system_hooks", ctx,
-	  "system_hooks=%p (version %i)", system_hooks,
-	  system_hooks->version);
-
-  _assuan_system_hooks_copy (&ctx->system, system_hooks);
-}
-
-
 /* Set the IO monitor function.  */
 void assuan_set_io_monitor (assuan_context_t ctx,
 			    assuan_io_monitor_t io_monitor, void *hook_data)

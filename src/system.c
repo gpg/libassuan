@@ -95,48 +95,6 @@ assuan_free (assuan_context_t ctx, void *ptr)
 
 
 
-/* Copy the system hooks struct, paying attention to version
-   differences.  SRC is usually from the user, DST MUST be from the
-   library.  */
-void
-_assuan_system_hooks_copy (assuan_system_hooks_t dst,
-			   assuan_system_hooks_t src)
-
-{
-  if (src == NULL)
-    return;
-
-  /* Reset the defaults.  */
-  if (dst != &_assuan_system_hooks)
-    memcpy (dst, &_assuan_system_hooks, sizeof (*dst));
-
-  dst->version = ASSUAN_SYSTEM_HOOKS_VERSION;
-  if (src->version >= 1)
-    {
-      dst->usleep = src->usleep;
-      dst->pipe = src->pipe;
-      dst->close = src->close;
-      dst->read = src->read;
-      dst->write = src->write;
-      dst->sendmsg = src->sendmsg;
-      dst->recvmsg = src->recvmsg;
-      dst->spawn = src->spawn;
-      dst->waitpid = src->waitpid;
-      dst->socketpair = src->socketpair;
-    }
-  if (src->version >= 2)
-    {
-      dst->socket = src->socket;
-      dst->connect = src->connect;
-    }
-  if (src->version > 2)
-    /* FIXME.  Application uses newer version of the library.  What to
-       do?  */
-    ;
-}
-
-
-
 /* Sleep for the given number of microseconds.  */
 void
 _assuan_usleep (assuan_context_t ctx, unsigned int usec)
@@ -144,14 +102,9 @@ _assuan_usleep (assuan_context_t ctx, unsigned int usec)
   TRACE1 (ctx, ASSUAN_LOG_SYSIO, "_assuan_usleep", ctx,
 	  "usec=%u", usec);
 
-  if (ctx->system.version)
-    (ctx->system.usleep) (ctx, usec);
-  else
-    {
-      _assuan_pre_syscall ();
-      __assuan_usleep (ctx, usec);
-      _assuan_post_syscall ();
-    }
+  _assuan_pre_syscall ();
+  __assuan_usleep (ctx, usec);
+  _assuan_post_syscall ();
 }
 
 
@@ -165,10 +118,7 @@ _assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx)
 	      "inherit_idx=%i (Assuan uses it for %s)",
 	      inherit_idx, inherit_idx ? "reading" : "writing");
 
-  if (ctx->system.version)
-    err = (ctx->system.pipe) (ctx, fd, inherit_idx);
-  else
-    err = __assuan_pipe (ctx, fd, inherit_idx);
+  err = __assuan_pipe (ctx, fd, inherit_idx);
   if (err)
     return TRACE_SYSRES (err);
 
@@ -182,19 +132,15 @@ _assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx)
 int
 _assuan_close (assuan_context_t ctx, assuan_fd_t fd)
 {
+  int res;
+
   TRACE1 (ctx, ASSUAN_LOG_SYSIO, "_assuan_close", ctx,
 	  "fd=0x%x", fd);
 
-  if (ctx->system.version)
-    return (ctx->system.close) (ctx, fd);
-  else
-    {
-      int res;
-      _assuan_pre_syscall ();
-      res = __assuan_close (ctx, fd);
-      _assuan_post_syscall ();
-      return res;
-    }
+  _assuan_pre_syscall ();
+  res = __assuan_close (ctx, fd);
+  _assuan_post_syscall ();
+  return res;
 }
 
 
@@ -203,19 +149,15 @@ _assuan_close (assuan_context_t ctx, assuan_fd_t fd)
 int
 _assuan_close_inheritable (assuan_context_t ctx, assuan_fd_t fd)
 {
+  int res;
+
   TRACE1 (ctx, ASSUAN_LOG_SYSIO, "_assuan_close_inheritable", ctx,
 	  "fd=0x%x", fd);
 
-  if (ctx->system.version)
-    return (ctx->system.close) (ctx, fd);
-  else
-    {
-      int res;
-      _assuan_pre_syscall ();
-      res = __assuan_close (ctx, fd);
-      _assuan_post_syscall ();
-      return res;
-    }
+  _assuan_pre_syscall ();
+  res = __assuan_close (ctx, fd);
+  _assuan_post_syscall ();
+  return res;
 }
 
 
@@ -227,26 +169,16 @@ _assuan_read (assuan_context_t ctx, assuan_fd_t fd, void *buffer, size_t size)
   ssize_t res;
   TRACE_BEG3 (ctx, ASSUAN_LOG_SYSIO, "_assuan_read", ctx,
 	      "fd=0x%x, buffer=%p, size=%i", fd, buffer, size);
-  if (ctx->system.version)
-    res = (ctx->system.read) (ctx, fd, buffer, size);
-  else
-    {
-      _assuan_pre_syscall ();
-      res = __assuan_read (ctx, fd, buffer, size);
-      _assuan_post_syscall ();
-    }
+  _assuan_pre_syscall ();
+  res = __assuan_read (ctx, fd, buffer, size);
+  _assuan_post_syscall ();
   return TRACE_SYSRES (res);
 #else
-  if (ctx->system.version)
-    return (ctx->system.read) (ctx, fd, buffer, size);
-  else
-    {
-      ssize_t res;
-      _assuan_pre_syscall ();
-      res = __assuan_read (ctx, fd, buffer, size);
-      _assuan_post_syscall ();
-      return res;
-    }
+  ssize_t res;
+  _assuan_pre_syscall ();
+  res = __assuan_read (ctx, fd, buffer, size);
+  _assuan_post_syscall ();
+  return res;
 #endif
 }
 
@@ -260,26 +192,16 @@ _assuan_write (assuan_context_t ctx, assuan_fd_t fd, const void *buffer,
   ssize_t res;
   TRACE_BEG3 (ctx, ASSUAN_LOG_SYSIO, "_assuan_write", ctx,
 	      "fd=0x%x, buffer=%p, size=%i", fd, buffer, size);
-  if (ctx->system.version)
-    res = (ctx->system.write) (ctx, fd, buffer, size);
-  else
-    {
-      _assuan_pre_syscall ();
-      res = __assuan_write (ctx, fd, buffer, size);
-      _assuan_post_syscall ();
-    }
+  _assuan_pre_syscall ();
+  res = __assuan_write (ctx, fd, buffer, size);
+  _assuan_post_syscall ();
   return TRACE_SYSRES (res);
 #else
-  if (ctx->system.version)
-    return (ctx->system.write) (ctx, fd, buffer, size);
-  else
-    {
-      ssize_t res;
-      _assuan_pre_syscall ();
-      res =  __assuan_write (ctx, fd, buffer, size);
-      _assuan_post_syscall ();
-      return res;
-    }
+  ssize_t res;
+  _assuan_pre_syscall ();
+  res =  __assuan_write (ctx, fd, buffer, size);
+  _assuan_post_syscall ();
+  return res;
 #endif
 }
 
@@ -293,14 +215,9 @@ _assuan_recvmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
   int res;
   TRACE_BEG3 (ctx, ASSUAN_LOG_SYSIO, "_assuan_recvmsg", ctx,
 	      "fd=0x%x, msg=%p, flags=0x%x", fd, msg, flags);
-  if (ctx->system.version)
-    res = (ctx->system.recvmsg) (ctx, fd, msg, flags);
-  else
-    {
-      _assuan_pre_syscall ();
-      res = __assuan_recvmsg (ctx, fd, msg, flags);
-      _assuan_post_syscall ();
-    }
+  _assuan_pre_syscall ();
+  res = __assuan_recvmsg (ctx, fd, msg, flags);
+  _assuan_post_syscall ();
   if (res > 0)
     {
       struct cmsghdr *cmptr;
@@ -321,16 +238,11 @@ _assuan_recvmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
     }
   return TRACE_SYSRES (res);
 #else
-  if (ctx->system.version)
-    return (ctx->system.recvmsg) (ctx, fd, msg, flags);
-  else
-    {
-      int res;
-      _assuan_pre_syscall ();
-      res = __assuan_recvmsg (ctx, fd, msg, flags);
-      _assuan_post_syscall ();
-      return res;
-    }
+  int res;
+  _assuan_pre_syscall ();
+  res = __assuan_recvmsg (ctx, fd, msg, flags);
+  _assuan_post_syscall ();
+  return res;
 #endif
 }
 
@@ -361,26 +273,16 @@ _assuan_sendmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
 		    cmptr->cmsg_level, cmptr->cmsg_type, *(int *)data);
       }
   }
-  if (ctx->system.version)
-    res = (ctx->system.sendmsg) (ctx, fd, msg, flags);
-  else
-    {
-      _assuan_pre_syscall ();
-      res = __assuan_sendmsg (ctx, fd, msg, flags);
-      _assuan_post_syscall ();
-    }
+  _assuan_pre_syscall ();
+  res = __assuan_sendmsg (ctx, fd, msg, flags);
+  _assuan_post_syscall ();
   return TRACE_SYSRES (res);
 #else
-  if (ctx->system.version)
-    return (ctx->system.sendmsg) (ctx, fd, msg, flags);
-  else
-    {
-      int res;
-      _assuan_pre_syscall ();
-      res = __assuan_sendmsg (ctx, fd, msg, flags);
-      _assuan_post_syscall ();
-      return res;
-    }
+  int res;
+  _assuan_pre_syscall ();
+  res = __assuan_sendmsg (ctx, fd, msg, flags);
+  _assuan_post_syscall ();
+  return res;
 #endif
 }
 
@@ -425,12 +327,8 @@ _assuan_spawn (assuan_context_t ctx, assuan_pid_t *r_pid, const char *name,
 	}
     }
 
-  if (ctx->system.version)
-    res = (ctx->system.spawn) (ctx, r_pid, name, argv, fd_in, fd_out,
-                               fd_child_list, atfork, atforkvalue, flags);
-  else
-    res = __assuan_spawn (ctx, r_pid, name, argv, fd_in, fd_out,
-                          fd_child_list, atfork, atforkvalue, flags);
+  res = __assuan_spawn (ctx, r_pid, name, argv, fd_in, fd_out,
+                        fd_child_list, atfork, atforkvalue, flags);
 
   if (name)
     {
@@ -457,26 +355,15 @@ _assuan_waitpid (assuan_context_t ctx, assuan_pid_t pid, int action,
   TRACE_BEG4 (ctx, ASSUAN_LOG_SYSIO, "_assuan_waitpid", ctx,
 	      "pid=%i, action=%i, status=%p, options=%i",
 	      pid, action, status, options);
-  if (ctx->system.version)
-    res = (ctx->system.waitpid) (ctx, pid, action, status, options);
-  else
-    {
-      _assuan_pre_syscall ();
-      res = __assuan_waitpid (ctx, pid, action, status, options);
-      _assuan_post_syscall ();
-    }
-  return TRACE_SYSRES (res);
+  _assuan_pre_syscall ();
+  res = __assuan_waitpid (ctx, pid, action, status, options);
+  _assuan_post_syscall ();
 #else
-  if (ctx->system.version)
-    return (ctx->system.waitpid) (ctx, pid, action, status, options);
-  else
-    {
-      assuan_pid_t res;
-      _assuan_pre_syscall ();
-      res = __assuan_waitpid (ctx, pid, action, status, options);
-      _assuan_post_syscall ();
-      return res;
-    }
+  assuan_pid_t res;
+  _assuan_pre_syscall ();
+  res = __assuan_waitpid (ctx, pid, action, status, options);
+  _assuan_post_syscall ();
+  return res;
 #endif
 }
 
@@ -491,10 +378,7 @@ _assuan_socketpair (assuan_context_t ctx, int namespace, int style,
 	      "namespace=%i,style=%i,protocol=%i,filedes=%p",
 	      namespace, style, protocol, filedes);
 
-  if (ctx->system.version)
-    res = (ctx->system.socketpair) (ctx, namespace, style, protocol, filedes);
-  else
-    res = __assuan_socketpair (ctx, namespace, style, protocol, filedes);
+  res = __assuan_socketpair (ctx, namespace, style, protocol, filedes);
   if (res == 0)
     TRACE_LOG2 ("filedes = { 0x%x, 0x%x }", filedes[0], filedes[1]);
 
@@ -511,10 +395,7 @@ _assuan_socket (assuan_context_t ctx, int namespace, int style, int protocol)
 	      "namespace=%i,style=%i,protocol=%i",
 	      namespace, style, protocol);
 
-  if (ctx->system.version)
-    res = (ctx->system.socket) (ctx, namespace, style, protocol);
-  else
-    res = __assuan_socket (ctx, namespace, style, protocol);
+  res = __assuan_socket (ctx, namespace, style, protocol);
   return TRACE_SYSRES (res);
 }
 
@@ -527,13 +408,8 @@ _assuan_connect (assuan_context_t ctx, assuan_fd_t sock,
   TRACE_BEG3 (ctx, ASSUAN_LOG_SYSIO, "_assuan_connect", ctx,
 	      "socket=%i,addr=%p,length=%i", sock, addr, length);
 
-  if (ctx->system.version)
-    res = (ctx->system.connect) (ctx, sock, addr, length);
-  else
-    {
-      _assuan_pre_syscall ();
-      res = __assuan_connect (ctx, sock, addr, length);
-      _assuan_post_syscall ();
-    }
+  _assuan_pre_syscall ();
+  res = __assuan_connect (ctx, sock, addr, length);
+  _assuan_post_syscall ();
   return TRACE_SYSRES (res);
 }
