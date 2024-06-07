@@ -112,27 +112,23 @@ assuan_accept (assuan_context_t ctx)
           pend = strchr (p, '\n');
         }
       while (pend);
-#if defined(HAVE_W32_SYSTEM)
       if (apid != ASSUAN_INVALID_PID)
         {
           snprintf (tmpbuf, sizeof tmpbuf, "%s, process %i", p, (int)apid);
           rc = _assuan_write_line (ctx, "OK ", tmpbuf, strlen (tmpbuf));
         }
       else
-#endif
         rc = _assuan_write_line (ctx, "OK ", p, strlen (p));
 
     }
   else if (p)
     {
-#if defined(HAVE_W32_SYSTEM)
       if (apid != ASSUAN_INVALID_PID)
         {
           snprintf (tmpbuf, sizeof tmpbuf, "%s, process %i", p, (int)apid);
           rc = assuan_write_line (ctx, tmpbuf);
         }
       else
-#endif
         rc = assuan_write_line (ctx, p);
     }
   else
@@ -192,4 +188,3 @@ assuan_close_output_fd (assuan_context_t ctx)
   ctx->output_fd = ASSUAN_INVALID_FD;
   return 0;
 }
-
