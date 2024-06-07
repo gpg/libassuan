@@ -197,7 +197,7 @@ assuan_new_ext (assuan_context_t *r_ctx, gpg_err_source_t err_source,
 #else
     ctx->pid = ASSUAN_INVALID_PID;
 #endif
-    ctx->server_proc = -1;
+    ctx->server_proc = NULL;
 
     *r_ctx = ctx;
 

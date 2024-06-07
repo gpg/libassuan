@@ -177,11 +177,19 @@ struct assuan_context_s
   int max_accepts;  /* If we can not handle more than one connection,
 		       set this to 1, otherwise to -1.  */
 
-  /*
+#if GPG_ERROR_VERSION_NUMBER < 0x013200 /* 1.50 */
    * Process reference (PID on POSIX, Process Handle on Windows).
+   * Process reference.
    * Internal use, only valid for client with pipe.
    */
   assuan_pid_t server_proc;
+#else
+  /*
+   * Process reference.
+   * Internal use, only valid for client with pipe.
+   */
+  gpgrt_process_t server_proc;
+#endif
 
   /*
    * NOTE: There are two different references for the process:
@@ -300,11 +308,10 @@ int _assuan_recvmsg (assuan_context_t ctx, assuan_fd_t fd,
 		     assuan_msghdr_t msg, int flags);
 int _assuan_sendmsg (assuan_context_t ctx, assuan_fd_t fd,
 		     assuan_msghdr_t msg, int flags);
-int _assuan_spawn (assuan_context_t ctx, assuan_pid_t *r_pid, const char *name,
-		   const char *argv[],
+int _assuan_spawn (assuan_context_t ctx, const char *name, const char *argv[],
 		   assuan_fd_t fd_in, assuan_fd_t fd_out,
 		   assuan_fd_t *fd_child_list,
-		   void (*atfork) (void *opaque, int reserved),
+		   void (*atfork) (void *opaque),
 		   void *atforkvalue, unsigned int flags);
 assuan_pid_t _assuan_waitpid (assuan_context_t ctx, assuan_pid_t pid,
                               int nowait, int *status, int options);

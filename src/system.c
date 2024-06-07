@@ -34,6 +34,8 @@
 #include <fcntl.h>
 #endif
 
+#include <gpg-error.h>
+
 #include "assuan-defs.h"
 #include "debug.h"
 
@@ -293,15 +295,21 @@ _assuan_sendmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
    FD_CHILD_LIST as given (no remapping), which must be inheritable.
    On Unix, call ATFORK with ATFORKVALUE after fork and before exec.  */
 int
-_assuan_spawn (assuan_context_t ctx, assuan_pid_t *r_pid, const char *name,
-	       const char **argv,
+_assuan_spawn (assuan_context_t ctx, const char *name, const char **argv,
 	       assuan_fd_t fd_in, assuan_fd_t fd_out,
 	       assuan_fd_t *fd_child_list,
-	       void (*atfork) (void *opaque, int reserved),
+	       void (*atfork) (void *opaque),
 	       void *atforkvalue, unsigned int flags)
 {
   int res;
   int i;
+  gpgrt_spawn_actions_t act = NULL;
+  unsigned int spawn_flags;
+  gpg_err_code_t ec;
+  gpgrt_process_t proc = NULL;
+  int keep_stderr = 0;
+  assuan_fd_t *fdp;
+
   TRACE_BEG6 (ctx, ASSUAN_LOG_CTX, "_assuan_spawn", ctx,
 	      "name=%s,fd_in=0x%x,fd_out=0x%x,"
 	      "atfork=%p,atforkvalue=%p,flags=%i",
@@ -327,17 +335,45 @@ _assuan_spawn (assuan_context_t ctx, assuan_pid_t *r_pid, const char *name,
 	}
     }
 
-  res = __assuan_spawn (ctx, r_pid, name, argv, fd_in, fd_out,
-                        fd_child_list, atfork, atforkvalue, flags);
+  spawn_flags = GPGRT_PROCESS_STDIN_PIPE|GPGRT_PROCESS_STDOUT_PIPE;
+  if ((flags & ASSUAN_SPAWN_DETACHED))
+    spawn_flags |= GPGRT_PROCESS_NO_CONSOLE;
 
-  if (name)
+  if (fd_child_list)
     {
-      TRACE_LOG1 ("pid = 0x%x", *r_pid);
+      for (fdp = fd_child_list; *fdp != ASSUAN_INVALID_FD; fdp++)
+        if (*fdp == (assuan_fd_t)STDERR_FILENO)
+          {
+            keep_stderr = 1;
+            break;
+          }
     }
-  else
+  if (keep_stderr)
+    spawn_flags |= GPGRT_PROCESS_STDERR_KEEP;
+
+  ec = gpgrt_spawn_actions_new (&act);
+  if (ec)
     {
-      TRACE_LOG2 ("pid = 0x%x (%s)", *r_pid, *argv);
+      return -1;
     }
+
+#ifdef HAVE_W32_SYSTEM
+  /*FIXME*/
+  gpgrt_spawn_actions_set_inherit_handles (act, fd_child_list);
+  gpgrt_spawn_actions_set_redirect (act, fd_in, fd_out, -1);
+#else
+  gpgrt_spawn_actions_set_inherit_fds (act, fd_child_list);
+  gpgrt_spawn_actions_set_redirect (act, fd_in, fd_out, -1);
+  gpgrt_spawn_actions_set_atfork (act, atfork, atforkvalue);
+#endif
+  ec = gpgrt_process_spawn (name, argv+1, spawn_flags, act, &proc);
+  gpgrt_spawn_actions_release (act);
+  if (ec)
+    {
+      return -1;
+    }
+  ctx->server_proc = proc;
+  res = 0;
 
   return TRACE_SYSERR (res);
 }

@@ -148,12 +148,12 @@ struct at_pipe_fork
 
 
 static void
-at_pipe_fork_cb (void *opaque, int reserved)
+at_pipe_fork_cb (void *opaque)
 {
   struct at_pipe_fork *atp = opaque;
 
   if (atp->user_atfork)
-    atp->user_atfork (atp->user_atforkvalue, reserved);
+    atp->user_atfork (atp->user_atforkvalue, 0);
 
 #ifndef HAVE_W32_SYSTEM
   {
@@ -184,7 +184,6 @@ pipe_connect (assuan_context_t ctx,
   gpg_error_t rc;
   assuan_fd_t rp[2];
   assuan_fd_t wp[2];
-  assuan_pid_t pid;
   int res;
   struct at_pipe_fork atp;
   unsigned int spawn_flags;
@@ -214,7 +213,7 @@ pipe_connect (assuan_context_t ctx,
     spawn_flags |= ASSUAN_SPAWN_DETACHED;
 
   /* FIXME: Use atfork handler that closes child fds on Unix.  */
-  res = _assuan_spawn (ctx, &pid, name, argv, wp[0], rp[1],
+  res = _assuan_spawn (ctx, name, argv, wp[0], rp[1],
 		       fd_child_list, at_pipe_fork_cb, &atp, spawn_flags);
   if (res < 0)
     {
@@ -224,6 +223,20 @@ pipe_connect (assuan_context_t ctx,
       _assuan_close_inheritable (ctx, wp[0]);
       _assuan_close (ctx, wp[1]);
       return _assuan_error (ctx, rc);
+    }
+
+  /* The fork feature on POSIX when NAME==NULL.  */
+  if (!name)
+    {
+      /* Set ARGV[0] for backward compatibility.  */
+      if (ctx->server_proc == NULL)
+        {
+          /* If this is the server child process, exit early.  */
+          argv[0] = "server";
+          return 0;
+        }
+      else
+        argv[0] = "client";
     }
 
   /* Close the stdin/stdout child fds in the parent.  */
@@ -244,7 +257,6 @@ pipe_connect (assuan_context_t ctx,
   ctx->accept_handler = NULL;
   ctx->inbound.fd  = rp[0];  /* Our inbound is read end of read pipe. */
   ctx->outbound.fd = wp[1];  /* Our outbound is write end of write pipe. */
-  ctx->server_proc = pid;
 
   rc = initial_handshake (ctx);
   if (rc)
@@ -268,12 +280,12 @@ struct at_socketpair_fork
 
 
 static void
-at_socketpair_fork_cb (void *opaque, int reserved)
+at_socketpair_fork_cb (void *opaque)
 {
   struct at_socketpair_fork *atp = opaque;
 
   if (atp->user_atfork)
-    atp->user_atfork (atp->user_atforkvalue, reserved);
+    atp->user_atfork (atp->user_atforkvalue, 0);
 
 #ifndef HAVE_W32_SYSTEM
   {
@@ -299,8 +311,7 @@ at_socketpair_fork_cb (void *opaque, int reserved)
 /* This function is similar to pipe_connect but uses a socketpair and
    sets the I/O up to use sendmsg/recvmsg. */
 static gpg_error_t
-socketpair_connect (assuan_context_t ctx,
-                    const char *name, const char **argv,
+socketpair_connect (assuan_context_t ctx, const char *name, const char **argv,
                     assuan_fd_t *fd_child_list,
                     void (*atfork) (void *opaque, int reserved),
                     void *atforkvalue)
@@ -309,7 +320,6 @@ socketpair_connect (assuan_context_t ctx,
   int idx;
   int fds[2];
   char mypidstr[50];
-  pid_t pid;
   int *child_fds = NULL;
   int child_fds_cnt = 0;
   struct at_socketpair_fork atp;
@@ -352,7 +362,7 @@ socketpair_connect (assuan_context_t ctx,
   atp.peer_fd = fds[1];
   child_fds[0] = fds[1];
 
-  rc = _assuan_spawn (ctx, &pid, name, argv, ASSUAN_INVALID_FD,
+  rc = _assuan_spawn (ctx, name, argv, ASSUAN_INVALID_FD,
 		      ASSUAN_INVALID_FD, child_fds, at_socketpair_fork_cb,
 		      &atp, 0);
   if (rc < 0)
@@ -378,11 +388,18 @@ socketpair_connect (assuan_context_t ctx,
 
   _assuan_free (ctx, child_fds);
 
-  /* If this is the server child process, exit early.  */
-  if (! name && (*argv)[0] == 's')
+  /* The fork feature on POSIX when NAME==NULL.  */
+  if (!name)
     {
-      _assuan_close (ctx, fds[0]);
-      return 0;
+      /* Set ARGV[0] for backward compatibility.  */
+      if (ctx->server_proc == NULL)
+        {
+          /* If this is the server child process, exit early.  */
+          argv[0] = "server";
+          return 0;
+        }
+      else
+        argv[0] = "client";
     }
 
   _assuan_close (ctx, fds[1]);
@@ -455,35 +472,28 @@ gpg_error_t
 assuan_pipe_wait_server_termination (assuan_context_t ctx, int *status,
                                      int no_hang)
 {
-  assuan_pid_t pid;
+  gpg_err_code_t ec;
 
-  if (ctx->server_proc == -1)
+  if (ctx->server_proc == NULL)
     return _assuan_error (ctx, GPG_ERR_NO_SERVICE);
 
-  pid = _assuan_waitpid (ctx, ctx->server_proc, 0, status, no_hang);
-  if (pid == -1)
-    return _assuan_error (ctx, gpg_err_code_from_syserror ());
-  else if (pid == 0)
-    return _assuan_error (ctx, GPG_ERR_TIMEOUT);
+  ec = gpgrt_process_wait (ctx->server_proc, !no_hang);
 
-  /* We did wait on the process already, so, not any more.  */
-  ctx->flags.no_waitpid = 1;
+  if (ec)
+    return _assuan_error (ctx, ec);
+
   return 0;
 }
 
 gpg_error_t
 assuan_pipe_kill_server (assuan_context_t ctx)
 {
-  if (ctx->server_proc == -1)
+  if (ctx->server_proc == NULL)
     ; /* No pid available can't send a kill. */
   else
     {
       _assuan_pre_syscall ();
-#ifdef HAVE_W32_SYSTEM
-      TerminateProcess ((HANDLE)ctx->server_proc, 1);
-#else
-      kill (ctx->server_proc, SIGINT);
-#endif
+      gpgrt_process_terminate (ctx->server_proc);
       _assuan_post_syscall ();
     }
   return 0;

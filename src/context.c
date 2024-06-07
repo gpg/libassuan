@@ -70,10 +70,6 @@ assuan_set_flag (assuan_context_t ctx, assuan_flag_t flag, int value)
 
   switch (flag)
     {
-    case ASSUAN_NO_WAITPID:
-      ctx->flags.no_waitpid = value;
-      break;
-
     case ASSUAN_CONFIDENTIAL:
       ctx->flags.confidential = value;
       if (ctx->flags.in_inq_cb && value)
@@ -112,10 +108,6 @@ assuan_get_flag (assuan_context_t ctx, assuan_flag_t flag)
 
   switch (flag)
     {
-    case ASSUAN_NO_WAITPID:
-      res = ctx->flags.no_waitpid;
-      break;
-
     case ASSUAN_CONFIDENTIAL:
       res = ctx->flags.confidential;
       break;
@@ -219,7 +211,7 @@ assuan_get_pid (assuan_context_t ctx)
      * application should be fixed.  It's here, only for backward
      * compatibility.
      */
-    return ctx->server_proc;
+    return (pid_t)-1;
 }
 
 

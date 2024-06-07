@@ -48,11 +48,10 @@ _assuan_client_finish (assuan_context_t ctx)
       _assuan_close (ctx, ctx->outbound.fd);
       ctx->outbound.fd = ASSUAN_INVALID_FD;
     }
-  if (ctx->server_proc != -1)
+  if (ctx->server_proc != NULL)
     {
-      if (!ctx->flags.is_socket)
-	_assuan_waitpid (ctx, ctx->server_proc, ctx->flags.no_waitpid, NULL, 0);
-      ctx->server_proc = -1;
+      gpgrt_process_release (ctx->server_proc);
+      ctx->server_proc = NULL;
     }
 
   _assuan_uds_deinit (ctx);
