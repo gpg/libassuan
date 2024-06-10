@@ -232,8 +232,6 @@ typedef unsigned int (*assuan_io_monitor_t) (assuan_context_t ctx, void *hook,
 /* Set the IO monitor function.  */
 void assuan_set_io_monitor (assuan_context_t ctx,
 			    assuan_io_monitor_t io_monitor, void *hook_data);
-
-#define ASSUAN_SPAWN_DETACHED 128
 
 /*
  * Configuration of the default log handler.
