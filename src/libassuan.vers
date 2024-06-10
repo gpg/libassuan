@@ -113,7 +113,7 @@ LIBASSUAN_1.0 {
     __assuan_close;
     __assuan_pipe;
     __assuan_socketpair;
-    __assuan_spawn;
+#   __assuan_spawn;
     __assuan_usleep;
     __assuan_socket;
     __assuan_connect;
@@ -121,7 +121,7 @@ LIBASSUAN_1.0 {
     __assuan_write;
     __assuan_recvmsg;
     __assuan_sendmsg;
-    __assuan_waitpid;
+#   __assuan_waitpid;
 
   local:
     *;

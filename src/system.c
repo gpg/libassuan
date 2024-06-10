@@ -376,33 +376,6 @@ _assuan_spawn (assuan_context_t ctx, const char *name, const char **argv,
 
   return TRACE_SYSERR (res);
 }
-
-
-
-/* FIXME: Add some sort of waitpid function that covers GPGME and
-   gpg-agent's use of assuan.  */
-assuan_pid_t
-_assuan_waitpid (assuan_context_t ctx, assuan_pid_t pid, int action,
-		 int *status, int options)
-{
-#if DEBUG_SYSIO
-  assuan_pid_t res;
-  TRACE_BEG4 (ctx, ASSUAN_LOG_SYSIO, "_assuan_waitpid", ctx,
-	      "pid=%i, action=%i, status=%p, options=%i",
-	      pid, action, status, options);
-  _assuan_pre_syscall ();
-  res = __assuan_waitpid (ctx, pid, action, status, options);
-  _assuan_post_syscall ();
-#else
-  assuan_pid_t res;
-  _assuan_pre_syscall ();
-  res = __assuan_waitpid (ctx, pid, action, status, options);
-  _assuan_post_syscall ();
-  return res;
-#endif
-}
-
-
 
 int
 _assuan_socketpair (assuan_context_t ctx, int namespace, int style,

@@ -91,7 +91,7 @@ EXPORTS
     __assuan_close			@70
     __assuan_pipe			@71
     __assuan_socketpair			@72
-    __assuan_spawn			@73
+;   __assuan_spawn			@73
     __assuan_usleep			@74
     assuan_fdopen			@75
     assuan_client_read_response		@76
@@ -109,7 +109,7 @@ EXPORTS
     __assuan_write			@88
     __assuan_recvmsg			@89
     __assuan_sendmsg			@90
-    __assuan_waitpid			@91
+;   __assuan_waitpid			@91
     assuan_check_version                @92
     assuan_sock_set_sockaddr_un         @93
     assuan_sock_set_flag                @94
