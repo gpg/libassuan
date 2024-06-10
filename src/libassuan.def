@@ -24,7 +24,7 @@ EXPORTS
     assuan_close_input_fd		@3
     assuan_close_output_fd		@4
     assuan_command_parse_fd		@5
-    assuan_ctx_set_system_hooks		@6
+;   assuan_ctx_set_system_hooks		@6
     assuan_end_confidential		@7
     assuan_get_active_fds		@8
     assuan_get_assuan_log_prefix	@9
@@ -75,7 +75,7 @@ EXPORTS
     assuan_set_malloc_hooks		@54
     assuan_set_okay_line		@55
     assuan_set_pointer			@56
-    assuan_set_system_hooks		@57
+;   assuan_set_system_hooks		@57
     assuan_sock_bind			@58
     assuan_sock_check_nonce		@59
     assuan_sock_close			@60
@@ -97,10 +97,10 @@ EXPORTS
     assuan_client_read_response		@76
     assuan_client_parse_response	@77
     assuan_set_sock_nonce               @78
-    _assuan_w32ce_create_pipe           @79
+;   _assuan_w32ce_create_pipe           @79
     assuan_free                         @80
-    _assuan_w32ce_prepare_pipe          @81
-    _assuan_w32ce_finish_pipe           @82
+;   _assuan_w32ce_prepare_pipe          @81
+;   _assuan_w32ce_finish_pipe           @82
     __assuan_socket			@83
     __assuan_connect			@84
     assuan_register_pre_cmd_notify	@85
@@ -115,7 +115,7 @@ EXPORTS
     assuan_sock_set_flag                @94
     assuan_sock_get_flag                @95
     assuan_sock_connect_byname          @96
-    assuan_sock_set_system_hooks        @97
+;   assuan_sock_set_system_hooks        @97
     assuan_sock_accept                  @98
     assuan_pipe_wait_server_termination @99
     assuan_pipe_kill_server             @100

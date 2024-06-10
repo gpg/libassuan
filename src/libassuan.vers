@@ -30,7 +30,7 @@ LIBASSUAN_1.0 {
     assuan_close_input_fd;
     assuan_close_output_fd;
     assuan_command_parse_fd;
-    assuan_ctx_set_system_hooks;
+#   assuan_ctx_set_system_hooks;
     assuan_end_confidential;
     assuan_fdopen;
     assuan_get_active_fds;
@@ -84,7 +84,7 @@ LIBASSUAN_1.0 {
     assuan_set_okay_line;
     assuan_set_pointer;
     assuan_set_sock_nonce;
-    assuan_set_system_hooks;
+#   assuan_set_system_hooks;
     assuan_sock_bind;
     assuan_sock_check_nonce;
     assuan_sock_close;
@@ -104,7 +104,7 @@ LIBASSUAN_1.0 {
     assuan_sock_set_flag;
     assuan_sock_get_flag;
     assuan_sock_connect_byname;
-    assuan_sock_set_system_hooks;
+#   assuan_sock_set_system_hooks;
     assuan_sock_accept;
     assuan_pipe_wait_server_termination;
     assuan_pipe_kill_server;
