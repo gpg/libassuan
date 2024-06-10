@@ -358,9 +358,8 @@ _assuan_spawn (assuan_context_t ctx, const char *name, const char **argv,
     }
 
 #ifdef HAVE_W32_SYSTEM
-  /*FIXME*/
   gpgrt_spawn_actions_set_inherit_handles (act, fd_child_list);
-  gpgrt_spawn_actions_set_redirect (act, fd_in, fd_out, -1);
+  gpgrt_spawn_actions_set_redirect (act, fd_in, fd_out, ASSUAN_INVALID_FD);
 #else
   gpgrt_spawn_actions_set_inherit_fds (act, fd_child_list);
   gpgrt_spawn_actions_set_redirect (act, fd_in, fd_out, -1);
