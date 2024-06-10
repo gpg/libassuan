@@ -111,24 +111,6 @@ _assuan_usleep (assuan_context_t ctx, unsigned int usec)
 
 
 
-/* Create a pipe with one inheritable end.  */
-int
-_assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx)
-{
-  int err;
-  TRACE_BEG2 (ctx, ASSUAN_LOG_SYSIO, "_assuan_pipe", ctx,
-	      "inherit_idx=%i (Assuan uses it for %s)",
-	      inherit_idx, inherit_idx ? "reading" : "writing");
-
-  err = __assuan_pipe (ctx, fd, inherit_idx);
-  if (err)
-    return TRACE_SYSRES (err);
-
-  return TRACE_SUC2 ("read=0x%x, write=0x%x", fd[0], fd[1]);
-}
-
-
-
 /* Close the given file descriptor, created with _assuan_pipe or one
    of the socket functions.  */
 int
@@ -286,95 +268,6 @@ _assuan_sendmsg (assuan_context_t ctx, assuan_fd_t fd, assuan_msghdr_t msg,
   _assuan_post_syscall ();
   return res;
 #endif
-}
-
-
-
-/* Create a new process from NAME and ARGV.  Provide FD_IN and FD_OUT
-   as stdin and stdout.  Inherit the ASSUAN_INVALID_FD-terminated
-   FD_CHILD_LIST as given (no remapping), which must be inheritable.
-   On Unix, call ATFORK with ATFORKVALUE after fork and before exec.  */
-int
-_assuan_spawn (assuan_context_t ctx, const char *name, const char **argv,
-	       assuan_fd_t fd_in, assuan_fd_t fd_out,
-	       assuan_fd_t *fd_child_list,
-	       void (*atfork) (void *opaque),
-	       void *atforkvalue, unsigned int flags)
-{
-  int res;
-  int i;
-  gpgrt_spawn_actions_t act = NULL;
-  unsigned int spawn_flags;
-  gpg_err_code_t ec;
-  gpgrt_process_t proc = NULL;
-  int keep_stderr = 0;
-  assuan_fd_t *fdp;
-
-  TRACE_BEG6 (ctx, ASSUAN_LOG_CTX, "_assuan_spawn", ctx,
-	      "name=%s,fd_in=0x%x,fd_out=0x%x,"
-	      "atfork=%p,atforkvalue=%p,flags=%i",
-	      name ? name : "(null)", fd_in, fd_out,
-	      atfork, atforkvalue, flags);
-
-  if (name)
-    {
-      i = 0;
-      while (argv[i])
-	{
-	  TRACE_LOG2 ("argv[%2i] = %s", i, argv[i]);
-	  i++;
-	}
-    }
-  i = 0;
-  if (fd_child_list)
-    {
-      while (fd_child_list[i] != ASSUAN_INVALID_FD)
-	{
-	  TRACE_LOG2 ("fd_child_list[%2i] = 0x%x", i, fd_child_list[i]);
-	  i++;
-	}
-    }
-
-  spawn_flags = GPGRT_PROCESS_STDIN_PIPE|GPGRT_PROCESS_STDOUT_PIPE;
-  if ((flags & ASSUAN_SPAWN_DETACHED))
-    spawn_flags |= GPGRT_PROCESS_NO_CONSOLE;
-
-  if (fd_child_list)
-    {
-      for (fdp = fd_child_list; *fdp != ASSUAN_INVALID_FD; fdp++)
-        if (*fdp == (assuan_fd_t)STDERR_FILENO)
-          {
-            keep_stderr = 1;
-            break;
-          }
-    }
-  if (keep_stderr)
-    spawn_flags |= GPGRT_PROCESS_STDERR_KEEP;
-
-  ec = gpgrt_spawn_actions_new (&act);
-  if (ec)
-    {
-      return -1;
-    }
-
-#ifdef HAVE_W32_SYSTEM
-  gpgrt_spawn_actions_set_inherit_handles (act, fd_child_list);
-  gpgrt_spawn_actions_set_redirect (act, fd_in, fd_out, ASSUAN_INVALID_FD);
-#else
-  gpgrt_spawn_actions_set_inherit_fds (act, fd_child_list);
-  gpgrt_spawn_actions_set_redirect (act, fd_in, fd_out, -1);
-  gpgrt_spawn_actions_set_atfork (act, atfork, atforkvalue);
-#endif
-  ec = gpgrt_process_spawn (name, argv+1, spawn_flags, act, &proc);
-  gpgrt_spawn_actions_release (act);
-  if (ec)
-    {
-      return -1;
-    }
-  ctx->server_proc = proc;
-  res = 0;
-
-  return TRACE_SYSERR (res);
 }
 
 int

@@ -64,57 +64,6 @@ __assuan_usleep (assuan_context_t ctx, unsigned int usec)
 
 
 
-/* Create a pipe with one inheritable end.  Default implementation.  */
-int
-__assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx)
-{
-  HANDLE rh;
-  HANDLE wh;
-  HANDLE th;
-  SECURITY_ATTRIBUTES sec_attr;
-
-  memset (&sec_attr, 0, sizeof (sec_attr));
-  sec_attr.nLength = sizeof (sec_attr);
-  sec_attr.bInheritHandle = FALSE;
-
-  if (!CreatePipe (&rh, &wh, &sec_attr, 0))
-    {
-      TRACE1 (ctx, ASSUAN_LOG_SYSIO, "__assuan_pipe", ctx,
-	      "CreatePipe failed: %s", _assuan_w32_strerror (ctx, -1));
-      gpg_err_set_errno (EIO);
-      return -1;
-    }
-
-  if (! DuplicateHandle (GetCurrentProcess(), (inherit_idx == 0) ? rh : wh,
-			 GetCurrentProcess(), &th, 0,
-			 TRUE, DUPLICATE_SAME_ACCESS ))
-    {
-      TRACE1 (ctx, ASSUAN_LOG_SYSIO, "__assuan_pipe", ctx,
-	      "DuplicateHandle failed: %s", _assuan_w32_strerror (ctx, -1));
-      CloseHandle (rh);
-      CloseHandle (wh);
-      gpg_err_set_errno (EIO);
-      return -1;
-    }
-  if (inherit_idx == 0)
-    {
-      CloseHandle (rh);
-      rh = th;
-    }
-  else
-    {
-      CloseHandle (wh);
-      wh = th;
-    }
-
-  fd[0] = rh;
-  fd[1] = wh;
-
-  return 0;
-}
-
-
-
 /* Close the given file descriptor, created with _assuan_pipe or one
    of the socket functions.  Default implementation.  */
 int

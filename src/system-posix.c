@@ -87,15 +87,6 @@ __assuan_usleep (assuan_context_t ctx, unsigned int usec)
 
 
 
-/* Create a pipe with one inheritable end.  Easy for Posix.  */
-int
-__assuan_pipe (assuan_context_t ctx, assuan_fd_t fd[2], int inherit_idx)
-{
-  return pipe (fd);
-}
-
-
-
 /* Close the given file descriptor, created with _assuan_pipe or one
    of the socket functions.  Easy for Posix.  */
 int

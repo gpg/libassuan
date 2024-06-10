@@ -89,7 +89,7 @@ EXPORTS
     assuan_write_line			@68
     assuan_write_status			@69
     __assuan_close			@70
-    __assuan_pipe			@71
+;   __assuan_pipe			@71
     __assuan_socketpair			@72
 ;   __assuan_spawn			@73
     __assuan_usleep			@74

@@ -111,7 +111,7 @@ LIBASSUAN_1.0 {
     assuan_control;
 
     __assuan_close;
-    __assuan_pipe;
+#   __assuan_pipe;
     __assuan_socketpair;
 #   __assuan_spawn;
     __assuan_usleep;

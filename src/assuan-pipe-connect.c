@@ -174,6 +174,86 @@ at_pipe_fork_cb (void *opaque)
 }
 
 
+static int
+my_spawn (assuan_context_t ctx, const char *name, const char **argv,
+          assuan_fd_t *fd_child_list, void (*atfork) (void *opaque),
+          void *atforkvalue, unsigned int spawn_flags)
+{
+  int i;
+  gpgrt_spawn_actions_t act = NULL;
+  gpg_err_code_t ec;
+  gpgrt_process_t proc = NULL;
+  int keep_stderr = 0;
+  assuan_fd_t *fdp;
+
+  TRACE_BEG4 (ctx, ASSUAN_LOG_CTX, "my_spawn", ctx,
+	      "name=%s,atfork=%p,atforkvalue=%p,flags=%i",
+	      name ? name : "(null)",
+	      atfork, atforkvalue, spawn_flags);
+
+  if (name)
+    {
+      i = 0;
+      while (argv[i])
+	{
+	  TRACE_LOG2 ("argv[%2i] = %s", i, argv[i]);
+	  i++;
+	}
+    }
+  i = 0;
+  if (fd_child_list)
+    {
+      while (fd_child_list[i] != ASSUAN_INVALID_FD)
+	{
+	  TRACE_LOG2 ("fd_child_list[%2i] = 0x%x", i, fd_child_list[i]);
+	  i++;
+	}
+    }
+
+  if (fd_child_list)
+    {
+      for (fdp = fd_child_list; *fdp != ASSUAN_INVALID_FD; fdp++)
+        if (*fdp == (assuan_fd_t)STDERR_FILENO)
+          {
+            keep_stderr = 1;
+            break;
+          }
+    }
+  if (keep_stderr)
+    spawn_flags |= GPGRT_PROCESS_STDERR_KEEP;
+
+  ec = gpgrt_spawn_actions_new (&act);
+  if (ec)
+    return -1;
+
+#ifdef HAVE_W32_SYSTEM
+  gpgrt_spawn_actions_set_inherit_handles (act, fd_child_list);
+#else
+  gpgrt_spawn_actions_set_inherit_fds (act, fd_child_list);
+  gpgrt_spawn_actions_set_atfork (act, atfork, atforkvalue);
+#endif
+  ec = gpgrt_process_spawn (name, argv+1, spawn_flags, act, &proc);
+  gpgrt_spawn_actions_release (act);
+  if (ec)
+    return -1;
+  ctx->server_proc = proc;
+
+  if (proc)
+    {
+#ifdef HAVE_W32_SYSTEM
+      HANDLE inbound, outbound;
+      ec = gpgrt_process_ctl (proc, GPGRT_PROCESS_GET_HANDLES,
+                              &inbound, &outbound, NULL);
+#else
+      int inbound, outbound;
+      ec = gpgrt_process_get_fds (proc, 0, &inbound, &outbound, NULL);
+#endif
+      ctx->inbound.fd  = outbound;
+      ctx->outbound.fd = inbound;
+    }
+  return TRACE_SYSERR (0);
+}
+
 static gpg_error_t
 pipe_connect (assuan_context_t ctx,
 	      const char *name, const char **argv,
@@ -182,8 +262,6 @@ pipe_connect (assuan_context_t ctx,
 	      void *atforkvalue, unsigned int flags)
 {
   gpg_error_t rc;
-  assuan_fd_t rp[2];
-  assuan_fd_t wp[2];
   int res;
   struct at_pipe_fork atp;
   unsigned int spawn_flags;
@@ -198,30 +276,14 @@ pipe_connect (assuan_context_t ctx,
   if (! ctx->flags.no_fixsignals)
     fix_signals ();
 
-  if (_assuan_pipe (ctx, rp, 1) < 0)
-    return _assuan_error (ctx, gpg_err_code_from_syserror ());
-
-  if (_assuan_pipe (ctx, wp, 0) < 0)
-    {
-      _assuan_close (ctx, rp[0]);
-      _assuan_close_inheritable (ctx, rp[1]);
-      return _assuan_error (ctx, gpg_err_code_from_syserror ());
-    }
-
-  spawn_flags = 0;
+  spawn_flags = GPGRT_PROCESS_STDIN_PIPE|GPGRT_PROCESS_STDOUT_PIPE;
   if (flags & ASSUAN_PIPE_CONNECT_DETACHED)
-    spawn_flags |= ASSUAN_SPAWN_DETACHED;
+    spawn_flags |= GPGRT_PROCESS_NO_CONSOLE;
 
-  /* FIXME: Use atfork handler that closes child fds on Unix.  */
-  res = _assuan_spawn (ctx, name, argv, wp[0], rp[1],
-		       fd_child_list, at_pipe_fork_cb, &atp, spawn_flags);
+  res = my_spawn (ctx, name, argv, fd_child_list, at_pipe_fork_cb, &atp, spawn_flags);
   if (res < 0)
     {
       rc = gpg_err_code_from_syserror ();
-      _assuan_close (ctx, rp[0]);
-      _assuan_close_inheritable (ctx, rp[1]);
-      _assuan_close_inheritable (ctx, wp[0]);
-      _assuan_close (ctx, wp[1]);
       return _assuan_error (ctx, rc);
     }
 
@@ -239,10 +301,6 @@ pipe_connect (assuan_context_t ctx,
         argv[0] = "client";
     }
 
-  /* Close the stdin/stdout child fds in the parent.  */
-  _assuan_close_inheritable (ctx, rp[1]);
-  _assuan_close_inheritable (ctx, wp[0]);
-
   ctx->engine.release = _assuan_client_release;
   ctx->engine.readfnc = _assuan_simple_read;
   ctx->engine.writefnc = _assuan_simple_write;
@@ -255,8 +313,6 @@ pipe_connect (assuan_context_t ctx,
   ctx->finish_handler = _assuan_client_finish;
   ctx->max_accepts = 1;
   ctx->accept_handler = NULL;
-  ctx->inbound.fd  = rp[0];  /* Our inbound is read end of read pipe. */
-  ctx->outbound.fd = wp[1];  /* Our outbound is write end of write pipe. */
 
   rc = initial_handshake (ctx);
   if (rc)
@@ -362,9 +418,8 @@ socketpair_connect (assuan_context_t ctx, const char *name, const char **argv,
   atp.peer_fd = fds[1];
   child_fds[0] = fds[1];
 
-  rc = _assuan_spawn (ctx, name, argv, ASSUAN_INVALID_FD,
-		      ASSUAN_INVALID_FD, child_fds, at_socketpair_fork_cb,
-		      &atp, 0);
+  rc = my_spawn (ctx, name, argv, child_fds, at_socketpair_fork_cb,
+                 &atp, 0);
   if (rc < 0)
     {
       err = gpg_err_code_from_syserror ();
