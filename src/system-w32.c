@@ -663,22 +663,3 @@ __assuan_connect (assuan_context_t ctx, assuan_fd_t sock,
     gpg_err_set_errno (_assuan_sock_wsa2errno (WSAGetLastError ()));
   return res;
 }
-
-
-/* The default system hooks for assuan contexts.  */
-struct assuan_system_hooks _assuan_system_hooks =
-  {
-    0,
-    __assuan_usleep,
-    __assuan_pipe,
-    __assuan_close,
-    __assuan_read,
-    __assuan_write,
-    __assuan_recvmsg,
-    __assuan_sendmsg,
-    __assuan_spawn,
-    __assuan_waitpid,
-    __assuan_socketpair,
-    __assuan_socket,
-    __assuan_connect
-  };
