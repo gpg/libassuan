@@ -123,15 +123,12 @@ sign-release:
              exit 2;\
           fi;\
 	  mysignkey="$$x";\
-	  files1="$(RELEASE_NAME).tar.bz2 \
-	          $(RELEASE_NAME).tar.gz" ; \
+	  files1="$(RELEASE_NAME).tar.bz2" ;\
 	  files2="$(RELEASE_NAME).tar.bz2.sig \
-	          $(RELEASE_NAME).tar.gz.sig  \
 		  $(RELEASE_NAME).swdb \
 		  $(RELEASE_NAME).buildlog" ;\
 	  echo "/* Signing the source tarball ..." ;\
 	  gpg -sbu $$mysignkey $(RELEASE_NAME).tar.bz2 ;\
-	  gpg -sbu $$mysignkey $(RELEASE_NAME).tar.gz  ;\
 	  cat $(RELEASE_NAME).swdb >swdb.snippet;\
 	  echo >>swdb.snippet ;\
 	  sha1sum $${files1} >>swdb.snippet ;\
