@@ -44,7 +44,7 @@ _assuan_sysutils_blurb (void)
     "\n\n"
     "This is Libassuan " PACKAGE_VERSION " - The GnuPG IPC Library\n"
     "Copyright 2001-2013 Free Software Foundation, Inc.\n"
-    "Copyright 2001-2020 g10 Code GmbH\n"
+    "Copyright 2001-2021,2023-2024 g10 Code GmbH\n"
     "\n"
     "SPDX-License-Identifier: LGPL-2.1-or-later\n"
     "(" BUILD_REVISION " " BUILD_TIMESTAMP ")\n"
