@@ -587,6 +587,27 @@ _assuan_sock_set_flag (assuan_context_t ctx, assuan_fd_t sockfd,
           return -1;
         }
     }
+  else if (!strcmp (name, "linger"))
+    {
+      struct linger li = { 0 };
+
+      if (value >= 0)
+        {
+          li.l_onoff = 1;
+          li.l_linger = value;
+        }
+
+      if (setsockopt (HANDLE2SOCKET(sockfd), SOL_SOCKET, SO_LINGER,
+                      (void *)&li, sizeof li))
+        return -1;
+    }
+  else if (!strcmp (name, "reuseaddr"))
+    {
+      int i = !!value;
+      if (setsockopt (HANDLE2SOCKET(sockfd), SOL_SOCKET, SO_REUSEADDR,
+                      (void *)&i, sizeof (i)))
+        return -1;
+    }
   else
     {
       gpg_err_set_errno (EINVAL);
@@ -619,6 +640,39 @@ _assuan_sock_get_flag (assuan_context_t ctx, assuan_fd_t sockfd,
   else if (!strcmp (name, "socks"))
     {
       *r_value = tor_mode == SOCKS_PORT;
+    }
+  else if (!strcmp (name, "linger"))
+    {
+      struct linger li = { 0 };
+      socklen_t lilen = sizeof li;
+
+      if (getsockopt (HANDLE2SOCKET(sockfd), SOL_SOCKET, SO_LINGER,
+                      (void *)&li, &lilen))
+        return -1;
+      else if (lilen < sizeof li)
+        {
+          gpg_err_set_errno (EINVAL);
+          return -1;
+        }
+      if (li.l_onoff && li.l_linger >= 0)
+        *r_value = li.l_linger;
+      else
+        *r_value = -1;
+    }
+  else if (!strcmp (name, "reuseaddr"))
+    {
+      int i = 0;
+      socklen_t ilen = sizeof i;
+
+      if (getsockopt (HANDLE2SOCKET(sockfd), SOL_SOCKET, SO_REUSEADDR,
+                      (void *)&i, &ilen))
+        return -1;
+      else if (ilen < sizeof i)
+        {
+          gpg_err_set_errno (EINVAL);
+          return -1;
+        }
+      *r_value = !!i;
     }
   else
     {
