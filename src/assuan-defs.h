@@ -431,9 +431,6 @@ char *stpcpy (char *dest, const char *src);
 #define clearenv _assuan_clearenv
 int setenv (const char *name, const char *value, int replace);
 #endif
-#ifndef HAVE_PUTC_UNLOCKED
-int putc_unlocked (int c, FILE *stream);
-#endif
 
 
 #define DIM(v)		     (sizeof(v)/sizeof((v)[0]))
