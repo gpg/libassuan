@@ -175,7 +175,7 @@ AC_DEFUN([_AM_PATH_LIBASSUAN_COMMON],
 
   if test $ok = yes; then
     AC_MSG_RESULT([yes ($libassuan_config_version)])
-    AC_DEFINE(LIBASSUAN_API_REQUESTED, $req_libassuan_api, Requested API version for libassuan)
+    AC_DEFINE_UNQUOTED(LIBASSUAN_API_REQUESTED, $req_libassuan_api, [Requested API version for libassuan])
   else
     AC_MSG_RESULT(no)
   fi
