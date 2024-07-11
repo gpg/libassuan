@@ -1089,7 +1089,7 @@ _assuan_sock_accept (assuan_context_t ctx, assuan_fd_t sockfd,
 
 int
 _assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
-		      struct sockaddr *addr, int addrlen)
+		      struct sockaddr *addr, socklen_t addrlen)
 {
 #ifdef HAVE_W32_SYSTEM
   if (addr->sa_family == AF_LOCAL || addr->sa_family == AF_UNIX)
@@ -1260,7 +1260,7 @@ _assuan_sock_connect_byname (assuan_context_t ctx, const char *host,
 
 int
 _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
-		   struct sockaddr *addr, int addrlen)
+		   struct sockaddr *addr, socklen_t addrlen)
 {
   int res;
 
@@ -1427,7 +1427,7 @@ _assuan_sock_set_sockaddr_un (const char *fname, struct sockaddr *addr,
 
 int
 _assuan_sock_get_nonce (assuan_context_t ctx, struct sockaddr *addr,
-			int addrlen, assuan_sock_nonce_t *nonce)
+			socklen_t addrlen, assuan_sock_nonce_t *nonce)
 {
 #ifdef HAVE_W32_SYSTEM
   if (addr->sa_family == AF_LOCAL || addr->sa_family == AF_UNIX)
@@ -1604,7 +1604,8 @@ assuan_sock_accept (assuan_fd_t sockfd, struct sockaddr *addr,
 }
 
 int
-assuan_sock_connect (assuan_fd_t sockfd, struct sockaddr *addr, int addrlen)
+assuan_sock_connect (assuan_fd_t sockfd, struct sockaddr *addr,
+                     socklen_t addrlen)
 {
   return _assuan_sock_connect (sock_ctx, sockfd, addr, addrlen);
 }
@@ -1619,7 +1620,8 @@ assuan_sock_connect_byname (const char *host, unsigned short port,
 }
 
 int
-assuan_sock_bind (assuan_fd_t sockfd, struct sockaddr *addr, int addrlen)
+assuan_sock_bind (assuan_fd_t sockfd, struct sockaddr *addr,
+                  socklen_t addrlen)
 {
   return _assuan_sock_bind (sock_ctx, sockfd, addr, addrlen);
 }
@@ -1632,7 +1634,7 @@ assuan_sock_set_sockaddr_un (const char *fname, struct sockaddr *addr,
 }
 
 int
-assuan_sock_get_nonce (struct sockaddr *addr, int addrlen,
+assuan_sock_get_nonce (struct sockaddr *addr, socklen_t addrlen,
                        assuan_sock_nonce_t *nonce)
 {
   return _assuan_sock_get_nonce (sock_ctx, addr, addrlen, nonce);

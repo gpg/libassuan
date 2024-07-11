@@ -391,13 +391,13 @@ ssize_t _assuan_simple_write (assuan_context_t ctx, const void *buffer,
 assuan_fd_t _assuan_sock_new (assuan_context_t ctx, int domain, int type,
 			      int proto);
 int _assuan_sock_connect (assuan_context_t ctx, assuan_fd_t sockfd,
-                          struct sockaddr *addr, int addrlen);
+                          struct sockaddr *addr, socklen_t addrlen);
 int _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
-		       struct sockaddr *addr, int addrlen);
+		       struct sockaddr *addr, socklen_t addrlen);
 int _assuan_sock_set_sockaddr_un (const char *fname, struct sockaddr *addr,
                                   int *r_redirected);
 int _assuan_sock_get_nonce (assuan_context_t ctx, struct sockaddr *addr,
-			    int addrlen, assuan_sock_nonce_t *nonce);
+			    socklen_t addrlen, assuan_sock_nonce_t *nonce);
 int _assuan_sock_check_nonce (assuan_context_t ctx, assuan_fd_t fd,
 			      assuan_sock_nonce_t *nonce);
 #ifdef HAVE_W32_SYSTEM

@@ -511,15 +511,16 @@ int assuan_sock_get_flag (assuan_fd_t sockfd, const char *name, int *r_value);
 assuan_fd_t assuan_sock_accept (assuan_fd_t sockfd,
                                 struct sockaddr *addr, socklen_t *p_addrlen);
 int assuan_sock_connect (assuan_fd_t sockfd,
-                         struct sockaddr *addr, int addrlen);
+                         struct sockaddr *addr, socklen_t addrlen);
 assuan_fd_t assuan_sock_connect_byname (const char *host, unsigned short port,
                                         int timeout,
                                         const char *credentials,
                                         unsigned int flags);
-int assuan_sock_bind (assuan_fd_t sockfd, struct sockaddr *addr, int addrlen);
+int assuan_sock_bind (assuan_fd_t sockfd, struct sockaddr *addr,
+                      socklen_t addrlen);
 int assuan_sock_set_sockaddr_un (const char *fname, struct sockaddr *addr,
                                  int *r_redirected);
-int assuan_sock_get_nonce (struct sockaddr *addr, int addrlen,
+int assuan_sock_get_nonce (struct sockaddr *addr, socklen_t addrlen,
                            assuan_sock_nonce_t *nonce);
 int assuan_sock_check_nonce (assuan_fd_t fd, assuan_sock_nonce_t *nonce);
 void assuan_sock_set_system_hooks (assuan_system_hooks_t system_hooks);
