@@ -566,7 +566,7 @@ assuan_pid_t __assuan_waitpid (assuan_context_t ctx, assuan_pid_t pid,
                                int nowait, int *status, int options);
 
 #if defined(LIBASSUAN_API_REQUESTED) && LIBASSUAN_API_REQUESTED >= 3
-#defined ASSUAN_NO_NPTH_SYSTEM_HOOKS_ANY_MORE 1
+#define ASSUAN_NO_NPTH_SYSTEM_HOOKS_ANY_MORE 1
 #endif
 
 #if defined(ASSUAN_REALLY_REQUIRE_V2_NPTH_SYSTEM_HOOKS) \
