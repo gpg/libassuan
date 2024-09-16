@@ -135,6 +135,15 @@ accept_connection_bottom (assuan_context_t ctx)
       {
         ctx->peercred_valid = 1;
         ctx->peercred.pid = ASSUAN_INVALID_PID;
+#if defined (HAVE_XUCRED_CR_PID)
+          {
+            struct xucred cr;
+            socklen_t len = sizeof (struct xucred);
+
+            if (!getsockopt (fd, SOL_LOCAL, LOCAL_PEERCRED, &cr, &len))
+              ctx->peercred.pid = cr.cr_pid;
+          }
+#endif
       }
   }
 #endif

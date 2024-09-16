@@ -468,6 +468,11 @@ AC_CHECK_FUNCS([getpeerucred])
 
 # FreeBSD
 AC_CHECK_FUNCS([getpeereid])
+AC_CHECK_MEMBER(struct xucred.cr_pid,
+		[AC_DEFINE(HAVE_XUCRED_CR_PID, 1,
+		 Define if struct xucred contains the cr_pid member.)],
+		 [], [#include <sys/ucred.h>
+#include <sys/ucred.h> ])
 
 
 #
