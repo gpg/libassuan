@@ -1312,7 +1312,7 @@ _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
                           (struct sockaddr *)&myaddr, &len);
       if (rc)
         {
-          int save_e = errno;
+          int save_e = _assuan_sock_wsa2errno (WSAGetLastError ());
           CloseHandle (filehd);
           MyDeleteFile (unaddr->sun_path);
           gpg_err_set_errno (save_e);
