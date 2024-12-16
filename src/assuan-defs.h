@@ -76,6 +76,7 @@ struct assuan_context_s
 #ifdef HAVE_W32_SYSTEM
   /* The per-context w32 error string.  */
   char w32_strerror[256];
+  int w32_error;
 #endif
 
   /* The allocation hooks.  */
@@ -402,7 +403,7 @@ int _assuan_sock_check_nonce (assuan_context_t ctx, assuan_fd_t fd,
 			      assuan_sock_nonce_t *nonce);
 #ifdef HAVE_W32_SYSTEM
 wchar_t *_assuan_utf8_to_wchar (const char *string);
-int _assuan_sock_wsa2errno (int err);
+int _assuan_sock_wsa2errno (assuan_context_t ctx, int err);
 #endif
 
 #ifdef HAVE_FOPENCOOKIE

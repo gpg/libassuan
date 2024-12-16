@@ -149,7 +149,7 @@ __assuan_close (assuan_context_t ctx, assuan_fd_t fd)
 {
   int rc = closesocket (HANDLE2SOCKET(fd));
   if (rc)
-    gpg_err_set_errno ( _assuan_sock_wsa2errno (WSAGetLastError ()) );
+    gpg_err_set_errno ( _assuan_sock_wsa2errno (ctx, WSAGetLastError ()) );
   if (rc && WSAGetLastError () == WSAENOTSOCK)
     {
       rc = CloseHandle (fd);
@@ -647,7 +647,7 @@ __assuan_socket (assuan_context_t ctx, int domain, int type, int proto)
 
   res = SOCKET2HANDLE (socket (domain, type, proto));
   if (res == SOCKET2HANDLE (INVALID_SOCKET))
-    gpg_err_set_errno (_assuan_sock_wsa2errno (WSAGetLastError ()));
+    gpg_err_set_errno (_assuan_sock_wsa2errno (ctx, WSAGetLastError ()));
   return res;
 }
 
@@ -660,7 +660,7 @@ __assuan_connect (assuan_context_t ctx, assuan_fd_t sock,
 
   res = connect (HANDLE2SOCKET (sock), addr, length);
   if (res < 0)
-    gpg_err_set_errno (_assuan_sock_wsa2errno (WSAGetLastError ()));
+    gpg_err_set_errno (_assuan_sock_wsa2errno (ctx, WSAGetLastError ()));
   return res;
 }
 

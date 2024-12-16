@@ -289,7 +289,7 @@ MyDeleteFile (LPCSTR lpFileName)
 
 
 int
-_assuan_sock_wsa2errno (int err)
+_assuan_sock_wsa2errno (assuan_context_t ctx, int err)
 {
   switch (err)
     {
@@ -306,6 +306,8 @@ _assuan_sock_wsa2errno (int err)
     default:
       return EIO;
     }
+
+  ctx->w32_error = err;
 }
 
 
@@ -674,6 +676,10 @@ _assuan_sock_get_flag (assuan_context_t ctx, assuan_fd_t sockfd,
         }
       *r_value = !!i;
     }
+#ifdef HAVE_W32_SYSTEM
+  else if (!strcmp (name, "w32_error"))
+    *r_value = ctx->w32_error;
+#endif
   else
     {
       gpg_err_set_errno (EINVAL);
@@ -1076,7 +1082,7 @@ _assuan_sock_accept (assuan_context_t ctx, assuan_fd_t sockfd,
 #ifdef HAVE_W32_SYSTEM
   res = SOCKET2HANDLE (accept (HANDLE2SOCKET (sockfd), addr, p_addrlen));
   if (res == SOCKET2HANDLE (INVALID_SOCKET))
-    gpg_err_set_errno (_assuan_sock_wsa2errno (WSAGetLastError ()));
+    gpg_err_set_errno (_assuan_sock_wsa2errno (ctx, WSAGetLastError ()));
 #else
   res = accept (sockfd, addr, p_addrlen);
 #endif
@@ -1312,7 +1318,7 @@ _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
                           (struct sockaddr *)&myaddr, &len);
       if (rc)
         {
-          int save_e = _assuan_sock_wsa2errno (WSAGetLastError ());
+          int save_e = _assuan_sock_wsa2errno (ctx, WSAGetLastError ());
           CloseHandle (filehd);
           MyDeleteFile (unaddr->sun_path);
           gpg_err_set_errno (save_e);
@@ -1351,7 +1357,7 @@ _assuan_sock_bind (assuan_context_t ctx, assuan_fd_t sockfd,
     {
       res = bind (HANDLE2SOCKET(sockfd), addr, addrlen);
       if (res < 0)
-	gpg_err_set_errno ( _assuan_sock_wsa2errno (WSAGetLastError ()));
+	gpg_err_set_errno ( _assuan_sock_wsa2errno (ctx, WSAGetLastError ()));
     }
  leave:
 #else
