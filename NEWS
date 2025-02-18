@@ -1,5 +1,17 @@
-Noteworthy changes in version 3.0.2 (unreleased) [C9/A0/R_]
+Noteworthy changes in version 3.0.2 (2025-02-18) [C9/A0/R2]
 ------------------------------------------------
+
+ * Fix for FreeBSD to set the pid of assuan_peercred_t.
+   [rAdfa5e6532d]
+
+ * Use socklen_t for the length of socket address.  [T5924]
+
+ * Fix errno setting on Widnows for assuan_sock_bind failure.  [T7456]
+
+ * New assuan_sock_get_flag "w32_error" to get the actual Windows
+   error after a system call and not just the mapped errno.  [T7456]
+
+ Release-info: https://dev.gnupg.org/T7163
 
 
 Noteworthy changes in version 3.0.1 (2024-06-24) [C9/A0/R1]

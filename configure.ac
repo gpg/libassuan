@@ -65,7 +65,7 @@ AC_INIT([mym4_package],[mym4_version],[https://bugs.gnupg.org])
 #
 LIBASSUAN_LT_CURRENT=9
 LIBASSUAN_LT_AGE=0
-LIBASSUAN_LT_REVISION=1
+LIBASSUAN_LT_REVISION=2
 
 # If the API is changed in an incompatible way: increment the next counter.
 LIBASSUAN_CONFIG_API_VERSION=3
