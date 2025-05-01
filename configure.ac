@@ -471,8 +471,14 @@ AC_CHECK_MEMBER(struct sockpeercred.pid,
 # (Open)Solaris
 AC_CHECK_FUNCS([getpeerucred])
 
-# FreeBSD
+# FreeBSD and AIX
 AC_CHECK_FUNCS([getpeereid])
+# AIX is missing the declaration.
+AC_CHECK_DECLS([getpeereid],,, [[
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/socket.h>
+]])
 AC_CHECK_MEMBER(struct xucred.cr_pid,
 		[AC_DEFINE(HAVE_XUCRED_CR_PID, 1,
 		 Define if struct xucred contains the cr_pid member.)],

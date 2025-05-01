@@ -55,6 +55,11 @@
 #include "debug.h"
 #include "assuan-defs.h"
 
+/* Missing declaration on AIX.  */
+#if HAVE_GETPEEREID && !HAVE_DECL_GETPEEREID
+int getpeereid (int fd, uid_t *euid, gid_t *egid);
+#endif
+
 static gpg_error_t
 accept_connection_bottom (assuan_context_t ctx)
 {
@@ -130,7 +135,7 @@ accept_connection_bottom (assuan_context_t ctx)
       }
   }
 #elif defined(HAVE_GETPEEREID)
-  {                             /* FreeBSD */
+  {                             /* FreeBSD and AIX */
     if (getpeereid (fd, &ctx->peercred.uid, &ctx->peercred.gid) != -1)
       {
         ctx->peercred_valid = 1;
