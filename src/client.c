@@ -250,6 +250,7 @@ assuan_transact (assuan_context_t ctx,
   int off;
   char *line;
   int linelen;
+  gpg_error_t last_err = 0;
 
   rc = assuan_write_line (ctx, command);
   if (rc)
@@ -278,9 +279,12 @@ assuan_transact (assuan_context_t ctx,
           rc = data_cb (data_cb_arg, line, linelen);
           if (ctx->flags.confidential)
             wipememory (ctx->inbound.line, LINELENGTH);
-          if (!rc)
-            goto again;
         }
+      /* We need to consume the whole data from server to avoid
+         unsynched state.  */
+      if (rc)
+        last_err = rc;
+      goto again;
     }
   else if (response == ASSUAN_RESPONSE_INQUIRE)
     {
@@ -338,12 +342,16 @@ assuan_transact (assuan_context_t ctx,
       if (!data_cb)
         rc = _assuan_error (ctx, GPG_ERR_ASS_NO_DATA_CB);
       else
-        {
-          rc = data_cb (data_cb_arg, NULL, 0);
-          if (!rc)
-            goto again;
-        }
+        rc = data_cb (data_cb_arg, NULL, 0);
+      /* We need to finish the response from server to avoid
+         unsynched state.  */
+      if (rc)
+        last_err = rc;
+      goto again;
     }
+
+  if (!rc)
+    return last_err;
 
   return rc;
 }
