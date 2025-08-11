@@ -92,6 +92,16 @@ cmd_echo (assuan_context_t ctx, char *line)
   return 0;
 }
 
+static int server_done;
+static gpg_error_t
+cmd_kill (assuan_context_t ctx, char *line)
+{
+  (void)ctx;
+  log_info ("got KILL command (%s)\n", line);
+  server_done = 1;
+  return 0;
+}
+
 static gpg_error_t
 register_commands (assuan_context_t ctx)
 {
@@ -101,10 +111,11 @@ register_commands (assuan_context_t ctx)
     gpg_error_t (*handler) (assuan_context_t, char *line);
   } table[] =
       {
-	{ "ECHO", cmd_echo },
-	{ "INPUT", NULL },
-	{ "OUTPUT", NULL },
-	{ NULL, NULL }
+        { "ECHO", cmd_echo },
+        { "KILL", cmd_kill },
+        { "INPUT", NULL },
+        { "OUTPUT", NULL },
+        { NULL, NULL }
       };
   int i;
   gpg_error_t rc;
@@ -130,7 +141,7 @@ server_common (assuan_context_t ctx)
 
   assuan_set_log_stream (ctx, stderr);
 
-  for (;;)
+  while (!server_done)
     {
       rc = assuan_accept (ctx);
       if (rc)
@@ -243,7 +254,7 @@ server_socket (const char *socketname)
 
 /* Client main.  If true is returned, a disconnect has not been done. */
 static int
-client (assuan_context_t ctx, const char *fname)
+client (assuan_context_t ctx, const char *fname, const char *sname)
 {
   int rc;
   FILE *fp;
@@ -297,6 +308,13 @@ client (assuan_context_t ctx, const char *fname)
 
   /* Give us some time to check with lsof that all descriptors are closed. */
 /*   sleep (10); */
+
+  if (sname)
+    {
+      rc = assuan_transact (ctx, "KILL", NULL, NULL, NULL, NULL, NULL, NULL);
+      if (rc)
+        log_error ("sending KILL failed: %s\n", gpg_strerror (rc));
+    }
 
   assuan_release (ctx);
   return 0;
@@ -452,7 +470,7 @@ main (int argc, char **argv)
         }
 
       fname = prepend_srcdir ("motd");
-      if (client (ctx, fname))
+      if (client (ctx, fname, socketname))
         {
           log_info ("waiting for server to terminate...\n");
           assuan_release (ctx);

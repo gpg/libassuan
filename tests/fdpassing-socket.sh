@@ -7,7 +7,7 @@ fi
 ./fdpassing$EXEEXT --server --socketname a.sock 2>/dev/null &
 SERVER_PID=$!
 
-# Wait for server stats up
+# Wait for server starts up
 sleep 1
 
 ./fdpassing$EXEEXT --socketname file://a.sock
