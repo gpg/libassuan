@@ -266,6 +266,68 @@ run_client (const char *servername)
 
 
 static void
+run_client_testing_kill (const char *servername)
+{
+  gpg_error_t err;
+  assuan_context_t ctx;
+  assuan_fd_t no_close_fds[2];
+  const char *arglist[5];
+
+  no_close_fds[0] = assuan_fd_from_posix_fd (fileno (stderr));
+  no_close_fds[1] = ASSUAN_INVALID_FD;
+
+  arglist[0] = servername;
+  arglist[1] = "--server";
+  arglist[2] = debug? "--debug" : verbose? "--verbose":NULL;
+  arglist[3] = NULL;
+
+  err = assuan_new (&ctx);
+  if (err)
+    log_fatal ("assuan_new failed: %s\n", gpg_strerror (err));
+
+  err = assuan_pipe_connect (ctx, servername, arglist, no_close_fds,
+                             NULL, NULL, 0);
+  if (err)
+    {
+      log_error ("assuan_pipe_connect failed: %s\n",
+                 gpg_strerror (err));
+      assuan_release (ctx);
+      return;
+    }
+
+  log_info ("server started; pid is %ld\n",
+            (long)assuan_get_pid (ctx));
+
+  err = assuan_transact (ctx, "ECHO Your lucky number is 3552664958674928.  "
+                         "Watch for it everywhere.",
+                         data_cb, NULL, NULL, NULL, NULL, NULL);
+  if (err)
+    {
+      log_error ("sending ECHO failed: %s\n", gpg_strerror (err));
+      return;
+    }
+
+  err = assuan_pipe_kill_server (ctx);
+  if (err)
+    {
+      log_error ("Killing server process failed: %s\n", gpg_strerror (err));
+      return;
+    }
+
+  err = assuan_transact (ctx, "BYE", NULL, NULL, NULL, NULL, NULL, NULL);
+  if (!err)
+    {
+      log_error ("sending BYE *NOT* failed: %s\n", gpg_strerror (err));
+      return;
+    }
+  log_info ("sending BYE correctly failed: %s\n", gpg_strerror (err));
+
+  assuan_release (ctx);
+  return;
+}
+
+
+static void
 parse_std_file_handles (int *argcp, char ***argvp)
 {
   (void)argcp;
@@ -360,6 +422,9 @@ main (int argc, char **argv)
       if (debug && !silent_client)
         assuan_set_assuan_log_stream (stderr);
       run_client (myname);
+      log_info ("client finished\n");
+      log_info ("another client started\n");
+      run_client_testing_kill (myname);
       log_info ("client finished\n");
     }
 
