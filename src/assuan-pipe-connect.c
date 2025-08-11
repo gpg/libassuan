@@ -26,8 +26,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-/* On Windows systems signal.h is not needed and even not supported on
-   WindowsCE. */
 #ifndef HAVE_DOSISH_SYSTEM
 # include <signal.h>
 #endif
