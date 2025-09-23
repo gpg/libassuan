@@ -15,7 +15,7 @@
 # configure it for the respective package.  It is maintained as part of
 # GnuPG and source copied by other packages.
 #
-# Version: 2024-12-03
+# Version: 2025-09-23
 
 configure_ac="configure.ac"
 
@@ -256,22 +256,23 @@ if [ "$myhost" = "find-version" ]; then
       matchstr3="$package-$major-base"
       vers="$major.$minor.$micro"
     fi
+    matchexcl="--exclude $package-*beta*"
 
     beta=no
     if [ -e .git ]; then
       ingit=yes
-      tmp=$(git describe --match "${matchstr1}" --long 2>/dev/null)
+      tmp=$(git describe --match "${matchstr1}" $matchexcl --long 2>/dev/null)
       if [ -n "$tmp" ]; then
           tmp=$(echo "$tmp" | sed s/^"$package"// \
                     | awk -F- '$3!=0 && $3 !~ /^beta/ {print"-beta"$3}')
       else
           # (due tof "-base" in the tag we need to take the 4th field)
-          tmp=$(git describe --match "${matchstr2}" --long 2>/dev/null)
+          tmp=$(git describe --match "${matchstr2}" $matchexcl --long 2>/dev/null)
           if [ -n "$tmp" ]; then
               tmp=$(echo "$tmp" | sed s/^"$package"// \
                         | awk -F- '$4!=0 && $4 !~ /^beta/ {print"-beta"$4}')
           elif [ -n "${matchstr3}" ]; then
-              tmp=$(git describe --match "${matchstr3}" --long 2>/dev/null)
+              tmp=$(git describe --match "${matchstr3}" $matchexcl --long 2>/dev/null)
               if [ -n "$tmp" ]; then
                   tmp=$(echo "$tmp" | sed s/^"$package"// \
                           | awk -F- '$4!=0 && $4 !~ /^beta/ {print"-beta"$4}')
@@ -481,7 +482,8 @@ if [ -d .git ]; then
   if cp --version >/dev/null 2>/dev/null; then
     [ -z "${SILENT}" ] && CP="$CP -v"
   fi
-  if [ -f .git/hooks/pre-commit.sample -a ! -f .git/hooks/pre-commit ] ; then
+  if [ -f .git/hooks/pre-commit.sample ] \
+      && [ ! -f .git/hooks/pre-commit ]; then
     [ -z "${SILENT}" ] && cat <<EOF
 *** Activating trailing whitespace git pre-commit hook. ***
     For more information see this thread:
@@ -503,7 +505,8 @@ EOF
         "awk '/^\"POT-Creation-Date:/&&!s{s=1;next};!/^#: /{print}'"
     fi
   fi
-  if [ -f build-aux/git-hooks/commit-msg -a ! -f .git/hooks/commit-msg ] ; then
+  if [ -f build-aux/git-hooks/commit-msg ] \
+     && [ ! -f .git/hooks/commit-msg ]; then
       [ -z "${SILENT}" ] && cat <<EOF
 *** Activating commit log message check hook. ***
 EOF
