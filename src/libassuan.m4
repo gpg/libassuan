@@ -9,7 +9,7 @@ dnl This file is distributed in the hope that it will be useful, but
 dnl WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
 dnl implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 dnl SPDX-License-Identifier: FSFULLR
-# Last-changed: 2024-07-11
+# Last-changed: 2025-09-24
 
 dnl
 dnl Find gpgrt-config, which uses .pc file
