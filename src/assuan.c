@@ -172,7 +172,10 @@ assuan_new_ext (assuan_context_t *r_ctx, gpg_err_source_t err_source,
   /* Set up a working context so we can use standard functions.  */
   memset (&wctx, 0, sizeof (wctx));
   wctx.err_source = err_source;
-  wctx.malloc_hooks = *malloc_hooks;
+  if (malloc_hooks == NULL)
+    wctx.malloc_hooks = _assuan_default_malloc_hooks;
+  else
+    wctx.malloc_hooks = *malloc_hooks;
   wctx.log_cb = log_cb;
   wctx.log_cb_data = log_cb_data;
 
@@ -181,8 +184,11 @@ assuan_new_ext (assuan_context_t *r_ctx, gpg_err_source_t err_source,
     TRACE_BEG8 (&wctx, ASSUAN_LOG_CTX, "assuan_new_ext", r_ctx,
 		"err_source = %i (%s), malloc_hooks = %p (%p, %p, %p), "
 		"log_cb = %p, log_cb_data = %p", err_source,
-		gpg_strsource (err_source), malloc_hooks, malloc_hooks->malloc,
-		malloc_hooks->realloc, malloc_hooks->free, log_cb, log_cb_data);
+		gpg_strsource (err_source), malloc_hooks,
+                malloc_hooks ? malloc_hooks->malloc  : NULL,
+		malloc_hooks ? malloc_hooks->realloc : NULL,
+                malloc_hooks ? malloc_hooks->free : NULL,
+                log_cb, log_cb_data);
 
     *r_ctx = NULL;
     ctx = _assuan_malloc (&wctx, sizeof (*ctx));
