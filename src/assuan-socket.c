@@ -25,6 +25,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef HAVE_SYS_TIME_H
+# include <sys/time.h>
+#endif
+#ifdef HAVE_SYS_SELECT_H
+# include <sys/select.h>
+#endif
 #ifdef HAVE_W32_SYSTEM
 # define WIN32_LEAN_AND_MEAN
 # include <windows.h>
