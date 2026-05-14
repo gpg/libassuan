@@ -33,7 +33,7 @@ assuan_fd_from_posix_fd (int fd)
   if (fd < 0)
     return ASSUAN_INVALID_FD;
   else
-    return (assuan_fd_t) _get_osfhandle (fd);
+    return (assuan_fd_t)(intptr_t) _get_osfhandle (fd);
 }
 
 ##EOF##
